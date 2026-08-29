@@ -1,0 +1,43 @@
+{# Base layout.
+ #
+ # Every URL in here goes through the `url()` global, never a literal "/...". Franchisarr is
+ # expected to run behind a reverse proxy at a subpath (technical challenge #10), and a single
+ # hardcoded path is enough to break the whole UI for those users while looking fine locally.
+ # tests/test_templates.py guards this.
+ #
+ # Dark by default via data-theme on <html>. Pico ships both palettes, so Phase 9's toggle only
+ # needs to change this attribute -- no stylesheet swap.
+ #}
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ theme|default('dark') }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Franchisarr{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url('/static/pico.min.css') }}">
+    <link rel="stylesheet" href="{{ url('/static/app.css') }}">
+    <script src="{{ url('/static/htmx.min.js') }}" defer></script>
+    <script src="{{ url('/static/alpine.min.js') }}" defer></script>
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <header class="container">
+      <nav class="app-nav">
+        <ul>
+          <li><a class="app-brand" href="{{ url('/') }}">Franchisarr</a></li>
+        </ul>
+        <ul>
+          {% block nav %}{% endblock %}
+        </ul>
+      </nav>
+    </header>
+
+    <main class="container">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="container">
+      <small>Franchisarr {{ version }}</small>
+    </footer>
+  </body>
+</html>

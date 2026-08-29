@@ -12,10 +12,13 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app/ ./app/
+# Not needed to run (the app builds its Alembic config in code) — copied so `docker exec` into a
+# running container can drive Alembic by hand when troubleshooting a migration.
+COPY alembic.ini .
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# App data (SQLite DB etc., once Phase 1 lands) mounts here.
+# App data (the SQLite database) mounts here.
 VOLUME ["/config"]
 ENV FRANCHISARR_CONFIG_DIR=/config
 

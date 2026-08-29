@@ -94,6 +94,14 @@ def configure_logging(level: str = "INFO") -> None:
     root.addHandler(handler)
     root.setLevel(resolved)
 
+    # uvicorn installs its own handlers, so without this its startup and access lines would use
+    # a different format *and* skip the redaction above. Dropping its handlers makes those
+    # records propagate to ours instead.
+    for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        uvicorn_logger = logging.getLogger(name)
+        uvicorn_logger.handlers.clear()
+        uvicorn_logger.propagate = True
+
     # These three are chatty at DEBUG and mostly report their own internals. They stay one step
     # quieter than the app unless the app itself is at DEBUG.
     for noisy in ("plexapi", "httpx", "httpcore"):

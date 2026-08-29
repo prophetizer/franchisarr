@@ -78,3 +78,28 @@ def get_session() -> Iterator[Session]:
     """FastAPI dependency yielding a session bound to the shared engine."""
     with Session(get_engine()) as session:
         yield session
+
+
+def run_migrations() -> None:
+    """Bring the database up to head.
+
+    Called at startup rather than left to the operator: Franchisarr ships as a container that
+    people upgrade by pulling a new tag, and expecting them to exec in and run Alembic by hand
+    would mean broken installs. This is what Radarr/Sonarr do too.
+
+    The Alembic config is built in code rather than read from alembic.ini so the runtime does not
+    depend on that file being present in the image; the ini remains for `alembic revision` during
+    development.
+    """
+    from alembic import command
+    from alembic.config import Config
+
+    migrations_dir = Path(__file__).resolve().parent / "migrations"
+
+    config = Config()
+    config.set_main_option("script_location", str(migrations_dir))
+    config.set_main_option("sqlalchemy.url", get_database_url())
+    # Leave our own logging setup alone.
+    config.attributes["configure_logger"] = False
+
+    command.upgrade(config, "head")

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <hgroup>
+    <h1>Franchisarr</h1>
+    <p>Finds the films missing from collections you already own, and the spin-offs of shows you already watch.</p>
+  </hgroup>
+
+  <article>
+    <header>Setup isn't finished yet</header>
+    <p>
+      Connecting Plex, TMDb, Radarr and Sonarr arrives in the next build phases. Until then this
+      page confirms the app is running and serving its own assets.
+    </p>
+    <footer>
+      <small>Health check: <a href="{{ url('/health') }}">{{ url('/health') }}</a></small>
+    </footer>
+  </article>
+{% endblock %}

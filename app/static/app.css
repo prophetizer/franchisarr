@@ -1,0 +1,41 @@
+/* Franchisarr's own styles, layered on top of Pico.
+ *
+ * Dark is the default (matching Radarr/Sonarr/Overseerr) and is set as `data-theme="dark"` on
+ * <html> rather than by overriding Pico's colours here. Pico ships both palettes; Phase 9's
+ * light/dark toggle only has to change that one attribute and remember the choice. Nothing in
+ * this file may assume a dark background.
+ */
+
+:root {
+  --franchisarr-header-border: var(--pico-muted-border-color);
+}
+
+body > header.container {
+  border-bottom: 1px solid var(--franchisarr-header-border);
+  margin-bottom: var(--pico-block-spacing-vertical);
+}
+
+.app-brand {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.app-nav ul {
+  margin-bottom: 0;
+}
+
+/* Shown while an htmx request is in flight. htmx toggles .htmx-request on the element. */
+.htmx-indicator {
+  opacity: 0;
+  transition: opacity 150ms ease-in;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  opacity: 1;
+}
+
+footer.container {
+  color: var(--pico-muted-color);
+  font-size: 0.875rem;
+}

@@ -64,6 +64,20 @@ def test_configure_logging_is_idempotent(capsys) -> None:
     assert _capture(capsys).count("once only") == 1
 
 
+def test_uvicorn_logs_are_routed_through_our_handler(capsys) -> None:
+    """uvicorn installs its own handlers; left alone, its access lines would use a different
+    format and skip redaction entirely."""
+    configure_logging("INFO")
+    register_secret("super-secret-api-key")
+
+    logging.getLogger("uvicorn.access").info("GET /?token=super-secret-api-key")
+
+    out = _capture(capsys)
+    assert "super-secret-api-key" not in out
+    assert "uvicorn.access" in out
+    assert out.split(" ", 1)[0].endswith("Z")
+
+
 def test_registered_secret_is_redacted_in_message(capsys) -> None:
     configure_logging("INFO")
     register_secret("super-secret-api-key")
