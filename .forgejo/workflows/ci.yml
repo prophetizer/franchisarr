@@ -37,15 +37,21 @@ jobs:
   docker-build:
     runs-on: docker
     needs: test
+    # DinD's own internal bridge gateway (confirmed via
+    # `docker exec forgejo-runner-dind ip route`) -- job containers run AS
+    # containers spawned by that same nested daemon, on its internal
+    # docker0 bridge, so this is reachable from here even though it isn't
+    # from the outer runner container (which is why this is set here,
+    # per-job, rather than in the runner's own config.yml).
+    env:
+      DOCKER_HOST: tcp://172.17.0.1:2375
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       # The runner's default job image is bare Node.js (needed for
       # checkout's own JS-based post-step) with no Docker CLI at all --
-      # install it here. The runner config's docker_host: automount setting
-      # mounts a working connection to the DinD sidecar; this just adds the
-      # client binary to actually use it.
+      # install it here.
       - name: Install Docker CLI
         run: |
           apt-get update
