@@ -46,6 +46,9 @@ A self-hosted *arr-stack companion app: scans your Plex library, finds movies mi
 | Versioning/changelog | **SemVer tags + a maintained `CHANGELOG.md`** in Keep a Changelog format — gives the update-checker something meaningful to compare against |
 | Security policy | **Yes** — a basic `SECURITY.md` (supported versions, private vulnerability-reporting process) added now, not deferred to the GitHub migration |
 | Config export/import | **Yes** — a Settings "download config backup" (JSON) / import pair, in addition to (not instead of) documenting direct SQLite file backup |
+| Schema migration timing | **Applied automatically at app startup**, not left to the operator — the app is upgraded by pulling a new image tag, so an install that needs a manual `alembic upgrade` is an install that breaks (added Phase 1) |
+| Constrained columns | Stored as **plain VARCHAR with `str` enums in Python**, not `sa.Enum`. SQLite has no native enum and `sa.Enum` emits a CHECK constraint, which would turn "accept one more value" into a table-rebuild migration on other people's databases (added Phase 1) |
+| Front-end assets | **Vendored into `app/static/` at pinned versions with recorded checksums**, never CDN-linked — a self-hosted app on a home network must render without outbound internet access (added Phase 1) |
 
 ## 1. What the app does
 
@@ -78,13 +81,16 @@ franchisarr/
 ├── app/
 │   ├── main.py                    # FastAPI app, mounts routes + static UI, /health endpoint
 │   ├── config.py                   # env-based bootstrap settings (fallback/first-run only), incl. BASE_URL
-│   ├── logging_config.py            # structured (leveled, timestamped, stdout) logging setup
+│   ├── logging_config.py            # structured (leveled, timestamped, stdout) logging setup, secret redaction
+│   ├── db.py                       # engine/session factory, DB_PATH resolution, migrate-on-startup
+│   ├── templating.py                # Jinja2 env + the BASE_URL-aware url() global
 │   ├── models.py                   # SQLModel table definitions
 │   ├── migrations/                 # Alembic env + versioned migration scripts
 │   ├── auth/
 │   │   ├── plex_oauth.py            # plex.tv PIN-based OAuth flow, session handling
 │   │   └── local_admin.py           # fallback local admin login (bcrypt-hashed password)
 │   ├── clients/
+│   │   ├── plex_guid.py             # Plex GUID -> external ID parsing (both agent generations), I/O-free
 │   │   ├── plex_client.py           # plexapi wrapper: list movies/shows, get GUIDs
 │   │   ├── tmdb_client.py           # TMDb wrapper: collection lookup, show details, rate-limited
 │   │   ├── radarr_client.py         # Radarr v3 API, instance-aware
@@ -107,6 +113,8 @@ franchisarr/
 │   └── static/
 │       ├── htmx.min.js
 │       ├── alpine.min.js
+│       ├── app.css                   # Franchisarr's own styles, layered on Pico
+│       ├── VENDOR.md                 # pinned versions, licences and checksums of the vendored assets
 │       └── pico.min.css              # configured for dark-by-default via data-theme, light toggle available
 ├── cli.py                          # Typer CLI: thin HTTP client against the app's own API (`scan movies`,
 │                                    # `scan tv`, `add radarr <id> --instance X`, needs an API key/local access)
@@ -121,6 +129,7 @@ franchisarr/
 ├── Dockerfile                       # non-root, PUID/PGID entrypoint (linuxserver.io-style s6/entrypoint script)
 ├── docker-compose.yml
 ├── .env.example                    # bootstrap-only env vars (see below)
+├── alembic.ini                      # migration tooling config (the app builds its own at runtime)
 ├── requirements.txt                 # incl. sqlmodel, alembic, apscheduler
 ├── LICENSE                          # MIT
 ├── SECURITY.md                       # supported versions + private vulnerability-reporting process
@@ -173,11 +182,12 @@ franchisarr/
 22. **Monitor-mode mapping to Sonarr's actual API.** Sonarr's `addOptions.monitor` field has specific accepted values that don't map 1:1 to a friendly "All/Future Only/First Season" UI — worth confirming Sonarr's current v3 API enum values during Phase 6/7 rather than assuming the UI labels translate directly.
 23. **Config export secrets handling.** A config-backup JSON necessarily includes Radarr/Sonarr API keys and the TMDb key to be actually restorable — needs a clear on-screen warning that the exported file is sensitive (treat like a password), and import should validate the file's shape before touching the DB rather than trusting it blindly.
 24. **Activity log vs. Radarr/Sonarr's own history.** The log only records the *add* action Franchisarr took (not download/import status, which stays Radarr/Sonarr's job) — worth a one-line UI note pointing at the instance's own history for what happened after the add, so the activity page doesn't imply it's tracking download progress it isn't.
+25. **plexapi's implicit per-item metadata refetch.** *(found in Phase 1, resolved)* plexapi reloads an entire object from the server whenever an attribute reads back as `None` or `[]` on an object built from a listing — and it does this from inside its own `_loadData`, so it cannot be avoided by being careful about which attributes are touched. A movie with no year, or a show whose listing omits `childCount`, silently becomes its own HTTP request: a 3,600-movie scan would have made thousands of requests instead of a handful. `plex_client.py` disables the behaviour via plexapi's own config flag before the server object is constructed, and a regression test asserts that listing a library makes zero `/library/metadata/` calls. Anything genuinely needing full metadata must call `fetch_external_ids()` explicitly, so the request is a decision rather than a side effect — relevant to the Phase 3 matcher's fallback path for servers whose listings omit `<Guid>` children.
 
 ## 8. Suggested build phases
 
 1. **Phase 0 — CI + repo hygiene skeleton — ✅ COMPLETE (CI green on Forgejo):** Forgejo Actions workflow that installs deps and runs `pytest` (empty suite passes trivially at first), a multi-arch (amd64/arm64) Buildx image-build job with a quick dependency audit for arm64 wheel availability, plus `LICENSE`, `SECURITY.md`, and an empty `CHANGELOG.md` (Keep a Changelog format) committed from the start — set up before real code lands so every subsequent phase is covered from its first commit, not bolted on at the end.
-2. **Phase 1 — Foundations:** SQLModel schema + first Alembic migration (users incl. `api_key`, instances, settings, spinoff_mappings, collection_excludes, included_libraries), env-var bootstrap incl. `BASE_URL`, structured logging setup, `/health` endpoint, Plex client (list libraries, movies/shows) with fixture-backed tests, dark-by-default Pico theme wired into the base template, Docker skeleton with PUID/PGID entrypoint that runs and connects to Plex.
+2. **Phase 1 — Foundations — ✅ COMPLETE:** SQLModel schema + first Alembic migration (users incl. `api_key`, instances, settings, spinoff_mappings, collection_excludes, included_libraries), env-var bootstrap incl. `BASE_URL`, structured logging setup, `/health` endpoint, Plex client (list libraries, movies/shows) with fixture-backed tests, dark-by-default Pico theme wired into the base template, Docker skeleton with PUID/PGID entrypoint that runs and connects to Plex.
 3. **Phase 2 — Auth:** Plex OAuth login flow + local admin fallback, session handling, library-selection step (checkboxes) in the post-login/setup flow, basic "logged in" shell UI, confirm the app works correctly when `BASE_URL` is set to a subpath, tests for the OAuth token/server-access check.
 4. **Phase 3 — Movie collections (single instance first):** TMDb client, Plex→TMDb matcher with a defined fuzzy-match confidence threshold (tested against real mismatch cases from your library), collection-gap diff logic. Establish the CLI-as-HTTP-client pattern here (API key auth, `cli.py scan movies` hitting `/api/scan/movies`) since every later CLI command follows the same shape. Validate against your library before building UI.
 5. **Phase 4 — Radarr integration + multi-instance:** Radarr client (incl. live profile/root-folder fetch with an unreachable-instance failure state), instance CRUD + setup wizard step, cross-instance dedup toggle, "add missing movie" (monitored + search-on-add) with instance dropdown, wired into web UI, each add recorded to `activity_log`.
@@ -196,7 +206,10 @@ PLEX_URL=
 PLEX_TOKEN=            # or OAuth client id/secret, TBD during Phase 2
 TMDB_API_KEY=          # your own free key from themoviedb.org/settings/api — not bundled
 BASE_URL=/             # e.g. /franchisarr if served under a reverse-proxy subpath
-LOG_LEVEL=INFO         # DEBUG | INFO | WARNING | ERROR, structured JSON-ish lines to stdout
+LOG_LEVEL=INFO         # DEBUG | INFO | WARNING | ERROR, structured lines to stdout
+DB_PATH=               # optional; defaults to franchisarr.db inside the mounted config volume
+TMDB_CACHE_TTL_DAYS=7
+CROSS_INSTANCE_DEDUP=false
 PUID=1000              # matches Radarr/Sonarr/Plex's own containers — sets ownership of the config volume
 PGID=1000
 # Optional single-instance bootstrap (further instances added via UI):
@@ -211,6 +224,9 @@ SCAN_SCHEDULE_CRON=    # e.g. "0 3 * * *" for nightly at 3am; empty disables sch
 WEBHOOK_URL=
 WEBHOOK_FORMAT=generic  # generic | discord | slack
 ```
+
+Comments in `.env` must be on their own line: Docker's `env_file` parser does not strip a trailing
+`# comment`, so `BASE_URL=/   # a comment` sets the base URL to the whole string after the `=`.
 
 **Everything else** (additional instances, quality profiles, root folders, toggles) is managed via the in-app setup wizard/settings UI and stored in SQLite — not re-editable only through env vars, so the app is usable without shell access after first boot.
 
