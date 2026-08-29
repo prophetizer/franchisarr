@@ -41,6 +41,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # The runner's default job image is bare Node.js (needed for
+      # checkout's own JS-based post-step) with no Docker CLI at all --
+      # install it here. The runner config's docker_host: automount setting
+      # mounts a working connection to the DinD sidecar; this just adds the
+      # client binary to actually use it.
+      - name: Install Docker CLI
+        run: |
+          apt-get update
+          apt-get install -y ca-certificates curl
+          install -m 0755 -d /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+          chmod a+r /etc/apt/keyrings/docker.asc
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo $VERSION_CODENAME) stable" > /etc/apt/sources.list.d/docker.list
+          apt-get update
+          apt-get install -y docker-ce-cli docker-buildx-plugin
+
       - name: Set up QEMU (for cross-arch emulation)
         uses: docker/setup-qemu-action@v3
 
