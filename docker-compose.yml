@@ -1,0 +1,12 @@
+services:
+  franchisarr:
+    build: .
+    # Once published: image: ghcr.io/<you>/franchisarr:latest
+    container_name: franchisarr
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config:/config
