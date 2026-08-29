@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MediaContainer size="3" totalSize="3" offset="0" allowSync="1" librarySectionID="1" librarySectionTitle="Movies" librarySectionUUID="11111111-1111-1111-1111-111111111111" mediaTagPrefix="/system/bundle/media/flags/" mediaTagVersion="1756000000" title1="Movies" viewGroup="movie">
+  <Video ratingKey="1001" key="/library/metadata/1001" guid="plex://movie/5d7768ba96b655001fdc0408" studio="Paramount Pictures" type="movie" title="Beverly Hills Cop" contentRating="R" summary="A freewheeling Detroit cop." year="1984" duration="6300000" originallyAvailableAt="1984-12-05" addedAt="1700000000" updatedAt="1700000001">
+    <Guid id="imdb://tt0086960"/>
+    <Guid id="tmdb://90"/>
+    <Guid id="tvdb://12345"/>
+  </Video>
+  <Video ratingKey="1002" key="/library/metadata/1002" guid="plex://movie/5d7768ba96b655001fdc0409" studio="Paramount Pictures" type="movie" title="Beverly Hills Cop II" type2="movie" year="1987" duration="6300000" addedAt="1700000000" updatedAt="1700000001">
+    <Guid id="imdb://tt0092644"/>
+    <Guid id="tmdb://9836"/>
+  </Video>
+  <Video ratingKey="1003" key="/library/metadata/1003" guid="plex://movie/5d7768ba96b655001fdc040a" type="movie" title="An Unmatched Film" addedAt="1700000000" updatedAt="1700000001"/>
+</MediaContainer>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MediaContainer size="1" allowSync="1" librarySectionID="1" librarySectionTitle="Movies" mediaTagPrefix="/system/bundle/media/flags/">
+  <Video ratingKey="1003" key="/library/metadata/1003" guid="plex://movie/5d7768ba96b655001fdc040a" type="movie" title="An Unmatched Film" year="2001">
+    <Guid id="imdb://tt0111161"/>
+    <Guid id="tmdb://278"/>
+  </Video>
+</MediaContainer>

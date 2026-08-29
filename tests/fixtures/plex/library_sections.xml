@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MediaContainer size="6" allowSync="0" title1="Plex Library">
+  <Directory allowSync="1" key="1" type="movie" title="Movies" agent="tv.plex.agents.movie" scanner="Plex Movie" language="en-US" uuid="11111111-1111-1111-1111-111111111111" updatedAt="1756400000">
+    <Location id="1" path="/media/movies"/>
+  </Directory>
+  <Directory allowSync="1" key="2" type="show" title="TV Shows" agent="tv.plex.agents.series" scanner="Plex TV Series" language="en-US" uuid="22222222-2222-2222-2222-222222222222" updatedAt="1756400000">
+    <Location id="2" path="/media/tv"/>
+  </Directory>
+  <Directory allowSync="1" key="3" type="movie" title="Legacy Movies" agent="com.plexapp.agents.imdb" scanner="Plex Movie Scanner" language="en" uuid="33333333-3333-3333-3333-333333333333" updatedAt="1700000000">
+    <Location id="3" path="/media/movies-legacy"/>
+  </Directory>
+  <Directory allowSync="1" key="4" type="movie" title="Home Videos" agent="com.plexapp.agents.none" scanner="Plex Video Files Scanner" language="xn" uuid="44444444-4444-4444-4444-444444444444" updatedAt="1700000000">
+    <Location id="4" path="/media/home-videos"/>
+  </Directory>
+  <Directory allowSync="1" key="5" type="show" title="Anime" agent="com.plexapp.agents.hama" scanner="Plex Series Scanner" language="en" uuid="55555555-5555-5555-5555-555555555555" updatedAt="1700000000">
+    <Location id="5" path="/media/anime"/>
+  </Directory>
+  <Directory allowSync="1" key="6" type="artist" title="Music" agent="tv.plex.agents.music" scanner="Plex Modern Music Scanner" language="en" uuid="66666666-6666-6666-6666-666666666666" updatedAt="1700000000">
+    <Location id="6" path="/media/music"/>
+  </Directory>
+</MediaContainer>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MediaContainer size="1" totalSize="3" offset="2" allowSync="1" librarySectionID="1" librarySectionTitle="Movies" mediaTagPrefix="/system/bundle/media/flags/" title1="Movies" viewGroup="movie">
+  <Video ratingKey="1004" key="/library/metadata/1004" guid="plex://movie/5d7768ba96b655001fdc040b" type="movie" title="Beverly Hills Cop III" year="1994">
+    <Guid id="tmdb://9558"/>
+  </Video>
+</MediaContainer>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MediaContainer size="3" totalSize="3" offset="0" allowSync="1" librarySectionID="3" librarySectionTitle="Legacy Movies" librarySectionUUID="33333333-3333-3333-3333-333333333333" mediaTagPrefix="/system/bundle/media/flags/" mediaTagVersion="1756000000" title1="Legacy Movies" viewGroup="movie">
+  <Video ratingKey="3001" key="/library/metadata/3001" guid="com.plexapp.agents.imdb://tt0080339?lang=en" studio="Paramount Pictures" type="movie" title="Airplane!" year="1980" addedAt="1600000000" updatedAt="1600000001"/>
+  <Video ratingKey="3002" key="/library/metadata/3002" guid="com.plexapp.agents.themoviedb://78?lang=en" studio="Warner Bros." type="movie" title="Blade Runner" year="1982" addedAt="1600000000" updatedAt="1600000001"/>
+  <Video ratingKey="3003" key="/library/metadata/3003" guid="com.plexapp.agents.xbmcnfo://tt0083658?lang=en" type="movie" title="Blade Runner (Director's Cut)" year="1982" addedAt="1600000000" updatedAt="1600000001"/>
+</MediaContainer>

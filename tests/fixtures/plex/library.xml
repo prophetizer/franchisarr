@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MediaContainer size="5" allowSync="0" title1="Plex Library" identifier="com.plexapp.plugins.library" mediaTagPrefix="/system/bundle/media/flags/" mediaTagVersion="1756000000">
+  <Directory key="sections" title="Library Sections"/>
+  <Directory key="recentlyAdded" title="Recently Added"/>
+  <Directory key="onDeck" title="On Deck"/>
+</MediaContainer>

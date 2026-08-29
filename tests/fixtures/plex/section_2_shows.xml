@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MediaContainer size="2" totalSize="2" offset="0" allowSync="1" librarySectionID="2" librarySectionTitle="TV Shows" librarySectionUUID="22222222-2222-2222-2222-222222222222" mediaTagPrefix="/system/bundle/media/flags/" mediaTagVersion="1756000000" title1="TV Shows" viewGroup="show">
+  <Directory ratingKey="2001" key="/library/metadata/2001/children" guid="plex://show/5d9c081e3c3f87001f366e21" studio="CBS" type="show" title="NCIS" contentRating="TV-14" year="2003" index="1" leafCount="450" childCount="21" addedAt="1700000000" updatedAt="1700000001">
+    <Guid id="imdb://tt0364845"/>
+    <Guid id="tmdb://1621"/>
+    <Guid id="tvdb://72108"/>
+  </Directory>
+  <Directory ratingKey="2002" key="/library/metadata/2002/children" guid="plex://show/5d9c081e3c3f87001f366e22" studio="NBC" type="show" title="Chicago Fire" year="2012" index="1" leafCount="260" childCount="12" addedAt="1700000000" updatedAt="1700000001">
+    <Guid id="tmdb://44006"/>
+    <Guid id="tvdb://255316"/>
+  </Directory>
+</MediaContainer>

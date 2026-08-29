@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MediaContainer size="2" totalSize="2" offset="0" allowSync="1" librarySectionID="4" librarySectionTitle="Home Videos" librarySectionUUID="44444444-4444-4444-4444-444444444444" mediaTagPrefix="/system/bundle/media/flags/" mediaTagVersion="1756000000" title1="Home Videos" viewGroup="movie">
+  <Video ratingKey="4001" key="/library/metadata/4001" guid="local://4001" type="movie" title="Christmas 2019" addedAt="1600000000" updatedAt="1600000001"/>
+  <Video ratingKey="4002" key="/library/metadata/4002" guid="com.plexapp.agents.none://4002?lang=xn" type="movie" title="Camping Trip" year="2021" addedAt="1600000000" updatedAt="1600000001"/>
+</MediaContainer>

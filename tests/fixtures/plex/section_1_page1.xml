@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MediaContainer size="2" totalSize="3" offset="0" allowSync="1" librarySectionID="1" librarySectionTitle="Movies" mediaTagPrefix="/system/bundle/media/flags/" title1="Movies" viewGroup="movie">
+  <Video ratingKey="1001" key="/library/metadata/1001" guid="plex://movie/5d7768ba96b655001fdc0408" type="movie" title="Beverly Hills Cop" year="1984">
+    <Guid id="tmdb://90"/>
+  </Video>
+  <Video ratingKey="1002" key="/library/metadata/1002" guid="plex://movie/5d7768ba96b655001fdc0409" type="movie" title="Beverly Hills Cop II" year="1987">
+    <Guid id="tmdb://9836"/>
+  </Video>
+</MediaContainer>
