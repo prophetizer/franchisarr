@@ -12,14 +12,17 @@ on:
 jobs:
   test:
     runs-on: docker
+    # actions/setup-python only ships prebuilt binaries matched to specific
+    # Ubuntu versions -- it doesn't recognize this runner's Debian-based
+    # default image at all ("version not found for this operating system").
+    # Using an image with Python 3.12 AND Node.js already installed instead
+    # sidesteps that entirely: Node is still there for checkout's JS-based
+    # post-step, and there's no version-manifest matching involved for Python.
+    container:
+      image: nikolaik/python-nodejs:python3.12-nodejs20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
 
       - name: Install dependencies
         run: |
