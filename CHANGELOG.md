@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Sign in with Plex, using plex.tv's PIN flow. Franchisarr never sees your Plex password. Accounts
+  are only admitted if they can actually reach this install's Plex server, so having a Plex
+  account is not by itself enough to log in; the server's owner becomes an administrator and
+  people the library is shared with get ordinary accounts.
+- Local admin account as a fallback and recovery login, seeded from `ADMIN_USERNAME` /
+  `ADMIN_PASSWORD` on first boot, so a misconfigured Plex connection cannot lock you out.
+- Sessions stored server-side, so signing out revokes the session immediately rather than only in
+  that browser. Session cookies are scoped to `BASE_URL`.
+- Library selection: pick which Plex movie and TV libraries Franchisarr scans. Newly discovered
+  libraries start switched off, so home videos and concert rips are never scanned by accident.
+- `SESSION_COOKIE_SECURE` environment variable, for installs served over HTTPS.
 - SQLite data layer: SQLModel definitions for users, Radarr/Sonarr instances, settings, dismissed
   items, spin-off mappings, collection excludes, included libraries and the activity log, with the
   initial Alembic migration. Migrations are applied automatically at startup.
@@ -30,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Asset links no longer depend on module import order when `BASE_URL` is a subpath: the base URL
+  is now resolved per request rather than captured at import.
 - Plex items left unmatched by a modern library agent (`tv.plex.agents.none`) are now recognised
   as legitimately carrying no external ID, instead of being reported as an unknown agent. Only
   the legacy spelling was handled; both occur on the same server.
