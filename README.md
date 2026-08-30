@@ -36,6 +36,22 @@ pytest
 uvicorn app.main:app --reload
 ```
 
+## Command line
+
+The CLI is an HTTP client against Franchisarr's own API, so it works over `docker exec` or from
+anywhere that can reach the app:
+
+```bash
+export FRANCHISARR_URL=http://localhost:8000   # include the base URL path if you use one
+export FRANCHISARR_API_KEY=...                 # generate one from Settings, or `cli.py api-key`
+python cli.py scan movies
+python cli.py gaps
+python cli.py review
+```
+
+`scan movies` walks your enabled Plex libraries and refreshes collection data from TMDb; `gaps`
+lists what's missing; `review` shows matches that need confirming and items nothing matched.
+
 ## Troubleshooting: items aren't being matched
 
 Franchisarr can only work with a Plex item if it can resolve that item to a TMDb ID. Plex stores

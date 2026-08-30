@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Finds films missing from collections you already partly own, sourced from TMDb Collections.
+  Only collections you own something from are considered, so this stays a report on your own
+  library rather than a catalogue of every franchise on TMDb.
+- Plex items are matched to TMDb by the id Plex already holds where possible, falling back to an
+  IMDb or TVDb lookup and finally a title-and-year search. Anything matched only on a title
+  needs the release year to agree before it is trusted; plausible-but-unconfirmed matches are
+  listed for you to confirm rather than being acted on or silently dropped.
+- Command line client (`cli.py`): `scan movies`, `gaps`, `review`, `test-tmdb`, `api-key`. It
+  talks to Franchisarr's own API over HTTP, so it works through `docker exec` and takes exactly
+  the same code path as the web UI.
+- Per-account API keys for the command line, sent as an `X-Api-Key` header.
+- TMDb API key checking that names the actual problem — a v4 Read Access Token pasted in place of
+  the v3 API Key, a truncated key, or a key too new to have activated yet.
+- TMDb responses are cached with a configurable TTL (`TMDB_CACHE_TTL_DAYS`, default 7 days), so
+  re-scanning an unchanged library makes no TMDb requests at all.
 - Sign in with Plex, using plex.tv's PIN flow. Franchisarr never sees your Plex password. Accounts
   are only admitted if they can actually reach this install's Plex server, so having a Plex
   account is not by itself enough to log in; the server's owner becomes an administrator and
