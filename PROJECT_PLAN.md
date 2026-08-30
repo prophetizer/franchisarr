@@ -49,6 +49,7 @@ A self-hosted *arr-stack companion app: scans your Plex library, finds movies mi
 | Schema migration timing | **Applied automatically at app startup**, not left to the operator — the app is upgraded by pulling a new image tag, so an install that needs a manual `alembic upgrade` is an install that breaks (added Phase 1) |
 | Constrained columns | Stored as **plain VARCHAR with `str` enums in Python**, not `sa.Enum`. SQLite has no native enum and `sa.Enum` emits a CHECK constraint, which would turn "accept one more value" into a table-rebuild migration on other people's databases (added Phase 1) |
 | Front-end assets | **Vendored into `app/static/` at pinned versions with recorded checksums**, never CDN-linked — a self-hosted app on a home network must render without outbound internet access (added Phase 1) |
+| theme.park themes | **Supported via an optional stylesheet-URL setting, default off** — the *arr community's theming convention, and theme.park's `theme-options/*.css` files are app-agnostic variable blocks, so mapping them onto Pico's `--pico-*` variables makes every theme work without upstream involvement. A `franchisarr-base.css` contributed upstream is a nice-to-have after public release, not a prerequisite. The one deliberate exception to the vendored-assets rule above: opt-in, self-host-friendly (URL, not a fixed host), and clearly labelled as a third-party fetch (requested 2026-08-30) |
 
 ## 1. What the app does
 
