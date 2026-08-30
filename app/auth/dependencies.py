@@ -16,6 +16,7 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from sqlmodel import Session
 
+from app.auth.api_keys import find_user_by_api_key
 from app.auth.sessions import COOKIE_NAME, get_session_user
 from app.config import get_settings
 from app.db import get_engine
@@ -30,8 +31,21 @@ def get_db() -> Iterator[Session]:
 DbSession = Annotated[Session, Depends(get_db)]
 
 
+#: Header the CLI authenticates with. Separate from the browser session cookie so
+#: `docker exec ... cli.py scan movies` needs no logged-in browser (technical challenge #21).
+API_KEY_HEADER = "X-Api-Key"
+
+
 def current_user(request: Request, session: DbSession) -> User | None:
-    return get_session_user(session, request.cookies.get(COOKIE_NAME))
+    """Whoever is asking: a browser session, or an API key.
+
+    The cookie is checked first because it is the common case; the API key is a fallback so the
+    same routes serve the web UI and the CLI without duplicating them.
+    """
+    user = get_session_user(session, request.cookies.get(COOKIE_NAME))
+    if user is not None:
+        return user
+    return find_user_by_api_key(session, request.headers.get(API_KEY_HEADER))
 
 
 CurrentUser = Annotated[User | None, Depends(current_user)]

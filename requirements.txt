@@ -12,14 +12,22 @@ alembic==1.14.0
 apscheduler==3.10.4
 
 # External API / auth
-httpx==0.28.1
+# requests is the single outbound HTTP library: plexapi already depends on it, so standardising
+# here keeps one library in the image and one mocking story (`responses`) in the tests.
+requests==2.34.2
 plexapi==4.16.1
 bcrypt==4.2.1
 
 # CLI
-typer==0.15.1
+# typer <0.16 calls Click's Parameter.make_metavar() with the old signature and dies on import
+# against Click 8.2+. Click is pinned alongside it so a fresh image build can't reintroduce that.
+typer==0.27.2
+click==8.5.0
 
 # Testing
 pytest==8.3.4
 pytest-asyncio==0.25.2
 responses==0.25.3
+# Required by fastapi.testclient (Starlette's TestClient is built on it). Not used by the
+# application itself -- all outbound HTTP goes through requests.
+httpx==0.28.1

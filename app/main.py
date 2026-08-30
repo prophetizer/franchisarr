@@ -28,6 +28,7 @@ from app.clients.plex_client import PlexClient, PlexClientError
 from app.config import get_settings
 from app.db import get_engine, run_migrations
 from app.logging_config import configure_logging, register_secret
+from app.routes_api import router as api_router
 from app.routes_auth import router as auth_router
 from app.services import library_service
 from app.services.auth_service import discover_machine_identifier
@@ -130,6 +131,7 @@ def libraries_save(
 
 app.include_router(router, prefix=settings.base_url)
 app.include_router(auth_router, prefix=settings.base_url)
+app.include_router(api_router, prefix=settings.base_url)
 
 # Mounted under BASE_URL for the same reason the routes are: behind a subpath proxy, /static
 # would not reach us.

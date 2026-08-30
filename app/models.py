@@ -181,6 +181,99 @@ class IncludedLibrary(SQLModel, table=True):
     enabled: bool = Field(default=True)
 
 
+class MatchSource(str, Enum):
+    """How a Plex item was resolved to a TMDb ID, in descending order of trust."""
+
+    GUID = "guid"          # TMDb id supplied by Plex directly
+    IMDB = "imdb"          # resolved via TMDb's /find using the IMDb id
+    TVDB = "tvdb"          # resolved via TMDb's /find using the TVDb id
+    TITLE = "title"        # title+year search
+    NONE = "none"          # nothing matched
+
+
+class LibraryItem(SQLModel, table=True):
+    """Cached snapshot of one Plex item and the TMDb id it resolved to.
+
+    Exists so gap views and scheduled scans don't re-walk Plex and re-query TMDb on every page
+    load (technical challenge #7). `last_seen_at` is what makes an incremental scan possible:
+    items missing from a later scan of the same library have been removed from Plex.
+    """
+
+    __tablename__ = "library_items"
+    __table_args__ = (
+        UniqueConstraint("plex_library_key", "rating_key", name="uq_library_item"),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    plex_library_key: str = Field(index=True)
+    rating_key: str = Field(index=True)
+    item_type: str = Field(default=ItemType.MOVIE.value)
+    title: str
+    year: int | None = Field(default=None)
+
+    tmdb_id: int | None = Field(default=None, index=True)
+    imdb_id: str | None = Field(default=None)
+    tvdb_id: int | None = Field(default=None)
+
+    match_source: str = Field(default=MatchSource.NONE.value)
+    #: Similarity score for a title match; None when the id came from an authoritative source.
+    match_confidence: float | None = Field(default=None)
+    #: A plausible but unconfirmed title match. Surfaced for review rather than acted on
+    #: (technical challenge #14) -- never silently skipped, never silently trusted.
+    needs_review: bool = Field(default=False)
+
+    last_seen_at: datetime = Field(default_factory=utcnow, index=True)
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
+class TmdbMovie(SQLModel, table=True):
+    """Cached TMDb movie details -- chiefly which collection it belongs to.
+
+    Collection membership changes about never, so this is cached with a TTL measured in days
+    (technical challenge #4). `fetched_at` drives expiry.
+    """
+
+    __tablename__ = "tmdb_movies"
+
+    tmdb_id: int = Field(primary_key=True)
+    title: str
+    release_year: int | None = Field(default=None)
+    collection_id: int | None = Field(default=None, index=True)
+    fetched_at: datetime = Field(default_factory=utcnow, index=True)
+
+
+class TmdbCollection(SQLModel, table=True):
+    __tablename__ = "tmdb_collections"
+
+    tmdb_collection_id: int = Field(primary_key=True)
+    name: str
+    fetched_at: datetime = Field(default_factory=utcnow, index=True)
+
+
+class TmdbCollectionMovie(SQLModel, table=True):
+    """One film belonging to a cached collection.
+
+    Rows are replaced wholesale when a collection is refreshed, which is why collection_excludes
+    keys on TMDb ids rather than referencing these rows -- an exclusion has to survive a refresh
+    (technical challenge #13).
+    """
+
+    __tablename__ = "tmdb_collection_movies"
+    __table_args__ = (
+        UniqueConstraint("collection_id", "tmdb_movie_id", name="uq_collection_member"),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    collection_id: int = Field(
+        foreign_key="tmdb_collections.tmdb_collection_id", ondelete="CASCADE", index=True
+    )
+    tmdb_movie_id: int = Field(index=True)
+    title: str
+    release_year: int | None = Field(default=None)
+    release_date: str | None = Field(default=None)
+    position: int = Field(default=0)
+
+
 class UserSession(SQLModel, table=True):
     """A logged-in browser session.
 
