@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 from sqlmodel import Session, col, select
 
 from app.clients.plex_client import PlexClient, PlexClientError
-from app.clients.tmdb_client import TmdbClient, TmdbError, TmdbNotFound
+from app.clients.tmdb_client import TmdbAuthError, TmdbClient, TmdbError, TmdbNotFound
 from app.models import (
     ItemType,
     LibraryItem,
@@ -32,6 +32,10 @@ from app.services.settings_service import SettingKey, get_int_setting
 logger = logging.getLogger(__name__)
 
 DEFAULT_CACHE_TTL_DAYS = 7
+
+#: Rows written per transaction while walking a library. Large enough to keep the commit overhead
+#: negligible, small enough that a scan interrupted halfway leaves useful progress behind.
+COMMIT_BATCH = 500
 
 
 @dataclass
@@ -92,9 +96,26 @@ def scan_movie_libraries(
             continue
 
         summary.libraries_scanned += 1
-        for item in items:
+
+        # Every existing row for this library is loaded once, up front. Querying per item
+        # instead is quadratic: SQLAlchemy autoflushes the pending objects before each query, so
+        # by the three-thousandth film every lookup flushes thousands of rows. Worth perhaps 15%
+        # of a 3,400-film scan today, but the cost grows faster than linearly, so it matters more
+        # on the larger libraries a public tool will meet than it does here.
+        existing = {
+            row.rating_key: row
+            for row in session.exec(
+                select(LibraryItem).where(
+                    col(LibraryItem.plex_library_key) == library.plex_library_key
+                )
+            ).all()
+        }
+
+        for index, item in enumerate(items, start=1):
             summary.items_seen += 1
-            _upsert_item(session, library.plex_library_key, item, tmdb, summary)
+            _upsert_item(session, library.plex_library_key, item, tmdb, summary, existing)
+            if index % COMMIT_BATCH == 0:
+                session.commit()
 
         session.commit()
         summary.removed += _prune_missing(session, library.plex_library_key, started)
@@ -109,13 +130,9 @@ def _upsert_item(
     item,
     tmdb: TmdbClient,
     summary: ScanSummary,
+    existing: dict[str, LibraryItem],
 ) -> LibraryItem:
-    row = session.exec(
-        select(LibraryItem).where(
-            col(LibraryItem.plex_library_key) == library_key,
-            col(LibraryItem.rating_key) == item.rating_key,
-        )
-    ).first()
+    row = existing.get(item.rating_key)
 
     # Only spend a TMDb call when we don't already have an answer for this item. A re-scan of an
     # unchanged library should cost Plex requests and nothing else.
@@ -129,6 +146,7 @@ def _upsert_item(
 
     if row is None:
         row = LibraryItem(plex_library_key=library_key, rating_key=item.rating_key)
+        existing[item.rating_key] = row
 
     row.title = item.title
     row.year = item.year
@@ -197,6 +215,13 @@ def _cache_collections(
                 details = tmdb.get_movie(tmdb_id)
             except TmdbNotFound:
                 continue
+            except TmdbAuthError as exc:
+                # A rejected key will be rejected for every remaining film. Carrying on would
+                # mean thousands of pointless requests, thousands of identical errors, and
+                # minutes of waiting to be told one thing that was knowable at the first call.
+                summary.errors.append(str(exc))
+                logger.error("Stopping TMDb enrichment: %s", exc)
+                return 0
             except TmdbError as exc:
                 summary.errors.append(str(exc))
                 logger.warning("TMDb movie lookup failed for %s: %s", tmdb_id, exc)
@@ -217,7 +242,12 @@ def _cache_collections(
             collection_ids.add(cached.collection_id)
 
     for collection_id in sorted(collection_ids):
-        _cache_collection(session, tmdb, collection_id, ttl, summary)
+        try:
+            _cache_collection(session, tmdb, collection_id, ttl, summary)
+        except TmdbAuthError as exc:
+            summary.errors.append(str(exc))
+            logger.error("Stopping TMDb enrichment: %s", exc)
+            break
 
     return len(collection_ids)
 
@@ -237,6 +267,8 @@ def _cache_collection(
         details = tmdb.get_collection(collection_id)
     except TmdbNotFound:
         return
+    except TmdbAuthError:
+        raise
     except TmdbError as exc:
         summary.errors.append(str(exc))
         logger.warning("TMDb collection lookup failed for %s: %s", collection_id, exc)

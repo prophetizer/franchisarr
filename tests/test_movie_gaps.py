@@ -233,6 +233,51 @@ def test_a_scan_populates_the_snapshot_and_the_cache(
     assert [m.title for m in gaps[0].missing] == ["Beverly Hills Cop III"]
 
 
+@responses.activate
+def test_a_rejected_tmdb_key_stops_the_scan_instead_of_retrying_every_film(
+    session: Session, fixtures_dir
+) -> None:
+    """A rejected key will be rejected for every remaining film.
+
+    Carrying on meant one failing request per film: measured against a real 3,428-film library
+    that was 130 seconds of pointless waiting and thousands of identical errors, to be told one
+    thing that was knowable at the first call.
+    """
+    plex_dir = fixtures_dir / "plex"
+    for name, url in [
+        ("root.xml", "http://plex.test:32400/"),
+        ("library.xml", "http://plex.test:32400/library"),
+        ("library_sections.xml", "http://plex.test:32400/library/sections"),
+        ("section_1_movies.xml", "http://plex.test:32400/library/sections/1/all"),
+    ]:
+        responses.add(responses.GET, url, body=(plex_dir / name).read_text(),
+                      content_type="application/xml")
+
+    # Every TMDb movie lookup is rejected. There are two matched films in the fixture, so a
+    # non-aborting scan would make two calls; aborting makes one.
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/90", status=401)
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/9836", status=401)
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/search/movie", json={"results": []})
+
+    session.add(IncludedLibrary(plex_library_key="1", plex_library_name="Movies",
+                                library_type="movie", enabled=True))
+    session.commit()
+
+    summary = scan_service.scan_movie_libraries(
+        session,
+        PlexClient("http://plex.test:32400", "token"),
+        TmdbClient("k" * 32, max_requests_per_second=10_000),
+    )
+
+    movie_calls = [c for c in responses.calls if "/movie/" in c.request.url]
+    assert len(movie_calls) == 1, "the second film must not be attempted with a dead key"
+    assert summary.errors, "the failure must be reported, not swallowed"
+    assert summary.collections_found == 0
+
+    # The library snapshot is still useful: matching succeeded, only enrichment stopped.
+    assert summary.matched == 2
+
+
 def test_scanning_with_no_enabled_libraries_says_so(session: Session) -> None:
     summary = scan_service.scan_movie_libraries(
         session, PlexClient("http://plex.test:32400", "t"), TmdbClient("k" * 32)
