@@ -167,3 +167,133 @@ def test_review_endpoint_reports_both_buckets(client: TestClient, api_key: str) 
 def test_the_api_is_mounted_under_the_base_url(client: TestClient, api_key: str) -> None:
     assert client.get("/api/me", headers={API_KEY_HEADER: api_key}).status_code == 404
     assert client.get(f"{BASE}/api/me", headers={API_KEY_HEADER: api_key}).status_code == 200
+
+
+# ------------------------------------------------------------------ Radarr endpoints
+
+
+RADARR = "http://radarr.test:7878"
+
+
+def _add_instance(client: TestClient, api_key: str, name: str = "HD") -> int:
+    response = client.post(
+        f"{BASE}/api/instances/radarr",
+        headers={API_KEY_HEADER: api_key},
+        json={"name": name, "url": RADARR, "api_key": "radarr-key"},
+    )
+    assert response.status_code == 201
+    return response.json()["id"]
+
+
+def test_instance_responses_never_include_the_api_key(client: TestClient, api_key: str) -> None:
+    """Convention #3: secrets are write-only from the API's point of view."""
+    _add_instance(client, api_key)
+
+    body = client.get(f"{BASE}/api/instances/radarr", headers={API_KEY_HEADER: api_key}).text
+
+    assert "radarr-key" not in body
+    assert "api_key" not in body
+
+
+def test_creating_an_instance_requires_an_admin(client: TestClient) -> None:
+    from sqlmodel import select
+
+    from app.auth.api_keys import generate_api_key
+    from app.models import User
+
+    with Session(get_engine()) as session:
+        ordinary = User(plex_user_id="99", plex_username="housemate", is_admin=False)
+        session.add(ordinary)
+        session.commit()
+        session.refresh(ordinary)
+        key = generate_api_key(session, ordinary)
+
+    response = client.post(
+        f"{BASE}/api/instances/radarr",
+        headers={API_KEY_HEADER: key},
+        json={"name": "HD", "url": RADARR, "api_key": "k"},
+    )
+
+    assert response.status_code == 403
+
+
+@responses.activate
+def test_options_reports_an_unreachable_instance_rather_than_empty_lists(
+    client: TestClient, api_key: str
+) -> None:
+    """The add dialog must be able to say "can't reach this" instead of offering nothing
+    (technical challenge #15)."""
+    instance_id = _add_instance(client, api_key)
+    responses.add(responses.GET, f"{RADARR}/api/v3/qualityprofile", status=500)
+
+    body = client.get(
+        f"{BASE}/api/instances/radarr/{instance_id}/options", headers={API_KEY_HEADER: api_key}
+    ).json()
+
+    assert body["ok"] is False
+    assert body["error"]
+    assert body["quality_profiles"] == []
+
+
+@responses.activate
+def test_options_are_fetched_live_and_not_stored(client: TestClient, api_key: str) -> None:
+    instance_id = _add_instance(client, api_key)
+    responses.add(responses.GET, f"{RADARR}/api/v3/qualityprofile",
+                  json=[{"id": 1, "name": "HD-1080p"}])
+    responses.add(responses.GET, f"{RADARR}/api/v3/rootfolder",
+                  json=[{"path": "/movies", "freeSpace": 100_000_000_000}])
+
+    body = client.get(
+        f"{BASE}/api/instances/radarr/{instance_id}/options", headers={API_KEY_HEADER: api_key}
+    ).json()
+
+    assert body["ok"] is True
+    assert body["quality_profiles"] == [{"id": 1, "name": "HD-1080p"}]
+    assert body["root_folders"][0]["path"] == "/movies"
+
+
+def test_adding_without_any_instance_configured_is_a_clear_conflict(
+    client: TestClient, api_key: str
+) -> None:
+    response = client.post(
+        f"{BASE}/api/radarr/add", headers={API_KEY_HEADER: api_key}, json={"tmdb_id": 9558}
+    )
+
+    assert response.status_code == 409
+    assert "Radarr instance" in response.json()["detail"]
+
+
+@responses.activate
+def test_adding_falls_back_to_the_preferred_instance(client: TestClient, api_key: str) -> None:
+    instance_id = _add_instance(client, api_key)
+    with Session(get_engine()) as session:
+        from app.services import instance_service
+
+        instance = instance_service.get_radarr(session, instance_id)
+        instance.default_quality_profile_id = 1
+        instance.default_root_folder = "/movies"
+        session.add(instance)
+        session.commit()
+
+    responses.add(responses.GET, f"{RADARR}/api/v3/movie/lookup",
+                  json=[{"tmdbId": 9558, "title": "Beverly Hills Cop III"}])
+    responses.add(responses.POST, f"{RADARR}/api/v3/movie", json={"id": 1, "tmdbId": 9558})
+    responses.add(responses.GET, f"{RADARR}/api/v3/movie", json=[])
+    responses.add(responses.GET, f"{RADARR}/api/v3/queue", json={"records": []})
+
+    response = client.post(
+        f"{BASE}/api/radarr/add", headers={API_KEY_HEADER: api_key}, json={"tmdb_id": 9558}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["added"] is True
+
+
+def test_the_activity_log_says_it_does_not_track_downloads(
+    client: TestClient, api_key: str
+) -> None:
+    """Technical challenge #24: don't imply we follow what Radarr does next."""
+    body = client.get(f"{BASE}/api/activity", headers={API_KEY_HEADER: api_key}).json()
+
+    assert body["entries"] == []
+    assert "history" in body["note"]

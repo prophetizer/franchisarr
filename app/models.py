@@ -74,6 +74,12 @@ class User(SQLModel, table=True):
     password_hash: str | None = Field(default=None)
     is_admin: bool = Field(default=False)
     api_key: str | None = Field(default=None, index=True, unique=True)
+    #: Which instance this person last added to, so the add dialog can pre-select it
+    #: (technical challenge #3). Deliberately not a foreign key: a stale id after an instance is
+    #: deleted should read as "no preference", not block the delete or need a cascade rule while
+    #: the on-delete semantics for the other user references are still unsettled.
+    last_radarr_instance_id: int | None = Field(default=None)
+    last_sonarr_instance_id: int | None = Field(default=None)
     created_at: datetime = Field(default_factory=utcnow)
 
 
@@ -272,6 +278,34 @@ class TmdbCollectionMovie(SQLModel, table=True):
     release_year: int | None = Field(default=None)
     release_date: str | None = Field(default=None)
     position: int = Field(default=0)
+
+
+class RadarrMovie(SQLModel, table=True):
+    """What a Radarr instance already knows about, cached.
+
+    The "do I already have this?" check runs at diff time against every configured instance
+    (technical challenge #5), and diff time is a page load. Radarr's movie list can run to
+    thousands of entries, so asking every instance for its whole library on every page view is
+    not viable -- this is refreshed on scan and on demand instead.
+
+    `in_queue` is kept separate from `has_file` because they answer different questions: one is
+    "you own it", the other is "it's already on its way", and `hide_if_queued` decides per
+    instance whether the second counts.
+    """
+
+    __tablename__ = "radarr_movies"
+    __table_args__ = (UniqueConstraint("instance_id", "tmdb_id", name="uq_radarr_movie"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    instance_id: int = Field(
+        foreign_key="radarr_instances.id", ondelete="CASCADE", index=True
+    )
+    tmdb_id: int = Field(index=True)
+    title: str = Field(default="")
+    monitored: bool = Field(default=True)
+    has_file: bool = Field(default=False)
+    in_queue: bool = Field(default=False)
+    fetched_at: datetime = Field(default_factory=utcnow)
 
 
 class UserSession(SQLModel, table=True):

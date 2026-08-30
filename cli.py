@@ -188,6 +188,158 @@ def review() -> None:
         typer.secho("Everything matched cleanly.", fg="green")
 
 
+instances = typer.Typer(help="Manage Radarr instances.")
+app.add_typer(instances, name="instances")
+
+
+@instances.command("list")
+def instances_list() -> None:
+    """Show configured Radarr instances."""
+    result = _call("GET", "/api/instances/radarr")
+    if not result["instances"]:
+        typer.echo("No Radarr instances configured yet.")
+        return
+
+    for instance in result["instances"]:
+        marks = []
+        if instance["is_default"]:
+            marks.append("default")
+        if instance["preferred"]:
+            marks.append("your last choice")
+        suffix = f"  ({', '.join(marks)})" if marks else ""
+        typer.secho(f"[{instance['id']}] {instance['name']}{suffix}", bold=True)
+        typer.echo(f"      {instance['url']}")
+        if instance["default_root_folder"]:
+            typer.echo(f"      root folder: {instance['default_root_folder']}")
+
+
+@instances.command("test")
+def instances_test(instance_id: Annotated[int, typer.Argument(help="Instance id.")]) -> None:
+    """Check that an instance is reachable and the API key works."""
+    result = _call("GET", f"/api/instances/radarr/{instance_id}/test")
+    if result.get("ok"):
+        typer.secho(f"Reachable — Radarr {result['version']}", fg="green")
+        return
+    typer.secho(result.get("error", "Could not reach the instance."), fg="red", err=True)
+    raise typer.Exit(1)
+
+
+@instances.command("options")
+def instances_options(instance_id: Annotated[int, typer.Argument(help="Instance id.")]) -> None:
+    """List the quality profiles and root folders an instance offers."""
+    result = _call("GET", f"/api/instances/radarr/{instance_id}/options")
+    if not result.get("ok"):
+        typer.secho(result.get("error", "Could not reach the instance."), fg="red", err=True)
+        raise typer.Exit(1)
+
+    typer.secho("Quality profiles:", bold=True)
+    for profile in result["quality_profiles"]:
+        default = "  (default)" if profile["id"] == result["default_quality_profile_id"] else ""
+        typer.echo(f"    [{profile['id']}] {profile['name']}{default}")
+
+    typer.secho("Root folders:", bold=True)
+    for folder in result["root_folders"]:
+        default = "  (default)" if folder["path"] == result["default_root_folder"] else ""
+        space = f"  {folder['label']}" if folder["label"] else ""
+        typer.echo(f"    {folder['path']}{space}{default}")
+
+
+@instances.command("refresh")
+def instances_refresh() -> None:
+    """Re-read what each instance holds, so gap lists reflect it."""
+    result = _call("POST", "/api/instances/radarr/refresh", timeout=300)
+    for instance in result["instances"]:
+        if instance["ok"]:
+            typer.echo(f"{instance['name']}: {instance['movies']} films, {instance['queued']} queued")
+        else:
+            typer.secho(f"{instance['name']}: {instance['error']}", fg="yellow", err=True)
+
+
+@app.command()
+def add(
+    tmdb_id: Annotated[int, typer.Argument(help="TMDb id of the film to add.")],
+    instance_id: Annotated[int | None, typer.Option("--instance", help="Radarr instance id.")] = None,
+    profile: Annotated[int | None, typer.Option(help="Quality profile id.")] = None,
+    root_folder: Annotated[str | None, typer.Option(help="Root folder path.")] = None,
+    no_search: Annotated[bool, typer.Option("--no-search", help="Add without searching now.")] = False,
+) -> None:
+    """Add one film to Radarr, monitored and searched immediately."""
+    result = _call("POST", "/api/radarr/add", json={
+        "tmdb_id": tmdb_id,
+        "instance_id": instance_id,
+        "quality_profile_id": profile,
+        "root_folder_path": root_folder,
+        "search_on_add": not no_search,
+    }, timeout=120)
+
+    searched = "searching now" if result["searched"] else "not searched"
+    typer.secho(f"Added {result['title']} to {result['instance']} ({searched}).", fg="green")
+
+
+@app.command("add-collection")
+def add_collection(
+    collection_id: Annotated[int, typer.Argument(help="TMDb collection id.")],
+    instance_id: Annotated[int | None, typer.Option("--instance", help="Radarr instance id.")] = None,
+    yes: Annotated[bool, typer.Option("--yes", "-y", help="Skip the confirmation.")] = False,
+    delay: Annotated[float, typer.Option(help="Seconds between adds.")] = 2.0,
+) -> None:
+    """Add every missing film from one collection.
+
+    Adds are staggered on purpose. Each one triggers an immediate search, so firing a whole
+    collection at once means N simultaneous searches hitting your indexers -- which is a good way
+    to get rate-limited or banned by them (technical challenge #12).
+    """
+    import time
+
+    gaps = _call("GET", "/api/collections/gaps")["collections"]
+    match = next((c for c in gaps if c["collection_id"] == collection_id), None)
+    if match is None:
+        typer.secho(f"No collection {collection_id} with missing films.", fg="red", err=True)
+        raise typer.Exit(1)
+
+    missing = match["missing"]
+    typer.echo(f"{match['name']}: {len(missing)} film(s) to add")
+    for movie in missing:
+        typer.echo(f"    {movie['title']} ({movie['year']})")
+
+    if not yes:
+        typer.confirm(
+            f"Add {len(missing)} film(s), each triggering a search?", abort=True
+        )
+
+    added = failed = 0
+    for index, movie in enumerate(missing):
+        if index:
+            time.sleep(delay)
+        try:
+            _call("POST", "/api/radarr/add", json={
+                "tmdb_id": movie["tmdb_id"], "instance_id": instance_id,
+            }, timeout=120)
+            typer.secho(f"  added {movie['title']}", fg="green")
+            added += 1
+        except typer.Exit:
+            # _call already explained the failure; one bad film shouldn't abandon the rest.
+            failed += 1
+
+    typer.echo(f"Added {added}, failed {failed}.")
+
+
+@app.command()
+def activity(
+    limit: Annotated[int, typer.Option(help="How many entries to show.")] = 20,
+) -> None:
+    """Show what Franchisarr has added."""
+    result = _call("GET", "/api/activity", params={"limit": limit})
+    if not result["entries"]:
+        typer.echo("Nothing added yet.")
+        return
+
+    for entry in result["entries"]:
+        when = entry["timestamp"][:19].replace("T", " ")
+        typer.echo(f"{when}  {entry['title']}  [{entry['trigger_source']}]")
+    typer.secho(result["note"], dim=True)
+
+
 @app.command("api-key")
 def api_key() -> None:
     """Generate a new API key for this account, invalidating any previous one."""
