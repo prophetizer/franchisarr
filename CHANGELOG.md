@@ -27,5 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Plex items left unmatched by a modern library agent (`tv.plex.agents.none`) are now recognised
+  as legitimately carrying no external ID, instead of being reported as an unknown agent. Only
+  the legacy spelling was handled; both occur on the same server.
 - `.env.example` used trailing inline comments, which Docker's `env_file` parser does not strip —
   copying it to `.env` would have made each comment part of the value it followed.

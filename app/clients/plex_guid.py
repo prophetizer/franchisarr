@@ -60,6 +60,12 @@ _ID_FREE_SCHEMES = frozenset(
         "com.plexapp.agents.none",
         "com.plexapp.agents.localmedia",
         "com.plexapp.agents.lambda",
+        # The new-agent equivalents. An unmatched item in a modern library reports
+        # tv.plex.agents.none rather than the com.plexapp.agents.none a legacy library uses --
+        # confirmed against a real 4,300-item server, where a "Sets" library of DJ sets produced
+        # 209 of them. Both spellings coexist on the same server, so both are needed.
+        "tv.plex.agents.none",
+        "tv.plex.agents.localmedia",
     }
 )
 

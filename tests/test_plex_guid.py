@@ -49,6 +49,11 @@ from app.clients.plex_guid import (
         ("local://12345", ExternalIds()),
         ("com.plexapp.agents.none://12345?lang=en", ExternalIds()),
         ("com.plexapp.agents.localmedia://12345", ExternalIds()),
+        # New-agent spelling of "no match", as emitted by a modern Plex library. Verified
+        # against a real server: legacy and new libraries on the same box use different ones.
+        ("tv.plex.agents.none://519433", ExternalIds()),
+        ("tv.plex.agents.none://cb45d43be3ab2d396870c23c0bf3a8588d81006a?lang=xn", ExternalIds()),
+        ("tv.plex.agents.localmedia://226004", ExternalIds()),
         ("mbid://f27ec8db-af05-4f36-916e-3d57f91ecf5e", ExternalIds()),
         # --- Malformed / unknown, must degrade quietly rather than raise ---
         ("", ExternalIds()),
@@ -110,6 +115,18 @@ def test_item_with_no_external_ids_at_all() -> None:
     assert ids.is_empty is True
 
 
+def test_unmatched_items_are_not_reported_as_unknown_agents() -> None:
+    """An item Plex could not match is a normal state, not a parser gap.
+
+    Reporting it as an unrecognised agent would bury a genuinely new format under hundreds of
+    lines of noise -- a real library of 209 DJ sets did exactly that before tv.plex.agents.none
+    was recognised.
+    """
+    assert unknown_schemes(item_guid="tv.plex.agents.none://519433") == []
+    assert unknown_schemes(item_guid="com.plexapp.agents.none://abc?lang=xn") == []
+    assert unknown_schemes(item_guid="local://226004") == []
+
+
 def test_merge_keeps_the_first_writer() -> None:
     first = ExternalIds(tmdb_id=1)
     second = ExternalIds(tmdb_id=2, imdb_id="tt1")
@@ -124,6 +141,7 @@ def test_merge_keeps_the_first_writer() -> None:
         "local://1",
         "com.plexapp.agents.hama://anidb-1",
         "com.plexapp.agents.none://1",
+        "tv.plex.agents.none://519433",
     ],
 )
 def test_known_schemes(guid: str) -> None:
