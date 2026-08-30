@@ -36,6 +36,44 @@ pytest
 uvicorn app.main:app --reload
 ```
 
+## Troubleshooting: items aren't being matched
+
+Franchisarr can only work with a Plex item if it can resolve that item to a TMDb ID. Plex stores
+those IDs differently depending on which agent matched the item, and libraries matched by an
+unusual or very old agent may not resolve.
+
+To see exactly what your own libraries look like:
+
+```bash
+export PLEX_URL=http://your-plex-host:32400
+export PLEX_TOKEN=your-plex-token
+python scripts/plex_guid_audit.py
+```
+
+It reads `PLEX_URL`/`PLEX_TOKEN` from a local `.env` if they aren't already set, so an existing
+docker-compose setup needs no extra configuration. The script is read-only — it writes nothing to
+Plex and nothing to Franchisarr's database.
+
+For each library it reports how many items carry a TMDb ID, which GUID formats are in use, and a
+sample of items that didn't resolve. Useful options: `--library "TV Shows"` to check just one
+(repeatable), and `--samples N` to change how many examples are shown.
+
+A healthy library looks like this:
+
+```
+=== Movies  [movie]  agent=tv.plex.agents.movie
+    3427 items in 27.3s
+    TMDb id: 3425 (99.9%) | other id only: 1 | no id at all: 1
+```
+
+Libraries of home videos, concert rips or test clips will legitimately show 0% — nothing in them
+exists on TMDb. Untick those in Franchisarr's library selection rather than trying to match them.
+
+**If the script ends with an `UNRECOGNISED AGENTS` section, please report it** (it also exits
+non-zero, so it can gate a check). That means your library uses a GUID format Franchisarr doesn't
+parse yet. Include that section's output in the issue — adding support is usually a small,
+contained change, and the script tells us exactly what's needed.
+
 ## License
 
 [MIT](LICENSE)

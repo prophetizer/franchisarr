@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dark-by-default web UI shell on Pico, with htmx, Alpine and Pico vendored locally at pinned
   versions — no CDN requests.
 - `DB_PATH`, `TMDB_CACHE_TTL_DAYS` and `CROSS_INSTANCE_DEDUP` environment variables.
+- `scripts/plex_guid_audit.py`, a read-only diagnostic reporting how many items in each Plex
+  library resolve to a TMDb ID and which GUID formats are in use. Exits non-zero when it meets an
+  agent format Franchisarr cannot parse, so unsupported libraries can be reported precisely.
 - Project scaffolding: CI (Forgejo Actions), multi-arch Docker build skeleton, license, security
   policy, and changelog established ahead of Phase 1 feature work.
 
