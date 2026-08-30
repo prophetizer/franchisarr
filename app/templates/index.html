@@ -7,13 +7,18 @@
   </hgroup>
 
   <article>
-    <header>Setup isn't finished yet</header>
+    <header>Scanning isn't built yet</header>
     <p>
-      Connecting Plex, TMDb, Radarr and Sonarr arrives in the next build phases. Until then this
-      page confirms the app is running and serving its own assets.
+      You're signed in and {{ libraries | length }} librar{{ 'y is' if libraries | length == 1 else 'ies are' }}
+      selected. Collection and spin-off scanning arrive in the next build phases.
     </p>
+    <ul>
+      {% for library in libraries %}
+        <li>{{ library.plex_library_name }} <small>({{ library.library_type }})</small></li>
+      {% endfor %}
+    </ul>
     <footer>
-      <small>Health check: <a href="{{ url('/health') }}">{{ url('/health') }}</a></small>
+      <small><a href="{{ url('/libraries') }}">Change which libraries are scanned</a></small>
     </footer>
   </article>
 {% endblock %}

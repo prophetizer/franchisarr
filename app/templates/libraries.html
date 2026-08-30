@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Choose libraries — Franchisarr{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>Choose libraries</h1>
+  <p>Franchisarr only scans the libraries you tick here.</p>
+</hgroup>
+
+{% if error %}<p role="alert" class="login-error">{{ error }}</p>{% endif %}
+
+{% if not libraries %}
+  <article>
+    <p>No Plex movie or TV libraries were found.</p>
+    <p><small>
+      Check the Plex connection, then <a href="{{ url('/libraries') }}">try again</a>.
+    </small></p>
+  </article>
+{% else %}
+  <form method="post" action="{{ url('/libraries') }}">
+    {% for library_type, heading in [('movie', 'Movie libraries'), ('show', 'TV libraries')] %}
+      {% set group = libraries | selectattr('library_type', 'equalto', library_type) | list %}
+      {% if group %}
+        <fieldset>
+          <legend><strong>{{ heading }}</strong></legend>
+          {% for library in group %}
+            <label>
+              <input type="checkbox" name="keys" value="{{ library.plex_library_key }}"
+                     {% if library.enabled %}checked{% endif %}>
+              {{ library.plex_library_name }}
+            </label>
+          {% endfor %}
+        </fieldset>
+      {% endif %}
+    {% endfor %}
+
+    <p><small>
+      Leave out libraries that don't contain films or shows you'd want to complete — home videos,
+      concert recordings, test clips. Nothing in them exists on TMDb, so scanning them only wastes
+      time.
+    </small></p>
+
+    <button type="submit">Save selection</button>
+  </form>
+{% endif %}
+{% endblock %}

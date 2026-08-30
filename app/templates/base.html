@@ -28,6 +28,17 @@
         </ul>
         <ul>
           {% block nav %}{% endblock %}
+          {% if user %}
+            <li><a href="{{ url('/libraries') }}">Libraries</a></li>
+            <li>
+              <small>{{ user.plex_username or user.local_username }}</small>
+            </li>
+            <li>
+              <form method="post" action="{{ url('/logout') }}" class="nav-form">
+                <button type="submit" class="secondary outline">Sign out</button>
+              </form>
+            </li>
+          {% endif %}
         </ul>
       </nav>
     </header>

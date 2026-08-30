@@ -41,9 +41,17 @@ def test_health_is_served_under_the_base_url(app_under_subpath) -> None:
         assert client.get("/health").status_code == 404
 
 
-def test_index_page_renders_dark_and_links_under_the_base_url(app_under_subpath) -> None:
-    with TestClient(app_under_subpath.app) as client:
+def test_index_redirects_anonymous_visitors_to_the_login_page(app_under_subpath) -> None:
+    with TestClient(app_under_subpath.app, follow_redirects=False) as client:
         response = client.get(f"{BASE}/")
+
+    assert response.status_code == 303
+    assert response.headers["location"].startswith(f"{BASE}/login")
+
+
+def test_login_page_renders_dark_and_links_under_the_base_url(app_under_subpath) -> None:
+    with TestClient(app_under_subpath.app) as client:
+        response = client.get(f"{BASE}/login")
 
     assert response.status_code == 200
     assert 'data-theme="dark"' in response.text

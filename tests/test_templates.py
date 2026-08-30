@@ -11,7 +11,7 @@ import re
 
 import pytest
 
-from app.templating import STATIC_DIR, build_templates, make_url_builder
+from app.templating import STATIC_DIR, build_templates, get_templates, make_url_builder
 
 VENDORED_ASSETS = ["pico.min.css", "htmx.min.js", "alpine.min.js", "app.css"]
 
@@ -34,6 +34,16 @@ def test_url_builder(base_url: str, path: str, expected: str) -> None:
 def _render(base_url: str) -> str:
     templates = build_templates(base_url)
     return templates.get_template("index.html").render()
+
+
+def test_get_templates_follows_the_configured_base_url(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Regression: route modules used to capture BASE_URL at import time, so whether asset links
+    carried the subpath depended on which module imported first."""
+    monkeypatch.setenv("BASE_URL", "/franchisarr")
+    assert get_templates().env.globals["url"]("/static/app.css") == "/franchisarr/static/app.css"
+
+    monkeypatch.setenv("BASE_URL", "/")
+    assert get_templates().env.globals["url"]("/static/app.css") == "/static/app.css"
 
 
 def test_theme_is_dark_by_default() -> None:

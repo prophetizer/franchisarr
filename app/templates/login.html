@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Sign in — Franchisarr{% endblock %}
+
+{% block content %}
+<article class="login-card">
+  <hgroup>
+    <h1>Sign in</h1>
+    <p>Franchisarr needs to know who you are before it can show your library's gaps.</p>
+  </hgroup>
+
+  {% if error %}<p role="alert" class="login-error">{{ error }}</p>{% endif %}
+
+  {% if plex_login_available %}
+    <div x-data="plexSignIn()">
+      <button type="button" @click="start()" :aria-busy="busy" :disabled="busy"
+              x-text="busy ? statusText : 'Sign in with Plex'">Sign in with Plex</button>
+      <template x-if="error">
+        <p role="alert" class="login-error" x-text="error"></p>
+      </template>
+      <small>Opens Plex in a new window. Franchisarr never sees your Plex password.</small>
+    </div>
+    {% if local_login_available %}<hr>{% endif %}
+  {% else %}
+    <p><small>
+      Plex sign-in becomes available once this install's Plex server connection is configured.
+    </small></p>
+  {% endif %}
+
+  {% if local_login_available %}
+    <form method="post" action="{{ url('/login') }}">
+      <input type="hidden" name="next" value="{{ next }}">
+      <label>Username
+        <input type="text" name="username" autocomplete="username" required autofocus>
+      </label>
+      <label>Password
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <button type="submit">Sign in</button>
+    </form>
+  {% elif not plex_login_available %}
+    <p role="alert" class="login-error">
+      No sign-in method is configured yet. Set <code>ADMIN_USERNAME</code> and
+      <code>ADMIN_PASSWORD</code> and restart, or configure the Plex connection.
+    </p>
+  {% endif %}
+</article>
+
+<script>
+  function plexSignIn() {
+    return {
+      busy: false,
+      error: '',
+      statusText: 'Waiting for Plex…',
+      popup: null,
+      async start() {
+        this.error = '';
+        this.busy = true;
+        // Opened before the await: browsers block popups not tied to a user gesture.
+        this.popup = window.open('', 'plex-signin', 'width=600,height=700');
+        try {
+          const res = await fetch('{{ url("/auth/plex/start") }}', { method: 'POST' });
+          const data = await res.json();
+          if (!res.ok) { throw new Error(data.error || 'Could not start Plex sign-in.'); }
+          if (this.popup) { this.popup.location = data.auth_url; }
+          this.poll();
+        } catch (err) {
+          this.fail(err.message);
+        }
+      },
+      async poll() {
+        const body = new FormData();
+        body.append('next', {{ (next or '')|tojson }});
+        for (let attempt = 0; attempt < 150; attempt++) {
+          await new Promise(r => setTimeout(r, 2000));
+          let res, data;
+          try {
+            res = await fetch('{{ url("/auth/plex/poll") }}', { method: 'POST', body });
+            data = await res.json();
+          } catch (err) {
+            continue;  // transient network blip; keep waiting
+          }
+          if (res.ok && data.status === 'ok') {
+            if (this.popup) { this.popup.close(); }
+            window.location = data.redirect;
+            return;
+          }
+          if (!res.ok) { return this.fail(data.error || 'Plex sign-in failed.'); }
+        }
+        this.fail('Plex sign-in timed out. Please try again.');
+      },
+      fail(message) {
+        this.busy = false;
+        this.error = message;
+        if (this.popup) { this.popup.close(); }
+      },
+    };
+  }
+</script>
+{% endblock %}

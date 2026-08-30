@@ -6,6 +6,7 @@ test, so a developer's own exported PLEX_TOKEN or BASE_URL can never change a te
 
 from __future__ import annotations
 
+import importlib
 import os
 from pathlib import Path
 
@@ -69,6 +70,31 @@ def engine(db_path: Path):
 def session(engine) -> Session:
     with Session(engine) as sess:
         yield sess
+
+
+@pytest.fixture
+def app_factory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Build the FastAPI app with a chosen BASE_URL and a throwaway database.
+
+    app.main binds BASE_URL when it mounts its routers, so exercising a subpath deployment means
+    re-importing it. The module is restored afterwards so later tests see it as they expect.
+    """
+    import app.main
+
+    def build(base_url: str = "", **env: str):
+        monkeypatch.setenv("BASE_URL", base_url or "/")
+        monkeypatch.setenv("DB_PATH", str(tmp_path / "franchisarr.db"))
+        monkeypatch.setenv("LOG_LEVEL", "WARNING")
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        reset_engine()
+        return importlib.reload(app.main)
+
+    yield build
+
+    monkeypatch.undo()
+    reset_engine()
+    importlib.reload(app.main)
 
 
 @pytest.fixture

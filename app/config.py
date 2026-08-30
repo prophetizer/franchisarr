@@ -52,6 +52,10 @@ class EnvSettings:
     base_url: str
     log_level: str
 
+    #: Sets the Secure flag on cookies. Off by default because most installs sit on a LAN over
+    #: plain HTTP, where a Secure cookie would simply never be sent and nobody could log in.
+    session_cookie_secure: bool = False
+
     plex_url: str | None = None
     plex_token: str | None = None
 
@@ -97,6 +101,7 @@ def get_settings() -> EnvSettings:
     return EnvSettings(
         base_url=_normalize_base_url(os.environ.get("BASE_URL", "/")),
         log_level=(_env("LOG_LEVEL") or "INFO").upper(),
+        session_cookie_secure=parse_bool(_env("SESSION_COOKIE_SECURE"), False),
         plex_url=_env_or_none("PLEX_URL"),
         plex_token=_env_or_none("PLEX_TOKEN"),
         tmdb_api_key=_env_or_none("TMDB_API_KEY"),

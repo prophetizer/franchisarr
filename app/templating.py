@@ -11,9 +11,12 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
+from functools import lru_cache
+
 from fastapi.templating import Jinja2Templates
 
 from app import __version__
+from app.config import get_settings
 
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -35,3 +38,19 @@ def build_templates(base_url: str) -> Jinja2Templates:
     templates.env.globals["url"] = make_url_builder(base_url)
     templates.env.globals["version"] = __version__
     return templates
+
+
+@lru_cache(maxsize=4)
+def _cached_templates(base_url: str) -> Jinja2Templates:
+    return build_templates(base_url)
+
+
+def get_templates() -> Jinja2Templates:
+    """Templates for the currently configured base URL.
+
+    Resolved per call rather than captured at import. Route modules that bound BASE_URL at import
+    time worked only if they happened to be imported after it was set -- which made correctness
+    depend on import order, and silently produced root-relative asset links under a subpath. The
+    cache is keyed on the base URL, so this stays a dictionary lookup in practice.
+    """
+    return _cached_templates(get_settings().base_url)

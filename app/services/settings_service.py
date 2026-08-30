@@ -33,6 +33,11 @@ class SettingKey:
     WEBHOOK_FORMAT = "webhook_format"
     CROSS_INSTANCE_DEDUP = "cross_instance_dedup"
 
+    # Generated or discovered at runtime rather than configured, so deliberately absent from
+    # DEFAULTS: a default value for either would be actively wrong.
+    PLEX_CLIENT_ID = "plex_client_id"
+    PLEX_MACHINE_IDENTIFIER = "plex_machine_identifier"
+
 
 #: Values used when neither the environment nor the user has said otherwise.
 DEFAULTS: dict[str, str] = {

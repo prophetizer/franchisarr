@@ -39,3 +39,24 @@ footer.container {
   color: var(--pico-muted-color);
   font-size: 0.875rem;
 }
+
+.login-card {
+  margin-inline: auto;
+  max-width: 28rem;
+}
+
+.login-error {
+  color: var(--pico-del-color);
+}
+
+/* Keeps the sign-out button inline with the rest of the nav instead of on its own block line. */
+.nav-form {
+  display: inline;
+  margin: 0;
+}
+
+.nav-form button {
+  margin: 0;
+  padding: 0.25rem 0.75rem;
+  width: auto;
+}
