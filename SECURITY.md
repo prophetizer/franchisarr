@@ -20,10 +20,10 @@ window.
 
 **Please do not open a public issue for security vulnerabilities.**
 
-Report vulnerabilities privately by emailing:
+Report vulnerabilities privately by emailing **franchisarr@ihatemikeg.com**.
 
-> _TODO: add a monitored contact address here before the GitHub migration (see PROJECT_PLAN.md,_
-> _open items) — GitHub's private security advisories become available once the repo migrates._
+Once the project moves to GitHub, GitHub's private security advisories will become available as an
+alternative route; this address will remain valid either way.
 
 Please include:
 
