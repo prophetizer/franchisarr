@@ -47,7 +47,8 @@ def _own(session: Session, tmdb_id: int, title: str, **kwargs) -> LibraryItem:
     return item
 
 
-def _collection(session: Session, *members: tuple[int, str]) -> None:
+def _collection(session: Session, *members: tuple[int, str], release_date: str | None = None) -> None:
+    """Members default to a long-past release date, i.e. films that actually exist."""
     session.add(TmdbCollection(tmdb_collection_id=COLLECTION, name="Beverly Hills Cop Collection"))
     for position, (tmdb_id, title) in enumerate(members):
         session.add(
@@ -56,6 +57,7 @@ def _collection(session: Session, *members: tuple[int, str]) -> None:
                 tmdb_movie_id=tmdb_id,
                 title=title,
                 release_year=1984 + position,
+                release_date=release_date or f"{1984 + position}-06-01",
                 position=position,
             )
         )
@@ -145,6 +147,84 @@ def test_an_exclusion_survives_a_collection_refresh(session: Session) -> None:
     _collection(session, (90, "Beverly Hills Cop"), (9558, "Beverly Hills Cop III"))
 
     assert movie_gap_service.collections_with_gaps(session) == []
+
+
+# ------------------------------------------------------------------ unreleased films
+
+
+def test_an_unreleased_sequel_is_not_reported_as_a_gap(session: Session) -> None:
+    """On a real library, 155 of 382 reported gaps were films that don't exist yet, and 126 of
+    239 collections had no released film missing at all. Reporting "Untitled Beetlejuice 3" as
+    something to go and get is noise, not a gap."""
+    _collection(session, (90, "Beverly Hills Cop"))
+    session.add(
+        TmdbCollectionMovie(
+            collection_id=COLLECTION, tmdb_movie_id=9999, title="Beverly Hills Cop IV",
+            release_year=2099, release_date="2099-01-01", position=1,
+        )
+    )
+    session.commit()
+    _own(session, 90, "Beverly Hills Cop")
+
+    assert movie_gap_service.collections_with_gaps(session) == []
+
+    everything = movie_gap_service.collection_gaps(session)
+    assert [m.title for m in everything[0].upcoming] == ["Beverly Hills Cop IV"]
+    assert everything[0].missing == ()
+
+
+def test_a_film_with_no_release_date_counts_as_upcoming(session: Session) -> None:
+    """TMDb carries announced-but-unscheduled entries. A film it cannot date is certainly not
+    one you can obtain."""
+    _collection(session, (90, "Beverly Hills Cop"))
+    session.add(
+        TmdbCollectionMovie(
+            collection_id=COLLECTION, tmdb_movie_id=9999, title="Untitled Sequel",
+            release_year=None, release_date=None, position=1,
+        )
+    )
+    session.commit()
+    _own(session, 90, "Beverly Hills Cop")
+
+    assert movie_gap_service.collections_with_gaps(session) == []
+    assert len(movie_gap_service.collection_gaps(session)[0].upcoming) == 1
+
+
+def test_a_released_film_is_still_reported_alongside_upcoming_ones(session: Session) -> None:
+    _collection(session, (90, "Beverly Hills Cop"), (9558, "Beverly Hills Cop III"))
+    session.add(
+        TmdbCollectionMovie(
+            collection_id=COLLECTION, tmdb_movie_id=9999, title="Beverly Hills Cop IV",
+            release_year=2099, release_date="2099-01-01", position=2,
+        )
+    )
+    session.commit()
+    _own(session, 90, "Beverly Hills Cop")
+
+    gap = movie_gap_service.collections_with_gaps(session)[0]
+
+    assert [m.title for m in gap.missing] == ["Beverly Hills Cop III"]
+    assert [m.title for m in gap.upcoming] == ["Beverly Hills Cop IV"]
+    assert gap.total == 3
+
+
+def test_a_film_released_today_counts_as_available(session: Session) -> None:
+    import datetime
+
+    today = datetime.date(2026, 6, 1)
+    _collection(session, (90, "Beverly Hills Cop"))
+    session.add(
+        TmdbCollectionMovie(
+            collection_id=COLLECTION, tmdb_movie_id=9999, title="Out Today",
+            release_year=2026, release_date="2026-06-01", position=1,
+        )
+    )
+    session.commit()
+    _own(session, 90, "Beverly Hills Cop")
+
+    gap = movie_gap_service.collections_with_gaps(session, today=today)[0]
+
+    assert [m.title for m in gap.missing] == ["Out Today"]
 
 
 # ------------------------------------------------------------------ unconfirmed matches

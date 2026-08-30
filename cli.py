@@ -129,6 +129,9 @@ def scan_movies(
 @app.command()
 def gaps(
     all: Annotated[bool, typer.Option(help="Include collections you already own in full.")] = False,
+    upcoming: Annotated[
+        bool, typer.Option(help="Also list announced films that aren't out yet.")
+    ] = False,
 ) -> None:
     """List collections with films missing."""
     result = _call("GET", "/api/collections/gaps", params={"all": all})
@@ -138,6 +141,7 @@ def gaps(
         typer.echo("No gaps found. Either everything's complete, or nothing's been scanned yet.")
         return
 
+    total_upcoming = 0
     for collection in collections:
         typer.secho(
             f"{collection['name']} "
@@ -147,6 +151,19 @@ def gaps(
         for movie in collection["missing"]:
             year = f" ({movie['year']})" if movie["year"] else ""
             typer.echo(f"    {movie['title']}{year}  [tmdb:{movie['tmdb_id']}]")
+
+        total_upcoming += collection.get("upcoming_count", 0)
+        if upcoming:
+            for movie in collection.get("upcoming", []):
+                when = movie["release_date"] or "no date announced"
+                typer.secho(f"    {movie['title']} — {when}", dim=True)
+
+    if total_upcoming and not upcoming:
+        typer.echo()
+        typer.secho(
+            f"{total_upcoming} announced film(s) aren't out yet — pass --upcoming to see them.",
+            dim=True,
+        )
 
 
 @app.command()

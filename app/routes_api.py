@@ -111,9 +111,21 @@ def collection_gaps(session: DbSession, user: RequiredUser, all: bool = False) -
                 "name": gap.name,
                 "owned_count": len(gap.owned),
                 "missing_count": len(gap.missing),
+                "upcoming_count": len(gap.upcoming),
                 "missing": [
                     {"tmdb_id": m.tmdb_id, "title": m.title, "year": m.release_year}
                     for m in gap.missing
+                ],
+                # Announced or scheduled but not out yet. Addable to Radarr (it will monitor and
+                # grab on release) but not something to chase today.
+                "upcoming": [
+                    {
+                        "tmdb_id": m.tmdb_id,
+                        "title": m.title,
+                        "year": m.release_year,
+                        "release_date": m.release_date,
+                    }
+                    for m in gap.upcoming
                 ],
             }
             for gap in gaps
