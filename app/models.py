@@ -181,6 +181,31 @@ class IncludedLibrary(SQLModel, table=True):
     enabled: bool = Field(default=True)
 
 
+class UserSession(SQLModel, table=True):
+    """A logged-in browser session.
+
+    Named UserSession rather than Session to avoid colliding with SQLModel's own Session.
+
+    Only a hash of the session token is stored. The plaintext token lives solely in the user's
+    cookie, so a leaked database -- a copied /config volume, a backup, a support bundle -- cannot
+    be replayed as a live login. Being a table rather than a signed cookie also means logout
+    actually revokes: deleting the row ends the session everywhere immediately.
+    """
+
+    __tablename__ = "sessions"
+
+    id: int | None = Field(default=None, primary_key=True)
+    token_hash: str = Field(index=True, unique=True)
+    # CASCADE: an orphaned session is meaningless and would be a live credential for an account
+    # that no longer exists. Note the other tables referencing users deliberately do NOT cascade
+    # -- deleting a user must not erase shared spin-off mappings or the audit log -- but those
+    # semantics are settled when user management arrives, not here.
+    user_id: int = Field(foreign_key="users.id", ondelete="CASCADE", index=True)
+    created_at: datetime = Field(default_factory=utcnow)
+    expires_at: datetime = Field(index=True)
+    last_seen_at: datetime = Field(default_factory=utcnow)
+
+
 class ActivityLogEntry(SQLModel, table=True):
     """Append-only record of adds Franchisarr made. `instance_id` has no foreign key because
     `item_type` decides which instance table it points at; it records what happened even if the
