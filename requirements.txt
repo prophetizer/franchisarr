@@ -31,3 +31,4 @@ responses==0.25.3
 # Required by fastapi.testclient (Starlette's TestClient is built on it). Not used by the
 # application itself -- all outbound HTTP goes through requests.
 httpx==0.28.1
+pytest-cov==7.1.0

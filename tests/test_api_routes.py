@@ -297,3 +297,157 @@ def test_the_activity_log_says_it_does_not_track_downloads(
 
     assert body["entries"] == []
     assert "history" in body["note"]
+
+
+# ------------------------------------------------------------------ Sonarr endpoints
+
+
+SONARR = "http://sonarr.test:8989"
+
+
+def _add_sonarr(client: TestClient, api_key: str, name: str = "TV") -> int:
+    response = client.post(
+        f"{BASE}/api/instances/sonarr",
+        headers={API_KEY_HEADER: api_key},
+        json={"name": name, "url": SONARR, "api_key": "sonarr-key"},
+    )
+    assert response.status_code == 201
+    return response.json()["id"]
+
+
+def test_sonarr_instances_are_listed_with_their_monitor_modes(
+    client: TestClient, api_key: str
+) -> None:
+    _add_sonarr(client, api_key)
+
+    body = client.get(f"{BASE}/api/instances/sonarr", headers={API_KEY_HEADER: api_key}).json()
+
+    assert body["instances"][0]["default_monitor_mode"] == "all"
+    assert {m["value"] for m in body["monitor_modes"]} == {"all", "future_only", "first_season"}
+    assert "api_key" not in body["instances"][0]
+
+
+def test_making_a_sonarr_instance_default(client: TestClient, api_key: str) -> None:
+    first = _add_sonarr(client, api_key, "TV")
+    second = _add_sonarr(client, api_key, "Anime")
+
+    response = client.post(f"{BASE}/api/instances/sonarr/{second}/default",
+                           headers={API_KEY_HEADER: api_key})
+    assert response.status_code == 200
+
+    body = client.get(f"{BASE}/api/instances/sonarr", headers={API_KEY_HEADER: api_key}).json()
+    defaults = {i["id"]: i["is_default"] for i in body["instances"]}
+    assert defaults == {first: False, second: True}
+
+
+def test_deleting_a_sonarr_instance(client: TestClient, api_key: str) -> None:
+    instance_id = _add_sonarr(client, api_key)
+
+    assert client.delete(f"{BASE}/api/instances/sonarr/{instance_id}",
+                         headers={API_KEY_HEADER: api_key}).status_code == 200
+    assert client.get(f"{BASE}/api/instances/sonarr",
+                      headers={API_KEY_HEADER: api_key}).json()["instances"] == []
+
+
+def test_an_unknown_sonarr_instance_is_a_404(client: TestClient, api_key: str) -> None:
+    assert client.get(f"{BASE}/api/instances/sonarr/999/test",
+                      headers={API_KEY_HEADER: api_key}).status_code == 404
+
+
+@responses.activate
+def test_sonarr_options_report_an_unreachable_instance(client: TestClient, api_key: str) -> None:
+    instance_id = _add_sonarr(client, api_key)
+    responses.add(responses.GET, f"{SONARR}/api/v3/qualityprofile", status=500)
+
+    body = client.get(f"{BASE}/api/instances/sonarr/{instance_id}/options",
+                      headers={API_KEY_HEADER: api_key}).json()
+
+    assert body["ok"] is False
+    assert body["quality_profiles"] == []
+
+
+@responses.activate
+def test_sonarr_options_include_the_monitor_modes(client: TestClient, api_key: str) -> None:
+    instance_id = _add_sonarr(client, api_key)
+    responses.add(responses.GET, f"{SONARR}/api/v3/qualityprofile",
+                  json=[{"id": 1, "name": "Any"}])
+    responses.add(responses.GET, f"{SONARR}/api/v3/rootfolder", json=[{"path": "/tv"}])
+
+    body = client.get(f"{BASE}/api/instances/sonarr/{instance_id}/options",
+                      headers={API_KEY_HEADER: api_key}).json()
+
+    assert body["ok"] is True
+    assert body["default_monitor_mode"] == "all"
+    assert len(body["monitor_modes"]) == 3
+
+
+def test_adding_a_show_without_an_instance_is_a_clear_conflict(
+    client: TestClient, api_key: str
+) -> None:
+    response = client.post(f"{BASE}/api/sonarr/add", headers={API_KEY_HEADER: api_key},
+                           json={"tmdb_id": 17610})
+
+    assert response.status_code == 409
+    assert "Sonarr instance" in response.json()["detail"]
+
+
+def test_the_spinoffs_endpoint_reports_an_empty_mapping_list(
+    client: TestClient, api_key: str
+) -> None:
+    body = client.get(f"{BASE}/api/spinoffs", headers={API_KEY_HEADER: api_key}).json()
+
+    assert body == {"suggestions": [], "mappings": 0}
+
+
+def test_creating_a_spinoff_mapping_through_the_api(client: TestClient, api_key: str) -> None:
+    response = client.post(f"{BASE}/api/spinoffs/mappings", headers={API_KEY_HEADER: api_key},
+                           json={"source_show_tmdb_id": 4614, "spinoff_show_tmdb_id": 17610})
+
+    assert response.status_code == 201
+    assert response.json()["created"] is True
+
+
+def test_creating_the_same_mapping_twice_reports_it_rather_than_failing(
+    client: TestClient, api_key: str
+) -> None:
+    payload = {"source_show_tmdb_id": 4614, "spinoff_show_tmdb_id": 17610}
+    client.post(f"{BASE}/api/spinoffs/mappings", headers={API_KEY_HEADER: api_key}, json=payload)
+
+    body = client.post(f"{BASE}/api/spinoffs/mappings", headers={API_KEY_HEADER: api_key},
+                       json=payload).json()
+
+    assert body["created"] is False
+    assert "already exists" in body["reason"]
+
+
+def test_a_self_referential_mapping_is_refused(client: TestClient, api_key: str) -> None:
+    response = client.post(f"{BASE}/api/spinoffs/mappings", headers={API_KEY_HEADER: api_key},
+                           json={"source_show_tmdb_id": 4614, "spinoff_show_tmdb_id": 4614})
+
+    assert response.status_code == 400
+
+
+def test_scanning_tv_without_plex_configured_is_a_clear_conflict(
+    client: TestClient, api_key: str
+) -> None:
+    with Session(get_engine()) as session:
+        set_setting(session, SettingKey.TMDB_API_KEY, V3_KEY)
+        session.commit()
+
+    response = client.post(f"{BASE}/api/scan/tv", headers={API_KEY_HEADER: api_key})
+
+    assert response.status_code == 409
+
+
+@responses.activate
+def test_refreshing_instances_reports_per_instance_results(
+    client: TestClient, api_key: str
+) -> None:
+    _add_instance(client, api_key)
+    responses.add(responses.GET, f"{RADARR}/api/v3/movie", status=500)
+
+    body = client.post(f"{BASE}/api/instances/radarr/refresh",
+                       headers={API_KEY_HEADER: api_key}).json()
+
+    assert body["instances"][0]["ok"] is False
+    assert body["instances"][0]["error"]

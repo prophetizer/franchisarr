@@ -480,6 +480,15 @@ def delete_sonarr_instance(session: DbSession, user: AdminUser, instance_id: int
     return {"deleted": instance_id}
 
 
+@router.post("/instances/sonarr/{instance_id}/default")
+def make_sonarr_default(session: DbSession, user: AdminUser, instance_id: int) -> dict:
+    """Mirror of the Radarr endpoint. Its absence was an asymmetry in the API surface rather
+    than a decision."""
+    _require_sonarr(session, instance_id)
+    sonarr_instance_service.set_default(session, instance_id)
+    return {"default": instance_id}
+
+
 @router.get("/instances/sonarr/{instance_id}/test")
 def test_sonarr_instance(session: DbSession, user: RequiredUser, instance_id: int) -> dict:
     instance = _require_sonarr(session, instance_id)

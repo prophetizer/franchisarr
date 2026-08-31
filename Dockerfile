@@ -19,7 +19,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
     # The test-only dependencies have no business in a runtime image.
-    && pip uninstall -y pytest pytest-asyncio responses httpx 2>/dev/null || true
+    && pip uninstall -y pytest pytest-asyncio pytest-cov responses httpx 2>/dev/null || true
 
 COPY app/ ./app/
 # Not needed to run (the app builds its Alembic config in code) — copied so `docker exec` into a
