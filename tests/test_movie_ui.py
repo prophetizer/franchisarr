@@ -108,7 +108,7 @@ def test_the_detail_page_separates_missing_owned_and_upcoming(client: TestClient
 
 
 def test_a_collection_you_own_nothing_from_is_a_404(client: TestClient) -> None:
-    assert client.get(f"{BASE}/collections/99999").status_code == 404
+    assert client.get(f"{BASE}/collections/157950").status_code == 404
 
 
 # ------------------------------------------------------------------ dismiss and exclude
@@ -347,7 +347,7 @@ def _own_show(tmdb_id: int, title: str) -> None:
 
 def test_the_spinoff_page_explains_why_it_starts_empty(client: TestClient) -> None:
     """An empty list looks broken unless you say the mapping list is meant to start that way."""
-    _own_show(1621, "NCIS")
+    _own_show(4614, "NCIS")
 
     body = client.get(f"{BASE}/shows").text
 
@@ -356,7 +356,7 @@ def test_the_spinoff_page_explains_why_it_starts_empty(client: TestClient) -> No
 
 
 def test_the_spinoff_page_lists_your_shows(client: TestClient) -> None:
-    _own_show(1621, "NCIS")
+    _own_show(4614, "NCIS")
 
     body = client.get(f"{BASE}/shows").text
 
@@ -367,12 +367,12 @@ def test_the_spinoff_page_lists_your_shows(client: TestClient) -> None:
 def test_a_confirmed_mapping_becomes_a_suggestion(client: TestClient) -> None:
     from app.services import tv_spinoff_service
 
-    _own_show(1621, "NCIS")
+    _own_show(4614, "NCIS")
     with Session(get_engine()) as session:
         session.add(TmdbShow(tmdb_id=17610, name="NCIS: Los Angeles", first_air_year=2009))
         session.commit()
         tv_spinoff_service.add_mapping(
-            session, source_show_tmdb_id=1621, spinoff_show_tmdb_id=17610
+            session, source_show_tmdb_id=4614, spinoff_show_tmdb_id=17610
         )
 
     body = client.get(f"{BASE}/shows").text
@@ -384,10 +384,10 @@ def test_a_confirmed_mapping_becomes_a_suggestion(client: TestClient) -> None:
 def test_confirming_a_candidate_creates_a_mapping(client: TestClient) -> None:
     from app.models import SpinoffMapping
 
-    _own_show(1621, "NCIS")
+    _own_show(4614, "NCIS")
 
     response = client.post(f"{BASE}/shows/mappings", data={
-        "source_show_tmdb_id": 1621, "spinoff_show_tmdb_id": 17610,
+        "source_show_tmdb_id": 4614, "spinoff_show_tmdb_id": 17610,
     })
 
     assert response.status_code == 200
@@ -398,7 +398,7 @@ def test_confirming_a_candidate_creates_a_mapping(client: TestClient) -> None:
 def test_the_candidates_panel_says_what_it_cannot_find(client: TestClient) -> None:
     """Being honest about the heuristic's blind spot is what stops someone assuming Chicago P.D.
     just isn't a spin-off."""
-    _own_show(1621, "NCIS")
+    _own_show(4614, "NCIS")
     with Session(get_engine()) as session:
         from app.services.settings_service import SettingKey as _SK
         from app.services.settings_service import set_setting as _set
@@ -408,15 +408,15 @@ def test_the_candidates_panel_says_what_it_cannot_find(client: TestClient) -> No
 
     with responses.RequestsMock() as mock:
         mock.add(responses.GET, "https://api.themoviedb.org/3/search/tv", json={"results": []})
-        body = client.get(f"{BASE}/shows/1621/candidates").text
+        body = client.get(f"{BASE}/shows/4614/candidates").text
 
     assert "Chicago" in body, "the panel should name a case it can't detect"
 
 
 def test_looking_for_candidates_without_a_tmdb_key_says_so(client: TestClient) -> None:
-    _own_show(1621, "NCIS")
+    _own_show(4614, "NCIS")
 
-    body = client.get(f"{BASE}/shows/1621/candidates").text
+    body = client.get(f"{BASE}/shows/4614/candidates").text
 
     assert "TMDb API key" in body
 
@@ -429,6 +429,6 @@ def test_the_spinoff_page_is_themed_like_everything_else(client: TestClient) -> 
     url = "https://theme-park.dev/css/theme-options/nord.css"
     with Session(get_engine()) as session:
         set_theme_url(session, url)
-    _own_show(1621, "NCIS")
+    _own_show(4614, "NCIS")
 
     assert url in client.get(f"{BASE}/shows").text

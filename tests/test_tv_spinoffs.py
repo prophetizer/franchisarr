@@ -25,7 +25,7 @@ from app.models import (
 )
 from app.services import tv_spinoff_service as svc
 
-NCIS = 1621
+NCIS = 4614
 NCIS_LA = 17610
 NCIS_NOLA = 61387
 
@@ -109,12 +109,12 @@ def test_heuristic_candidates_exclude_owned_and_mapped_shows(session: Session) -
         {"id": NCIS, "name": "NCIS", "first_air_date": "2003-09-23"},
         {"id": NCIS_LA, "name": "NCIS: Los Angeles", "first_air_date": "2009-09-22"},
         {"id": NCIS_NOLA, "name": "NCIS: New Orleans", "first_air_date": "2014-09-23"},
-        {"id": 99999, "name": "NCIS: Sydney", "first_air_date": "2023-11-10"},
+        {"id": 157950, "name": "NCIS: Sydney", "first_air_date": "2023-11-10"},
     ]})
 
     found = svc.heuristic_candidates(session, TmdbClient("k" * 32), show)
 
-    assert [c.spinoff_tmdb_id for c in found] == [99999]
+    assert [c.spinoff_tmdb_id for c in found] == [157950]
     assert found[0].confidence == MappingConfidence.HEURISTIC.value
 
 
