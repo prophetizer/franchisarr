@@ -1,0 +1,29 @@
+{# Re-rendered on its own by htmx after a dismiss or exclude, so it must not depend on anything
+   the full page sets up beyond `gap`. #}
+<ul class="film-list">
+  {% for movie in gap.missing %}
+    <li class="film-row missing">
+      <span class="film-title">{{ movie.title }}</span>
+      <span class="film-meta muted">{{ movie.release_year or '' }}</span>
+      <span class="film-actions">
+        <button hx-get="{{ url('/add/' ~ movie.tmdb_id) }}"
+                hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
+
+        {# Two different kinds of "hide this", deliberately not one button. Dismiss is a personal
+           preference; exclude is a correction to TMDb's data that everyone should get. #}
+        <button class="secondary outline"
+                hx-post="{{ url('/collections/' ~ gap.collection_id ~ '/dismiss/' ~ movie.tmdb_id) }}"
+                hx-target="#missing-list" hx-swap="innerHTML"
+                title="Hide this film from your own lists only">Not interested</button>
+
+        <button class="secondary outline"
+                hx-post="{{ url('/collections/' ~ gap.collection_id ~ '/exclude/' ~ movie.tmdb_id) }}"
+                hx-target="#missing-list" hx-swap="innerHTML"
+                title="TMDb lists this as part of the collection, but it isn't really — hides it for everyone">
+          Not part of this collection</button>
+      </span>
+    </li>
+  {% else %}
+    <li class="muted">Nothing missing.</li>
+  {% endfor %}
+</ul>

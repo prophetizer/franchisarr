@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ gap.name }} — Franchisarr{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ul><li><a href="{{ url('/collections') }}">← All collections</a></li></ul>
+</nav>
+
+<hgroup>
+  <h1>{{ gap.name }}</h1>
+  <p>{{ gap.owned | length }} of {{ gap.total }} in your library.</p>
+</hgroup>
+
+{% if gap.missing %}
+  <section>
+    <h2>Missing</h2>
+    <div id="missing-list">
+      {% include "partials/missing_list.html" %}
+    </div>
+  </section>
+{% else %}
+  <p role="status" class="notice-good">You have every released film in this collection.</p>
+{% endif %}
+
+{% if gap.upcoming %}
+  {# Kept deliberately separate from the list above: these films don't exist yet, so they are not
+     something to go and get. Mixing them in was measured at 41% of the raw gap list. #}
+  <section class="upcoming-section">
+    <h2>Coming soon</h2>
+    <p><small class="muted">
+      Announced but not released. You can still add one — Radarr will monitor it and grab it when
+      it appears.
+    </small></p>
+    <ul class="film-list">
+      {% for movie in gap.upcoming %}
+        <li class="film-row upcoming">
+          <span class="film-title">{{ movie.title }}</span>
+          <span class="film-meta muted">
+            {% if movie.release_date %}expected {{ movie.release_date }}{% else %}no release date announced{% endif %}
+          </span>
+          <span class="film-actions">
+            <button class="outline" hx-get="{{ url('/add/' ~ movie.tmdb_id) }}"
+                    hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endif %}
+
+{% if gap.owned %}
+  <section>
+    <h2>In your library</h2>
+    <ul class="film-list">
+      {% for movie in gap.owned %}
+        <li class="film-row owned">
+          <span class="film-title">{{ movie.title }}</span>
+          <span class="film-meta muted">{{ movie.release_year or '' }}</span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endif %}
+
+<div id="add-dialog"></div>
+{% endblock %}

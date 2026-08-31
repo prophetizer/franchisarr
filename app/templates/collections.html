@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Collections — Franchisarr{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>Collections with gaps</h1>
+  <p>
+    {{ gaps | length }} collection{{ '' if gaps | length == 1 else 's' }} you own part of,
+    missing {{ total_missing }} film{{ '' if total_missing == 1 else 's' }}.
+  </p>
+</hgroup>
+
+{% if not gaps %}
+  <article>
+    {% if not scanned %}
+      <header>Nothing scanned yet</header>
+      <p>Run a scan to find the gaps in your library.</p>
+      <form method="post" action="{{ url('/scan') }}">
+        <button type="submit" aria-busy="false">Scan my library</button>
+      </form>
+      <footer><small>This walks your Plex libraries and looks each film up on TMDb. On a few
+        thousand films it takes a handful of minutes.</small></footer>
+    {% else %}
+      <header>No gaps found</header>
+      <p>Every collection you own part of is complete. That's either very satisfying or slightly
+         suspicious.</p>
+    {% endif %}
+  </article>
+{% else %}
+  <div class="collection-grid">
+    {% for gap in gaps %}
+      <article class="collection-card">
+        <header>
+          <a href="{{ url('/collections/' ~ gap.collection_id) }}"><strong>{{ gap.name }}</strong></a>
+        </header>
+        <p class="collection-counts">
+          <span class="count-owned">{{ gap.owned | length }} owned</span>
+          <span class="count-missing">{{ gap.missing | length }} missing</span>
+          {% if gap.upcoming %}
+            <span class="count-upcoming">{{ gap.upcoming | length }} coming soon</span>
+          {% endif %}
+        </p>
+        <ul class="missing-preview">
+          {% for movie in gap.missing[:3] %}
+            <li>{{ movie.title }}{% if movie.release_year %} <small class="muted">({{ movie.release_year }})</small>{% endif %}</li>
+          {% endfor %}
+          {% if gap.missing | length > 3 %}
+            <li class="muted">…and {{ gap.missing | length - 3 }} more</li>
+          {% endif %}
+        </ul>
+      </article>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

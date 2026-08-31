@@ -60,3 +60,91 @@ footer.container {
   padding: 0.25rem 0.75rem;
   width: auto;
 }
+
+/* ---------------------------------------------------------------------------
+ * Movie screens.
+ *
+ * Every colour below is a Pico variable, never a literal. That is what lets
+ * theme-adapter.css repaint the whole UI from a theme.park stylesheet without
+ * touching this file. A hex value here would be a hole in the theme.
+ * ------------------------------------------------------------------------ */
+
+.collection-grid {
+  display: grid;
+  gap: var(--pico-spacing);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+}
+
+.collection-card {
+  margin-bottom: 0;
+}
+
+.collection-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.875rem;
+  margin-bottom: var(--pico-spacing);
+}
+
+.count-owned { color: var(--pico-muted-color); }
+.count-missing { color: var(--pico-primary); font-weight: 600; }
+.count-upcoming { color: var(--pico-muted-color); font-style: italic; }
+
+.missing-preview {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.9rem;
+}
+
+.film-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.film-row {
+  align-items: center;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  padding: 0.6rem 0;
+}
+
+.film-row:last-child { border-bottom: none; }
+
+.film-title { flex: 1 1 14rem; }
+
+.film-meta { flex: 0 0 auto; font-size: 0.875rem; }
+
+.film-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.film-actions button {
+  font-size: 0.8rem;
+  margin: 0;
+  padding: 0.3rem 0.7rem;
+  width: auto;
+}
+
+/* Upcoming films are visually quieter than missing ones on purpose: they are not something the
+ * reader can act on today, and giving them equal weight is what made the raw gap list unusable. */
+.upcoming-section .film-row { opacity: 0.75; }
+
+.owned .film-title::before {
+  color: var(--pico-primary);
+  content: "✓ ";
+}
+
+.muted { color: var(--pico-muted-color); }
+
+.notice-good { color: var(--pico-primary); }
+.notice-bad { color: var(--pico-del-color); }
+.notice-warn { color: var(--pico-muted-color); }
+
+dialog article { max-width: 32rem; }

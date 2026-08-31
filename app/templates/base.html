@@ -15,6 +15,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Franchisarr{% endblock %}</title>
     <link rel="stylesheet" href="{{ url('/static/pico.min.css') }}">
+    {#- An external theme, if one is configured. Loaded between Pico and our own styles: the
+        theme defines its custom properties, the adapter maps them onto Pico's, and app.css then
+        builds on the result. theme_url is validated server-side (http/https only) before it
+        reaches this attribute. -#}
+    {% if theme_url %}
+      <link rel="stylesheet" href="{{ theme_url }}">
+      <link rel="stylesheet" href="{{ url('/static/theme-adapter.css') }}">
+    {% endif %}
     <link rel="stylesheet" href="{{ url('/static/app.css') }}">
     <script src="{{ url('/static/htmx.min.js') }}" defer></script>
     <script src="{{ url('/static/alpine.min.js') }}" defer></script>
@@ -29,7 +37,9 @@
         <ul>
           {% block nav %}{% endblock %}
           {% if user %}
+            <li><a href="{{ url('/collections') }}">Collections</a></li>
             <li><a href="{{ url('/libraries') }}">Libraries</a></li>
+            <li><a href="{{ url('/settings') }}">Settings</a></li>
             <li>
               <small>{{ user.plex_username or user.local_username }}</small>
             </li>

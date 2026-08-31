@@ -38,6 +38,9 @@ class SettingKey:
     PLEX_CLIENT_ID = "plex_client_id"
     PLEX_MACHINE_IDENTIFIER = "plex_machine_identifier"
 
+    #: Optional theme.park (or self-hosted) stylesheet URL. Empty means the built-in theme.
+    THEME_URL = "theme_url"
+
 
 #: Values used when neither the environment nor the user has said otherwise.
 DEFAULTS: dict[str, str] = {
@@ -50,6 +53,7 @@ DEFAULTS: dict[str, str] = {
     SettingKey.WEBHOOK_URL: "",
     SettingKey.WEBHOOK_FORMAT: WebhookFormat.GENERIC.value,
     SettingKey.CROSS_INSTANCE_DEDUP: "false",
+    SettingKey.THEME_URL: "",
 }
 
 #: Settings whose values must never be logged or rendered unmasked.

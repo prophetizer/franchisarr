@@ -1,0 +1,70 @@
+{# The add dialog. Rendered by htmx into #add-dialog on the collection page. #}
+<dialog open>
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" hx-get="{{ url('/add/close') }}"
+              hx-target="#add-dialog" hx-swap="innerHTML"></button>
+      <strong>Add {{ title }}</strong>
+    </header>
+
+    {% if not instances %}
+      <p role="alert" class="notice-bad">
+        No Radarr instance is configured yet.
+      </p>
+    {% elif not options.ok %}
+      {# Technical challenge #15: say plainly that the instance is unreachable rather than
+         presenting empty dropdowns that look like the instance has nothing configured. #}
+      <p role="alert" class="notice-bad">{{ options.error }}</p>
+      <p><small>Franchisarr can't read this instance's quality profiles or root folders right now,
+        so it can't add anything to it. Check the instance is running and try again.</small></p>
+    {% else %}
+      <form hx-post="{{ url('/add') }}" hx-target="#add-dialog" hx-swap="innerHTML">
+        <input type="hidden" name="tmdb_id" value="{{ tmdb_id }}">
+
+        {% if instances | length > 1 %}
+          <label for="instance_id">Radarr instance</label>
+          <select id="instance_id" name="instance_id"
+                  hx-get="{{ url('/add/' ~ tmdb_id) }}" hx-target="#add-dialog"
+                  hx-swap="innerHTML" hx-trigger="change">
+            {% for instance in instances %}
+              {# The hint matters when instances are called "Radarr" and "Radarr 4K": the root
+                 folder is what actually tells them apart (technical challenge #3). #}
+              <option value="{{ instance.id }}" {% if instance.id == selected.id %}selected{% endif %}>
+                {{ instance.name }}{% if instance.default_root_folder %} — {{ instance.default_root_folder }}{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        {% else %}
+          <input type="hidden" name="instance_id" value="{{ selected.id }}">
+        {% endif %}
+
+        <label for="quality_profile_id">Quality profile</label>
+        <select id="quality_profile_id" name="quality_profile_id" required>
+          {% for profile in options.quality_profiles %}
+            <option value="{{ profile.id }}"
+                    {% if profile.id == options.default_quality_profile_id %}selected{% endif %}>
+              {{ profile.name }}</option>
+          {% endfor %}
+        </select>
+
+        <label for="root_folder_path">Root folder</label>
+        <select id="root_folder_path" name="root_folder_path" required>
+          {% for folder in options.root_folders %}
+            <option value="{{ folder.path }}"
+                    {% if folder.path == options.default_root_folder %}selected{% endif %}>
+              {{ folder.path }}{% if folder.free_space_label %} — {{ folder.free_space_label }}{% endif %}</option>
+          {% endfor %}
+        </select>
+
+        <label>
+          <input type="checkbox" name="search_on_add" checked>
+          Search for it now
+        </label>
+
+        <footer>
+          <button type="submit" aria-busy="false">Add to {{ selected.name }}</button>
+        </footer>
+      </form>
+    {% endif %}
+  </article>
+</dialog>

@@ -1,0 +1,26 @@
+<dialog open>
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" hx-get="{{ url('/add/close') }}"
+              hx-target="#add-dialog" hx-swap="innerHTML"></button>
+      <strong>{{ 'Added' if added else "Couldn't add it" }}</strong>
+    </header>
+
+    {% if added %}
+      <p role="status" class="notice-good">
+        {{ title }} was added to {{ instance }}{{ ', and a search has started' if searched else '' }}.
+      </p>
+      <p><small class="muted">
+        What happens next is Radarr's business — check its own activity page to follow the
+        download.
+      </small></p>
+    {% else %}
+      <p role="alert" class="notice-bad">{{ error }}</p>
+    {% endif %}
+
+    <footer>
+      <button hx-get="{{ url('/add/close') }}" hx-target="#add-dialog" hx-swap="innerHTML">
+        Close</button>
+    </footer>
+  </article>
+</dialog>
