@@ -200,7 +200,7 @@ franchisarr/
 8. **Phase 7 — Sonarr integration + TV UI — ✅ COMPLETE (validated against a real Sonarr 4.0.19):** mirror phases 4–5 for TV, including multi-instance, cross-instance dedup, and the season-monitoring dropdown mapped to Sonarr's actual `addOptions.monitor` API values.
 9. **Phase 8 — Scheduling & notifications — ✅ COMPLETE:** APScheduler job wired to the existing diff services, settings UI for cron schedule + webhook URL/format, webhook notifier with generic/Discord/Slack payloads.
 10. **Phase 9 — Activity log, settings, and packaging — ✅ COMPLETE:** Activity log UI page, config export/import (with the secrets warning and shape validation from technical challenge #23), full setup wizard, remaining settings page items (incl. light/dark toggle, library selection editing), update-checker job + banner, README/docs, Dockerfile hardening, docker-compose.yml example.
-11. **Phase 10 — Pre-release hardening (before GitHub migration):** review for secret leakage (incl. the config export path), fill any gaps in test coverage (target: diff logic, auth flow, base-URL routing, instance-unreachable handling all covered), first real `CHANGELOG.md` entry and `v0.1.0` tag, write install docs aimed at other *arr users (not just you).
+11. **Phase 10 — Pre-release hardening — ✅ COMPLETE (v0.1.0 tagged 2026-08-31):** review for secret leakage (incl. the config export path), fill any gaps in test coverage (target: diff logic, auth flow, base-URL routing, instance-unreachable handling all covered), first real `CHANGELOG.md` entry and `v0.1.0` tag, write install docs aimed at other *arr users (not just you).
 
 ## 9. Config reference
 
