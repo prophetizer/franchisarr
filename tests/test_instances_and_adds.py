@@ -26,7 +26,7 @@ from app.models import (
 from app.services import add_service, instance_service, movie_gap_service
 from app.services.settings_service import SettingKey, set_setting
 
-COLLECTION = 8354
+COLLECTION = 85861
 HD = "http://radarr-hd.test:7878"
 UHD = "http://radarr-4k.test:7878"
 
@@ -49,7 +49,7 @@ def _library_with_gap(session: Session) -> None:
     """Owns Beverly Hills Cop; II and III are missing."""
     session.add(TmdbCollection(tmdb_collection_id=COLLECTION, name="Beverly Hills Cop Collection"))
     for position, (tmdb_id, title) in enumerate(
-        [(90, "Beverly Hills Cop"), (9836, "Beverly Hills Cop II"), (9558, "Beverly Hills Cop III")]
+        [(90, "Beverly Hills Cop"), (96, "Beverly Hills Cop II"), (306, "Beverly Hills Cop III")]
     ):
         session.add(
             TmdbCollectionMovie(
@@ -161,11 +161,11 @@ def test_no_instances_means_no_preference(session: Session) -> None:
 def test_a_film_already_in_radarr_is_not_a_gap(session: Session) -> None:
     _library_with_gap(session)
     instance = _instance(session, "HD", HD)
-    _cache(session, instance, 9836)
+    _cache(session, instance, 96)
 
     gaps = movie_gap_service.collections_with_gaps(session)
 
-    assert [m.tmdb_id for m in gaps[0].missing] == [9558]
+    assert [m.tmdb_id for m in gaps[0].missing] == [306]
 
 
 def test_instances_are_independent_by_default(session: Session) -> None:
@@ -174,11 +174,11 @@ def test_instances_are_independent_by_default(session: Session) -> None:
     _library_with_gap(session)
     hd = _instance(session, "HD", HD)
     fourk = _instance(session, "4K", UHD)
-    _cache(session, hd, 9836)
+    _cache(session, hd, 96)
 
     from_4k = movie_gap_service.collections_with_gaps(session, radarr_instance_id=fourk.id)
 
-    assert {m.tmdb_id for m in from_4k[0].missing} == {9836, 9558}
+    assert {m.tmdb_id for m in from_4k[0].missing} == {96, 306}
 
 
 def test_cross_instance_dedup_makes_any_instance_count(session: Session) -> None:
@@ -186,33 +186,33 @@ def test_cross_instance_dedup_makes_any_instance_count(session: Session) -> None
     _library_with_gap(session)
     hd = _instance(session, "HD", HD)
     fourk = _instance(session, "4K", UHD)
-    _cache(session, hd, 9836)
+    _cache(session, hd, 96)
     set_setting(session, SettingKey.CROSS_INSTANCE_DEDUP, "true")
     session.commit()
 
     from_4k = movie_gap_service.collections_with_gaps(session, radarr_instance_id=fourk.id)
 
-    assert [m.tmdb_id for m in from_4k[0].missing] == [9558]
+    assert [m.tmdb_id for m in from_4k[0].missing] == [306]
 
 
 def test_a_queued_film_counts_as_owned_when_hide_if_queued_is_on(session: Session) -> None:
     _library_with_gap(session)
     instance = _instance(session, "HD", HD, hide_if_queued=True)
-    _cache(session, instance, 9836, in_queue=True)
+    _cache(session, instance, 96, in_queue=True)
 
     gaps = movie_gap_service.collections_with_gaps(session)
 
-    assert [m.tmdb_id for m in gaps[0].missing] == [9558]
+    assert [m.tmdb_id for m in gaps[0].missing] == [306]
 
 
 def test_a_queued_film_still_shows_when_hide_if_queued_is_off(session: Session) -> None:
     _library_with_gap(session)
     instance = _instance(session, "HD", HD, hide_if_queued=False)
-    _cache(session, instance, 9836, in_queue=True)
+    _cache(session, instance, 96, in_queue=True)
 
     gaps = movie_gap_service.collections_with_gaps(session)
 
-    assert {m.tmdb_id for m in gaps[0].missing} == {9836, 9558}
+    assert {m.tmdb_id for m in gaps[0].missing} == {96, 306}
 
 
 def test_radarr_alone_does_not_pull_in_an_unrelated_franchise(session: Session) -> None:
@@ -240,17 +240,17 @@ def test_adding_records_activity_and_remembers_the_instance(session: Session) ->
                          default_root_folder="/movies")
     user = _user(session)
     responses.add(responses.GET, f"{HD}/api/v3/movie/lookup",
-                  json=[{"tmdbId": 9558, "title": "Beverly Hills Cop III"}])
+                  json=[{"tmdbId": 306, "title": "Beverly Hills Cop III"}])
     responses.add(responses.POST, f"{HD}/api/v3/movie",
-                  json={"id": 7, "tmdbId": 9558, "title": "Beverly Hills Cop III"})
-    responses.add(responses.GET, f"{HD}/api/v3/movie", json=[{"tmdbId": 9558, "title": "BHC III"}])
+                  json={"id": 7, "tmdbId": 306, "title": "Beverly Hills Cop III"})
+    responses.add(responses.GET, f"{HD}/api/v3/movie", json=[{"tmdbId": 306, "title": "BHC III"}])
     responses.add(responses.GET, f"{HD}/api/v3/queue", json={"records": []})
 
-    result = add_service.add_movie(session, instance=instance, tmdb_id=9558, user=user)
+    result = add_service.add_movie(session, instance=instance, tmdb_id=306, user=user)
 
     assert result.title == "Beverly Hills Cop III"
     entry = session.exec(select(ActivityLogEntry)).first()
-    assert entry.tmdb_id == 9558
+    assert entry.tmdb_id == 306
     assert entry.triggered_by == user.id
     assert entry.instance_id == instance.id
 
@@ -266,15 +266,15 @@ def test_a_successful_add_immediately_stops_being_a_gap(session: Session) -> Non
     instance = _instance(session, "HD", HD, default_quality_profile_id=1,
                          default_root_folder="/movies")
     responses.add(responses.GET, f"{HD}/api/v3/movie/lookup",
-                  json=[{"tmdbId": 9836, "title": "Beverly Hills Cop II"}])
-    responses.add(responses.POST, f"{HD}/api/v3/movie", json={"id": 7, "tmdbId": 9836})
-    responses.add(responses.GET, f"{HD}/api/v3/movie", json=[{"tmdbId": 9836, "title": "BHC II"}])
+                  json=[{"tmdbId": 96, "title": "Beverly Hills Cop II"}])
+    responses.add(responses.POST, f"{HD}/api/v3/movie", json={"id": 7, "tmdbId": 96})
+    responses.add(responses.GET, f"{HD}/api/v3/movie", json=[{"tmdbId": 96, "title": "BHC II"}])
     responses.add(responses.GET, f"{HD}/api/v3/queue", json={"records": []})
 
-    add_service.add_movie(session, instance=instance, tmdb_id=9836)
+    add_service.add_movie(session, instance=instance, tmdb_id=96)
 
     gaps = movie_gap_service.collections_with_gaps(session)
-    assert [m.tmdb_id for m in gaps[0].missing] == [9558]
+    assert [m.tmdb_id for m in gaps[0].missing] == [306]
 
 
 def test_adding_without_a_profile_is_refused_rather_than_guessed(session: Session) -> None:
@@ -283,7 +283,7 @@ def test_adding_without_a_profile_is_refused_rather_than_guessed(session: Sessio
     instance = _instance(session, "HD", HD, default_root_folder="/movies")
 
     with pytest.raises(add_service.AddFailed) as exc_info:
-        add_service.add_movie(session, instance=instance, tmdb_id=9558)
+        add_service.add_movie(session, instance=instance, tmdb_id=306)
 
     assert "quality profile" in str(exc_info.value)
 
@@ -292,7 +292,7 @@ def test_adding_without_a_root_folder_is_refused(session: Session) -> None:
     instance = _instance(session, "HD", HD, default_quality_profile_id=1)
 
     with pytest.raises(add_service.AddFailed) as exc_info:
-        add_service.add_movie(session, instance=instance, tmdb_id=9558)
+        add_service.add_movie(session, instance=instance, tmdb_id=306)
 
     assert "root folder" in str(exc_info.value)
 
@@ -304,7 +304,7 @@ def test_a_failed_add_records_no_activity(session: Session) -> None:
     responses.add(responses.GET, f"{HD}/api/v3/movie/lookup", json=[])
 
     with pytest.raises(add_service.AddFailed):
-        add_service.add_movie(session, instance=instance, tmdb_id=9558)
+        add_service.add_movie(session, instance=instance, tmdb_id=306)
 
     assert session.exec(select(ActivityLogEntry)).all() == []
 
@@ -317,14 +317,14 @@ def test_an_unreachable_instance_keeps_its_previous_cache(session: Session) -> N
     """Treating "couldn't ask" as "has nothing" would flood the gap list with films the user
     already owns -- worse than slightly stale data (technical challenge #15)."""
     instance = _instance(session, "HD", HD)
-    _cache(session, instance, 9836)
+    _cache(session, instance, 96)
     responses.add(responses.GET, f"{HD}/api/v3/movie", status=500)
 
     result = instance_service.refresh_instance_cache(session, instance)
 
     assert result.ok is False
     assert result.error
-    assert {row.tmdb_id for row in session.exec(select(RadarrMovie)).all()} == {9836}
+    assert {row.tmdb_id for row in session.exec(select(RadarrMovie)).all()} == {96}
 
 
 @responses.activate

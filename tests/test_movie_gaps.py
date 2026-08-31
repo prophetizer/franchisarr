@@ -26,7 +26,7 @@ from app.models import (
 )
 from app.services import movie_gap_service, scan_service
 
-COLLECTION = 8354
+COLLECTION = 85861
 
 
 def _own(session: Session, tmdb_id: int, title: str, **kwargs) -> LibraryItem:
@@ -76,22 +76,22 @@ def _user(session: Session) -> User:
 
 
 def test_a_partly_owned_collection_reports_what_is_missing(session: Session) -> None:
-    _collection(session, (90, "Beverly Hills Cop"), (9836, "Beverly Hills Cop II"),
-                (9558, "Beverly Hills Cop III"))
+    _collection(session, (90, "Beverly Hills Cop"), (96, "Beverly Hills Cop II"),
+                (306, "Beverly Hills Cop III"))
     _own(session, 90, "Beverly Hills Cop")
-    _own(session, 9836, "Beverly Hills Cop II")
+    _own(session, 96, "Beverly Hills Cop II")
 
     gaps = movie_gap_service.collections_with_gaps(session)
 
     assert len(gaps) == 1
-    assert [m.tmdb_id for m in gaps[0].missing] == [9558]
+    assert [m.tmdb_id for m in gaps[0].missing] == [306]
     assert len(gaps[0].owned) == 2
 
 
 def test_a_complete_collection_is_not_reported_as_a_gap(session: Session) -> None:
-    _collection(session, (90, "Beverly Hills Cop"), (9836, "Beverly Hills Cop II"))
+    _collection(session, (90, "Beverly Hills Cop"), (96, "Beverly Hills Cop II"))
     _own(session, 90, "Beverly Hills Cop")
-    _own(session, 9836, "Beverly Hills Cop II")
+    _own(session, 96, "Beverly Hills Cop II")
 
     assert movie_gap_service.collections_with_gaps(session) == []
     assert len(movie_gap_service.collection_gaps(session)) == 1, "still listed when asked for all"
@@ -99,7 +99,7 @@ def test_a_complete_collection_is_not_reported_as_a_gap(session: Session) -> Non
 
 def test_collections_you_own_nothing_from_are_not_suggested(session: Session) -> None:
     """Otherwise this becomes "every franchise on TMDb" rather than gaps in your own library."""
-    _collection(session, (90, "Beverly Hills Cop"), (9836, "Beverly Hills Cop II"))
+    _collection(session, (90, "Beverly Hills Cop"), (96, "Beverly Hills Cop II"))
 
     assert movie_gap_service.collection_gaps(session) == []
 
@@ -109,20 +109,20 @@ def test_collections_you_own_nothing_from_are_not_suggested(session: Session) ->
 
 def test_a_collection_exclude_hides_a_film_for_everyone(session: Session) -> None:
     """A TMDb data-quality correction: a re-release listed as a separate film."""
-    _collection(session, (90, "Beverly Hills Cop"), (9558, "Beverly Hills Cop III"))
+    _collection(session, (90, "Beverly Hills Cop"), (306, "Beverly Hills Cop III"))
     _own(session, 90, "Beverly Hills Cop")
-    session.add(CollectionExclude(tmdb_collection_id=COLLECTION, tmdb_movie_id=9558))
+    session.add(CollectionExclude(tmdb_collection_id=COLLECTION, tmdb_movie_id=306))
     session.commit()
 
     assert movie_gap_service.collections_with_gaps(session) == []
 
 
 def test_a_dismissal_hides_a_film_only_for_that_user(session: Session) -> None:
-    _collection(session, (90, "Beverly Hills Cop"), (9558, "Beverly Hills Cop III"))
+    _collection(session, (90, "Beverly Hills Cop"), (306, "Beverly Hills Cop III"))
     _own(session, 90, "Beverly Hills Cop")
     user = _user(session)
     session.add(
-        DismissedItem(user_id=user.id, item_type=ItemType.MOVIE.value, tmdb_id=9558)
+        DismissedItem(user_id=user.id, item_type=ItemType.MOVIE.value, tmdb_id=306)
     )
     session.commit()
 
@@ -134,9 +134,9 @@ def test_a_dismissal_hides_a_film_only_for_that_user(session: Session) -> None:
 
 def test_an_exclusion_survives_a_collection_refresh(session: Session) -> None:
     """Technical challenge #13: re-fetching the collection must not resurrect an exclusion."""
-    _collection(session, (90, "Beverly Hills Cop"), (9558, "Beverly Hills Cop III"))
+    _collection(session, (90, "Beverly Hills Cop"), (306, "Beverly Hills Cop III"))
     _own(session, 90, "Beverly Hills Cop")
-    session.add(CollectionExclude(tmdb_collection_id=COLLECTION, tmdb_movie_id=9558))
+    session.add(CollectionExclude(tmdb_collection_id=COLLECTION, tmdb_movie_id=306))
     session.commit()
 
     # Simulate the refresh: members are replaced wholesale, exactly as _cache_collection does.
@@ -144,7 +144,7 @@ def test_an_exclusion_survives_a_collection_refresh(session: Session) -> None:
         session.delete(row)
     session.delete(session.get(TmdbCollection, COLLECTION))
     session.commit()
-    _collection(session, (90, "Beverly Hills Cop"), (9558, "Beverly Hills Cop III"))
+    _collection(session, (90, "Beverly Hills Cop"), (306, "Beverly Hills Cop III"))
 
     assert movie_gap_service.collections_with_gaps(session) == []
 
@@ -191,7 +191,7 @@ def test_a_film_with_no_release_date_counts_as_upcoming(session: Session) -> Non
 
 
 def test_a_released_film_is_still_reported_alongside_upcoming_ones(session: Session) -> None:
-    _collection(session, (90, "Beverly Hills Cop"), (9558, "Beverly Hills Cop III"))
+    _collection(session, (90, "Beverly Hills Cop"), (306, "Beverly Hills Cop III"))
     session.add(
         TmdbCollectionMovie(
             collection_id=COLLECTION, tmdb_movie_id=9999, title="Beverly Hills Cop IV",
@@ -232,14 +232,14 @@ def test_a_film_released_today_counts_as_available(session: Session) -> None:
 
 def test_an_unconfirmed_match_does_not_count_as_owned(session: Session) -> None:
     """A guess must not be able to hide a real gap by pretending you own something."""
-    _collection(session, (90, "Beverly Hills Cop"), (9836, "Beverly Hills Cop II"))
+    _collection(session, (90, "Beverly Hills Cop"), (96, "Beverly Hills Cop II"))
     _own(session, 90, "Beverly Hills Cop")
-    _own(session, 9836, "Beverly Hills Cop II", needs_review=True,
+    _own(session, 96, "Beverly Hills Cop II", needs_review=True,
          match_source=MatchSource.TITLE.value, match_confidence=0.7)
 
     gaps = movie_gap_service.collections_with_gaps(session)
 
-    assert [m.tmdb_id for m in gaps[0].missing] == [9836]
+    assert [m.tmdb_id for m in gaps[0].missing] == [96]
 
 
 def test_items_needing_review_are_listed_rather_than_silently_dropped(session: Session) -> None:
@@ -282,16 +282,16 @@ def test_a_scan_populates_the_snapshot_and_the_cache(
     responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/90", json={
         "id": 90, "title": "Beverly Hills Cop", "release_date": "1984-12-05",
         "belongs_to_collection": {"id": COLLECTION, "name": "Beverly Hills Cop Collection"}})
-    responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/9836", json={
-        "id": 9836, "title": "Beverly Hills Cop II", "release_date": "1987-05-20",
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/96", json={
+        "id": 96, "title": "Beverly Hills Cop II", "release_date": "1987-05-18",
         "belongs_to_collection": {"id": COLLECTION, "name": "Beverly Hills Cop Collection"}})
     responses.add(responses.GET, f"{TMDB_BASE_URL}/search/movie", json={"results": []})
     responses.add(responses.GET, f"{TMDB_BASE_URL}/collection/{COLLECTION}", json={
         "id": COLLECTION, "name": "Beverly Hills Cop Collection",
         "parts": [
             {"id": 90, "title": "Beverly Hills Cop", "release_date": "1984-12-05"},
-            {"id": 9836, "title": "Beverly Hills Cop II", "release_date": "1987-05-20"},
-            {"id": 9558, "title": "Beverly Hills Cop III", "release_date": "1994-05-25"},
+            {"id": 96, "title": "Beverly Hills Cop II", "release_date": "1987-05-18"},
+            {"id": 306, "title": "Beverly Hills Cop III", "release_date": "1994-05-24"},
         ]})
 
     session.add(IncludedLibrary(plex_library_key="1", plex_library_name="Movies",
@@ -336,7 +336,7 @@ def test_a_rejected_tmdb_key_stops_the_scan_instead_of_retrying_every_film(
     # Every TMDb movie lookup is rejected. There are two matched films in the fixture, so a
     # non-aborting scan would make two calls; aborting makes one.
     responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/90", status=401)
-    responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/9836", status=401)
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/96", status=401)
     responses.add(responses.GET, f"{TMDB_BASE_URL}/search/movie", json={"results": []})
 
     session.add(IncludedLibrary(plex_library_key="1", plex_library_name="Movies",

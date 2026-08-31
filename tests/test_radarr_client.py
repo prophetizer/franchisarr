@@ -117,14 +117,14 @@ def test_movies_reports_what_the_instance_tracks() -> None:
         f"{URL}/api/v3/movie",
         json=[
             {"tmdbId": 90, "title": "Beverly Hills Cop", "hasFile": True, "monitored": True},
-            {"tmdbId": 9836, "title": "Beverly Hills Cop II", "hasFile": False, "monitored": True},
+            {"tmdbId": 96, "title": "Beverly Hills Cop II", "hasFile": False, "monitored": True},
             {"title": "No tmdb id here"},
         ],
     )
 
     movies = _client().movies()
 
-    assert {m.tmdb_id for m in movies} == {90, 9836}
+    assert {m.tmdb_id for m in movies} == {90, 96}
     assert movies[0].has_file is True
 
 
@@ -133,10 +133,10 @@ def test_the_queue_is_read_from_the_records_wrapper() -> None:
     responses.add(
         responses.GET,
         f"{URL}/api/v3/queue",
-        json={"records": [{"movie": {"tmdbId": 9558}}, {"tmdbId": 12345}]},
+        json={"records": [{"movie": {"tmdbId": 306}}, {"tmdbId": 12345}]},
     )
 
-    assert _client().queued_tmdb_ids() == {9558, 12345}
+    assert _client().queued_tmdb_ids() == {306, 12345}
 
 
 @responses.activate
@@ -156,15 +156,15 @@ def test_add_movie_posts_what_radarr_itself_described() -> None:
     responses.add(
         responses.GET,
         f"{URL}/api/v3/movie/lookup",
-        json=[{"tmdbId": 9558, "title": "Beverly Hills Cop III", "titleSlug": "bhc-iii",
+        json=[{"tmdbId": 306, "title": "Beverly Hills Cop III", "titleSlug": "bhc-iii",
                "year": 1994, "images": []}],
     )
     responses.add(responses.POST, f"{URL}/api/v3/movie",
-                  json={"id": 7, "tmdbId": 9558, "title": "Beverly Hills Cop III"})
+                  json={"id": 7, "tmdbId": 306, "title": "Beverly Hills Cop III"})
 
-    added = _client().add_movie(9558, quality_profile_id=1, root_folder_path="/movies")
+    added = _client().add_movie(306, quality_profile_id=1, root_folder_path="/movies")
 
-    assert added.tmdb_id == 9558
+    assert added.tmdb_id == 306
     posted = responses.calls[-1].request.body
     import json as _json
 
@@ -179,10 +179,10 @@ def test_add_movie_posts_what_radarr_itself_described() -> None:
 @responses.activate
 def test_search_on_add_can_be_turned_off() -> None:
     responses.add(responses.GET, f"{URL}/api/v3/movie/lookup",
-                  json=[{"tmdbId": 9558, "title": "X"}])
-    responses.add(responses.POST, f"{URL}/api/v3/movie", json={"id": 7, "tmdbId": 9558})
+                  json=[{"tmdbId": 306, "title": "X"}])
+    responses.add(responses.POST, f"{URL}/api/v3/movie", json={"id": 7, "tmdbId": 306})
 
-    _client().add_movie(9558, quality_profile_id=1, root_folder_path="/m", search_on_add=False)
+    _client().add_movie(306, quality_profile_id=1, root_folder_path="/m", search_on_add=False)
 
     import json as _json
 
@@ -195,11 +195,11 @@ def test_adding_something_radarr_already_has_is_its_own_error() -> None:
     responses.add(
         responses.GET,
         f"{URL}/api/v3/movie/lookup",
-        json=[{"id": 42, "tmdbId": 9558, "title": "Beverly Hills Cop III"}],
+        json=[{"id": 42, "tmdbId": 306, "title": "Beverly Hills Cop III"}],
     )
 
     with pytest.raises(MovieAlreadyAddedError):
-        _client().add_movie(9558, quality_profile_id=1, root_folder_path="/movies")
+        _client().add_movie(306, quality_profile_id=1, root_folder_path="/movies")
 
 
 @responses.activate

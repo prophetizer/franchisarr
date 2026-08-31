@@ -256,7 +256,7 @@ def test_adding_without_any_instance_configured_is_a_clear_conflict(
     client: TestClient, api_key: str
 ) -> None:
     response = client.post(
-        f"{BASE}/api/radarr/add", headers={API_KEY_HEADER: api_key}, json={"tmdb_id": 9558}
+        f"{BASE}/api/radarr/add", headers={API_KEY_HEADER: api_key}, json={"tmdb_id": 306}
     )
 
     assert response.status_code == 409
@@ -276,13 +276,13 @@ def test_adding_falls_back_to_the_preferred_instance(client: TestClient, api_key
         session.commit()
 
     responses.add(responses.GET, f"{RADARR}/api/v3/movie/lookup",
-                  json=[{"tmdbId": 9558, "title": "Beverly Hills Cop III"}])
-    responses.add(responses.POST, f"{RADARR}/api/v3/movie", json={"id": 1, "tmdbId": 9558})
+                  json=[{"tmdbId": 306, "title": "Beverly Hills Cop III"}])
+    responses.add(responses.POST, f"{RADARR}/api/v3/movie", json={"id": 1, "tmdbId": 306})
     responses.add(responses.GET, f"{RADARR}/api/v3/movie", json=[])
     responses.add(responses.GET, f"{RADARR}/api/v3/queue", json={"records": []})
 
     response = client.post(
-        f"{BASE}/api/radarr/add", headers={API_KEY_HEADER: api_key}, json={"tmdb_id": 9558}
+        f"{BASE}/api/radarr/add", headers={API_KEY_HEADER: api_key}, json={"tmdb_id": 306}
     )
 
     assert response.status_code == 200

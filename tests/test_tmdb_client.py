@@ -108,13 +108,13 @@ def test_get_movie_extracts_the_collection() -> None:
             "id": 90,
             "title": "Beverly Hills Cop",
             "release_date": "1984-12-05",
-            "belongs_to_collection": {"id": 8354, "name": "Beverly Hills Cop Collection"},
+            "belongs_to_collection": {"id": 85861, "name": "Beverly Hills Cop Collection"},
         },
     )
 
     movie = _client().get_movie(90)
 
-    assert movie.collection_id == 8354
+    assert movie.collection_id == 85861
     assert movie.collection_name == "Beverly Hills Cop Collection"
     assert movie.year == 1984
 
@@ -135,21 +135,21 @@ def test_a_standalone_film_has_no_collection() -> None:
 def test_get_collection_returns_its_members_in_order() -> None:
     responses.add(
         responses.GET,
-        f"{TMDB_BASE_URL}/collection/8354",
+        f"{TMDB_BASE_URL}/collection/85861",
         json={
-            "id": 8354,
+            "id": 85861,
             "name": "Beverly Hills Cop Collection",
             "parts": [
                 {"id": 90, "title": "Beverly Hills Cop", "release_date": "1984-12-05"},
-                {"id": 9836, "title": "Beverly Hills Cop II", "release_date": "1987-05-20"},
-                {"id": 9558, "title": "Beverly Hills Cop III", "release_date": "1994-05-25"},
+                {"id": 96, "title": "Beverly Hills Cop II", "release_date": "1987-05-18"},
+                {"id": 306, "title": "Beverly Hills Cop III", "release_date": "1994-05-24"},
             ],
         },
     )
 
-    collection = _client().get_collection(8354)
+    collection = _client().get_collection(85861)
 
-    assert [m.tmdb_id for m in collection.movies] == [90, 9836, 9558]
+    assert [m.tmdb_id for m in collection.movies] == [90, 96, 306]
     assert collection.movies[0].year == 1984
 
 
