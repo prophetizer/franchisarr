@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- TV spin-offs: shows related to ones you already watch that aren't in your library. Because TMDb
+  has no spin-off data to import, the mapping list starts empty and grows as you confirm
+  suggestions — the app says so rather than looking broken.
+- A "possible spin-offs" search that finds shows named after one you own (like *NCIS: Los
+  Angeles*). These are guesses, shown separately from confirmed mappings, and nothing is ever
+  added from them without you saying yes. Spin-offs that don't carry the parent's name — Chicago
+  Fire and Chicago P.D. — can't be found this way, and the app tells you so.
+- `scan tv`, `spinoffs` and `map-spinoff` command line commands.
 - Web UI for the movie side: a collections-with-gaps overview, a per-collection view separating
   what you own, what's missing and what hasn't been released yet, and an add dialog that reads
   quality profiles and root folders live from the chosen Radarr instance.
