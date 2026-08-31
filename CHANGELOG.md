@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Web UI for the movie side: a collections-with-gaps overview, a per-collection view separating
+  what you own, what's missing and what hasn't been released yet, and an add dialog that reads
+  quality profiles and root folders live from the chosen Radarr instance.
+- Two distinct ways to hide a film, because they mean different things: "not interested" is
+  yours alone, while "not part of this collection" corrects TMDb's data for everyone and applies
+  only within that collection.
+- **theme.park theme support.** Paste any theme-options stylesheet URL — from theme-park.dev or
+  your own self-hosted copy — into Settings and the whole UI takes on that theme. Off by default;
+  when it's off, nothing is fetched from anywhere but your own server.
 - One-click add to Radarr, with support for multiple instances. Films are added monitored and
   searched immediately, matching what you'd get adding through Radarr's own UI. Quality profiles
   and root folders are read live from the instance at add time, and an instance that can't be
