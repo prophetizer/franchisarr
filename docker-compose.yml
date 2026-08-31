@@ -4,9 +4,27 @@ services:
     # Once published: image: ghcr.io/<you>/franchisarr:latest
     container_name: franchisarr
     restart: unless-stopped
+    environment:
+      # Match these to the user that owns your config directory (`id -u`, `id -g`).
+      PUID: 1000
+      PGID: 1000
+      # Scheduled scans run in this timezone.
+      TZ: Etc/UTC
+      # Everything else can be set here or in the app's own Settings page. See .env.example.
+      # BASE_URL: /franchisarr
     env_file:
       - .env
     ports:
       - "8000:8000"
     volumes:
       - ./config:/config
+
+    # If Radarr/Sonarr run in Docker too, put them on a shared network and use their container
+    # names as URLs (http://radarr:7878). That is also the way past a login proxy in front of
+    # them: an API key cannot get through a proxy that wants a browser session.
+    # networks:
+    #   - arrs
+
+# networks:
+#   arrs:
+#     external: true

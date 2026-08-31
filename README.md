@@ -1,31 +1,117 @@
 # Franchisarr
 
-Franchisarr scans your Plex library and finds:
+Franchisarr looks at your Plex library and finds two things you probably want and don't have:
 
-- **Movies missing from a collection/franchise** you already own part of (e.g. you have *Beverly
-  Hills Cop* and *Beverly Hills Cop II* but not *III*) — sourced from TMDb Collections — with
-  one-click add to Radarr.
-- **TV spin-offs of shows you already have** that you don't own yet (e.g. you have *NCIS* but not
-  *NCIS: Los Angeles*) — from a curated, user-extensible mapping — with one-click add to Sonarr.
+- **Films missing from collections you already own part of.** You have *Beverly Hills Cop* and
+  *II* but not *III* — one click sends it to Radarr.
+- **Spin-offs of shows you already watch.** You have *NCIS* but not *NCIS: Los Angeles* — one
+  click sends it to Sonarr.
 
-Franchisarr is a self-hosted companion for the *arr stack: Plex + Radarr + Sonarr, with support for
-multiple Radarr/Sonarr instances, Plex sign-in, scheduled scans with webhook notifications, and a
-web UI plus a CLI.
+It supports multiple Radarr and Sonarr instances, signs you in with Plex, scans on a schedule,
+and can shout into Discord or Slack when it finds something new. There's a web UI and a CLI.
 
-**Status:** early development — not yet ready to run. This README will grow into real install docs
-as Phase 1+ lands. See `PROJECT_PLAN.md` (if present in your checkout) for the full design and
-build-phase plan.
+**Status:** feature-complete and running against a real library, but not yet released. Version
+`0.1.0` is the first tag.
 
-## Planned quick start (not yet functional)
+## Quick start
 
 ```bash
 git clone <this-repo>
 cd franchisarr
-cp .env.example .env   # fill in PLEX_URL, TMDB_API_KEY, etc.
+cp .env.example .env      # at minimum: PLEX_URL, PLEX_TOKEN, TMDB_API_KEY, ADMIN_* 
 docker compose up -d
 ```
 
-Then open `http://localhost:8000` (or your configured `BASE_URL`) and follow the setup wizard.
+Then open <http://localhost:8000>, sign in, choose which Plex libraries to scan, and run a scan.
+
+You need a **TMDb API key** — the free v3 one from
+[themoviedb.org/settings/api](https://www.themoviedb.org/settings/api). Note it's the *shorter*
+value on that page; the v4 Read Access Token won't work, and Franchisarr will tell you so if you
+paste it by mistake.
+
+## Configuration
+
+Everything can be set in the app's Settings page. Environment variables are a convenience for
+docker-compose deployments and are only read on first boot — after that the database wins, so
+changing a variable later has no effect. See [`.env.example`](.env.example) for the full list.
+
+| Variable | Purpose |
+|---|---|
+| `PLEX_URL`, `PLEX_TOKEN` | Your Plex server |
+| `TMDB_API_KEY` | Your own free v3 key |
+| `RADARR_URL`, `RADARR_API_KEY` | Optional first Radarr; more can be added in the UI |
+| `SONARR_URL`, `SONARR_API_KEY` | Optional first Sonarr |
+| `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Fallback login, created on first boot only |
+| `BASE_URL` | e.g. `/franchisarr` when behind a reverse proxy subpath |
+| `SCAN_SCHEDULE_CRON` | e.g. `0 3 * * *`; empty disables scheduled scans |
+| `TZ` | Which timezone the schedule runs in |
+| `PUID`, `PGID` | Ownership of the config volume, as in the linuxserver.io images |
+
+### If Radarr or Sonarr sit behind a login proxy
+
+Authelia, Authentik, Cloudflare Access and friends answer API requests with a login page, and an
+API key can't get past one. Franchisarr will say so rather than blaming your API key. Either:
+
+- point it at the internal address (`http://radarr:7878`) — put both on the same Docker network
+  and use the container name; or
+- add a bypass rule in the proxy for `/api` so API-key requests are let through.
+
+## Signing in
+
+**Sign in with Plex** is the main route — Franchisarr never sees your Plex password. Only accounts
+that can actually reach *your* Plex server are admitted, so having a Plex account isn't enough;
+the server's owner becomes an administrator and people you share with get ordinary accounts.
+
+The local admin account from `ADMIN_USERNAME`/`ADMIN_PASSWORD` is the fallback for when Plex isn't
+configured yet or plex.tv is unreachable.
+
+## Command line
+
+The CLI talks to Franchisarr's own API, so it works through `docker exec` or from anywhere that
+can reach the app.
+
+```bash
+export FRANCHISARR_URL=http://localhost:8000
+export FRANCHISARR_API_KEY=...          # Settings, or `cli.py api-key`
+python cli.py scan movies
+python cli.py gaps
+python cli.py add 176 --instance 1
+```
+
+`scan movies` / `scan tv` walk your libraries; `gaps` and `spinoffs` list what's missing;
+`review` shows matches that need confirming; `add`, `add-show` and `add-collection` send things to
+Radarr/Sonarr; `instances` and `activity` inspect the rest.
+
+## Theming
+
+Franchisarr ships dark by default with a light toggle, and supports
+[theme.park](https://theme-park.dev) themes: paste any theme-options stylesheet URL into Settings
+and the whole UI takes it on. Off by default — when it's off, nothing is fetched from anywhere but
+your own server. A self-hosted theme.park works too; it's a URL field, not a fixed list.
+
+## Backing up
+
+Settings has a config download. **The full one contains your Plex token and every API key in plain
+text** — treat it like a password. There's a redacted download alongside it with those blanked
+out; that's the one to paste into a forum thread when asking for help.
+
+## Troubleshooting: items aren't being matched
+
+Franchisarr can only work with a Plex item if it can resolve it to a TMDb ID. To see what your own
+libraries look like:
+
+```bash
+export PLEX_URL=http://your-plex-host:32400
+export PLEX_TOKEN=your-plex-token
+python scripts/plex_guid_audit.py
+```
+
+It's read-only. For each library it reports how many items carry a TMDb ID, which GUID formats are
+in use, and a sample of what didn't resolve. Libraries of home videos, concert rips or test clips
+will legitimately show 0% — untick those in Franchisarr rather than trying to match them.
+
+If it ends with an `UNRECOGNISED AGENTS` section, please report it: your library uses a GUID format
+Franchisarr doesn't parse yet, and that section says exactly what's needed.
 
 ## Development
 
@@ -36,59 +122,9 @@ pytest
 uvicorn app.main:app --reload
 ```
 
-## Command line
-
-The CLI is an HTTP client against Franchisarr's own API, so it works over `docker exec` or from
-anywhere that can reach the app:
-
-```bash
-export FRANCHISARR_URL=http://localhost:8000   # include the base URL path if you use one
-export FRANCHISARR_API_KEY=...                 # generate one from Settings, or `cli.py api-key`
-python cli.py scan movies
-python cli.py gaps
-python cli.py review
-```
-
-`scan movies` walks your enabled Plex libraries and refreshes collection data from TMDb; `gaps`
-lists what's missing; `review` shows matches that need confirming and items nothing matched.
-
-## Troubleshooting: items aren't being matched
-
-Franchisarr can only work with a Plex item if it can resolve that item to a TMDb ID. Plex stores
-those IDs differently depending on which agent matched the item, and libraries matched by an
-unusual or very old agent may not resolve.
-
-To see exactly what your own libraries look like:
-
-```bash
-export PLEX_URL=http://your-plex-host:32400
-export PLEX_TOKEN=your-plex-token
-python scripts/plex_guid_audit.py
-```
-
-It reads `PLEX_URL`/`PLEX_TOKEN` from a local `.env` if they aren't already set, so an existing
-docker-compose setup needs no extra configuration. The script is read-only — it writes nothing to
-Plex and nothing to Franchisarr's database.
-
-For each library it reports how many items carry a TMDb ID, which GUID formats are in use, and a
-sample of items that didn't resolve. Useful options: `--library "TV Shows"` to check just one
-(repeatable), and `--samples N` to change how many examples are shown.
-
-A healthy library looks like this:
-
-```
-=== Movies  [movie]  agent=tv.plex.agents.movie
-    3427 items in 27.3s
-    TMDb id: 3425 (99.9%) | other id only: 1 | no id at all: 1
-```
-
-Libraries of home videos, concert rips or test clips will legitimately show 0% — nothing in them
-exists on TMDb. Untick those in Franchisarr's library selection rather than trying to match them.
-
-**If the script ends with an `UNRECOGNISED AGENTS` section, please report it** (it also exits
-non-zero, so it can gate a check). That means your library uses a GUID format Franchisarr doesn't
-parse yet. Include that section's output in the issue — adding support is usually a small,
-contained change, and the script tells us exactly what's needed.
+Tests never touch the network — Plex, TMDb, Radarr and Sonarr are all mocked. See `docs/DEVELOPMENT.md` for
+the conventions this codebase holds itself to, and `PROJECT_PLAN.md` for the design and the
+28 documented technical challenges behind it.
 
 ## License
 

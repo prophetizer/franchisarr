@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Activity page listing everything Franchisarr has added, what triggered it, and which instance
+  it went to — with a note that what happens after the add is Radarr's or Sonarr's business.
+- Radarr and Sonarr instances can now be added, tested, made default and removed from the UI. API
+  keys are shown masked and never appear in the page source.
+- Config backup and restore, in two flavours: a full download that can actually restore an
+  install, and a redacted one safe to share when asking for help.
+- Light/dark toggle, remembered per browser. Dark stays the default.
+- A banner when a newer Franchisarr is released. The check sends nothing about your install and
+  stays quiet if it can't reach the release list.
+- Change-password screen for the local admin account, which signs out every other browser.
 - Scheduled scans on a cron schedule you set in Settings, running in the container's local time
   (set `TZ`). A scan that's still running when the next is due is not started twice.
 - Webhook notifications when a scheduled scan finds something new — generic JSON, Discord or
