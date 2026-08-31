@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Activity — Franchisarr{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>Activity</h1>
+  <p>Everything Franchisarr has added, and what asked it to.</p>
+</hgroup>
+
+{% if not entries %}
+  <article>
+    <header>Nothing yet</header>
+    <p>Adds you make will be listed here.</p>
+  </article>
+{% else %}
+  <table>
+    <thead>
+      <tr><th>When</th><th>What</th><th>Where</th><th>Triggered by</th></tr>
+    </thead>
+    <tbody>
+      {% for entry in entries %}
+        <tr>
+          <td><small>{{ entry.when }}</small></td>
+          <td>{{ entry.title }} <small class="muted">({{ entry.item_type }})</small></td>
+          <td><small class="muted">{{ entry.instance }}</small></td>
+          <td><small class="muted">{{ entry.who }}</small></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <nav>
+    {% if page > 1 %}
+      <a href="{{ url('/activity?page=' ~ (page - 1)) }}" role="button" class="secondary">← Newer</a>
+    {% endif %}
+    {% if has_more %}
+      <a href="{{ url('/activity?page=' ~ (page + 1)) }}" role="button" class="secondary">Older →</a>
+    {% endif %}
+  </nav>
+
+  <p><small class="muted">
+    {# Technical challenge #24: be explicit that this isn't download tracking. #}
+    Franchisarr records the moment it asked Radarr or Sonarr to add something. What happened
+    afterwards — grabbed, downloaded, imported, failed — is that app's business, and its own
+    history page tells that story far better than a copy here would.
+  </small></p>
+{% endif %}
+{% endblock %}

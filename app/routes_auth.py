@@ -185,3 +185,67 @@ def plex_poll(request: Request, session: DbSession, next: Annotated[str, Form()]
     _set_session_cookie(response, session_token)
     response.delete_cookie(PIN_COOKIE, path=_cookie_kwargs()["path"])
     return response
+
+
+@router.get("/password", response_class=HTMLResponse)
+def password_form(request: Request, session: DbSession, user: CurrentUser, changed: bool = False):
+    """Change the local admin password.
+
+    Only meaningful for the local account: a Plex-authenticated user's password lives at
+    plex.tv and Franchisarr has never seen it.
+    """
+    if user is None:
+        return RedirectResponse(_url("/login"), status_code=status.HTTP_303_SEE_OTHER)
+
+    return get_templates().TemplateResponse(
+        request,
+        "password.html",
+        {"user": user, "changed": changed, "is_local": bool(user.local_username)},
+    )
+
+
+@router.post("/password", response_class=HTMLResponse)
+def password_change(
+    request: Request,
+    session: DbSession,
+    user: CurrentUser,
+    current_password: Annotated[str, Form()] = "",
+    new_password: Annotated[str, Form()] = "",
+    confirm_password: Annotated[str, Form()] = "",
+):
+    if user is None:
+        return RedirectResponse(_url("/login"), status_code=status.HTTP_303_SEE_OTHER)
+
+    from app.auth.local_admin import authenticate_local
+    from app.auth.passwords import hash_password
+    from app.auth.sessions import delete_sessions_for_user
+
+    def fail(message: str):
+        return get_templates().TemplateResponse(
+            request,
+            "password.html",
+            {"user": user, "error": message, "is_local": bool(user.local_username)},
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if not user.local_username:
+        return fail("This account signs in with Plex, so there's no password here to change.")
+    if authenticate_local(session, user.local_username, current_password) is None:
+        return fail("That isn't your current password.")
+    if len(new_password) < 8:
+        return fail("Use at least 8 characters.")
+    if new_password != confirm_password:
+        return fail("The two new passwords don't match.")
+
+    user.password_hash = hash_password(new_password)
+    session.add(user)
+    session.commit()
+
+    # Every other session belonged to whoever knew the old password. Changing it should end
+    # them, which is the entire reason delete_sessions_for_user exists.
+    delete_sessions_for_user(session, user.id)
+
+    token = create_session(session, user)
+    response = RedirectResponse(_url("/password?changed=1"), status_code=status.HTTP_303_SEE_OTHER)
+    _set_session_cookie(response, token)
+    return response

@@ -1,0 +1,5 @@
+{% if ok %}
+  <small class="notice-good">Reachable — version {{ version }}</small>
+{% else %}
+  <small class="notice-bad">{{ error }}</small>
+{% endif %}

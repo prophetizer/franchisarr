@@ -14,10 +14,10 @@ from __future__ import annotations
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Form, HTTPException, Request, status
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from app.auth.dependencies import DbSession, RequiredUser
+from app.auth.dependencies import AdminUser, DbSession, RequiredUser
 from app.clients.radarr_client import RadarrError
 from app.config import get_settings
 from app.models import CollectionExclude, DismissedItem, ItemType, TmdbCollection
@@ -215,6 +215,19 @@ def submit_add(
 # ---------------------------------------------------------------------- settings
 
 
+def _update_status():
+    """Cached so the settings page doesn't call out on every render."""
+    from app.services import update_checker
+
+    global _UPDATE_CACHE
+    if _UPDATE_CACHE is None:
+        _UPDATE_CACHE = update_checker.check()
+    return _UPDATE_CACHE
+
+
+_UPDATE_CACHE = None
+
+
 def _settings_context(session, user, **extra) -> dict:
     """One place that assembles the settings page, so a new field can't be added to the template
     and forgotten in one of the handlers that renders it."""
@@ -234,6 +247,8 @@ def _settings_context(session, user, **extra) -> dict:
         "webhook_formats": [f.value for f in WebhookFormat],
         "saved": False,
         "error": None,
+        "import_note": None,
+        "update": _update_status(),
     }
     context.update(extra)
     return context
@@ -365,3 +380,118 @@ def trigger_scan(request: Request, session: DbSession, user: RequiredUser):
         session, PlexClient(plex_url, plex_token), TmdbClient(tmdb_key)
     )
     return RedirectResponse(_url("/collections"), status_code=status.HTTP_303_SEE_OTHER)
+
+
+# ---------------------------------------------------------------------- activity log
+
+
+@router.get("/activity", response_class=HTMLResponse)
+def activity_page(request: Request, session: DbSession, user: RequiredUser, page: int = 1):
+    """What Franchisarr added, newest first."""
+    from app.models import RadarrInstance, SonarrInstance, User
+    from app.services import activity_log
+
+    page = max(1, page)
+    per_page = 50
+    entries = activity_log.recent(session, limit=per_page + 1, offset=(page - 1) * per_page)
+    has_more = len(entries) > per_page
+
+    rows = []
+    for entry in entries[:per_page]:
+        if entry.trigger_source == "scheduled":
+            who = "Scheduled scan"
+        elif entry.triggered_by is None:
+            # NULL with trigger_source='manual' means the account was deleted, not the scheduler.
+            who = "A deleted account"
+        else:
+            account = session.get(User, entry.triggered_by)
+            who = (account.plex_username or account.local_username) if account else "Unknown"
+
+        model = RadarrInstance if entry.item_type == "movie" else SonarrInstance
+        instance = session.get(model, entry.instance_id) if entry.instance_id else None
+
+        rows.append({
+            "when": entry.timestamp.strftime("%Y-%m-%d %H:%M"),
+            "title": entry.title,
+            "item_type": entry.item_type,
+            "instance": instance.name if instance else "—",
+            "who": who,
+        })
+
+    return get_templates().TemplateResponse(
+        request,
+        "activity.html",
+        {"user": user, "entries": rows, "page": page, "has_more": has_more},
+    )
+
+
+# ---------------------------------------------------------------------- config backup
+
+
+@router.get("/settings/export")
+def export_config(session: DbSession, user: AdminUser, redact: bool = False):
+    """Download the configuration as JSON."""
+    import json
+
+    from fastapi.responses import Response
+
+    from app.services import config_backup
+
+    document = config_backup.export_config(session, redact=redact)
+    suffix = "-redacted" if redact else ""
+    return Response(
+        content=json.dumps(document, indent=2),
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f'attachment; filename="franchisarr-config{suffix}.json"'
+        },
+    )
+
+
+@router.post("/settings/import", response_class=HTMLResponse)
+async def import_config(
+    request: Request,
+    session: DbSession,
+    user: AdminUser,
+    backup: Annotated[UploadFile, File()],
+    replace: Annotated[str, Form()] = "",
+):
+    import json
+
+    from app.services import config_backup
+
+    try:
+        document = json.loads((await backup.read()).decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return get_templates().TemplateResponse(
+            request,
+            "settings.html",
+            _settings_context(session, user, error="That file isn't valid JSON."),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        counts = config_backup.import_config(session, document, replace=bool(replace))
+    except config_backup.InvalidBackup as exc:
+        return get_templates().TemplateResponse(
+            request,
+            "settings.html",
+            _settings_context(session, user, error=str(exc)),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    note = (
+        f"Imported {counts['settings']} setting(s), {counts['radarr']} Radarr and "
+        f"{counts['sonarr']} Sonarr instance(s), {counts['mappings']} mapping(s)."
+    )
+    if counts["already_present"]:
+        note += f" {counts['already_present']} item(s) were already present and left alone."
+    if counts["skipped_redacted"]:
+        note += (
+            f" {counts['skipped_redacted']} item(s) were skipped because the export was "
+            f"redacted — those need entering by hand."
+        )
+
+    return get_templates().TemplateResponse(
+        request, "settings.html", _settings_context(session, user, saved=True, import_note=note)
+    )

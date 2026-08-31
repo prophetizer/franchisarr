@@ -133,7 +133,8 @@ class DismissedItem(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("user_id", "item_type", "tmdb_id", name="uq_dismissed_item"),)
 
     id: int | None = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", index=True)
+    # CASCADE: a dismiss list is one person's preference and means nothing without them.
+    user_id: int = Field(foreign_key="users.id", ondelete="CASCADE", index=True)
     item_type: str
     tmdb_id: int = Field(index=True)
     created_at: datetime = Field(default_factory=utcnow)
@@ -155,7 +156,10 @@ class SpinoffMapping(SQLModel, table=True):
     source: str = Field(default=MappingSource.LOCAL.value)
     confidence: str = Field(default=MappingConfidence.CONFIRMED.value)
     origin_ref: str | None = Field(default=None)
-    added_by_user_id: int | None = Field(default=None, foreign_key="users.id")
+    # SET NULL: the mapping is shared household data and outlives whoever contributed it.
+    added_by_user_id: int | None = Field(
+        default=None, foreign_key="users.id", ondelete="SET NULL"
+    )
     created_at: datetime = Field(default_factory=utcnow)
 
 
@@ -171,7 +175,11 @@ class CollectionExclude(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     tmdb_collection_id: int = Field(index=True)
     tmdb_movie_id: int = Field(index=True)
-    added_by_user_id: int | None = Field(default=None, foreign_key="users.id")
+    # SET NULL: an exclusion is a correction to TMDb's data, not a personal preference, so it
+    # must survive the account that made it.
+    added_by_user_id: int | None = Field(
+        default=None, foreign_key="users.id", ondelete="SET NULL"
+    )
     created_at: datetime = Field(default_factory=utcnow)
 
 
@@ -401,5 +409,12 @@ class ActivityLogEntry(SQLModel, table=True):
     tmdb_id: int = Field(index=True)
     title: str
     instance_id: int | None = Field(default=None)
-    triggered_by: int | None = Field(default=None, foreign_key="users.id")
+    # SET NULL is safe here despite NULL also meaning "a scheduled scan did this", because
+    # `trigger_source` already carries that distinction: NULL with trigger_source='scheduled' is
+    # the scheduler, NULL with 'manual' is a person whose account has since been deleted. Without
+    # that second column this would have to be RESTRICT, and deleting a user would be blocked by
+    # their own history.
+    triggered_by: int | None = Field(
+        default=None, foreign_key="users.id", ondelete="SET NULL"
+    )
     trigger_source: str = Field(default=TriggerSource.MANUAL.value)

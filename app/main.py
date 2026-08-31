@@ -31,6 +31,7 @@ from app.config import get_settings
 from app.db import get_engine, run_migrations
 from app.logging_config import configure_logging, register_secret
 from app.routes_api import router as api_router
+from app.routes_instances import router as instances_router
 from app.routes_movies import router as movies_router
 from app.routes_tv import router as tv_router
 from app.routes_auth import router as auth_router
@@ -153,6 +154,7 @@ def libraries_save(
 app.include_router(router, prefix=settings.base_url)
 app.include_router(auth_router, prefix=settings.base_url)
 app.include_router(movies_router, prefix=settings.base_url)
+app.include_router(instances_router, prefix=settings.base_url)
 app.include_router(tv_router, prefix=settings.base_url)
 app.include_router(api_router, prefix=settings.base_url)
 

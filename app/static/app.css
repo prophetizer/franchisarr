@@ -150,3 +150,14 @@ footer.container {
 dialog article { max-width: 32rem; }
 
 .candidates-panel { margin-top: var(--pico-spacing); }
+
+.test-result { flex-basis: 100%; }
+
+details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
+
+/* Only one of the two glyphs is shown, whichever offers the *other* mode. Driven by the same
+ * data-theme attribute everything else uses, so it stays correct under an external theme. */
+.theme-toggle { margin: 0; padding: 0.25rem 0.6rem; width: auto; }
+
+[data-theme="light"] .theme-toggle-light,
+:root:not([data-theme="light"]) .theme-toggle-dark { display: none; }

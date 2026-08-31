@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Radarr & Sonarr — Franchisarr{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>Radarr &amp; Sonarr</h1>
+  <p>Where Franchisarr sends the things you choose to add.</p>
+</hgroup>
+
+{% if error %}<p role="alert" class="notice-bad">{{ error }}</p>{% endif %}
+{% if saved %}<p role="status" class="notice-good">Saved.</p>{% endif %}
+
+{% for kind, label, items in [('radarr', 'Radarr', radarr), ('sonarr', 'Sonarr', sonarr)] %}
+  <section>
+    <h2>{{ label }}</h2>
+
+    {% if items %}
+      <ul class="film-list">
+        {% for instance in items %}
+          <li class="film-row">
+            <span class="film-title">
+              {{ instance.name }}
+              {% if instance.is_default %}<small class="muted">(default)</small>{% endif %}
+            </span>
+            <span class="film-meta muted">
+              {{ instance.url }} · key {{ instance.masked_key }}
+            </span>
+            <span class="film-actions">
+              <button class="outline"
+                      hx-get="{{ url('/instances/' ~ kind ~ '/' ~ instance.id ~ '/test') }}"
+                      hx-target="#test-result-{{ kind }}-{{ instance.id }}"
+                      hx-swap="innerHTML">Test</button>
+              {% if not instance.is_default and items | length > 1 %}
+                <form method="post" action="{{ url('/instances/' ~ kind ~ '/' ~ instance.id ~ '/default') }}" class="nav-form">
+                  <button type="submit" class="secondary outline">Make default</button>
+                </form>
+              {% endif %}
+              <form method="post" action="{{ url('/instances/' ~ kind ~ '/' ~ instance.id ~ '/delete') }}" class="nav-form">
+                <button type="submit" class="secondary outline">Remove</button>
+              </form>
+            </span>
+            <span id="test-result-{{ kind }}-{{ instance.id }}" class="test-result"></span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No {{ label }} instance configured yet.</p>
+    {% endif %}
+
+    <details>
+      <summary>Add a {{ label }} instance</summary>
+      <form method="post" action="{{ url('/instances/' ~ kind ) }}">
+        <label>Name <input type="text" name="name" required placeholder="{{ label }}{% if kind == 'radarr' %} 4K{% endif %}"></label>
+        <label>URL <input type="url" name="url" required placeholder="http://{{ kind }}:{{ '7878' if kind == 'radarr' else '8989' }}"></label>
+        <label>API key <input type="password" name="api_key" required autocomplete="off"></label>
+        <small>
+          Settings → General → API Key in {{ label }}. If {{ label }} sits behind a login proxy,
+          use its address on your own network instead — an API key can't get past a login page.
+        </small>
+        <button type="submit">Add</button>
+      </form>
+    </details>
+  </section>
+{% endfor %}
+{% endblock %}

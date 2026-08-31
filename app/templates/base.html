@@ -10,6 +10,15 @@
  #}
 <!DOCTYPE html>
 <html lang="en" data-theme="{{ theme|default('dark') }}">
+{#- The stored preference is applied before the stylesheets load, so a light-mode viewer never
+    sees a dark flash. Wrapped in try/catch: a browser with site data blocked would otherwise
+    throw here and stop the rest of the page's scripts. -#}
+<script>
+  try {
+    var saved = localStorage.getItem('franchisarr-theme');
+    if (saved) { document.documentElement.setAttribute('data-theme', saved); }
+  } catch (e) { /* storage unavailable; the default stands */ }
+</script>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -40,9 +49,17 @@
             <li><a href="{{ url('/collections') }}">Collections</a></li>
             <li><a href="{{ url('/shows') }}">Spin-offs</a></li>
             <li><a href="{{ url('/libraries') }}">Libraries</a></li>
+            <li><a href="{{ url('/activity') }}">Activity</a></li>
+            <li><a href="{{ url('/instances') }}">Instances</a></li>
             <li><a href="{{ url('/settings') }}">Settings</a></li>
             <li>
               <small>{{ user.plex_username or user.local_username }}</small>
+            </li>
+            <li>
+              <button type="button" class="secondary outline theme-toggle"
+                      onclick="franchisarrToggleTheme()" title="Switch between light and dark">
+                <span class="theme-toggle-dark">☾</span><span class="theme-toggle-light">☀</span>
+              </button>
             </li>
             <li>
               <form method="post" action="{{ url('/logout') }}" class="nav-form">
@@ -61,5 +78,13 @@
     <footer class="container">
       <small>Franchisarr {{ version }}</small>
     </footer>
+    <script>
+      function franchisarrToggleTheme() {
+        var root = document.documentElement;
+        var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        root.setAttribute('data-theme', next);
+        try { localStorage.setItem('franchisarr-theme', next); } catch (e) { /* not fatal */ }
+      }
+    </script>
   </body>
 </html>
