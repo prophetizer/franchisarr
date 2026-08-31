@@ -41,6 +41,10 @@ class SettingKey:
     #: Optional theme.park (or self-hosted) stylesheet URL. Empty means the built-in theme.
     THEME_URL = "theme_url"
 
+    #: Where to look for new releases. Empty uses the built-in default; set it to point at a fork,
+    #: or at nothing, if you'd rather the install asked no one.
+    UPDATE_RELEASES_URL = "update_releases_url"
+
 
 #: Values used when neither the environment nor the user has said otherwise.
 DEFAULTS: dict[str, str] = {
@@ -54,6 +58,7 @@ DEFAULTS: dict[str, str] = {
     SettingKey.WEBHOOK_FORMAT: WebhookFormat.GENERIC.value,
     SettingKey.CROSS_INSTANCE_DEDUP: "false",
     SettingKey.THEME_URL: "",
+    SettingKey.UPDATE_RELEASES_URL: "",
 }
 
 #: Settings whose values must never be logged or rendered unmasked.

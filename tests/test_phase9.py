@@ -290,14 +290,62 @@ def test_importing_a_redacted_export_skips_rather_than_breaking_connections(
 
 
 @responses.activate
-def test_an_available_update_is_detected() -> None:
+def test_an_available_update_is_detected_from_a_release_list() -> None:
+    """Forgejo and GitHub both return /releases newest-first with the same field names, which is
+    why that endpoint is used rather than /releases/latest."""
     responses.add(responses.GET, update_checker.DEFAULT_RELEASES_URL,
-                  json={"tag_name": "v99.0.0", "html_url": "https://example/releases/99"})
+                  json=[{"tag_name": "v99.0.0", "html_url": "https://example/releases/99"}])
 
     status = update_checker.check()
 
     assert status.update_available is True
     assert status.latest == "99.0.0"
+    assert status.url == "https://example/releases/99"
+
+
+@responses.activate
+def test_a_single_release_object_also_works() -> None:
+    """So pointing this at /releases/latest, or a different forge, needs no code change."""
+    responses.add(responses.GET, update_checker.DEFAULT_RELEASES_URL,
+                  json={"tag_name": "v99.0.0"})
+
+    assert update_checker.check().update_available is True
+
+
+@responses.activate
+def test_a_repository_with_no_releases_yet_is_not_an_error() -> None:
+    """Forgejo answers /releases/latest with 404 when nothing is tagged, which is why the list
+    endpoint is used -- it returns an empty list instead."""
+    responses.add(responses.GET, update_checker.DEFAULT_RELEASES_URL, json=[])
+
+    status = update_checker.check()
+
+    assert status.latest is None
+    assert status.update_available is False
+
+
+@responses.activate
+def test_a_draft_or_prerelease_is_not_announced() -> None:
+    """Sending people to something not meant for them yet is worse than staying quiet."""
+    responses.add(responses.GET, update_checker.DEFAULT_RELEASES_URL,
+                  json=[{"tag_name": "v99.0.0", "prerelease": True}])
+
+    assert update_checker.check().update_available is False
+
+
+def test_the_default_release_url_points_at_this_project() -> None:
+    assert "franchisarr" in update_checker.DEFAULT_RELEASES_URL
+    assert update_checker.DEFAULT_RELEASES_URL.startswith("https://")
+
+
+def test_the_release_url_can_be_overridden_per_install(session: Session) -> None:
+    """For a fork, or for anyone who would rather the install asked no one."""
+    assert update_checker.releases_url(session) == update_checker.DEFAULT_RELEASES_URL
+
+    set_setting(session, SettingKey.UPDATE_RELEASES_URL, "https://example.invalid/releases")
+    session.commit()
+
+    assert update_checker.releases_url(session) == "https://example.invalid/releases"
 
 
 @responses.activate
@@ -326,14 +374,24 @@ def test_an_unreachable_release_api_is_not_an_error() -> None:
 
 @responses.activate
 def test_the_update_check_sends_nothing_about_the_install() -> None:
-    """Technical challenge #18: no telemetry."""
+    """Technical challenge #18: no telemetry.
+
+    `limit=1` is a query parameter but says nothing about the install; what matters is that
+    nothing identifying it is sent. Checked against the whole request rather than just the
+    parameters, so a header or body added later would fail this too.
+    """
     responses.add(responses.GET, update_checker.DEFAULT_RELEASES_URL, json={"tag_name": "v0.0.1"})
 
     update_checker.check()
 
     request = responses.calls[0].request
     assert request.body is None
-    assert not request.params
+
+    everything_sent = (
+        f"{request.url} {dict(request.headers)}".lower()
+    )
+    for leak in ("franchisarr/0", "version=", "library", "plex", "tmdb", "instance", "uuid"):
+        assert leak not in everything_sent, f"the update check disclosed {leak!r}"
 
 
 # ------------------------------------------------------------------ password change

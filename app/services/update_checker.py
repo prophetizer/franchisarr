@@ -23,8 +23,15 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 10
 
-#: Overridable so a fork, or the eventual GitHub move, doesn't need a code change here.
-DEFAULT_RELEASES_URL = "https://api.github.com/repos/mikeg/franchisarr/releases/latest"
+#: The releases *list* rather than `/releases/latest`, deliberately. Forgejo answers 404 on
+#: `/releases/latest` when a repository has no releases yet, which is indistinguishable from a
+#: broken URL; the list endpoint returns `[]` instead. Both Forgejo and GitHub return that list
+#: newest-first with the same field names, so the eventual GitHub migration is a hostname change
+#: rather than a code change. Overridable per install via the `update_releases_url` setting, for
+#: forks and for anyone who would rather it asked nothing at all.
+DEFAULT_RELEASES_URL = (
+    "https://github.com/api/v1/repos/michael/franchisarr/releases?limit=1"
+)
 
 _VERSION_PART = re.compile(r"\d+")
 
@@ -48,6 +55,16 @@ def _as_tuple(version: str) -> tuple[int, ...]:
     return tuple(int(part) for part in _VERSION_PART.findall(version or "")) or (0,)
 
 
+def releases_url(session=None) -> str:
+    """The URL to ask, honouring a per-install override."""
+    if session is None:
+        return DEFAULT_RELEASES_URL
+
+    from app.services.settings_service import SettingKey, get_setting
+
+    return (get_setting(session, SettingKey.UPDATE_RELEASES_URL) or "").strip() or DEFAULT_RELEASES_URL
+
+
 def check(url: str = DEFAULT_RELEASES_URL, *, timeout: int = DEFAULT_TIMEOUT) -> UpdateStatus:
     try:
         response = requests.get(url, timeout=timeout, headers={"Accept": "application/json"})
@@ -61,12 +78,22 @@ def check(url: str = DEFAULT_RELEASES_URL, *, timeout: int = DEFAULT_TIMEOUT) ->
         logger.debug("Update check unavailable: %s", exc)
         return UpdateStatus(current=__version__)
 
-    tag = payload.get("tag_name") or payload.get("name") if isinstance(payload, dict) else None
+    # `/releases` gives a list, `/releases/latest` a single object. Accept either, so pointing
+    # this at a different forge or endpoint doesn't need a code change.
+    if isinstance(payload, list):
+        payload = payload[0] if payload else None
+    if not isinstance(payload, dict):
+        return UpdateStatus(current=__version__)
+
+    if payload.get("draft") or payload.get("prerelease"):
+        # Announcing a draft or pre-release as "an update is available" would send people to
+        # something not meant for them yet.
+        return UpdateStatus(current=__version__)
+
+    tag = payload.get("tag_name") or payload.get("name")
     if not tag:
         return UpdateStatus(current=__version__)
 
     return UpdateStatus(
-        current=__version__,
-        latest=str(tag).lstrip("v"),
-        url=payload.get("html_url") if isinstance(payload, dict) else None,
+        current=__version__, latest=str(tag).lstrip("v"), url=payload.get("html_url")
     )

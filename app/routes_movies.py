@@ -215,13 +215,13 @@ def submit_add(
 # ---------------------------------------------------------------------- settings
 
 
-def _update_status():
+def _update_status(session=None):
     """Cached so the settings page doesn't call out on every render."""
     from app.services import update_checker
 
     global _UPDATE_CACHE
     if _UPDATE_CACHE is None:
-        _UPDATE_CACHE = update_checker.check()
+        _UPDATE_CACHE = update_checker.check(update_checker.releases_url(session))
     return _UPDATE_CACHE
 
 
@@ -248,7 +248,7 @@ def _settings_context(session, user, **extra) -> dict:
         "saved": False,
         "error": None,
         "import_note": None,
-        "update": _update_status(),
+        "update": _update_status(session),
     }
     context.update(extra)
     return context
