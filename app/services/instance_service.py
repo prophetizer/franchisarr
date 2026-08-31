@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from sqlmodel import Session, col, select
+from sqlmodel import Session, col, delete, select
 
 from app.clients.radarr_client import RadarrClient, RadarrError
 from app.config import EnvSettings
@@ -151,10 +151,13 @@ def refresh_instance_cache(session: Session, instance: RadarrInstance) -> Instan
         logger.warning("Could not refresh Radarr instance %r: %s", instance.name, exc)
         return InstanceRefresh(instance.id, instance.name, error=str(exc))
 
-    for row in session.exec(
-        select(RadarrMovie).where(col(RadarrMovie.instance_id) == instance.id)
-    ).all():
-        session.delete(row)
+    # The delete must reach the database before the inserts do. SQLAlchemy does not guarantee
+    # DELETE-before-INSERT ordering between different objects in one flush, so an ORM delete loop
+    # followed by adds fails the (instance_id, tmdb_id) unique constraint the moment the two sets
+    # overlap -- which is every refresh after the first, since a library barely changes between
+    # them. A bulk delete statement is emitted immediately, and the flush pins the ordering.
+    session.exec(delete(RadarrMovie).where(col(RadarrMovie.instance_id) == instance.id))
+    session.flush()
 
     for movie in movies:
         session.add(

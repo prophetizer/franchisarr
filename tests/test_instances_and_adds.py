@@ -340,6 +340,47 @@ def test_a_refresh_replaces_the_cache_wholesale(session: Session) -> None:
 
 
 @responses.activate
+def test_a_refresh_survives_the_cached_films_being_the_same_ones(session: Session) -> None:
+    """The realistic case, and the one that broke on a real instance.
+
+    A library barely changes between refreshes, so almost every id is already cached. Deleting
+    the old rows through the ORM and adding the new ones in the same flush let SQLAlchemy order
+    the INSERTs before the DELETEs, tripping the (instance_id, tmdb_id) unique constraint. The
+    previous test only used non-overlapping ids, so it never saw it -- which is exactly why this
+    reached a real Radarr before it was found.
+    """
+    instance = _instance(session, "HD", HD)
+    for tmdb_id in (111, 222, 333):
+        _cache(session, instance, tmdb_id)
+
+    responses.add(
+        responses.GET,
+        f"{HD}/api/v3/movie",
+        json=[{"tmdbId": tmdb_id, "title": f"Film {tmdb_id}"} for tmdb_id in (111, 222, 333, 444)],
+    )
+    responses.add(responses.GET, f"{HD}/api/v3/queue", json={"records": []})
+
+    result = instance_service.refresh_instance_cache(session, instance)
+
+    assert result.ok is True
+    assert {row.tmdb_id for row in session.exec(select(RadarrMovie)).all()} == {111, 222, 333, 444}
+
+
+@responses.activate
+def test_two_refreshes_in_a_row_are_safe(session: Session) -> None:
+    """Every add triggers a refresh, so the second one must work as well as the first."""
+    instance = _instance(session, "HD", HD)
+    for _ in range(2):
+        responses.add(responses.GET, f"{HD}/api/v3/movie",
+                      json=[{"tmdbId": 90, "title": "Beverly Hills Cop"}])
+        responses.add(responses.GET, f"{HD}/api/v3/queue", json={"records": []})
+
+    assert instance_service.refresh_instance_cache(session, instance).ok is True
+    assert instance_service.refresh_instance_cache(session, instance).ok is True
+    assert len(session.exec(select(RadarrMovie)).all()) == 1
+
+
+@responses.activate
 def test_the_queue_is_not_fetched_when_hide_if_queued_is_off(session: Session) -> None:
     """No point paying for a request whose answer is ignored."""
     instance = _instance(session, "HD", HD, hide_if_queued=False)
