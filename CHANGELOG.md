@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- One-click add to Radarr, with support for multiple instances. Films are added monitored and
+  searched immediately, matching what you'd get adding through Radarr's own UI. Quality profiles
+  and root folders are read live from the instance at add time, and an instance that can't be
+  reached says so rather than silently offering nothing.
+- Films Radarr already has stop being reported as gaps. Instances are treated independently by
+  default, so a 4K/1080p split still shows both; turn on `CROSS_INSTANCE_DEDUP` when your
+  instances are split by content type instead. A per-instance setting decides whether a film
+  that's currently downloading counts as already had.
+- Activity log recording every add — what, when, which instance, and who or what triggered it.
+- Command line additions: `instances list/test/options/refresh`, `add`, `add-collection` and
+  `activity`. Bulk adds are staggered and confirm the count first, since each one triggers a
+  search against your indexers.
 - Finds films missing from collections you already partly own, sourced from TMDb Collections.
   Only collections you own something from are considered, so this stays a report on your own
   library rather than a catalogue of every franchise on TMDb.
