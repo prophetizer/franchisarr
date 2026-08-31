@@ -126,6 +126,59 @@ def scan_movies(
         typer.secho(f"  ! {error}", fg="yellow", err=True)
 
 
+@scan.command("tv")
+def scan_tv(
+    force: Annotated[bool, typer.Option(help="Ignore the TMDb cache and refetch everything.")] = False,
+) -> None:
+    """Walk the enabled TV libraries and refresh show details."""
+    typer.echo("Scanning TV…")
+    result = _call("POST", "/api/scan/tv", params={"force": force}, timeout=SCAN_TIMEOUT)
+    typer.echo(f"{result['items_seen']} shows across {result['libraries_scanned']} library(ies)")
+    typer.echo(f"  matched:       {result['matched']}")
+    typer.echo(f"  needs review:  {result['needs_review']}")
+    typer.echo(f"  unmatched:     {result['unmatched']}")
+    for error in result["errors"]:
+        typer.secho(f"  ! {error}", fg="yellow", err=True)
+
+
+@app.command()
+def spinoffs() -> None:
+    """List spin-offs of your shows that you don't have."""
+    result = _call("GET", "/api/spinoffs")
+
+    if not result["suggestions"]:
+        typer.echo("No spin-offs suggested.")
+        if not result["mappings"]:
+            typer.secho(
+                "Your mapping list is empty — it starts that way, because TMDb has no spin-off "
+                "data to import. Confirm suggestions from the Spin-offs page to build it up.",
+                dim=True,
+            )
+        return
+
+    for suggestion in result["suggestions"]:
+        year = f" ({suggestion['year']})" if suggestion["year"] else ""
+        typer.echo(
+            f"{suggestion['name']}{year}  [tmdb:{suggestion['tmdb_id']}]"
+            f"  — spin-off of {suggestion['source_show_name']}"
+        )
+
+
+@app.command("map-spinoff")
+def map_spinoff(
+    source_tmdb_id: Annotated[int, typer.Argument(help="TMDb id of the original show.")],
+    spinoff_tmdb_id: Annotated[int, typer.Argument(help="TMDb id of the spin-off.")],
+) -> None:
+    """Record that one show is a spin-off of another."""
+    result = _call("POST", "/api/spinoffs/mappings", json={
+        "source_show_tmdb_id": source_tmdb_id, "spinoff_show_tmdb_id": spinoff_tmdb_id,
+    })
+    if result.get("created"):
+        typer.secho("Mapping saved.", fg="green")
+    else:
+        typer.echo(result.get("reason", "Nothing changed."))
+
+
 @app.command()
 def gaps(
     all: Annotated[bool, typer.Option(help="Include collections you already own in full.")] = False,

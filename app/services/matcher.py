@@ -36,7 +36,12 @@ from dataclasses import dataclass
 from difflib import SequenceMatcher
 
 from app.clients.plex_client import PlexItem
-from app.clients.tmdb_client import TmdbClient, TmdbError, TmdbMovieSummary
+from app.clients.tmdb_client import (
+    TmdbClient,
+    TmdbError,
+    TmdbMovieSummary,
+    TmdbShowSummary,
+)
 from app.models import MatchSource
 
 logger = logging.getLogger(__name__)
@@ -220,3 +225,59 @@ def match_movie(item: PlexItem, client: TmdbClient) -> MatchResult:
         return MatchResult(tmdb_id=None, source=MatchSource.NONE.value, reason=str(exc))
 
     return choose_candidate(item.title, item.year, candidates)
+
+
+def choose_show_candidate(
+    item_name: str, item_year: int | None, candidates: list[TmdbShowSummary]
+) -> MatchResult:
+    """Apply the same confidence bar to shows.
+
+    Shows are, if anything, more dangerous than films here: a franchise deliberately names its
+    spin-offs after the original ("NCIS" / "NCIS: Los Angeles"), so title similarity alone is
+    exactly the wrong tool. The year requirement does the real work.
+    """
+    return choose_candidate(
+        item_name,
+        item_year,
+        [
+            TmdbMovieSummary(
+                tmdb_id=candidate.tmdb_id,
+                title=candidate.name,
+                release_date=candidate.first_air_date,
+            )
+            for candidate in candidates
+        ],
+    )
+
+
+def match_show(item: PlexItem, client: TmdbClient) -> MatchResult:
+    """Resolve one Plex show to a TMDb id, cheapest and most trustworthy tier first."""
+    ids = item.external_ids
+
+    if ids.tmdb_id:
+        return MatchResult(tmdb_id=ids.tmdb_id, source=MatchSource.GUID.value)
+
+    for external_id, source, label in (
+        (ids.imdb_id, "imdb_id", MatchSource.IMDB.value),
+        (str(ids.tvdb_id) if ids.tvdb_id else None, "tvdb_id", MatchSource.TVDB.value),
+    ):
+        if not external_id:
+            continue
+        try:
+            found = client.find_show_by_external_id(external_id, source)
+        except TmdbError as exc:
+            logger.warning("TMDb show lookup failed for %s %s: %s", source, external_id, exc)
+            continue
+        if found:
+            return MatchResult(tmdb_id=found.tmdb_id, source=label)
+
+    if not item.title:
+        return NO_MATCH
+
+    try:
+        candidates = client.search_shows(item.title, item.year)
+    except TmdbError as exc:
+        logger.warning("TMDb show search failed for %r: %s", item.title, exc)
+        return MatchResult(tmdb_id=None, source=MatchSource.NONE.value, reason=str(exc))
+
+    return choose_show_candidate(item.title, item.year, candidates)

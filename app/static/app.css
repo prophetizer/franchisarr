@@ -148,3 +148,5 @@ footer.container {
 .notice-warn { color: var(--pico-muted-color); }
 
 dialog article { max-width: 32rem; }
+
+.candidates-panel { margin-top: var(--pico-spacing); }

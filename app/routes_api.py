@@ -17,7 +17,14 @@ from app.auth.dependencies import AdminUser, DbSession, RequiredUser
 from app.clients.plex_client import PlexClient
 from app.clients.radarr_client import RadarrClient, RadarrError
 from app.clients.tmdb_client import TmdbAuthError, TmdbClient, TmdbError
-from app.services import activity_log, add_service, instance_service, movie_gap_service, scan_service
+from app.services import (
+    activity_log,
+    add_service,
+    instance_service,
+    movie_gap_service,
+    scan_service,
+    tv_spinoff_service,
+)
 from app.services.settings_service import SettingKey, get_setting
 
 logger = logging.getLogger(__name__)
@@ -141,6 +148,69 @@ def collection_gaps(
             for gap in gaps
         ]
     }
+
+
+@router.post("/scan/tv")
+def scan_tv(session: DbSession, user: RequiredUser, force: bool = False) -> dict:
+    """Re-walk the enabled TV libraries and refresh cached show details."""
+    summary = scan_service.scan_show_libraries(
+        session, _plex(session), _tmdb(session), force_refresh=force
+    )
+    return {
+        "libraries_scanned": summary.libraries_scanned,
+        "items_seen": summary.items_seen,
+        "matched": summary.matched,
+        "needs_review": summary.needs_review,
+        "unmatched": summary.unmatched,
+        "removed": summary.removed,
+        "tmdb_lookups": summary.tmdb_lookups,
+        "errors": summary.errors,
+    }
+
+
+@router.get("/spinoffs")
+def spinoffs(session: DbSession, user: RequiredUser) -> dict:
+    """Spin-offs of shows in the library that the library doesn't have."""
+    suggestions = tv_spinoff_service.missing_spinoffs(session, user.id)
+    return {
+        "suggestions": [
+            {
+                "source_show_tmdb_id": s.source_show_tmdb_id,
+                "source_show_name": s.source_show_name,
+                "tmdb_id": s.spinoff_tmdb_id,
+                "name": s.spinoff_name,
+                "year": s.first_air_year,
+                "confidence": s.confidence,
+            }
+            for s in suggestions
+        ],
+        "mappings": len(tv_spinoff_service.list_mappings(session)),
+    }
+
+
+class SpinoffMappingIn(BaseModel):
+    source_show_tmdb_id: int
+    spinoff_show_tmdb_id: int
+
+
+@router.post("/spinoffs/mappings", status_code=status.HTTP_201_CREATED)
+def add_spinoff_mapping(
+    session: DbSession, user: RequiredUser, payload: SpinoffMappingIn
+) -> dict:
+    """Record a spin-off relationship. Always written as a local, confirmed mapping."""
+    try:
+        mapping = tv_spinoff_service.add_mapping(
+            session,
+            source_show_tmdb_id=payload.source_show_tmdb_id,
+            spinoff_show_tmdb_id=payload.spinoff_show_tmdb_id,
+            user=user,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    if mapping is None:
+        return {"created": False, "reason": "That mapping already exists."}
+    return {"created": True, "id": mapping.id}
 
 
 @router.get("/matches/review")

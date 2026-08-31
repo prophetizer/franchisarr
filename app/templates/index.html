@@ -24,7 +24,16 @@
 
   <article>
     <header><strong>TV spin-offs</strong></header>
-    <p>Not built yet — that's the next phase.</p>
+    <p>
+      {% if spinoff_count %}
+        {{ spinoff_count }} spin-off{{ '' if spinoff_count == 1 else 's' }} of shows you watch
+        {{ 'is' if spinoff_count == 1 else 'are' }} missing.
+      {% else %}
+        No spin-offs suggested yet. The mapping list starts empty and grows as you confirm
+        suggestions — TMDb has no spin-off data to import.
+      {% endif %}
+    </p>
+    <footer><a href="{{ url('/shows') }}" role="button">Browse spin-offs</a></footer>
   </article>
 
   <p><small class="muted">

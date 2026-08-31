@@ -72,6 +72,24 @@ class TmdbMovieDetails:
 
 
 @dataclass(frozen=True)
+class TmdbShowSummary:
+    tmdb_id: int
+    name: str
+    first_air_date: str | None = None
+    network: str | None = None
+
+    @property
+    def year(self) -> int | None:
+        if (
+            self.first_air_date
+            and len(self.first_air_date) >= 4
+            and self.first_air_date[:4].isdigit()
+        ):
+            return int(self.first_air_date[:4])
+        return None
+
+
+@dataclass(frozen=True)
 class TmdbCollectionDetails:
     tmdb_collection_id: int
     name: str
@@ -223,6 +241,44 @@ class TmdbClient:
             title=str(first.get("title") or first.get("original_title") or ""),
             release_date=first.get("release_date") or None,
         )
+
+    def get_show(self, tmdb_id: int) -> TmdbShowSummary:
+        payload = self._get(f"/tv/{tmdb_id}")
+        networks = payload.get("networks") or []
+        return TmdbShowSummary(
+            tmdb_id=int(payload.get("id", tmdb_id)),
+            name=str(payload.get("name") or payload.get("original_name") or ""),
+            first_air_date=payload.get("first_air_date") or None,
+            network=str(networks[0]["name"]) if networks and networks[0].get("name") else None,
+        )
+
+    def find_show_by_external_id(self, external_id: str, source: str) -> TmdbShowSummary | None:
+        payload = self._get(f"/find/{external_id}", {"external_source": source})
+        results = payload.get("tv_results") or []
+        if not results:
+            return None
+        first = results[0]
+        return TmdbShowSummary(
+            tmdb_id=int(first["id"]),
+            name=str(first.get("name") or first.get("original_name") or ""),
+            first_air_date=first.get("first_air_date") or None,
+        )
+
+    def search_shows(self, name: str, year: int | None = None) -> list[TmdbShowSummary]:
+        params: dict[str, str | int] = {"query": name}
+        if year:
+            params["first_air_date_year"] = year
+
+        payload = self._get("/search/tv", params)
+        return [
+            TmdbShowSummary(
+                tmdb_id=int(item["id"]),
+                name=str(item.get("name") or item.get("original_name") or ""),
+                first_air_date=item.get("first_air_date") or None,
+            )
+            for item in payload.get("results") or []
+            if isinstance(item, dict) and item.get("id")
+        ]
 
     def search_movies(self, title: str, year: int | None = None) -> list[TmdbMovieSummary]:
         params: dict[str, str | int] = {"query": title}

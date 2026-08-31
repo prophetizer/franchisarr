@@ -1,0 +1,23 @@
+{# Confirmed mappings. Re-rendered on its own by htmx after a mapping is added or removed. #}
+{% if mappings %}
+  <section>
+    <h2>Confirmed spin-off mappings</h2>
+    <p><small class="muted">
+      Your own list. It starts empty and grows as you confirm suggestions — TMDb has no spin-off
+      relation to import from.
+    </small></p>
+    <ul class="film-list">
+      {% for mapping in mappings %}
+        <li class="film-row">
+          <span class="film-title">{{ mapping.spinoff_name }}</span>
+          <span class="film-meta muted">spin-off of {{ mapping.source_name }}</span>
+          <span class="film-actions">
+            <button class="secondary outline"
+                    hx-post="{{ url('/shows/mappings/' ~ mapping.id ~ '/delete') }}"
+                    hx-target="#spinoff-lists" hx-swap="innerHTML">Remove</button>
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endif %}

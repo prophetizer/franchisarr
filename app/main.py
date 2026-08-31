@@ -31,6 +31,7 @@ from app.db import get_engine, run_migrations
 from app.logging_config import configure_logging, register_secret
 from app.routes_api import router as api_router
 from app.routes_movies import router as movies_router
+from app.routes_tv import router as tv_router
 from app.routes_auth import router as auth_router
 from app.services import library_service
 from app.services.auth_service import discover_machine_identifier
@@ -89,7 +90,7 @@ def index(request: Request, session: DbSession, user: RequiredUser):
             f"{settings.base_url}/libraries", status_code=status.HTTP_303_SEE_OTHER
         )
 
-    from app.services import movie_gap_service
+    from app.services import movie_gap_service, tv_spinoff_service
 
     gaps = movie_gap_service.collections_with_gaps(session, user.id)
     return get_templates().TemplateResponse(
@@ -100,6 +101,7 @@ def index(request: Request, session: DbSession, user: RequiredUser):
             "libraries": library_service.enabled_libraries(session),
             "collections_with_gaps": len(gaps),
             "total_missing": sum(len(gap.missing) for gap in gaps),
+            "spinoff_count": len(tv_spinoff_service.missing_spinoffs(session, user.id)),
         },
     )
 
@@ -145,6 +147,7 @@ def libraries_save(
 app.include_router(router, prefix=settings.base_url)
 app.include_router(auth_router, prefix=settings.base_url)
 app.include_router(movies_router, prefix=settings.base_url)
+app.include_router(tv_router, prefix=settings.base_url)
 app.include_router(api_router, prefix=settings.base_url)
 
 # Mounted under BASE_URL for the same reason the routes are: behind a subpath proxy, /static

@@ -248,6 +248,23 @@ class TmdbMovie(SQLModel, table=True):
     fetched_at: datetime = Field(default_factory=utcnow, index=True)
 
 
+class TmdbShow(SQLModel, table=True):
+    """Cached TMDb show details.
+
+    `network` is kept because it corroborates a heuristic spin-off guess: shows that spun off
+    from each other usually shared a broadcaster, and a title that merely *looks* like a spin-off
+    on a different network is far more often an unrelated show with a similar name.
+    """
+
+    __tablename__ = "tmdb_shows"
+
+    tmdb_id: int = Field(primary_key=True)
+    name: str
+    first_air_year: int | None = Field(default=None)
+    network: str | None = Field(default=None)
+    fetched_at: datetime = Field(default_factory=utcnow, index=True)
+
+
 class TmdbCollection(SQLModel, table=True):
     __tablename__ = "tmdb_collections"
 

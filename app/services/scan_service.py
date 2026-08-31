@@ -26,7 +26,7 @@ from app.models import (
     utcnow,
 )
 from app.services import library_service
-from app.services.matcher import match_movie
+from app.services.matcher import match_movie, match_show
 from app.services.settings_service import SettingKey, get_int_setting
 
 logger = logging.getLogger(__name__)
@@ -124,6 +124,103 @@ def scan_movie_libraries(
     return summary
 
 
+def scan_show_libraries(
+    session: Session,
+    plex: PlexClient,
+    tmdb: TmdbClient,
+    *,
+    force_refresh: bool = False,
+) -> ScanSummary:
+    """Refresh the snapshot for every enabled TV library, and cache each show's TMDb details.
+
+    Deliberately a sibling of the movie scan rather than a generalisation of it: the two share
+    the snapshot table but almost nothing else, since shows have no collections to walk and their
+    spin-off relationships come from a curated mapping instead of TMDb.
+    """
+    summary = ScanSummary()
+    ttl = timedelta(0) if force_refresh else cache_ttl(session)
+    started = utcnow()
+
+    libraries = [
+        lib for lib in library_service.enabled_libraries(session)
+        if lib.library_type == ItemType.SHOW.value
+    ]
+    if not libraries:
+        summary.errors.append("No TV libraries are enabled.")
+        return summary
+
+    for library in libraries:
+        try:
+            items = list(plex.iter_shows(library.plex_library_key))
+        except PlexClientError as exc:
+            logger.warning("Skipping library %r: %s", library.plex_library_name, exc)
+            summary.errors.append(f"{library.plex_library_name}: {exc}")
+            continue
+
+        summary.libraries_scanned += 1
+        existing = {
+            row.rating_key: row
+            for row in session.exec(
+                select(LibraryItem).where(
+                    col(LibraryItem.plex_library_key) == library.plex_library_key
+                )
+            ).all()
+        }
+
+        for index, item in enumerate(items, start=1):
+            summary.items_seen += 1
+            _upsert_item(
+                session, library.plex_library_key, item, tmdb, summary, existing,
+                item_type=ItemType.SHOW.value,
+            )
+            if index % COMMIT_BATCH == 0:
+                session.commit()
+
+        session.commit()
+        summary.removed += _prune_missing(session, library.plex_library_key, started)
+
+    _cache_shows(session, tmdb, ttl, summary)
+    return summary
+
+
+def _cache_shows(
+    session: Session, tmdb: TmdbClient, ttl: timedelta, summary: ScanSummary
+) -> None:
+    """Fetch and cache details for each owned show, so spin-off views have names to display."""
+    from app.models import TmdbShow
+    from app.services.tv_spinoff_service import cache_show
+
+    owned = {
+        row.tmdb_id
+        for row in session.exec(
+            select(LibraryItem).where(
+                col(LibraryItem.item_type) == ItemType.SHOW.value,
+                col(LibraryItem.tmdb_id).is_not(None),
+                col(LibraryItem.needs_review) == False,  # noqa: E712 - SQL, not Python
+            )
+        ).all()
+        if row.tmdb_id
+    }
+
+    for tmdb_id in sorted(owned):
+        cached = session.get(TmdbShow, tmdb_id)
+        if cached is not None and _is_fresh(cached.fetched_at, ttl):
+            continue
+        try:
+            cache_show(session, tmdb.get_show(tmdb_id))
+        except TmdbNotFound:
+            continue
+        except TmdbAuthError as exc:
+            # Same reasoning as the movie scan: a rejected key stays rejected.
+            summary.errors.append(str(exc))
+            logger.error("Stopping TMDb enrichment: %s", exc)
+            return
+        except TmdbError as exc:
+            summary.errors.append(str(exc))
+            continue
+        summary.tmdb_lookups += 1
+
+
 def _upsert_item(
     session: Session,
     library_key: str,
@@ -131,6 +228,7 @@ def _upsert_item(
     tmdb: TmdbClient,
     summary: ScanSummary,
     existing: dict[str, LibraryItem],
+    item_type: str = ItemType.MOVIE.value,
 ) -> LibraryItem:
     row = existing.get(item.rating_key)
 
@@ -140,7 +238,8 @@ def _upsert_item(
     if already_resolved:
         result = None
     else:
-        result = match_movie(item, tmdb)
+        matcher = match_show if item_type == ItemType.SHOW.value else match_movie
+        result = matcher(item, tmdb)
         if result.source not in (MatchSource.GUID.value, MatchSource.NONE.value):
             summary.tmdb_lookups += 1
 
@@ -150,7 +249,7 @@ def _upsert_item(
 
     row.title = item.title
     row.year = item.year
-    row.item_type = ItemType.MOVIE.value
+    row.item_type = item_type
     row.imdb_id = item.external_ids.imdb_id
     row.tvdb_id = item.external_ids.tvdb_id
     row.last_seen_at = utcnow()

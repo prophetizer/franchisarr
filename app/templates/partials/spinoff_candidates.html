@@ -1,0 +1,42 @@
+{# The lower-confidence tier (technical challenge #6). Visibly separate from confirmed mappings,
+   and nothing here can be acted on without a person saying "yes, that's a spin-off" first. #}
+<article class="candidates-panel">
+  <header><strong>Possible spin-offs of {{ show_name }}</strong></header>
+
+  {% if error %}
+    <p role="alert" class="notice-bad">{{ error }}</p>
+  {% elif not candidates %}
+    <p class="muted">
+      Nothing found whose title reads as a spin-off of this show.
+    </p>
+    <p><small class="muted">
+      This only spots spin-offs named after the original, like “NCIS: Los Angeles”. Siblings with
+      their own names — Chicago Fire and Chicago P.D., say — won't show up, so add those by hand.
+    </small></p>
+  {% else %}
+    <p><small class="muted">
+      Guesses based on the title, not facts. Confirm the ones that are really spin-offs and
+      they'll join your mapping list.
+    </small></p>
+    <ul class="film-list">
+      {% for candidate in candidates %}
+        <li class="film-row">
+          <span class="film-title">
+            {{ candidate.spinoff_name }}
+            {% if candidate.first_air_year %}<small class="muted">({{ candidate.first_air_year }})</small>{% endif %}
+          </span>
+          <span class="film-actions">
+            <button hx-post="{{ url('/shows/mappings') }}"
+                    hx-vals='{"source_show_tmdb_id": {{ candidate.source_show_tmdb_id }}, "spinoff_show_tmdb_id": {{ candidate.spinoff_tmdb_id }}}'
+                    hx-target="#candidates" hx-swap="innerHTML">Yes, it's a spin-off</button>
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <footer>
+    <button class="secondary" hx-get="{{ url('/shows/candidates/close') }}"
+            hx-target="#candidates" hx-swap="innerHTML">Close</button>
+  </footer>
+</article>

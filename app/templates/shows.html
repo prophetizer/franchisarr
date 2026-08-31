@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}TV spin-offs — Franchisarr{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>TV spin-offs</h1>
+  <p>Spin-offs of shows you already watch, that aren't in your library.</p>
+</hgroup>
+
+{% if not shows %}
+  <article>
+    <header>No TV libraries scanned yet</header>
+    <p>Enable a TV library and run a scan, and your shows will appear here.</p>
+    <footer><a href="{{ url('/libraries') }}" role="button" class="secondary">Choose libraries</a></footer>
+  </article>
+{% else %}
+
+  <section>
+    <h2>Suggested</h2>
+    {% if suggestions %}
+      <ul class="film-list">
+        {% for suggestion in suggestions %}
+          <li class="film-row missing">
+            <span class="film-title">
+              {{ suggestion.spinoff_name }}
+              {% if suggestion.first_air_year %}<small class="muted">({{ suggestion.first_air_year }})</small>{% endif %}
+            </span>
+            <span class="film-meta muted">spin-off of {{ suggestion.source_show_name }}</span>
+            <span class="film-actions">
+              <button class="secondary outline"
+                      hx-post="{{ url('/shows/dismiss/' ~ suggestion.spinoff_tmdb_id) }}"
+                      hx-target="#spinoff-lists" hx-swap="innerHTML">Not interested</button>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+      <p><small class="muted">
+        Adding these to Sonarr arrives in the next phase. For now this is the list of what's
+        missing.
+      </small></p>
+    {% else %}
+      <p class="muted">
+        Nothing suggested yet. Spin-offs come from the mapping list below, which starts empty and
+        grows as you confirm them — there's no reliable spin-off data on TMDb to import.
+      </p>
+    {% endif %}
+  </section>
+
+  <div id="spinoff-lists">{% include "partials/spinoff_lists.html" %}</div>
+
+  <section>
+    <h2>Your shows</h2>
+    <p><small class="muted">
+      {{ shows | length }} show{{ '' if shows | length == 1 else 's' }} in your library. Check one
+      for possible spin-offs — this searches TMDb for shows named after it.
+    </small></p>
+    <ul class="film-list">
+      {% for show in shows %}
+        <li class="film-row">
+          <span class="film-title">{{ show.title }}</span>
+          <span class="film-meta muted">{{ show.year or '' }}</span>
+          <span class="film-actions">
+            <button class="outline"
+                    hx-get="{{ url('/shows/' ~ show.tmdb_id ~ '/candidates') }}"
+                    hx-target="#candidates" hx-swap="innerHTML"
+                    hx-indicator="#candidates-loading">Look for spin-offs</button>
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <div id="candidates-loading" class="htmx-indicator"><small class="muted">Asking TMDb…</small></div>
+  <div id="candidates"></div>
+{% endif %}
+{% endblock %}
