@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- One-click add to Sonarr for spin-offs, with a choice of how much to monitor: all seasons,
+  future episodes only, or the first season. Your choice is remembered as the default for next
+  time. Shows already in Sonarr stop being suggested, with the same per-instance and
+  cross-instance settings as the movie side.
 - TV spin-offs: shows related to ones you already watch that aren't in your library. Because TMDb
   has no spin-off data to import, the mapping list starts empty and grows as you confirm
   suggestions — the app says so rather than looking broken.
