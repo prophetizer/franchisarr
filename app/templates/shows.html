@@ -27,6 +27,8 @@
             </span>
             <span class="film-meta muted">spin-off of {{ suggestion.source_show_name }}</span>
             <span class="film-actions">
+              <button hx-get="{{ url('/shows/add/' ~ suggestion.spinoff_tmdb_id) }}"
+                      hx-target="#add-show-dialog" hx-swap="innerHTML">Add</button>
               <button class="secondary outline"
                       hx-post="{{ url('/shows/dismiss/' ~ suggestion.spinoff_tmdb_id) }}"
                       hx-target="#spinoff-lists" hx-swap="innerHTML">Not interested</button>
@@ -34,10 +36,7 @@
           </li>
         {% endfor %}
       </ul>
-      <p><small class="muted">
-        Adding these to Sonarr arrives in the next phase. For now this is the list of what's
-        missing.
-      </small></p>
+
     {% else %}
       <p class="muted">
         Nothing suggested yet. Spin-offs come from the mapping list below, which starts empty and
@@ -72,5 +71,6 @@
 
   <div id="candidates-loading" class="htmx-indicator"><small class="muted">Asking TMDb…</small></div>
   <div id="candidates"></div>
+  <div id="add-show-dialog"></div>
 {% endif %}
 {% endblock %}

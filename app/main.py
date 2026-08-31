@@ -25,6 +25,7 @@ from app.auth.dependencies import (
 )
 from app.auth.local_admin import seed_local_admin_from_env
 from app.services.instance_service import seed_radarr_from_env
+from app.services.sonarr_instance_service import seed_sonarr_from_env
 from app.clients.plex_client import PlexClient, PlexClientError
 from app.config import get_settings
 from app.db import get_engine, run_migrations
@@ -59,6 +60,7 @@ async def lifespan(app: FastAPI):
         seed_settings_from_env(session, settings)
         seed_local_admin_from_env(session, settings)
         seed_radarr_from_env(session, settings)
+        seed_sonarr_from_env(session, settings)
 
     yield
 

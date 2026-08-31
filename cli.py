@@ -329,6 +329,51 @@ def add(
     typer.secho(f"Added {result['title']} to {result['instance']} ({searched}).", fg="green")
 
 
+@app.command("add-show")
+def add_show(
+    tmdb_id: Annotated[int, typer.Argument(help="TMDb id of the show to add.")],
+    instance_id: Annotated[int | None, typer.Option("--instance", help="Sonarr instance id.")] = None,
+    profile: Annotated[int | None, typer.Option(help="Quality profile id.")] = None,
+    root_folder: Annotated[str | None, typer.Option(help="Root folder path.")] = None,
+    monitor: Annotated[
+        str | None,
+        typer.Option(help="all | future_only | first_season. Defaults to the instance's last choice."),
+    ] = None,
+    no_search: Annotated[bool, typer.Option("--no-search", help="Add without searching now.")] = False,
+) -> None:
+    """Add one show to Sonarr."""
+    result = _call("POST", "/api/sonarr/add", json={
+        "tmdb_id": tmdb_id,
+        "instance_id": instance_id,
+        "quality_profile_id": profile,
+        "root_folder_path": root_folder,
+        "monitor_mode": monitor,
+        "search_on_add": not no_search,
+    }, timeout=180)
+
+    searched = "searching now" if result["searched"] else "not searched"
+    typer.secho(f"Added {result['title']} to {result['instance']} ({searched}).", fg="green")
+
+
+@instances.command("sonarr")
+def instances_sonarr() -> None:
+    """Show configured Sonarr instances."""
+    result = _call("GET", "/api/instances/sonarr")
+    if not result["instances"]:
+        typer.echo("No Sonarr instances configured yet.")
+        return
+    for instance in result["instances"]:
+        marks = []
+        if instance["is_default"]:
+            marks.append("default")
+        if instance["preferred"]:
+            marks.append("your last choice")
+        suffix = f"  ({', '.join(marks)})" if marks else ""
+        typer.secho(f"[{instance['id']}] {instance['name']}{suffix}", bold=True)
+        typer.echo(f"      {instance['url']}")
+        typer.echo(f"      monitors: {instance['default_monitor_mode']}")
+
+
 @app.command("add-collection")
 def add_collection(
     collection_id: Annotated[int, typer.Argument(help="TMDb collection id.")],

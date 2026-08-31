@@ -16,6 +16,7 @@ from app.auth.api_keys import generate_api_key
 from app.auth.dependencies import AdminUser, DbSession, RequiredUser
 from app.clients.plex_client import PlexClient
 from app.clients.radarr_client import RadarrClient, RadarrError
+from app.clients.sonarr_client import MONITOR_MODE_LABELS, SonarrError
 from app.clients.tmdb_client import TmdbAuthError, TmdbClient, TmdbError
 from app.services import (
     activity_log,
@@ -23,6 +24,7 @@ from app.services import (
     instance_service,
     movie_gap_service,
     scan_service,
+    sonarr_instance_service,
     tv_spinoff_service,
 )
 from app.services.settings_service import SettingKey, get_setting
@@ -415,4 +417,156 @@ def activity(session: DbSession, user: RequiredUser, limit: int = 50, offset: in
             }
             for entry in activity_log.recent(session, limit=limit, offset=offset)
         ],
+    }
+
+
+# ---------------------------------------------------------------------- Sonarr instances
+
+
+class SonarrInstanceIn(BaseModel):
+    name: str
+    url: str
+    api_key: str
+    default_root_folder: str | None = None
+    default_quality_profile_id: int | None = None
+    default_monitor_mode: str = "all"
+    hide_if_queued: bool = True
+
+
+def _sonarr_summary(instance, *, preferred_id: int | None = None) -> dict:
+    """Never includes the API key, for the same reason the Radarr one doesn't."""
+    return {
+        "id": instance.id,
+        "name": instance.name,
+        "url": instance.url,
+        "default_root_folder": instance.default_root_folder,
+        "default_quality_profile_id": instance.default_quality_profile_id,
+        "default_monitor_mode": instance.default_monitor_mode,
+        "is_default": instance.is_default,
+        "hide_if_queued": instance.hide_if_queued,
+        "preferred": instance.id == preferred_id,
+    }
+
+
+def _require_sonarr(session, instance_id: int):
+    instance = sonarr_instance_service.get_sonarr(session, instance_id)
+    if instance is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such Sonarr instance.")
+    return instance
+
+
+@router.get("/instances/sonarr")
+def list_sonarr_instances(session: DbSession, user: RequiredUser) -> dict:
+    preferred = sonarr_instance_service.preferred_instance(session, user)
+    return {
+        "instances": [
+            _sonarr_summary(instance, preferred_id=preferred.id if preferred else None)
+            for instance in sonarr_instance_service.list_sonarr(session)
+        ],
+        "monitor_modes": [{"value": v, "label": l} for v, l in MONITOR_MODE_LABELS.items()],
+    }
+
+
+@router.post("/instances/sonarr", status_code=status.HTTP_201_CREATED)
+def create_sonarr_instance(session: DbSession, user: AdminUser, payload: SonarrInstanceIn) -> dict:
+    instance = sonarr_instance_service.create_sonarr(session, **payload.model_dump())
+    return _sonarr_summary(instance)
+
+
+@router.delete("/instances/sonarr/{instance_id}")
+def delete_sonarr_instance(session: DbSession, user: AdminUser, instance_id: int) -> dict:
+    _require_sonarr(session, instance_id)
+    sonarr_instance_service.delete_sonarr(session, instance_id)
+    return {"deleted": instance_id}
+
+
+@router.get("/instances/sonarr/{instance_id}/test")
+def test_sonarr_instance(session: DbSession, user: RequiredUser, instance_id: int) -> dict:
+    instance = _require_sonarr(session, instance_id)
+    try:
+        return {
+            "ok": True,
+            "version": sonarr_instance_service.client_for(instance).test_connection(),
+        }
+    except SonarrError as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+@router.get("/instances/sonarr/{instance_id}/options")
+def sonarr_instance_options(session: DbSession, user: RequiredUser, instance_id: int) -> dict:
+    instance = _require_sonarr(session, instance_id)
+    client = sonarr_instance_service.client_for(instance)
+    try:
+        profiles = client.quality_profiles()
+        folders = client.root_folders()
+    except SonarrError as exc:
+        return {"ok": False, "error": str(exc), "quality_profiles": [], "root_folders": []}
+
+    return {
+        "ok": True,
+        "quality_profiles": [{"id": p.id, "name": p.name} for p in profiles],
+        "root_folders": [
+            {"path": f.path, "free_space": f.free_space, "label": f.free_space_label}
+            for f in folders
+        ],
+        "default_quality_profile_id": instance.default_quality_profile_id,
+        "default_root_folder": instance.default_root_folder,
+        "default_monitor_mode": instance.default_monitor_mode,
+        "monitor_modes": [{"value": v, "label": l} for v, l in MONITOR_MODE_LABELS.items()],
+    }
+
+
+@router.post("/instances/sonarr/refresh")
+def refresh_sonarr_instances(session: DbSession, user: RequiredUser) -> dict:
+    results = sonarr_instance_service.refresh_all(session)
+    return {
+        "instances": [
+            {"id": r.instance_id, "name": r.name, "series": r.series, "queued": r.queued,
+             "ok": r.ok, "error": r.error}
+            for r in results
+        ]
+    }
+
+
+class AddSeriesIn(BaseModel):
+    tmdb_id: int
+    instance_id: int | None = None
+    quality_profile_id: int | None = None
+    root_folder_path: str | None = None
+    monitor_mode: str | None = None
+    search_on_add: bool = True
+
+
+@router.post("/sonarr/add")
+def add_series_endpoint(session: DbSession, user: RequiredUser, payload: AddSeriesIn) -> dict:
+    if payload.instance_id is not None:
+        instance = _require_sonarr(session, payload.instance_id)
+    else:
+        instance = sonarr_instance_service.preferred_instance(session, user)
+        if instance is None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="No Sonarr instance is configured yet.",
+            )
+
+    try:
+        result = add_service.add_series(
+            session,
+            instance=instance,
+            tmdb_id=payload.tmdb_id,
+            user=user,
+            quality_profile_id=payload.quality_profile_id,
+            root_folder_path=payload.root_folder_path,
+            monitor_mode=payload.monitor_mode,
+            search_on_add=payload.search_on_add,
+        )
+    except add_service.AddFailed as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    return {
+        "added": True,
+        "tmdb_id": result.tmdb_id,
+        "title": result.title,
+        "instance": result.instance_name,
+        "searched": result.searched,
     }

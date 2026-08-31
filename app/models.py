@@ -325,6 +325,25 @@ class RadarrMovie(SQLModel, table=True):
     fetched_at: datetime = Field(default_factory=utcnow)
 
 
+class SonarrSeries(SQLModel, table=True):
+    """What a Sonarr instance already tracks. The TV counterpart of RadarrMovie, and there for
+    the same reason: the "already have it" check runs at diff time, which is a page load."""
+
+    __tablename__ = "sonarr_series"
+    __table_args__ = (UniqueConstraint("instance_id", "tmdb_id", name="uq_sonarr_series"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    instance_id: int = Field(
+        foreign_key="sonarr_instances.id", ondelete="CASCADE", index=True
+    )
+    tmdb_id: int = Field(index=True)
+    tvdb_id: int | None = Field(default=None, index=True)
+    title: str = Field(default="")
+    monitored: bool = Field(default=True)
+    in_queue: bool = Field(default=False)
+    fetched_at: datetime = Field(default_factory=utcnow)
+
+
 class UserSession(SQLModel, table=True):
     """A logged-in browser session.
 

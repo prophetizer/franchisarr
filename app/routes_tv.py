@@ -13,9 +13,10 @@ from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 
 from app.auth.dependencies import DbSession, RequiredUser
+from app.clients.sonarr_client import MONITOR_MODE_LABELS, SonarrError
 from app.clients.tmdb_client import TmdbClient
 from app.models import DismissedItem, ItemType, SpinoffMapping
-from app.services import tv_spinoff_service
+from app.services import add_service, sonarr_instance_service, tv_spinoff_service
 from app.services.settings_service import SettingKey, get_setting
 from app.templating import get_templates
 
@@ -134,6 +135,104 @@ def create_mapping(
 def delete_mapping(request: Request, session: DbSession, user: RequiredUser, mapping_id: int):
     tv_spinoff_service.remove_mapping(session, mapping_id)
     return _lists(request, session, user)
+
+
+# ---------------------------------------------------------------------- adding to Sonarr
+
+
+def _suggestion_title(session, tmdb_id: int) -> str:
+    for suggestion in tv_spinoff_service.missing_spinoffs(session):
+        if suggestion.spinoff_tmdb_id == tmdb_id:
+            return suggestion.spinoff_name
+    return tv_spinoff_service._show_name(session, tmdb_id)
+
+
+@router.get("/shows/add/close", response_class=HTMLResponse)
+def close_add_dialog() -> HTMLResponse:
+    return HTMLResponse("")
+
+
+@router.get("/shows/add/{tmdb_id}", response_class=HTMLResponse)
+def add_show_dialog(
+    request: Request,
+    session: DbSession,
+    user: RequiredUser,
+    tmdb_id: int,
+    instance_id: int | None = None,
+):
+    instances = sonarr_instance_service.list_sonarr(session)
+    selected = (
+        sonarr_instance_service.get_sonarr(session, instance_id)
+        if instance_id
+        else sonarr_instance_service.preferred_instance(session, user)
+    )
+
+    options: dict = {"ok": False, "error": "", "quality_profiles": [], "root_folders": []}
+    if selected is not None:
+        client = sonarr_instance_service.client_for(selected)
+        try:
+            options = {
+                "ok": True,
+                "error": "",
+                "quality_profiles": client.quality_profiles(),
+                "root_folders": client.root_folders(),
+                "default_quality_profile_id": selected.default_quality_profile_id,
+                "default_root_folder": selected.default_root_folder,
+                "default_monitor_mode": selected.default_monitor_mode,
+            }
+        except SonarrError as exc:
+            options["error"] = str(exc)
+
+    return get_templates().TemplateResponse(
+        request,
+        "partials/add_show_dialog.html",
+        {
+            "user": user,
+            "tmdb_id": tmdb_id,
+            "title": _suggestion_title(session, tmdb_id),
+            "instances": instances,
+            "selected": selected,
+            "options": options,
+            "monitor_modes": list(MONITOR_MODE_LABELS.items()),
+        },
+    )
+
+
+@router.post("/shows/add", response_class=HTMLResponse)
+def submit_add_show(
+    request: Request,
+    session: DbSession,
+    user: RequiredUser,
+    tmdb_id: Annotated[int, Form()],
+    instance_id: Annotated[int, Form()],
+    quality_profile_id: Annotated[int, Form()],
+    root_folder_path: Annotated[str, Form()],
+    monitor_mode: Annotated[str, Form()],
+    search_on_add: Annotated[bool, Form()] = False,
+):
+    instance = sonarr_instance_service.get_sonarr(session, instance_id)
+    if instance is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such instance.")
+
+    context: dict = {"user": user, "added": False, "error": "", "title": "", "instance": "",
+                     "searched": False}
+    try:
+        result = add_service.add_series(
+            session,
+            instance=instance,
+            tmdb_id=tmdb_id,
+            user=user,
+            quality_profile_id=quality_profile_id,
+            root_folder_path=root_folder_path,
+            monitor_mode=monitor_mode,
+            search_on_add=search_on_add,
+        )
+        context.update(added=True, title=result.title, instance=result.instance_name,
+                       searched=result.searched)
+    except add_service.AddFailed as exc:
+        context["error"] = str(exc)
+
+    return get_templates().TemplateResponse(request, "partials/add_result.html", context)
 
 
 @router.post("/shows/dismiss/{tmdb_id}", response_class=HTMLResponse)

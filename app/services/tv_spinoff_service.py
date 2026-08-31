@@ -38,10 +38,13 @@ from app.models import (
     LibraryItem,
     MappingConfidence,
     MappingSource,
+    SonarrInstance,
+    SonarrSeries,
     SpinoffMapping,
     TmdbShow,
     User,
 )
+from app.services.settings_service import SettingKey, get_bool_setting
 from app.services.matcher import normalise_title
 
 logger = logging.getLogger(__name__)
@@ -100,6 +103,28 @@ def owned_show_ids(session: Session) -> set[int]:
         )
     ).all()
     return {row.tmdb_id for row in rows if row.tmdb_id}
+
+
+def sonarr_known_ids(session: Session, instance_id: int | None = None) -> set[int]:
+    """Shows Sonarr already tracks, and so aren't gaps.
+
+    Same two toggles as the movie side: per-instance `hide_if_queued`, and the global
+    `cross_instance_dedup` that decides whether instances are judged independently.
+    """
+    cross_instance = get_bool_setting(session, SettingKey.CROSS_INSTANCE_DEDUP, False)
+
+    statement = select(SonarrSeries, SonarrInstance).join(
+        SonarrInstance, col(SonarrSeries.instance_id) == col(SonarrInstance.id)
+    )
+    if instance_id is not None and not cross_instance:
+        statement = statement.where(col(SonarrSeries.instance_id) == instance_id)
+
+    known: set[int] = set()
+    for show, instance in session.exec(statement).all():
+        if show.in_queue and not instance.hide_if_queued:
+            continue
+        known.add(show.tmdb_id)
+    return known
 
 
 def owned_shows(session: Session) -> list[LibraryItem]:
@@ -192,9 +217,20 @@ def _show_name(session: Session, tmdb_id: int, fallback: str = "") -> str:
     return item.title if item else (fallback or f"TMDb {tmdb_id}")
 
 
-def missing_spinoffs(session: Session, user_id: int | None = None) -> list[SpinoffSuggestion]:
-    """Curated spin-offs of shows the library has, that the library doesn't."""
-    owned = owned_show_ids(session)
+def missing_spinoffs(
+    session: Session,
+    user_id: int | None = None,
+    *,
+    sonarr_instance_id: int | None = None,
+) -> list[SpinoffSuggestion]:
+    """Curated spin-offs of shows the library has, that the library doesn't.
+
+    A show already in Sonarr is not a gap: there is nothing for the user to do about it. The
+    *sources* still come only from Plex, though -- keying those off Sonarr too would let adding
+    one show drag its whole franchise into the suggestions.
+    """
+    in_library = owned_show_ids(session)
+    owned = in_library | sonarr_known_ids(session, sonarr_instance_id)
     dismissed = {
         row.tmdb_id
         for row in session.exec(
@@ -207,7 +243,7 @@ def missing_spinoffs(session: Session, user_id: int | None = None) -> list[Spino
 
     suggestions: list[SpinoffSuggestion] = []
     for mapping in list_mappings(session):
-        if mapping.source_show_tmdb_id not in owned:
+        if mapping.source_show_tmdb_id not in in_library:
             continue
         if mapping.spinoff_show_tmdb_id in owned:
             continue
