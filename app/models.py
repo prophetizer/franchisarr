@@ -344,6 +344,24 @@ class SonarrSeries(SQLModel, table=True):
     fetched_at: datetime = Field(default_factory=utcnow)
 
 
+class SeenGap(SQLModel, table=True):
+    """A gap Franchisarr has already told someone about.
+
+    Exists so a scheduled scan can notify about what is *new* rather than re-announcing the same
+    227 films every night, which would train everyone to ignore the notification. Rows are only
+    ever added, so a film that is added and later removed from Radarr doesn't re-notify.
+    """
+
+    __tablename__ = "seen_gaps"
+    __table_args__ = (UniqueConstraint("item_type", "tmdb_id", name="uq_seen_gap"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    item_type: str = Field(index=True)
+    tmdb_id: int = Field(index=True)
+    title: str = Field(default="")
+    first_seen_at: datetime = Field(default_factory=utcnow)
+
+
 class UserSession(SQLModel, table=True):
     """A logged-in browser session.
 

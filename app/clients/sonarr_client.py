@@ -133,7 +133,7 @@ class SonarrClient:
             raise SonarrUnreachableError(f"Couldn't reach Sonarr at {self._base}") from exc
 
         if response.status_code in (401, 403):
-            raise SonarrAuthError("Sonarr rejected the API key for this instance.")
+            raise SonarrAuthError(_auth_failure_message(response, self._base, "Sonarr"))
         if response.status_code >= 400:
             raise SonarrError(_describe_failure(response))
         return response
@@ -259,6 +259,30 @@ class SonarrClient:
             title=str(created.get("title") or payload.get("title") or ""),
             monitored=bool(created.get("monitored", True)),
         )
+
+
+def _auth_failure_message(response: requests.Response, base: str, app: str) -> str:
+    """Explain a 401/403, distinguishing the app from something standing in front of it.
+
+    Sonarr answers with JSON. A forward-auth proxy -- Authelia, Authentik, Cloudflare Access,
+    oauth2-proxy -- answers with an HTML login page or a redirect to one, and plenty of this
+    audience puts exactly that in front of their *arr apps. Reporting "your API key was rejected"
+    in that situation sends someone to check a credential that was never the problem.
+    """
+    content_type = response.headers.get("content-type", "")
+    body = (response.text or "")[:400].lstrip()
+    looks_like_a_login_page = (
+        "text/html" in content_type.lower() or body.startswith(("<", "<!DOCTYPE", "<!doctype"))
+    )
+
+    if looks_like_a_login_page:
+        return (
+            f"{base} is behind an authentication proxy, not answering as Sonarr. "
+            f"Franchisarr sends an API key, which a login-page proxy doesn't understand. "
+            f"Either point Franchisarr at Sonarr directly on your internal network, or add a "
+            f"bypass rule in the proxy for /api so API-key requests are let through."
+        )
+    return f"Sonarr rejected the API key for this instance."
 
 
 def _describe_failure(response: requests.Response) -> str:

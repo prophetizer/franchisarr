@@ -22,6 +22,7 @@ from app.clients.radarr_client import RadarrError
 from app.config import get_settings
 from app.models import CollectionExclude, DismissedItem, ItemType, TmdbCollection
 from app.services import add_service, instance_service, movie_gap_service
+from app.services.settings_service import SettingKey, get_setting
 from app.templating import get_templates
 
 logger = logging.getLogger(__name__)
@@ -214,19 +215,36 @@ def submit_add(
 # ---------------------------------------------------------------------- settings
 
 
+def _settings_context(session, user, **extra) -> dict:
+    """One place that assembles the settings page, so a new field can't be added to the template
+    and forgotten in one of the handlers that renders it."""
+    from app.models import WebhookFormat
+    from app.services import scheduler as scheduler_service
+    from app.services.theme_service import SUGGESTED_THEMES, get_theme_url
+
+    cron = get_setting(session, SettingKey.SCAN_SCHEDULE_CRON) or ""
+    context = {
+        "user": user,
+        "current_theme_url": get_theme_url(session),
+        "suggested": SUGGESTED_THEMES,
+        "current_cron": cron,
+        "schedule_description": scheduler_service.describe(cron),
+        "current_webhook_url": get_setting(session, SettingKey.WEBHOOK_URL) or "",
+        "current_webhook_format": get_setting(session, SettingKey.WEBHOOK_FORMAT) or "generic",
+        "webhook_formats": [f.value for f in WebhookFormat],
+        "saved": False,
+        "error": None,
+    }
+    context.update(extra)
+    return context
+
+
 @router.get("/settings", response_class=HTMLResponse)
 def settings_page(request: Request, session: DbSession, user: RequiredUser, saved: bool = False):
     from app.services.theme_service import SUGGESTED_THEMES, get_theme_url
 
     return get_templates().TemplateResponse(
-        request,
-        "settings.html",
-        {
-            "user": user,
-            "current_theme_url": get_theme_url(session),
-            "suggested": SUGGESTED_THEMES,
-            "saved": saved,
-        },
+        request, "settings.html", _settings_context(session, user, saved=saved)
     )
 
 
@@ -237,12 +255,7 @@ def save_settings(
     user: RequiredUser,
     theme_url: Annotated[str, Form()] = "",
 ):
-    from app.services.theme_service import (
-        SUGGESTED_THEMES,
-        InvalidThemeUrl,
-        get_theme_url,
-        set_theme_url,
-    )
+    from app.services.theme_service import InvalidThemeUrl, set_theme_url
 
     try:
         set_theme_url(session, theme_url)
@@ -250,13 +263,78 @@ def save_settings(
         return get_templates().TemplateResponse(
             request,
             "settings.html",
-            {
-                "user": user,
-                "current_theme_url": get_theme_url(session),
-                "suggested": SUGGESTED_THEMES,
-                "error": str(exc),
-            },
+            _settings_context(session, user, error=str(exc)),
             status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    return RedirectResponse(_url("/settings?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/settings/schedule", response_class=HTMLResponse)
+def save_schedule(
+    request: Request,
+    session: DbSession,
+    user: RequiredUser,
+    scan_schedule_cron: Annotated[str, Form()] = "",
+):
+    """Save the scan schedule and apply it immediately, so the page can't disagree with reality."""
+    from app.services import scan_job
+    from app.services import scheduler as scheduler_service
+    from app.services.settings_service import set_setting
+
+    try:
+        scheduler_service.validate_cron(scan_schedule_cron)
+    except scheduler_service.InvalidSchedule as exc:
+        return get_templates().TemplateResponse(
+            request,
+            "settings.html",
+            _settings_context(session, user, error=str(exc)),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
+    was_unscheduled = not (get_setting(session, SettingKey.SCAN_SCHEDULE_CRON) or "").strip()
+    set_setting(session, SettingKey.SCAN_SCHEDULE_CRON, scan_schedule_cron.strip())
+    session.commit()
+    scheduler_service.apply_schedule(scan_schedule_cron)
+
+    # Turning scheduling on for the first time shouldn't make the first run announce the entire
+    # existing backlog -- that's the state of the world, not news.
+    if was_unscheduled and scan_schedule_cron.strip():
+        scan_job.prime_seen_gaps(session)
+
+    return RedirectResponse(_url("/settings?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/settings/webhook", response_class=HTMLResponse)
+def save_webhook(
+    request: Request,
+    session: DbSession,
+    user: RequiredUser,
+    webhook_url: Annotated[str, Form()] = "",
+    webhook_format: Annotated[str, Form()] = "generic",
+    test: Annotated[str, Form()] = "",
+):
+    from app.services import notifier
+    from app.services.settings_service import set_setting
+
+    set_setting(session, SettingKey.WEBHOOK_URL, webhook_url.strip())
+    set_setting(session, SettingKey.WEBHOOK_FORMAT, webhook_format)
+    session.commit()
+
+    if test and webhook_url.strip():
+        sample = notifier.ScanReport(
+            new_movies=[notifier.NewItem("movie", 0, "A test notification from Franchisarr",
+                                         "no action needed")]
+        )
+        delivered = notifier.send(webhook_url.strip(), sample, webhook_format)
+        return get_templates().TemplateResponse(
+            request,
+            "settings.html",
+            _settings_context(
+                session, user,
+                saved=delivered,
+                error=None if delivered else "Couldn't deliver the test — check the URL.",
+            ),
         )
 
     return RedirectResponse(_url("/settings?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
@@ -272,7 +350,6 @@ def trigger_scan(request: Request, session: DbSession, user: RequiredUser):
     from app.clients.plex_client import PlexClient
     from app.clients.tmdb_client import TmdbClient
     from app.services import scan_service
-    from app.services.settings_service import SettingKey, get_setting
 
     plex_url = get_setting(session, SettingKey.PLEX_URL)
     plex_token = get_setting(session, SettingKey.PLEX_TOKEN)

@@ -36,6 +36,7 @@ from app.routes_tv import router as tv_router
 from app.routes_auth import router as auth_router
 from app.services import library_service
 from app.services.auth_service import discover_machine_identifier
+from app.services import scheduler as scheduler_service
 from app.services.settings_service import SettingKey, get_setting, seed_settings_from_env
 from app.templating import STATIC_DIR, get_templates
 
@@ -61,8 +62,11 @@ async def lifespan(app: FastAPI):
         seed_local_admin_from_env(session, settings)
         seed_radarr_from_env(session, settings)
         seed_sonarr_from_env(session, settings)
+        scheduler_service.start(session)
 
     yield
+
+    scheduler_service.shutdown()
 
 
 app = FastAPI(title="Franchisarr", version=__version__, lifespan=lifespan)

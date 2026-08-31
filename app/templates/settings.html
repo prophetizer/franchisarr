@@ -38,6 +38,51 @@
   </form>
 </article>
 
+<article>
+  <header><strong>Scheduled scans</strong></header>
+
+  <form method="post" action="{{ url('/settings/schedule') }}">
+    <label for="scan_schedule_cron">Cron schedule</label>
+    <input type="text" id="scan_schedule_cron" name="scan_schedule_cron"
+           value="{{ current_cron }}" placeholder="0 3 * * *" autocomplete="off">
+    <small>
+      Five fields, e.g. <code>0 3 * * *</code> for 3am every day. Leave empty to only scan when
+      you ask. Times are this server's local time.
+    </small>
+    <p><small class="muted">{{ schedule_description }}</small></p>
+    <button type="submit">Save schedule</button>
+  </form>
+</article>
+
+<article>
+  <header><strong>Notifications</strong></header>
+
+  <form method="post" action="{{ url('/settings/webhook') }}">
+    <label for="webhook_url">Webhook URL</label>
+    <input type="url" id="webhook_url" name="webhook_url" value="{{ current_webhook_url }}"
+           placeholder="https://discord.com/api/webhooks/..." autocomplete="off">
+
+    <label for="webhook_format">Payload format</label>
+    <select id="webhook_format" name="webhook_format">
+      {% for value in webhook_formats %}
+        <option value="{{ value }}" {% if value == current_webhook_format %}selected{% endif %}>
+          {{ value | capitalize }}</option>
+      {% endfor %}
+    </select>
+
+    <small>
+      Sent after a scheduled scan, and only when something new turns up — not every run.
+    </small>
+
+    <p>
+      <button type="submit">Save</button>
+      {% if current_webhook_url %}
+        <button type="submit" name="test" value="1" class="secondary">Send a test</button>
+      {% endif %}
+    </p>
+  </form>
+</article>
+
 {% if current_theme_url %}
   <article>
     <header><strong>Theme preview</strong></header>

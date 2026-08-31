@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Scheduled scans on a cron schedule you set in Settings, running in the container's local time
+  (set `TZ`). A scan that's still running when the next is due is not started twice.
+- Webhook notifications when a scheduled scan finds something new — generic JSON, Discord or
+  Slack — with a "send a test" button. Only genuinely new gaps are announced, and the very first
+  scan never notifies, so you aren't handed a list of everything that was already missing.
 - One-click add to Sonarr for spin-offs, with a choice of how much to monitor: all seasons,
   future episodes only, or the first season. Your choice is remembered as the default for next
   time. Shows already in Sonarr stop being suggested, with the same per-instance and
@@ -92,6 +97,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- An *arr instance behind an authentication proxy (Authelia, Authentik, Cloudflare Access) is no
+  longer reported as "API key rejected". Franchisarr now recognises a login page and suggests
+  either using an internal URL or allowing `/api` through the proxy.
 - Asset links no longer depend on module import order when `BASE_URL` is a subpath: the base URL
   is now resolved per request rather than captured at import.
 - Plex items left unmatched by a modern library agent (`tv.plex.agents.none`) are now recognised

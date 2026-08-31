@@ -1,0 +1,178 @@
+"""The whole scan, as one callable: libraries, instances, then notify.
+
+Shared by the scheduler and by anything that wants to trigger a full run, so a scheduled scan and
+a manual one cannot drift apart -- which is the point of building it as one function rather than
+letting the scheduler assemble its own sequence.
+
+Order matters. Plex and TMDb first, so the snapshot is current; then the Radarr/Sonarr caches, so
+"already have it" reflects reality; only then the diff, so the notification doesn't announce
+films the user acquired an hour ago. Getting that backwards would produce a nightly message full
+of things already dealt with, which is how people learn to ignore notifications.
+"""
+
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass, field
+
+from sqlmodel import Session, col, select
+
+from app.clients.plex_client import PlexClient
+from app.clients.tmdb_client import TmdbClient
+from app.models import ItemType, SeenGap, utcnow
+from app.services import (
+    instance_service,
+    movie_gap_service,
+    notifier,
+    scan_service,
+    sonarr_instance_service,
+    tv_spinoff_service,
+)
+from app.services.settings_service import SettingKey, get_setting
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class ScanJobResult:
+    movies: scan_service.ScanSummary | None = None
+    shows: scan_service.ScanSummary | None = None
+    instances_refreshed: int = 0
+    report: notifier.ScanReport = field(default_factory=notifier.ScanReport)
+    notified: bool = False
+    errors: list[str] = field(default_factory=list)
+
+    @property
+    def ok(self) -> bool:
+        return not self.errors
+
+
+def _clients(session: Session) -> tuple[PlexClient | None, TmdbClient | None, list[str]]:
+    errors: list[str] = []
+    plex_url = get_setting(session, SettingKey.PLEX_URL)
+    plex_token = get_setting(session, SettingKey.PLEX_TOKEN)
+    tmdb_key = get_setting(session, SettingKey.TMDB_API_KEY)
+
+    if not (plex_url and plex_token):
+        errors.append("No Plex connection is configured.")
+    if not tmdb_key:
+        errors.append("No TMDb API key is configured.")
+    if errors:
+        return None, None, errors
+
+    return PlexClient(plex_url, plex_token), TmdbClient(tmdb_key), []
+
+
+def _record_new(session: Session, item_type: str, found: dict[int, tuple[str, str]]) -> list[notifier.NewItem]:
+    """Which of these gaps we haven't reported before, marking them reported as we go."""
+    already = {
+        row.tmdb_id
+        for row in session.exec(
+            select(SeenGap).where(col(SeenGap.item_type) == item_type)
+        ).all()
+    }
+
+    fresh: list[notifier.NewItem] = []
+    for tmdb_id, (title, detail) in sorted(found.items()):
+        if tmdb_id in already:
+            continue
+        fresh.append(notifier.NewItem(item_type=item_type, tmdb_id=tmdb_id, title=title,
+                                      detail=detail))
+        session.add(
+            SeenGap(item_type=item_type, tmdb_id=tmdb_id, title=title, first_seen_at=utcnow())
+        )
+
+    session.commit()
+    return fresh
+
+
+def has_ever_scanned(session: Session) -> bool:
+    return session.exec(select(SeenGap).limit(1)).first() is not None
+
+
+def run(session: Session, *, notify: bool = True) -> ScanJobResult:
+    """Do a complete scan and, if anything new turned up, send the webhook.
+
+    The very first run never notifies. Everything missing on a fresh install is the state of the
+    world rather than news, and a first message listing 227 films -- the real number on this
+    developer's library -- is precisely how someone learns to mute the channel. The settings page
+    primes explicitly when a schedule is switched on, but a schedule supplied through
+    SCAN_SCHEDULE_CRON never passes through that page, so the guard belongs here too.
+    """
+    result = ScanJobResult()
+    first_run = not has_ever_scanned(session)
+
+    plex, tmdb, errors = _clients(session)
+    if errors:
+        result.errors.extend(errors)
+        return result
+
+    result.movies = scan_service.scan_movie_libraries(session, plex, tmdb)
+    result.shows = scan_service.scan_show_libraries(session, plex, tmdb)
+    for summary in (result.movies, result.shows):
+        # "No movie libraries are enabled" is a normal state for a TV-only install, not a fault.
+        result.errors.extend(
+            error for error in summary.errors if "libraries are enabled" not in error
+        )
+
+    # Before the diff, so a film acquired since the last run isn't announced as missing.
+    refreshed = instance_service.refresh_all(session) + sonarr_instance_service.refresh_all(session)
+    result.instances_refreshed = sum(1 for r in refreshed if r.ok)
+    result.errors.extend(r.error for r in refreshed if r.error)
+
+    movie_gaps: dict[int, tuple[str, str]] = {}
+    for gap in movie_gap_service.collections_with_gaps(session):
+        for movie in gap.missing:
+            movie_gaps[movie.tmdb_id] = (movie.title, gap.name)
+
+    show_gaps: dict[int, tuple[str, str]] = {
+        suggestion.spinoff_tmdb_id: (suggestion.spinoff_name, f"spin-off of {suggestion.source_show_name}")
+        for suggestion in tv_spinoff_service.missing_spinoffs(session)
+    }
+
+    result.report = notifier.ScanReport(
+        new_movies=_record_new(session, ItemType.MOVIE.value, movie_gaps),
+        new_shows=_record_new(session, ItemType.SHOW.value, show_gaps),
+    )
+
+    if first_run and result.report.has_news:
+        logger.info(
+            "First scan: recorded %d existing gap(s) without notifying", result.report.total
+        )
+        notify = False
+
+    if notify and result.report.has_news:
+        url = get_setting(session, SettingKey.WEBHOOK_URL)
+        if url:
+            result.notified = notifier.send(
+                url, result.report, get_setting(session, SettingKey.WEBHOOK_FORMAT) or "generic"
+            )
+
+    logger.info(
+        "Scan finished: %s new (%d movies, %d shows), %d instance(s) refreshed",
+        result.report.total, len(result.report.new_movies), len(result.report.new_shows),
+        result.instances_refreshed,
+    )
+    return result
+
+
+def prime_seen_gaps(session: Session) -> int:
+    """Mark everything currently missing as already-reported, without notifying.
+
+    Run once when a schedule is first configured. Otherwise the very first scheduled scan
+    announces the entire backlog -- 227 films on a real library -- which is not news, it is the
+    state of the world, and it teaches the recipient to mute the channel immediately.
+    """
+    movie_gaps = {
+        movie.tmdb_id: (movie.title, gap.name)
+        for gap in movie_gap_service.collections_with_gaps(session)
+        for movie in gap.missing
+    }
+    show_gaps = {
+        s.spinoff_tmdb_id: (s.spinoff_name, "") for s in tv_spinoff_service.missing_spinoffs(session)
+    }
+
+    primed = len(_record_new(session, ItemType.MOVIE.value, movie_gaps))
+    primed += len(_record_new(session, ItemType.SHOW.value, show_gaps))
+    logger.info("Marked %d existing gap(s) as already reported", primed)
+    return primed

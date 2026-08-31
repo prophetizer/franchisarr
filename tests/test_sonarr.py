@@ -384,3 +384,27 @@ def test_env_does_not_add_a_second_sonarr_instance(session: Session, monkeypatch
 
     assert svc.seed_sonarr_from_env(session, get_settings()) is None
     assert len(svc.list_sonarr(session)) == 1
+
+
+@responses.activate
+def test_an_sso_proxy_is_not_reported_as_a_bad_api_key() -> None:
+    responses.add(
+        responses.GET, f"{URL}/api/v3/system/status", status=401,
+        body="<!DOCTYPE html><html><body>Sign in</body></html>", content_type="text/html",
+    )
+
+    with pytest.raises(SonarrAuthError) as exc_info:
+        _client().test_connection()
+
+    assert "authentication proxy" in str(exc_info.value)
+
+
+@responses.activate
+def test_a_genuine_sonarr_key_rejection_still_says_so() -> None:
+    responses.add(responses.GET, f"{URL}/api/v3/system/status", status=401,
+                  json={"error": "Unauthorized"})
+
+    with pytest.raises(SonarrAuthError) as exc_info:
+        _client().test_connection()
+
+    assert "rejected the API key" in str(exc_info.value)

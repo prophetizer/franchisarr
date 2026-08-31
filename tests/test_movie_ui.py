@@ -432,3 +432,79 @@ def test_the_spinoff_page_is_themed_like_everything_else(client: TestClient) -> 
     _own_show(4614, "NCIS")
 
     assert url in client.get(f"{BASE}/shows").text
+
+
+# ------------------------------------------------------------------ schedule & webhook settings
+
+
+def test_saving_a_valid_schedule(client: TestClient) -> None:
+    response = client.post(f"{BASE}/settings/schedule", data={"scan_schedule_cron": "0 3 * * *"})
+
+    assert response.status_code == 303
+    body = client.get(f"{BASE}/settings").text
+    assert "0 3 * * *" in body
+    assert "Next scheduled scan" in body
+
+
+def test_saving_a_bad_schedule_is_rejected_with_an_explanation(client: TestClient) -> None:
+    response = client.post(f"{BASE}/settings/schedule", data={"scan_schedule_cron": "nonsense"})
+
+    assert response.status_code == 400
+    assert "valid cron expression" in response.text
+
+
+def test_clearing_the_schedule_is_allowed(client: TestClient) -> None:
+    client.post(f"{BASE}/settings/schedule", data={"scan_schedule_cron": "0 3 * * *"})
+
+    response = client.post(f"{BASE}/settings/schedule", data={"scan_schedule_cron": ""})
+
+    assert response.status_code == 303
+    assert "only scan when you ask" in client.get(f"{BASE}/settings").text
+
+
+def test_turning_scheduling_on_primes_the_backlog(client: TestClient) -> None:
+    """Otherwise the first scheduled run announces every gap that was already there."""
+    from app.models import SeenGap
+
+    _seed_collection()
+
+    client.post(f"{BASE}/settings/schedule", data={"scan_schedule_cron": "0 3 * * *"})
+
+    with Session(get_engine()) as session:
+        assert session.exec(select(SeenGap)).all(), "existing gaps should be marked as seen"
+
+
+def test_saving_a_webhook(client: TestClient) -> None:
+    response = client.post(f"{BASE}/settings/webhook", data={
+        "webhook_url": "https://hooks.example.com/abc", "webhook_format": "discord",
+    })
+
+    assert response.status_code == 303
+    body = client.get(f"{BASE}/settings").text
+    assert "hooks.example.com" in body
+
+
+@responses.activate
+def test_the_test_button_sends_one_and_reports_the_result(client: TestClient) -> None:
+    responses.add(responses.POST, "https://hooks.example.com/abc", status=204)
+
+    response = client.post(f"{BASE}/settings/webhook", data={
+        "webhook_url": "https://hooks.example.com/abc",
+        "webhook_format": "discord", "test": "1",
+    })
+
+    assert response.status_code == 200
+    assert "Saved" in response.text
+
+
+@responses.activate
+def test_a_failing_test_webhook_says_so(client: TestClient) -> None:
+    responses.add(responses.POST, "https://hooks.example.com/abc", status=404)
+
+    response = client.post(f"{BASE}/settings/webhook", data={
+        "webhook_url": "https://hooks.example.com/abc",
+        "webhook_format": "discord", "test": "1",
+    })
+
+    # Jinja escapes the apostrophe, so match a portion without one.
+    assert "deliver the test" in response.text

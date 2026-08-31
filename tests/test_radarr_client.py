@@ -226,3 +226,41 @@ def test_a_radarr_validation_failure_surfaces_its_message() -> None:
         _client().add_movie(1, quality_profile_id=1, root_folder_path="/nope")
 
     assert "Root folder /nope does not exist" in str(exc_info.value)
+
+
+# ------------------------------------------------------------------ auth proxies
+
+
+@responses.activate
+def test_an_sso_proxy_is_not_reported_as_a_bad_api_key() -> None:
+    """Plenty of this audience puts Authelia or similar in front of their *arr apps. The proxy
+    answers 401 with an HTML login page, and calling that "your API key was rejected" sends
+    someone to check a credential that was never the problem."""
+    responses.add(
+        responses.GET,
+        f"{URL}/api/v3/system/status",
+        status=401,
+        body='<a href="https://auth.example.com/?rd=https%3A%2F%2Fradarr">Found</a>',
+        content_type="text/html",
+    )
+
+    with pytest.raises(RadarrAuthError) as exc_info:
+        _client().test_connection()
+
+    message = str(exc_info.value)
+    assert "authentication proxy" in message
+    assert "bypass rule" in message
+    assert "rejected the API key" not in message
+
+
+@responses.activate
+def test_a_genuine_key_rejection_still_says_so() -> None:
+    responses.add(
+        responses.GET, f"{URL}/api/v3/system/status", status=401,
+        json={"error": "Unauthorized"},
+    )
+
+    with pytest.raises(RadarrAuthError) as exc_info:
+        _client().test_connection()
+
+    assert "rejected the API key" in str(exc_info.value)
