@@ -19,12 +19,12 @@ services:
     volumes:
       - ./config:/config
 
-    # If Radarr/Sonarr run in Docker too, put them on a shared network and use their container
-    # names as URLs (http://radarr:7878). That is also the way past a login proxy in front of
-    # them: an API key cannot get through a proxy that wants a browser session.
+    # Radarr and Sonarr are reached by their address on your own network. If they run in Docker,
+    # join their network and use the container names (http://radarr:7878) — see .env.example.
+    # A public URL behind a login proxy will not work: an API key cannot get past a login page.
     # networks:
     #   - arrs
 
 # networks:
 #   arrs:
-#     external: true
+#     external: true      # e.g. the network your *arr stack already uses

@@ -47,14 +47,28 @@ changing a variable later has no effect. See [`.env.example`](.env.example) for 
 | `TZ` | Which timezone the schedule runs in |
 | `PUID`, `PGID` | Ownership of the config volume, as in the linuxserver.io images |
 
-### If Radarr or Sonarr sit behind a login proxy
+### Connecting to Radarr and Sonarr
 
-Authelia, Authentik, Cloudflare Access and friends answer API requests with a login page, and an
-API key can't get past one. Franchisarr will say so rather than blaming your API key. Either:
+Use their address on your own network, not a public one:
 
-- point it at the internal address (`http://radarr:7878`) — put both on the same Docker network
-  and use the container name; or
-- add a bypass rule in the proxy for `/api` so API-key requests are let through.
+```yaml
+services:
+  franchisarr:
+    networks: [arrs]          # the network Radarr and Sonarr are already on
+networks:
+  arrs:
+    external: true
+```
+
+```
+RADARR_URL=http://radarr:7878
+SONARR_URL=http://sonarr:8989
+```
+
+A public URL behind a login proxy — Authelia, Authentik, Cloudflare Access — will **not** work:
+those answer API requests with a login page, and an API key can't get past one. Franchisarr says
+so rather than blaming your API key. If you'd rather keep the public URL, add a bypass rule in
+the proxy for `/api` so API-key requests are let through.
 
 ## Signing in
 
