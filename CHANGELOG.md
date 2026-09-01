@@ -7,18 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+## [0.2.0] — 2026-09-01
 
-- **Theming is configured by environment variable, not in the app.** Franchisarr previously asked
-  you to paste a stylesheet URL into its settings page, which is the wrong shape for a homelab
-  that themes every service centrally. It now reads theme.park's own `TP_THEME`, `TP_DOMAIN`,
-  `TP_SCHEME` and `TP_COMMUNITY_THEME`, so a stack already setting those needs no per-app
-  configuration. `THEME_CSS_URL` overrides them with a literal URL. The settings page shows what
-  is active and where it came from, and no longer offers to change it.
-- Themes injected by a reverse proxy now work with nothing configured in Franchisarr at all. The
-  stylesheet that maps theme.park's properties onto the app's is always loaded; previously it only
-  loaded when Franchisarr rendered the theme link itself, so an injected theme silently did
-  nothing.
+### Changed — action needed if you set a theme
+
+**Themes are now set by environment variable instead of in Franchisarr's settings page.** If you
+had chosen one in the app, it is no longer applied: set `TP_THEME` on the container instead.
+
+```yaml
+environment:
+  TP_THEME: nord
+  TP_DOMAIN: theme-park.dev     # or your own copy
+  TP_SCHEME: https
+  TP_COMMUNITY_THEME: "false"
+```
+
+The reason for the change is that this is how theming is actually done: a homelab running
+[theme.park](https://theme-park.dev) across a dozen services sets it once, centrally, and expects
+every app to follow. Asking you to open each app and paste a URL was the wrong shape. These are
+theme.park's own variable names, so a stack already setting them needs nothing new.
+`THEME_CSS_URL` overrides with a literal stylesheet URL. The settings page shows what is active
+and where it came from, and no longer offers to change it.
+
+### Fixed
+
+- **Themes injected by a reverse proxy now work**, with nothing configured in Franchisarr at all.
+  If you theme centrally — nginx `sub_filter`, a Traefik plugin, theme.park's Docker mod — the
+  stylesheet that maps theme.park's properties onto the ones the app paints with is now always
+  loaded. It previously loaded only when Franchisarr rendered the theme link itself, so an
+  injected theme defined its colours and nothing used them.
+
+  Note there is still no `franchisarr-base.css` at theme.park, so injecting a *base* stylesheet
+  the way you would for Sonarr finds nothing; the theme-options file plus the built-in adapter is
+  what does the work.
 
 ## [0.1.1] — 2026-08-31
 
@@ -112,6 +133,7 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.2.0
 [0.1.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.1.1
 [0.1.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.1.0
