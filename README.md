@@ -127,9 +127,10 @@ plugin, theme.park's Docker mod — that works with **nothing set here at all**.
 loads a small adapter mapping theme.park's custom properties onto the ones it paints with, so an
 injected theme-options stylesheet takes effect on its own.
 
-There is no upstream `franchisarr-base.css` at theme.park yet, so injecting a *base* stylesheet
-the way you would for Sonarr won't find one — the theme-options file plus the built-in adapter is
-what does the work today.
+If you host your own theme.park, `contrib/theme-park/franchisarr-base.css` is a base stylesheet
+ready to drop in as `css/base/franchisarr/franchisarr-base.css`. See
+[`contrib/theme-park/README.md`](contrib/theme-park/README.md). It isn't in the upstream
+theme.park yet.
 
 Leave it all unset and nothing is fetched from anywhere but your own server.
 

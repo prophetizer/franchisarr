@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `contrib/theme-park/franchisarr-base.css`, a base stylesheet for anyone hosting their own
+  [theme.park](https://theme-park.dev), so Franchisarr can be themed through the standard
+  mechanism alongside the rest of a stack.
+
 ## [0.2.0] — 2026-09-01
 
 ### Changed — action needed if you set a theme
