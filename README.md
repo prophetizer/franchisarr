@@ -77,7 +77,17 @@ that can actually reach *your* Plex server are admitted, so having a Plex accoun
 the server's owner becomes an administrator and people you share with get ordinary accounts.
 
 The local admin account from `ADMIN_USERNAME`/`ADMIN_PASSWORD` is the fallback for when Plex isn't
-configured yet or plex.tv is unreachable.
+configured yet or plex.tv is unreachable. It's created on **first boot only**, so changing those
+variables later has no effect — if you forget the password:
+
+```bash
+docker exec -it franchisarr python scripts/reset_admin_password.py            # lists accounts
+docker exec -it franchisarr python scripts/reset_admin_password.py michael    # prompts for a new one
+```
+
+If the Plex button isn't offered, Franchisarr couldn't reach your Plex server at startup — it has
+to know which server it belongs to before it can check that a Plex account is allowed in. Check
+`PLEX_URL`/`PLEX_TOKEN` and restart.
 
 ## Command line
 

@@ -92,3 +92,71 @@ def test_startup_registers_env_secrets_for_redaction(app_under_subpath) -> None:
 
     with TestClient(app_under_subpath.app):
         assert "tmdb-key-from-env" not in redact("key is tmdb-key-from-env")
+
+
+def test_plex_sign_in_becomes_available_at_startup(tmp_path, monkeypatch) -> None:
+    """Regression: the machine identifier was only learned by opening the library page, which
+    requires being signed in. Plex sign-in could therefore never appear on a fresh install, and
+    an install with Plex configured but no local admin had no way in at all."""
+    import importlib
+
+    import responses as responses_lib
+    from sqlmodel import Session
+
+    from app.db import get_engine
+    from app.services.auth_service import get_machine_identifier
+
+    monkeypatch.setenv("BASE_URL", "/")
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "startup.db"))
+    monkeypatch.setenv("LOG_LEVEL", "WARNING")
+    monkeypatch.setenv("PLEX_URL", "http://plex.test:32400")
+    monkeypatch.setenv("PLEX_TOKEN", "a-token")
+
+    fixture = (
+        Path(__file__).parent / "fixtures" / "plex" / "root.xml"
+    ).read_text()
+
+    import app.main
+
+    module = importlib.reload(app.main)
+    try:
+        with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as mock:
+            mock.add(responses_lib.GET, "http://plex.test:32400/", body=fixture,
+                     content_type="application/xml")
+            with TestClient(module.app) as client:
+                body = client.get("/login").text
+
+        assert "Sign in with Plex" in body, "the button must be offered before anyone signs in"
+        with Session(get_engine()) as session:
+            assert get_machine_identifier(session)
+    finally:
+        monkeypatch.undo()
+        importlib.reload(app.main)
+
+
+def test_an_unreachable_plex_at_startup_is_not_fatal(tmp_path, monkeypatch) -> None:
+    """The app must still boot and still offer the local admin login."""
+    import importlib
+
+    import responses as responses_lib
+
+    monkeypatch.setenv("BASE_URL", "/")
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "startup2.db"))
+    monkeypatch.setenv("LOG_LEVEL", "WARNING")
+    monkeypatch.setenv("PLEX_URL", "http://plex.test:32400")
+    monkeypatch.setenv("PLEX_TOKEN", "a-token")
+    monkeypatch.setenv("ADMIN_USERNAME", "admin")
+    monkeypatch.setenv("ADMIN_PASSWORD", "a-passphrase-here")
+
+    import app.main
+
+    module = importlib.reload(app.main)
+    try:
+        with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as mock:
+            mock.add(responses_lib.GET, "http://plex.test:32400/", status=500)
+            with TestClient(module.app) as client:
+                assert client.get("/health").status_code == 200
+                assert 'name="username"' in client.get("/login").text
+    finally:
+        monkeypatch.undo()
+        importlib.reload(app.main)

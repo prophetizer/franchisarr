@@ -46,6 +46,32 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
+def _discover_plex_server(session: Session) -> None:
+    """Learn which Plex server this install is for, at startup.
+
+    Plex sign-in is refused unless the account can reach *this* server, which means knowing the
+    server's machine identifier. That was previously only learned when someone opened the library
+    page -- a page you have to be signed in to reach. So Plex sign-in could never appear on a
+    fresh install, and an install configured with Plex but no local admin had no way in at all.
+
+    Failure is not fatal: an unreachable Plex simply leaves Plex sign-in unavailable until the
+    next restart, which is the same conservative outcome as before.
+    """
+    plex_url = get_setting(session, SettingKey.PLEX_URL)
+    plex_token = get_setting(session, SettingKey.PLEX_TOKEN)
+    if not (plex_url and plex_token):
+        return
+
+    identifier = discover_machine_identifier(session, PlexClient(plex_url, plex_token))
+    if identifier:
+        logger.info("Plex sign-in is available")
+    else:
+        logger.warning(
+            "Could not reach Plex at startup, so Plex sign-in stays unavailable until the next "
+            "restart. The local admin account is unaffected."
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     configure_logging(settings.log_level)
@@ -63,6 +89,7 @@ async def lifespan(app: FastAPI):
         seed_local_admin_from_env(session, settings)
         seed_radarr_from_env(session, settings)
         seed_sonarr_from_env(session, settings)
+        _discover_plex_server(session)
         scheduler_service.start(session)
 
     yield

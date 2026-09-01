@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-08-31
+
+### Fixed
+
+- **Sign in with Plex never appeared on a new install.** Franchisarr only learned which Plex
+  server it belongs to when someone opened the library page — a page you have to be signed in to
+  reach. It now finds out at startup, so the Plex button is there the first time you load the
+  login page. An install configured with Plex but no local admin account previously had no way to
+  sign in at all.
+
+### Added
+
+- `scripts/reset_admin_password.py`, for when the local admin password is forgotten. The in-app
+  change screen asks for the current password, which is no use in that situation.
+
 ## [0.1.0] — 2026-08-31
 
 First release.
@@ -84,5 +99,6 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.1.1
 [0.1.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.1.0
