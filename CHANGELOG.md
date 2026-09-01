@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **"Sign in with Plex" spun forever instead of signing you in.** The sign-in itself worked — the
+  session was created — but the page never moved, and reloading it by hand was the only way
+  through. The popup window was held in the Alpine component's state, and Alpine makes that state
+  reactive; reading a reactive-wrapped cross-origin window raises a SecurityError, which the
+  window becomes the moment it goes to plex.tv. So the check that closes the popup threw, and
+  took the redirect with it. The window is kept outside the component now, closing it can no
+  longer block the redirect, and a failure while polling shows an error instead of spinning.
+
 ## [0.3.0] — 2026-09-01
 
 Artwork, and a bug that had not gone off yet. If you have been running 0.2.x, the fix below is

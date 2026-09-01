@@ -47,22 +47,37 @@
 
 <script>
   function plexSignIn() {
+    // The popup is deliberately NOT part of the Alpine component's state. Alpine makes component
+    // data reactive, and reading a reactive-wrapped cross-origin Window throws a SecurityError:
+    // the proxy probes properties like __v_isRef on whatever it holds. This window is same-origin
+    // (about:blank) when it is opened and cross-origin the moment it is sent to plex.tv, so every
+    // later touch of it -- `if (popup)` included -- threw, killed the poll loop, and left the
+    // button spinning forever over a sign-in that had actually succeeded.
+    let popup = null;
+
+    const closePopup = () => {
+      // A courtesy, never a precondition: tidying up must not be able to stop the redirect.
+      try { if (popup) { popup.close(); } } catch (err) { /* already closed, or disowned */ }
+      popup = null;
+    };
+
     return {
       busy: false,
       error: '',
       statusText: 'Waiting for Plex…',
-      popup: null,
       async start() {
         this.error = '';
         this.busy = true;
         // Opened before the await: browsers block popups not tied to a user gesture.
-        this.popup = window.open('', 'plex-signin', 'width=600,height=700');
+        popup = window.open('', 'plex-signin', 'width=600,height=700');
         try {
           const res = await fetch('{{ url("/auth/plex/start") }}', { method: 'POST' });
           const data = await res.json();
           if (!res.ok) { throw new Error(data.error || 'Could not start Plex sign-in.'); }
-          if (this.popup) { this.popup.location = data.auth_url; }
-          this.poll();
+          if (popup) { popup.location = data.auth_url; }
+          // Nothing awaits poll(), so an exception inside it would otherwise be an unhandled
+          // rejection -- a spinner that runs forever and never says why.
+          this.poll().catch(err => this.fail(err.message));
         } catch (err) {
           this.fail(err.message);
         }
@@ -80,7 +95,7 @@
             continue;  // transient network blip; keep waiting
           }
           if (res.ok && data.status === 'ok') {
-            if (this.popup) { this.popup.close(); }
+            closePopup();
             window.location = data.redirect;
             return;
           }
@@ -90,8 +105,8 @@
       },
       fail(message) {
         this.busy = false;
-        this.error = message;
-        if (this.popup) { this.popup.close(); }
+        this.error = message || 'Plex sign-in failed.';
+        closePopup();
       },
     };
   }

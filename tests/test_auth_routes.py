@@ -199,6 +199,47 @@ def test_the_login_page_hides_plex_sign_in_until_it_is_usable(client: TestClient
     assert "Sign in with Plex" in client.get(f"{BASE}/login").text
 
 
+def test_the_popup_is_not_kept_in_alpine_reactive_state(client: TestClient) -> None:
+    """Alpine makes component data reactive, and its proxy probes properties like __v_isRef on
+    whatever it holds. The sign-in popup is same-origin (about:blank) when it is stored and
+    cross-origin the moment it goes to plex.tv, so from then on *any* read of it -- including a
+    bare `if (popup)` -- raised a SecurityError.
+
+    That killed the poll loop after the sign-in had already succeeded server-side: the session
+    existed, but the page never redirected and the button spun until the user reloaded by hand.
+    Keeping the window in a closure instead of in the component keeps it un-proxied.
+    """
+    _seed(**{SettingKey.PLEX_MACHINE_IDENTIFIER: OUR_SERVER})
+
+    page = client.get(f"{BASE}/login").text
+    component = page.split("return {", 1)[1].split("\n    };", 1)[0]
+
+    assert "popup:" not in component, "the popup is a component property again"
+    assert "this.popup" not in page, "the popup is being read through Alpine's proxy again"
+    assert "let popup = null;" in page
+
+
+def test_a_failure_while_polling_cannot_leave_the_button_spinning(client: TestClient) -> None:
+    """poll() is deliberately not awaited, so without a catch any exception inside it becomes an
+    unhandled rejection -- the spinner runs forever and the user is never told why."""
+    _seed(**{SettingKey.PLEX_MACHINE_IDENTIFIER: OUR_SERVER})
+
+    page = client.get(f"{BASE}/login").text
+
+    assert "this.poll().catch(" in page
+
+
+def test_closing_the_popup_cannot_block_the_redirect(client: TestClient) -> None:
+    """Closing it is a courtesy. If it throws -- and cross-origin windows can -- the sign-in must
+    still complete."""
+    _seed(**{SettingKey.PLEX_MACHINE_IDENTIFIER: OUR_SERVER})
+
+    page = client.get(f"{BASE}/login").text
+    close_body = page.split("const closePopup", 1)[1].split("};", 1)[0]
+
+    assert "try {" in close_body and "catch" in close_body
+
+
 @responses.activate
 def test_plex_start_returns_an_auth_url(client: TestClient) -> None:
     _seed(**{SettingKey.PLEX_MACHINE_IDENTIFIER: OUR_SERVER})
