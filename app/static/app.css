@@ -161,3 +161,51 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 
 [data-theme="light"] .theme-toggle-light,
 :root:not([data-theme="light"]) .theme-toggle-dark { display: none; }
+
+/* --- Artwork ------------------------------------------------------------------------------
+ * Posters are given explicit width and height attributes in the markup and a fixed aspect ratio
+ * here, so the layout doesn't jump as images arrive. Without that, a grid of a hundred cards
+ * reflows repeatedly while it loads.
+ */
+
+.collection-poster {
+  display: block;
+  margin-bottom: var(--pico-spacing);
+}
+
+.collection-poster img,
+.collection-heading-poster {
+  aspect-ratio: 2 / 3;
+  border-radius: var(--pico-border-radius);
+  display: block;
+  object-fit: cover;
+  width: 100%;
+}
+
+.collection-heading {
+  align-items: start;
+  display: flex;
+  gap: var(--pico-spacing);
+}
+
+.collection-heading-poster {
+  flex: 0 0 8rem;
+  width: 8rem;
+}
+
+.film-poster {
+  aspect-ratio: 2 / 3;
+  border-radius: calc(var(--pico-border-radius) / 2);
+  flex: 0 0 2.5rem;
+  object-fit: cover;
+  width: 2.5rem;
+}
+
+/* The poster is decoration; the title beside it carries the meaning. Dimming an owned film's
+ * artwork keeps the missing ones the thing the eye lands on. */
+.film-row.owned .film-poster { opacity: 0.55; }
+
+@media (max-width: 480px) {
+  .collection-heading { display: block; }
+  .collection-heading-poster { margin-bottom: var(--pico-spacing); width: 6rem; flex-basis: 6rem; }
+}

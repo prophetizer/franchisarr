@@ -37,6 +37,14 @@
   <div class="collection-grid">
     {% for gap in gaps %}
       <article class="collection-card">
+        {% if gap.poster %}
+          <a href="{{ url('/collections/' ~ gap.collection_id) }}" class="collection-poster">
+            {#- loading=lazy because a library can produce a hundred of these, and decoding=async
+                so a slow image never blocks the rest of the page rendering. -#}
+            <img src="{{ gap.poster }}" alt="" loading="lazy" decoding="async" width="342"
+                 height="513">
+          </a>
+        {% endif %}
         <header>
           <a href="{{ url('/collections/' ~ gap.collection_id) }}"><strong>{{ gap.name }}</strong></a>
         </header>

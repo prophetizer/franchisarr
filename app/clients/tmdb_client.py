@@ -50,6 +50,7 @@ class TmdbMovieSummary:
     tmdb_id: int
     title: str
     release_date: str | None = None
+    poster_path: str | None = None
 
     @property
     def year(self) -> int | None:
@@ -93,6 +94,7 @@ class TmdbShowSummary:
 class TmdbCollectionDetails:
     tmdb_collection_id: int
     name: str
+    poster_path: str | None = None
     movies: tuple[TmdbMovieSummary, ...] = field(default_factory=tuple)
 
 
@@ -212,11 +214,13 @@ class TmdbClient:
         return TmdbCollectionDetails(
             tmdb_collection_id=int(payload.get("id", collection_id)),
             name=str(payload.get("name") or ""),
+            poster_path=payload.get("poster_path") or None,
             movies=tuple(
                 TmdbMovieSummary(
                     tmdb_id=int(part["id"]),
                     title=str(part.get("title") or part.get("original_title") or ""),
                     release_date=part.get("release_date") or None,
+                    poster_path=part.get("poster_path") or None,
                 )
                 for part in parts
                 if isinstance(part, dict) and part.get("id")

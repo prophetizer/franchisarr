@@ -50,6 +50,13 @@ class MissingMovie:
     title: str
     release_year: int | None
     release_date: str | None = None
+    poster_path: str | None = None
+
+    @property
+    def poster(self) -> str | None:
+        from app.services.artwork import THUMB_SIZE, poster_url
+
+        return poster_url(self.poster_path, THUMB_SIZE)
 
     def is_released(self, today: date | None = None) -> bool:
         """Whether this film exists yet.
@@ -71,6 +78,13 @@ class CollectionGap:
     missing: tuple[MissingMovie, ...]
     #: Announced or scheduled but not yet released. Addable, but not a gap to act on today.
     upcoming: tuple[MissingMovie, ...] = ()
+    poster_path: str | None = None
+
+    @property
+    def poster(self) -> str | None:
+        from app.services.artwork import CARD_SIZE, poster_url
+
+        return poster_url(self.poster_path, CARD_SIZE)
 
     @property
     def total(self) -> int:
@@ -202,6 +216,7 @@ def collection_gaps(
                 title=member.title,
                 release_year=member.release_year,
                 release_date=member.release_date,
+                poster_path=member.poster_path,
             )
             if member.tmdb_movie_id in owned:
                 owned_here.append(entry)
@@ -222,6 +237,7 @@ def collection_gaps(
                 owned=tuple(owned_here),
                 missing=tuple(missing_here),
                 upcoming=tuple(upcoming_here),
+                poster_path=collection.poster_path,
             )
         )
 

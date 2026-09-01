@@ -399,6 +399,7 @@ def _cache_collection(
         TmdbCollection(
             tmdb_collection_id=details.tmdb_collection_id,
             name=details.name,
+            poster_path=details.poster_path,
             fetched_at=utcnow(),
         )
     )
@@ -418,6 +419,7 @@ def _cache_collection(
                 title=movie.title,
                 release_year=movie.year,
                 release_date=movie.release_date,
+                poster_path=movie.poster_path,
                 position=position,
             )
         )

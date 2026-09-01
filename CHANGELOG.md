@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Poster artwork on the collections screens — on the cards, in the per-collection view, and beside
+  each film in the lists. Images come from TMDb's image CDN, which means each viewer's browser
+  fetches them from TMDb rather than from your server; `SHOW_ARTWORK=false` turns them off for a
+  text-only interface.
+
 ## [0.2.1] — 2026-09-01
 
 The command line and the JSON API both change here. Both are treated as unstable before 1.0, so

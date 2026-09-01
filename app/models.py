@@ -278,6 +278,9 @@ class TmdbCollection(SQLModel, table=True):
 
     tmdb_collection_id: int = Field(primary_key=True)
     name: str
+    #: TMDb's path fragment, e.g. "/7TEAr7....jpg". Stored rather than a full URL so the size and
+    #: the CDN host stay a rendering decision.
+    poster_path: str | None = Field(default=None)
     fetched_at: datetime = Field(default_factory=utcnow, index=True)
 
 
@@ -302,6 +305,7 @@ class TmdbCollectionMovie(SQLModel, table=True):
     title: str
     release_year: int | None = Field(default=None)
     release_date: str | None = Field(default=None)
+    poster_path: str | None = Field(default=None)
     position: int = Field(default=0)
 
 

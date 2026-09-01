@@ -6,10 +6,16 @@
   <ul><li><a href="{{ url('/collections') }}">← All collections</a></li></ul>
 </nav>
 
-<hgroup>
-  <h1>{{ gap.name }}</h1>
-  <p>{{ gap.owned | length }} of {{ gap.total }} in your library.</p>
-</hgroup>
+<div class="collection-heading">
+  {% if gap.poster %}
+    <img class="collection-heading-poster" src="{{ gap.poster }}" alt="" decoding="async"
+         width="342" height="513">
+  {% endif %}
+  <hgroup>
+    <h1>{{ gap.name }}</h1>
+    <p>{{ gap.owned | length }} of {{ gap.total }} in your library.</p>
+  </hgroup>
+</div>
 
 {% if gap.missing %}
   <section>
@@ -34,6 +40,10 @@
     <ul class="film-list">
       {% for movie in gap.upcoming %}
         <li class="film-row upcoming">
+          {% if movie.poster %}
+            <img class="film-poster" src="{{ movie.poster }}" alt="" loading="lazy"
+                 decoding="async" width="92" height="138">
+          {% endif %}
           <span class="film-title">{{ movie.title }}</span>
           <span class="film-meta muted">
             {% if movie.release_date %}expected {{ movie.release_date }}{% else %}no release date announced{% endif %}
@@ -54,6 +64,10 @@
     <ul class="film-list">
       {% for movie in gap.owned %}
         <li class="film-row owned">
+          {% if movie.poster %}
+            <img class="film-poster" src="{{ movie.poster }}" alt="" loading="lazy"
+                 decoding="async" width="92" height="138">
+          {% endif %}
           <span class="film-title">{{ movie.title }}</span>
           <span class="film-meta muted">{{ movie.release_year or '' }}</span>
         </li>

@@ -432,3 +432,79 @@ def test_a_failing_test_webhook_says_so(client: TestClient) -> None:
 
     # Jinja escapes the apostrophe, so match a portion without one.
     assert "deliver the test" in response.text
+
+
+# ------------------------------------------------------------------ artwork
+
+
+def test_a_collection_card_shows_its_poster(client: TestClient) -> None:
+    _seed_collection()
+    with Session(get_engine()) as session:
+        collection = session.get(TmdbCollection, COLLECTION)
+        collection.poster_path = "/collection-poster.jpg"
+        session.add(collection)
+        session.commit()
+
+    body = client.get(f"{BASE}/collections").text
+
+    assert "https://image.tmdb.org/t/p/w342/collection-poster.jpg" in body
+
+
+def test_missing_films_show_a_thumbnail(client: TestClient) -> None:
+    _seed_collection()
+    with Session(get_engine()) as session:
+        from sqlmodel import col
+
+        member = session.exec(
+            select(TmdbCollectionMovie).where(col(TmdbCollectionMovie.tmdb_movie_id) == 96)
+        ).first()
+        member.poster_path = "/film-poster.jpg"
+        session.add(member)
+        session.commit()
+
+    body = client.get(f"{BASE}/collections/{COLLECTION}").text
+
+    assert "https://image.tmdb.org/t/p/w92/film-poster.jpg" in body
+
+
+def test_a_collection_with_no_artwork_renders_without_a_broken_image(
+    client: TestClient,
+) -> None:
+    """TMDb doesn't have a poster for everything, and an <img> with an empty src shows a broken
+    icon rather than nothing."""
+    _seed_collection()
+
+    body = client.get(f"{BASE}/collections").text
+
+    assert "collection-poster" not in body
+    assert "image.tmdb.org" not in body
+
+
+def test_posters_carry_dimensions_so_the_layout_does_not_jump(client: TestClient) -> None:
+    """A grid of a hundred cards would otherwise reflow repeatedly as images arrive."""
+    _seed_collection()
+    with Session(get_engine()) as session:
+        collection = session.get(TmdbCollection, COLLECTION)
+        collection.poster_path = "/p.jpg"
+        session.add(collection)
+        session.commit()
+
+    body = client.get(f"{BASE}/collections").text
+
+    assert 'width="342"' in body and 'height="513"' in body
+    assert 'loading="lazy"' in body
+
+
+def test_artwork_can_be_turned_off_entirely(client: TestClient, monkeypatch) -> None:
+    """The only thing on these pages not served by the user's own server, so there is a switch."""
+    monkeypatch.setenv("SHOW_ARTWORK", "false")
+    _seed_collection()
+    with Session(get_engine()) as session:
+        collection = session.get(TmdbCollection, COLLECTION)
+        collection.poster_path = "/p.jpg"
+        session.add(collection)
+        session.commit()
+
+    body = client.get(f"{BASE}/collections").text
+
+    assert "image.tmdb.org" not in body

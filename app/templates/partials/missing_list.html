@@ -3,6 +3,10 @@
 <ul class="film-list">
   {% for movie in gap.missing %}
     <li class="film-row missing">
+      {% if movie.poster %}
+        <img class="film-poster" src="{{ movie.poster }}" alt="" loading="lazy" decoding="async"
+             width="92" height="138">
+      {% endif %}
       <span class="film-title">{{ movie.title }}</span>
       <span class="film-meta muted">{{ movie.release_year or '' }}</span>
       <span class="film-actions">
