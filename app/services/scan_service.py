@@ -27,6 +27,11 @@ from app.models import (
 )
 from app.services import library_service
 from app.services.matcher import match_movie, match_show
+
+#: Called as (phase, processed, total) while a scan runs. Reporting through a callback rather
+#: than reaching for the live scan state keeps this module usable on its own -- the CLI and the
+#: tests both drive it without any background machinery.
+ProgressHook = "Callable[[str, int, int], None] | None"
 from app.services.settings_service import SettingKey, get_int_setting
 
 logger = logging.getLogger(__name__)
@@ -36,6 +41,10 @@ DEFAULT_CACHE_TTL_DAYS = 7
 #: Rows written per transaction while walking a library. Large enough to keep the commit overhead
 #: negligible, small enough that a scan interrupted halfway leaves useful progress behind.
 COMMIT_BATCH = 500
+
+#: How often to report progress. Every item would be thousands of lock acquisitions for a number
+#: nobody can read changing that fast.
+PROGRESS_EVERY = 25
 
 
 @dataclass
@@ -75,6 +84,7 @@ def scan_movie_libraries(
     tmdb: TmdbClient,
     *,
     force_refresh: bool = False,
+    progress=None,
 ) -> ScanSummary:
     """Refresh the snapshot for every enabled movie library, then cache their collections."""
     summary = ScanSummary()
@@ -116,11 +126,13 @@ def scan_movie_libraries(
             _upsert_item(session, library.plex_library_key, item, tmdb, summary, existing)
             if index % COMMIT_BATCH == 0:
                 session.commit()
+            if progress and index % PROGRESS_EVERY == 0:
+                progress(f"Reading {library.plex_library_name}", index, len(items))
 
         session.commit()
         summary.removed += _prune_missing(session, library.plex_library_key, started)
 
-    summary.collections_found = _cache_collections(session, tmdb, ttl, summary)
+    summary.collections_found = _cache_collections(session, tmdb, ttl, summary, progress)
     return summary
 
 
@@ -130,6 +142,7 @@ def scan_show_libraries(
     tmdb: TmdbClient,
     *,
     force_refresh: bool = False,
+    progress=None,
 ) -> ScanSummary:
     """Refresh the snapshot for every enabled TV library, and cache each show's TMDb details.
 
@@ -175,16 +188,18 @@ def scan_show_libraries(
             )
             if index % COMMIT_BATCH == 0:
                 session.commit()
+            if progress and index % PROGRESS_EVERY == 0:
+                progress(f"Reading {library.plex_library_name}", index, len(items))
 
         session.commit()
         summary.removed += _prune_missing(session, library.plex_library_key, started)
 
-    _cache_shows(session, tmdb, ttl, summary)
+    _cache_shows(session, tmdb, ttl, summary, progress)
     return summary
 
 
 def _cache_shows(
-    session: Session, tmdb: TmdbClient, ttl: timedelta, summary: ScanSummary
+    session: Session, tmdb: TmdbClient, ttl: timedelta, summary: ScanSummary, progress=None
 ) -> None:
     """Fetch and cache details for each owned show, so spin-off views have names to display."""
     from app.models import TmdbShow
@@ -202,7 +217,9 @@ def _cache_shows(
         if row.tmdb_id
     }
 
-    for tmdb_id in sorted(owned):
+    for index, tmdb_id in enumerate(sorted(owned), start=1):
+        if progress and index % PROGRESS_EVERY == 0:
+            progress("Looking shows up on TMDb", index, len(owned))
         cached = session.get(TmdbShow, tmdb_id)
         if cached is not None and _is_fresh(cached.fetched_at, ttl):
             continue
@@ -291,7 +308,7 @@ def _prune_missing(session: Session, library_key: str, started: datetime) -> int
 
 
 def _cache_collections(
-    session: Session, tmdb: TmdbClient, ttl: timedelta, summary: ScanSummary
+    session: Session, tmdb: TmdbClient, ttl: timedelta, summary: ScanSummary, progress=None
 ) -> int:
     """Look up which collection each owned film belongs to, then cache those collections."""
     owned_ids = {
@@ -307,7 +324,9 @@ def _cache_collections(
     }
 
     collection_ids: set[int] = set()
-    for tmdb_id in sorted(owned_ids):
+    for index, tmdb_id in enumerate(sorted(owned_ids), start=1):
+        if progress and index % PROGRESS_EVERY == 0:
+            progress("Looking films up on TMDb", index, len(owned_ids))
         cached = session.get(TmdbMovie, tmdb_id)
         if cached is None or not _is_fresh(cached.fetched_at, ttl):
             try:
@@ -340,7 +359,9 @@ def _cache_collections(
         if cached.collection_id:
             collection_ids.add(cached.collection_id)
 
-    for collection_id in sorted(collection_ids):
+    for index, collection_id in enumerate(sorted(collection_ids), start=1):
+        if progress:
+            progress("Fetching collections", index, len(collection_ids))
         try:
             _cache_collection(session, tmdb, collection_id, ttl, summary)
         except TmdbAuthError as exc:

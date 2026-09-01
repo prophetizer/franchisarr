@@ -44,12 +44,15 @@ def _gap_or_404(session, user, collection_id: int):
 
 @router.get("/collections", response_class=HTMLResponse)
 def collections(request: Request, session: DbSession, user: RequiredUser):
+    from app.services import scan_state
+
     gaps = movie_gap_service.collections_with_gaps(session, user.id)
     return get_templates().TemplateResponse(
         request,
         "collections.html",
         {
             "user": user,
+            "progress": scan_state.current(),
             "gaps": gaps,
             "total_missing": sum(len(gap.missing) for gap in gaps),
             # Distinguishes "you have no gaps" from "you haven't scanned yet", which look
@@ -332,14 +335,14 @@ def save_webhook(
 
 @router.post("/scan", response_class=HTMLResponse)
 def trigger_scan(request: Request, session: DbSession, user: RequiredUser):
-    """Kick off a scan from the empty-state button.
+    """Start a scan and return immediately.
 
-    Synchronous, which is honest but slow -- the browser waits. Phase 8 moves scanning onto the
-    scheduler and this becomes a trigger rather than the thing itself.
+    This used to run the scan inside the request. On a real library that is minutes of waiting on
+    Plex and TMDb with no sign of life, and the page eventually timed out — the work carried on
+    invisibly, or died with the request. It now starts a background task and hands back a panel
+    that polls for progress.
     """
-    from app.clients.plex_client import PlexClient
-    from app.clients.tmdb_client import TmdbClient
-    from app.services import scan_service
+    from app.services import scan_job, scan_state
 
     plex_url = get_setting(session, SettingKey.PLEX_URL)
     plex_token = get_setting(session, SettingKey.PLEX_TOKEN)
@@ -351,10 +354,22 @@ def trigger_scan(request: Request, session: DbSession, user: RequiredUser):
             detail="Plex and TMDb both need configuring before a scan can run.",
         )
 
-    scan_service.scan_movie_libraries(
-        session, PlexClient(plex_url, plex_token), TmdbClient(tmdb_key)
+    # A second click while one is running is a no-op rather than an error: the panel it gets back
+    # shows the scan already in progress, which is what the person wanted to see anyway.
+    scan_job.run_in_background("manual")
+
+    return get_templates().TemplateResponse(
+        request, "partials/scan_status.html", {"user": user, "progress": scan_state.current()}
     )
-    return RedirectResponse(_url("/collections"), status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.get("/scan/status", response_class=HTMLResponse)
+def scan_status(request: Request, session: DbSession, user: RequiredUser):
+    from app.services import scan_state
+
+    return get_templates().TemplateResponse(
+        request, "partials/scan_status.html", {"user": user, "progress": scan_state.current()}
+    )
 
 
 # ---------------------------------------------------------------------- activity log

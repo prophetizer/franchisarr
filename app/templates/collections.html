@@ -2,6 +2,9 @@
 {% block title %}Collections — Franchisarr{% endblock %}
 
 {% block content %}
+{#- Rendered on load so a scan already running (started elsewhere, or by the scheduler) shows up
+    and starts polling without anyone pressing anything. -#}
+{% include "partials/scan_status.html" %}
 <hgroup>
   <h1>Collections with gaps</h1>
   <p>
@@ -15,11 +18,11 @@
     {% if not scanned %}
       <header>Nothing scanned yet</header>
       <p>Run a scan to find the gaps in your library.</p>
-      <form method="post" action="{{ url('/scan') }}">
-        <button type="submit" aria-busy="false">Scan my library</button>
-      </form>
+      <button hx-post="{{ url('/scan') }}" hx-target="#scan-status" hx-swap="outerHTML">
+        Scan my library</button>
       <footer><small>This walks your Plex libraries and looks each film up on TMDb. On a few
-        thousand films it takes a handful of minutes.</small></footer>
+        thousand films it takes a handful of minutes, and runs in the background — you don't have
+        to stay on this page.</small></footer>
     {% else %}
       <header>No gaps found</header>
       <p>Every collection you own part of is complete. That's either very satisfying or slightly
@@ -27,6 +30,10 @@
     {% endif %}
   </article>
 {% else %}
+  <p>
+    <button class="secondary" hx-post="{{ url('/scan') }}" hx-target="#scan-status"
+            hx-swap="outerHTML">Rescan my library</button>
+  </p>
   <div class="collection-grid">
     {% for gap in gaps %}
       <article class="collection-card">

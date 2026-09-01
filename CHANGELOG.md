@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Scanning no longer hangs the page.** "Scan my library" ran the whole scan inside the request,
+  so on a real library the page sat frozen with no sign of progress for minutes and then timed
+  out. Scans now run in the background: the button starts one and returns immediately, and the
+  page shows what it's doing and how far along it is. You can navigate away — a scan already
+  running shows up wherever you land, including one the scheduler started.
+
+### Changed
+
+- The command line's `scan movies` and `scan tv` are replaced by a single `scan`, which starts
+  the background task and follows its progress. Interrupting it no longer stops the scan.
+- `POST /api/scan/movies` and `POST /api/scan/tv` are replaced by `POST /api/scan`, which returns
+  at once, plus `GET /api/scan/status` to poll.
+
 ### Added
 
 - `contrib/theme-park/franchisarr-base.css`, a base stylesheet for anyone hosting their own

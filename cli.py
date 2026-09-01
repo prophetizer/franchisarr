@@ -99,45 +99,41 @@ def test_tmdb() -> None:
     raise typer.Exit(1)
 
 
-scan = typer.Typer(help="Re-scan your libraries.")
-app.add_typer(scan, name="scan")
-
-
-@scan.command("movies")
-def scan_movies(
-    force: Annotated[bool, typer.Option(help="Ignore the TMDb cache and refetch everything.")] = False,
+@app.command()
+def scan(
+    watch: Annotated[bool, typer.Option(help="Follow progress until it finishes.")] = True,
 ) -> None:
-    """Walk the enabled movie libraries and refresh collection data."""
-    typer.echo("Scanning… (this can take a few minutes on a large library)")
-    result = _call("POST", "/api/scan/movies", params={"force": force}, timeout=SCAN_TIMEOUT)
+    """Scan your Plex libraries and refresh what's missing.
 
-    typer.echo(
-        f"{result['items_seen']} items across {result['libraries_scanned']} librar"
-        f"{'y' if result['libraries_scanned'] == 1 else 'ies'}"
-    )
-    typer.echo(f"  matched:       {result['matched']}")
-    typer.echo(f"  needs review:  {result['needs_review']}")
-    typer.echo(f"  unmatched:     {result['unmatched']}")
-    typer.echo(f"  collections:   {result['collections_found']}")
-    typer.echo(f"  TMDb lookups:  {result['tmdb_lookups']}")
-    if result["removed"]:
-        typer.echo(f"  removed:       {result['removed']} (no longer in Plex)")
-    for error in result["errors"]:
-        typer.secho(f"  ! {error}", fg="yellow", err=True)
+    The scan runs in the background on the server, so this can be interrupted at any point
+    without stopping it.
+    """
+    import time
 
+    result = _call("POST", "/api/scan")
+    if result.get("already_running"):
+        typer.echo("A scan is already running; following it.")
+    else:
+        typer.echo("Scan started.")
 
-@scan.command("tv")
-def scan_tv(
-    force: Annotated[bool, typer.Option(help="Ignore the TMDb cache and refetch everything.")] = False,
-) -> None:
-    """Walk the enabled TV libraries and refresh show details."""
-    typer.echo("Scanning TV…")
-    result = _call("POST", "/api/scan/tv", params={"force": force}, timeout=SCAN_TIMEOUT)
-    typer.echo(f"{result['items_seen']} shows across {result['libraries_scanned']} library(ies)")
-    typer.echo(f"  matched:       {result['matched']}")
-    typer.echo(f"  needs review:  {result['needs_review']}")
-    typer.echo(f"  unmatched:     {result['unmatched']}")
-    for error in result["errors"]:
+    if not watch:
+        return
+
+    last = ""
+    while True:
+        status = _call("GET", "/api/scan/status")
+        if not status["running"]:
+            break
+        line = status["phase"]
+        if status["total"]:
+            line += f"  {status['processed']:,}/{status['total']:,} ({status['percent']}%)"
+        if line != last:
+            typer.echo(f"  {line}")
+            last = line
+        time.sleep(2)
+
+    typer.secho(status["summary"] or "Finished.", fg="green")
+    for error in status["errors"]:
         typer.secho(f"  ! {error}", fg="yellow", err=True)
 
 

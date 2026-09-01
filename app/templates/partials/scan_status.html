@@ -1,0 +1,41 @@
+{# Polls itself while a scan runs, then stops. hx-trigger with `every` is dropped from the
+   response once finished, which is what ends the polling — there is no separate stop signal. #}
+<div id="scan-status"
+     {% if progress.running %}hx-get="{{ url('/scan/status') }}" hx-trigger="every 2s"
+        hx-target="#scan-status" hx-swap="outerHTML"{% endif %}>
+
+  {% if progress.running %}
+    <article aria-busy="true">
+      <header><strong>Scanning…</strong></header>
+      <p>
+        {{ progress.phase }}
+        {% if progress.total %}
+          — {{ "{:,}".format(progress.processed) }} of {{ "{:,}".format(progress.total) }}
+        {% endif %}
+      </p>
+      {% if progress.total %}
+        <progress value="{{ progress.processed }}" max="{{ progress.total }}"></progress>
+      {% else %}
+        <progress></progress>
+      {% endif %}
+      <footer><small class="muted">
+        Running in the background — you can leave this page. Started
+        {{ progress.elapsed_seconds }}s ago.
+      </small></footer>
+    </article>
+
+  {% elif progress.finished_at %}
+    <article>
+      <header><strong>Scan finished</strong></header>
+      <p role="status" class="notice-good">{{ progress.summary }}</p>
+      {% for error in progress.errors %}
+        <p role="alert" class="notice-bad">{{ error }}</p>
+      {% endfor %}
+      <footer>
+        <a href="{{ url('/collections') }}" role="button">See collections</a>
+        <button class="secondary" hx-post="{{ url('/scan') }}" hx-target="#scan-status"
+                hx-swap="outerHTML">Scan again</button>
+      </footer>
+    </article>
+  {% endif %}
+</div>

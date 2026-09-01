@@ -73,13 +73,14 @@ def describe(expression: str) -> str:
 
 
 def _run_scan() -> None:
-    """The scheduled job. Opens its own session -- it runs on a scheduler thread, not a request."""
-    logger.info("Scheduled scan starting")
-    try:
-        with Session(get_engine()) as session:
-            scan_job.run(session, notify=True)
-    except Exception:  # noqa: BLE001 - a failed run must not kill the scheduler thread
-        logger.exception("Scheduled scan failed")
+    """The scheduled job.
+
+    Goes through the same background runner a manual scan uses, so the two share one guard: a
+    scheduled scan firing while someone is watching a manual one would otherwise run the same
+    work twice against Plex and TMDb.
+    """
+    if not scan_job.run_in_background("scheduled"):
+        logger.info("Skipping the scheduled scan: one is already running")
 
 
 def get_scheduler() -> BackgroundScheduler:

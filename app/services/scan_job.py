@@ -28,6 +28,7 @@ from app.services import (
     sonarr_instance_service,
     tv_spinoff_service,
 )
+from app.services import scan_state
 from app.services.settings_service import SettingKey, get_setting
 
 logger = logging.getLogger(__name__)
@@ -90,7 +91,7 @@ def has_ever_scanned(session: Session) -> bool:
     return session.exec(select(SeenGap).limit(1)).first() is not None
 
 
-def run(session: Session, *, notify: bool = True) -> ScanJobResult:
+def run(session: Session, *, notify: bool = True, progress=None) -> ScanJobResult:
     """Do a complete scan and, if anything new turned up, send the webhook.
 
     The very first run never notifies. Everything missing on a fresh install is the state of the
@@ -107,18 +108,23 @@ def run(session: Session, *, notify: bool = True) -> ScanJobResult:
         result.errors.extend(errors)
         return result
 
-    result.movies = scan_service.scan_movie_libraries(session, plex, tmdb)
-    result.shows = scan_service.scan_show_libraries(session, plex, tmdb)
+    result.movies = scan_service.scan_movie_libraries(session, plex, tmdb, progress=progress)
+    result.shows = scan_service.scan_show_libraries(session, plex, tmdb, progress=progress)
     for summary in (result.movies, result.shows):
         # "No movie libraries are enabled" is a normal state for a TV-only install, not a fault.
         result.errors.extend(
             error for error in summary.errors if "libraries are enabled" not in error
         )
 
+    if progress:
+        progress("Checking Radarr and Sonarr", 0, 0)
     # Before the diff, so a film acquired since the last run isn't announced as missing.
     refreshed = instance_service.refresh_all(session) + sonarr_instance_service.refresh_all(session)
     result.instances_refreshed = sum(1 for r in refreshed if r.ok)
     result.errors.extend(r.error for r in refreshed if r.error)
+
+    if progress:
+        progress("Working out what's missing", 0, 0)
 
     movie_gaps: dict[int, tuple[str, str]] = {}
     for gap in movie_gap_service.collections_with_gaps(session):
@@ -176,3 +182,50 @@ def prime_seen_gaps(session: Session) -> int:
     primed += len(_record_new(session, ItemType.SHOW.value, show_gaps))
     logger.info("Marked %d existing gap(s) as already reported", primed)
     return primed
+
+
+def run_in_background(trigger: str = "manual") -> bool:
+    """Start a scan on a background thread. False means one is already running.
+
+    A thread rather than a request: a scan of a real library is minutes of waiting on Plex and
+    TMDb, and doing that inside a request leaves the page hanging until the proxy gives up.
+
+    The thread opens its own session. Sessions are not safe to share across threads, and the
+    request that started this one is long finished by the time the scan ends.
+    """
+    import threading
+
+    from sqlmodel import Session as DbSession
+
+    from app.db import get_engine
+
+    if not scan_state.begin(trigger):
+        return False
+
+    def _work() -> None:
+        try:
+            with DbSession(get_engine()) as session:
+                result = run(session, notify=True, progress=scan_state.update)
+                scan_state.finish(_describe(result), result.errors)
+        except Exception as exc:  # noqa: BLE001
+            # Anything escaping here would leave the state stuck on "running" forever, and the
+            # button would never come back.
+            logger.exception("Background scan failed")
+            scan_state.fail(str(exc) or exc.__class__.__name__)
+
+    threading.Thread(target=_work, name="franchisarr-scan", daemon=True).start()
+    return True
+
+
+def _describe(result: ScanJobResult) -> str:
+    """A sentence for the page to show when the scan ends."""
+    seen = (result.movies.items_seen if result.movies else 0) + (
+        result.shows.items_seen if result.shows else 0
+    )
+    if not seen:
+        return "Nothing to scan — no libraries are enabled."
+
+    parts = [f"{seen:,} item{'' if seen == 1 else 's'} scanned"]
+    if result.report.total:
+        parts.append(f"{result.report.total} new since the last scan")
+    return ", ".join(parts) + "."

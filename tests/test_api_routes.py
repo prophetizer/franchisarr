@@ -138,14 +138,16 @@ def test_a_missing_tmdb_key_is_a_clear_conflict(client: TestClient, api_key: str
 # ------------------------------------------------------------------ scanning and gaps
 
 
-def test_scanning_without_plex_configured_is_a_clear_conflict(
+def test_starting_a_scan_without_plex_configured_is_a_clear_conflict(
     client: TestClient, api_key: str
 ) -> None:
+    """Checked before the background task starts, so the caller hears about it rather than a
+    status endpoint nobody is polling yet."""
     with Session(get_engine()) as session:
         set_setting(session, SettingKey.TMDB_API_KEY, V3_KEY)
         session.commit()
 
-    response = client.post(f"{BASE}/api/scan/movies", headers={API_KEY_HEADER: api_key})
+    response = client.post(f"{BASE}/api/scan", headers={API_KEY_HEADER: api_key})
 
     assert response.status_code == 409
     assert "Plex" in response.json()["detail"]
@@ -427,16 +429,17 @@ def test_a_self_referential_mapping_is_refused(client: TestClient, api_key: str)
     assert response.status_code == 400
 
 
-def test_scanning_tv_without_plex_configured_is_a_clear_conflict(
+def test_the_scan_status_endpoint_reports_idle_when_nothing_is_running(
     client: TestClient, api_key: str
 ) -> None:
-    with Session(get_engine()) as session:
-        set_setting(session, SettingKey.TMDB_API_KEY, V3_KEY)
-        session.commit()
+    from app.services import scan_state
 
-    response = client.post(f"{BASE}/api/scan/tv", headers={API_KEY_HEADER: api_key})
+    scan_state.reset()
 
-    assert response.status_code == 409
+    body = client.get(f"{BASE}/api/scan/status", headers={API_KEY_HEADER: api_key}).json()
+
+    assert body["running"] is False
+    assert body["percent"] == 0
 
 
 @responses.activate

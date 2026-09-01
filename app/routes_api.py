@@ -23,7 +23,6 @@ from app.services import (
     add_service,
     instance_service,
     movie_gap_service,
-    scan_service,
     sonarr_instance_service,
     tv_spinoff_service,
 )
@@ -85,26 +84,43 @@ def test_tmdb(session: DbSession, user: RequiredUser) -> dict:
     return {"ok": True}
 
 
-@router.post("/scan/movies")
-def scan_movies(session: DbSession, user: RequiredUser, force: bool = False) -> dict:
-    """Re-walk the enabled movie libraries and refresh the TMDb cache.
+@router.post("/scan")
+def start_scan(session: DbSession, user: RequiredUser) -> dict:
+    """Start a scan in the background and return at once.
 
-    Synchronous for now: a scan of a few thousand films takes minutes, which is tolerable for a
-    CLI invocation. Moving it onto the scheduler is Phase 8's job.
+    Scanning used to happen inside the request, which on a real library meant minutes of silence
+    and then a timeout. Poll `/api/scan/status` for progress.
     """
-    summary = scan_service.scan_movie_libraries(
-        session, _plex(session), _tmdb(session), force_refresh=force
-    )
+    from app.services import scan_job, scan_state
+
+    # Fail before starting rather than letting the background task discover it and report through
+    # a status endpoint nobody is watching yet.
+    _plex(session)
+    _tmdb(session)
+
+    started = scan_job.run_in_background("api")
+    return {"started": started, "already_running": not started, **_scan_status_dict()}
+
+
+@router.get("/scan/status")
+def scan_status(user: RequiredUser) -> dict:
+    return _scan_status_dict()
+
+
+def _scan_status_dict() -> dict:
+    from app.services import scan_state
+
+    progress = scan_state.current()
     return {
-        "libraries_scanned": summary.libraries_scanned,
-        "items_seen": summary.items_seen,
-        "matched": summary.matched,
-        "needs_review": summary.needs_review,
-        "unmatched": summary.unmatched,
-        "removed": summary.removed,
-        "collections_found": summary.collections_found,
-        "tmdb_lookups": summary.tmdb_lookups,
-        "errors": summary.errors,
+        "running": progress.running,
+        "phase": progress.phase,
+        "processed": progress.processed,
+        "total": progress.total,
+        "percent": progress.percent,
+        "elapsed_seconds": progress.elapsed_seconds,
+        "summary": progress.summary,
+        "errors": list(progress.errors),
+        "trigger": progress.trigger,
     }
 
 
@@ -149,24 +165,6 @@ def collection_gaps(
             }
             for gap in gaps
         ]
-    }
-
-
-@router.post("/scan/tv")
-def scan_tv(session: DbSession, user: RequiredUser, force: bool = False) -> dict:
-    """Re-walk the enabled TV libraries and refresh cached show details."""
-    summary = scan_service.scan_show_libraries(
-        session, _plex(session), _tmdb(session), force_refresh=force
-    )
-    return {
-        "libraries_scanned": summary.libraries_scanned,
-        "items_seen": summary.items_seen,
-        "matched": summary.matched,
-        "needs_review": summary.needs_review,
-        "unmatched": summary.unmatched,
-        "removed": summary.removed,
-        "tmdb_lookups": summary.tmdb_lookups,
-        "errors": summary.errors,
     }
 
 
