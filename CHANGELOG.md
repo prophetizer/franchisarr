@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-09-01
+
+Artwork, and a bug that had not gone off yet. If you have been running 0.2.x, the fix below is
+the reason to take this one: the next scan after your collection cache turned seven days old
+would have failed without it.
+
 ### Added
 
 - Optional fanart.tv support. With a `FANART_API_KEY` set, a collection heading becomes a hero:
@@ -180,7 +186,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.3.0
 [0.2.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.2.1
 [0.2.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.2.0
 [0.1.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.1.1
