@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-09-01
+
+The command line and the JSON API both change here. Both are treated as unstable before 1.0, so
+this is a patch release rather than a minor one — but if you script against either, read the
+Changed section.
+
 ### Fixed
 
 - **Scanning no longer hangs the page.** "Scan my library" ran the whole scan inside the request,
@@ -154,7 +160,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.2.1
 [0.2.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.2.0
 [0.1.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.1.1
 [0.1.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.1.0
