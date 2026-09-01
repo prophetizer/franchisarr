@@ -6,15 +6,30 @@
   <ul><li><a href="{{ url('/collections') }}">← All collections</a></li></ul>
 </nav>
 
-<div class="collection-heading">
-  {% if gap.poster %}
-    <img class="collection-heading-poster" src="{{ gap.poster }}" alt="" decoding="async"
-         width="342" height="513">
+<div class="collection-heading{% if gap.backdrop %} has-backdrop{% endif %}">
+  {% if gap.backdrop %}
+    <img class="collection-backdrop" src="{{ gap.backdrop }}" alt="" decoding="async"
+         aria-hidden="true">
   {% endif %}
-  <hgroup>
-    <h1>{{ gap.name }}</h1>
-    <p>{{ gap.owned | length }} of {{ gap.total }} in your library.</p>
-  </hgroup>
+  <div class="collection-heading-inner">
+    {% if gap.poster %}
+      <img class="collection-heading-poster" src="{{ gap.poster }}" alt="" decoding="async"
+           width="342" height="513">
+    {% endif %}
+    <hgroup>
+      {# The logo is the franchise wordmark, so it replaces the title rather than joining it --
+         but only visually: the h1 stays for screen readers and for when fanart has nothing. #}
+      {% if gap.logo_image %}
+        <h1 class="collection-logo-title">
+          <img class="collection-logo" src="{{ gap.logo_image }}" alt="{{ gap.name }}"
+               decoding="async">
+        </h1>
+      {% else %}
+        <h1>{{ gap.name }}</h1>
+      {% endif %}
+      <p>{{ gap.owned | length }} of {{ gap.total }} in your library.</p>
+    </hgroup>
+  </div>
 </div>
 
 {% if gap.missing %}

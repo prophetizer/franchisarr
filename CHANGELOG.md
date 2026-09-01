@@ -9,10 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Optional fanart.tv support. With a `FANART_API_KEY` set, a collection heading becomes a hero:
+  the franchise wordmark over the collection's backdrop. fanart.tv has no collection endpoint, so
+  the logo comes from the collection's earliest film, which is the entry that established the
+  wordmark. Entirely optional — with no key, headings stay as text, which is what they were.
 - Poster artwork on the collections screens — on the cards, in the per-collection view, and beside
   each film in the lists. Images come from TMDb's image CDN, which means each viewer's browser
   fetches them from TMDb rather than from your server; `SHOW_ARTWORK=false` turns them off for a
   text-only interface.
+
+### Fixed
+
+- Refreshing a cached TMDb collection failed with a unique-constraint error. Members were deleted
+  with an ORM loop and re-added in the same flush, and SQLAlchemy does not order those DELETEs
+  before the INSERTs — so any refetch whose membership overlapped the previous one failed, which
+  is every refetch. It needed a collection to fall out of the seven-day cache to happen at all,
+  so no install had reached it yet. The same bug was fixed in the Radarr cache in 0.1.0; this is
+  the same fix in the other place it lived.
 
 ## [0.2.1] — 2026-09-01
 

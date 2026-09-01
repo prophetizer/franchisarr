@@ -188,6 +188,69 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
   gap: var(--pico-spacing);
 }
 
+/* With a backdrop the heading becomes a band: the image sits behind, the poster and title on
+   top. The gradient is what makes the text legible over an arbitrary photograph -- without it,
+   a pale backdrop and pale text are a coin toss. It fades to the page background rather than to
+   black so a light theme doesn't get a dark bar across it. */
+.collection-heading.has-backdrop {
+  align-items: end;
+  border-radius: var(--pico-border-radius);
+  isolation: isolate;
+  margin-bottom: var(--pico-block-spacing-vertical);
+  min-height: 14rem;
+  overflow: hidden;
+  padding: var(--pico-spacing);
+  position: relative;
+}
+
+.collection-backdrop {
+  height: 100%;
+  inset: 0;
+  object-fit: cover;
+  object-position: center 30%;
+  position: absolute;
+  width: 100%;
+  z-index: -2;
+}
+
+.collection-heading.has-backdrop::after {
+  background: linear-gradient(
+    to top,
+    var(--pico-background-color) 0%,
+    color-mix(in srgb, var(--pico-background-color) 82%, transparent) 45%,
+    color-mix(in srgb, var(--pico-background-color) 35%, transparent) 100%
+  );
+  content: "";
+  inset: 0;
+  position: absolute;
+  z-index: -1;
+}
+
+.collection-heading-inner {
+  align-items: end;
+  display: flex;
+  gap: var(--pico-spacing);
+  width: 100%;
+}
+
+.collection-heading:not(.has-backdrop) .collection-heading-inner {
+  align-items: start;
+}
+
+/* The wordmark is the title, so it takes the h1's spacing and none of its type styling. */
+.collection-logo-title {
+  margin-bottom: calc(var(--pico-typography-spacing-vertical) * 0.5);
+}
+
+.collection-logo {
+  display: block;
+  max-height: 5.5rem;
+  max-width: min(100%, 22rem);
+  object-fit: contain;
+  object-position: left bottom;
+  width: auto;
+}
+
 .collection-heading-poster {
   flex: 0 0 8rem;
   width: 8rem;
@@ -207,5 +270,8 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 
 @media (max-width: 480px) {
   .collection-heading { display: block; }
+  .collection-heading-inner { display: block; }
   .collection-heading-poster { margin-bottom: var(--pico-spacing); width: 6rem; flex-basis: 6rem; }
+  .collection-heading.has-backdrop { min-height: 0; }
+  .collection-logo { max-height: 4rem; }
 }

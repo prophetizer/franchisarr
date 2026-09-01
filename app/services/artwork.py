@@ -22,6 +22,9 @@ TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/"
 POSTER_SIZES = ("w92", "w154", "w185", "w342", "w500", "w780", "original")
 
 CARD_SIZE = "w342"
+#: Backdrops are rendered full-width behind a heading, so they need the wide sizes.
+BACKDROP_SIZES = ("w300", "w780", "w1280", "original")
+HERO_SIZE = "w1280"
 THUMB_SIZE = "w92"
 
 
@@ -38,3 +41,23 @@ def poster_url(path: str | None, size: str = CARD_SIZE) -> str | None:
     if size not in POSTER_SIZES:
         size = CARD_SIZE
     return f"{TMDB_IMAGE_BASE}{size}{path if path.startswith('/') else '/' + path}"
+
+
+def backdrop_url(path: str | None, size: str = HERO_SIZE) -> str | None:
+    """A TMDb backdrop, for the band behind a collection heading."""
+    if not path or not images_enabled():
+        return None
+    if size not in BACKDROP_SIZES:
+        size = HERO_SIZE
+    return f"{TMDB_IMAGE_BASE}{size}{path if path.startswith('/') else '/' + path}"
+
+
+def logo_url(url: str | None) -> str | None:
+    """A fanart.tv logo, passed through the same off switch as everything else.
+
+    Stored complete rather than as a path, so there is nothing to build here -- but it still has
+    to answer to SHOW_ARTWORK, or turning artwork off would leave one image behind.
+    """
+    if not url or not images_enabled():
+        return None
+    return url

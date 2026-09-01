@@ -12,9 +12,11 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import delete
 from sqlmodel import Session, col, select
 
 from app.clients.plex_client import PlexClient, PlexClientError
+from app.clients.fanart_client import FanartAuthError, FanartClient, FanartError
 from app.clients.tmdb_client import TmdbAuthError, TmdbClient, TmdbError, TmdbNotFound
 from app.models import (
     ItemType,
@@ -83,6 +85,7 @@ def scan_movie_libraries(
     plex: PlexClient,
     tmdb: TmdbClient,
     *,
+    fanart: FanartClient | None = None,
     force_refresh: bool = False,
     progress=None,
 ) -> ScanSummary:
@@ -132,7 +135,9 @@ def scan_movie_libraries(
         session.commit()
         summary.removed += _prune_missing(session, library.plex_library_key, started)
 
-    summary.collections_found = _cache_collections(session, tmdb, ttl, summary, progress)
+    summary.collections_found = _cache_collections(
+        session, tmdb, ttl, summary, progress, fanart=fanart
+    )
     return summary
 
 
@@ -308,7 +313,13 @@ def _prune_missing(session: Session, library_key: str, started: datetime) -> int
 
 
 def _cache_collections(
-    session: Session, tmdb: TmdbClient, ttl: timedelta, summary: ScanSummary, progress=None
+    session: Session,
+    tmdb: TmdbClient,
+    ttl: timedelta,
+    summary: ScanSummary,
+    progress=None,
+    *,
+    fanart: FanartClient | None = None,
 ) -> int:
     """Look up which collection each owned film belongs to, then cache those collections."""
     owned_ids = {
@@ -363,7 +374,11 @@ def _cache_collections(
         if progress:
             progress("Fetching collections", index, len(collection_ids))
         try:
-            _cache_collection(session, tmdb, collection_id, ttl, summary)
+            if not _cache_collection(session, tmdb, collection_id, ttl, summary, fanart=fanart):
+                # The fanart key was rejected, and it will be rejected for every remaining
+                # collection too. Artwork is optional, so the scan carries on without it rather
+                # than failing -- but it stops asking.
+                fanart = None
         except TmdbAuthError as exc:
             summary.errors.append(str(exc))
             logger.error("Stopping TMDb enrichment: %s", exc)
@@ -378,38 +393,56 @@ def _cache_collection(
     collection_id: int,
     ttl: timedelta,
     summary: ScanSummary,
-) -> None:
+    *,
+    fanart: FanartClient | None = None,
+) -> bool:
+    """Cache one collection. Returns False only to say the fanart key is unusable."""
     existing = session.get(TmdbCollection, collection_id)
     if existing is not None and _is_fresh(existing.fetched_at, ttl):
-        return
+        return True
 
     try:
         details = tmdb.get_collection(collection_id)
     except TmdbNotFound:
-        return
+        return True
     except TmdbAuthError:
         raise
     except TmdbError as exc:
         summary.errors.append(str(exc))
         logger.warning("TMDb collection lookup failed for %s: %s", collection_id, exc)
-        return
+        return True
 
     summary.tmdb_lookups += 1
+    fanart_usable = True
+    logo_url = None
+    if fanart is not None:
+        logo_url, fanart_usable = _collection_logo(fanart, details, summary)
+
     session.merge(
         TmdbCollection(
             tmdb_collection_id=details.tmdb_collection_id,
             name=details.name,
             poster_path=details.poster_path,
+            backdrop_path=details.backdrop_path,
+            logo_url=logo_url,
             fetched_at=utcnow(),
         )
     )
 
     # Members are replaced wholesale: a film removed from a collection upstream must disappear
     # here too. Exclusions key on TMDb ids, so they survive this (technical challenge #13).
-    for row in session.exec(
-        select(TmdbCollectionMovie).where(col(TmdbCollectionMovie.collection_id) == collection_id)
-    ).all():
-        session.delete(row)
+    #
+    # A bulk delete, for the reason instance_service documents: SQLAlchemy does not guarantee
+    # DELETE-before-INSERT ordering between different objects in one flush, so an ORM delete loop
+    # followed by adds fails the (collection_id, tmdb_movie_id) unique constraint as soon as the
+    # two sets overlap -- which is always, since a collection's members are what barely change.
+    # This only ever runs on a refetch, so it stayed invisible until a cache went stale.
+    session.exec(
+        delete(TmdbCollectionMovie).where(
+            col(TmdbCollectionMovie.collection_id) == collection_id
+        )
+    )
+    session.flush()
 
     for position, movie in enumerate(details.movies):
         session.add(
@@ -424,3 +457,38 @@ def _cache_collection(
             )
         )
     session.commit()
+    return fanart_usable
+
+
+def _collection_logo(
+    fanart: FanartClient, details, summary: ScanSummary
+) -> tuple[str | None, bool]:
+    """Find a franchise logo for a collection, via its earliest film.
+
+    fanart.tv has no collection endpoint -- it is keyed per film -- so this leans on the fact
+    that a franchise's wordmark is established by its first entry and reused by the sequels.
+    Measured on 70 of the real library's collections, the anchor film had a logo every time.
+
+    Returns the logo and whether the fanart key is still worth using.
+    """
+    anchor = min(
+        details.movies,
+        key=lambda movie: (movie.year is None, movie.year or 0),
+        default=None,
+    )
+    if anchor is None:
+        return None, True
+
+    try:
+        art = fanart.get_movie_art(anchor.tmdb_id)
+    except FanartAuthError as exc:
+        summary.errors.append(str(exc))
+        logger.error("Disabling fanart.tv artwork for this scan: %s", exc)
+        return None, False
+    except FanartError as exc:
+        # Artwork is decoration. A collection with no logo is a heading in text, which is what
+        # every install without a fanart key gets anyway.
+        logger.debug("fanart.tv lookup failed for %s: %s", anchor.tmdb_id, exc)
+        return None, True
+
+    return art.logo_url, True

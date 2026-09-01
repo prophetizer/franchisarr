@@ -32,6 +32,7 @@ PASSWORD = "s3cret-passphrase"
 SECRETS = {
     "plex_token": "PLEXTOKEN-zzz111aaa222bbb333",
     "tmdb_key": "TMDBKEY-zzz111aaa222bbb333ccc4",
+    "fanart_key": "FANARTKEY-zzz111aaa222bbb33",
     "radarr_key": "RADARRKEY-zzz111aaa222bbb333",
     "sonarr_key": "SONARRKEY-zzz111aaa222bbb333",
 }
@@ -46,6 +47,7 @@ def client(app_factory):
             set_setting(session, SettingKey.PLEX_URL, "http://plex.test:32400")
             set_setting(session, SettingKey.PLEX_TOKEN, SECRETS["plex_token"])
             set_setting(session, SettingKey.TMDB_API_KEY, SECRETS["tmdb_key"])
+            set_setting(session, SettingKey.FANART_API_KEY, SECRETS["fanart_key"])
             set_setting(session, SettingKey.WEBHOOK_URL, "https://hooks.example.com/abc")
             session.commit()
             instance_service.create_radarr(

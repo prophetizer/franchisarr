@@ -12,12 +12,12 @@ question this project will ever get.
 from __future__ import annotations
 
 import logging
-import threading
 import time
 from dataclasses import dataclass, field
 
 import requests
 
+from app.clients.rate_limit import RateLimiter
 from app.logging_config import register_secret
 
 logger = logging.getLogger(__name__)
@@ -95,25 +95,13 @@ class TmdbCollectionDetails:
     tmdb_collection_id: int
     name: str
     poster_path: str | None = None
+    backdrop_path: str | None = None
     movies: tuple[TmdbMovieSummary, ...] = field(default_factory=tuple)
 
 
-class _RateLimiter:
-    """Smooths outgoing requests to a fixed ceiling. Thread-safe, since a scheduled scan and a
-    web request can both be talking to TMDb at once."""
-
-    def __init__(self, max_per_second: int) -> None:
-        self._min_interval = 1.0 / max(1, max_per_second)
-        self._lock = threading.Lock()
-        self._next_allowed = 0.0
-
-    def wait(self) -> None:
-        with self._lock:
-            now = time.monotonic()
-            sleep_for = self._next_allowed - now
-            self._next_allowed = max(now, self._next_allowed) + self._min_interval
-        if sleep_for > 0:
-            time.sleep(sleep_for)
+#: Kept as a module-level name because this is where the limiter used to live; fanart.tv needs
+#: the same behaviour, so the implementation moved to `rate_limit`.
+_RateLimiter = RateLimiter
 
 
 def looks_like_v4_token(api_key: str) -> bool:
@@ -133,7 +121,7 @@ class TmdbClient:
     ) -> None:
         self._api_key = api_key.strip()
         self._timeout = timeout
-        self._limiter = _RateLimiter(max_requests_per_second)
+        self._limiter = RateLimiter(max_requests_per_second)
         self._session = session or requests.Session()
         register_secret(self._api_key)
 
@@ -215,6 +203,7 @@ class TmdbClient:
             tmdb_collection_id=int(payload.get("id", collection_id)),
             name=str(payload.get("name") or ""),
             poster_path=payload.get("poster_path") or None,
+            backdrop_path=payload.get("backdrop_path") or None,
             movies=tuple(
                 TmdbMovieSummary(
                     tmdb_id=int(part["id"]),

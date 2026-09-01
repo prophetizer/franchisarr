@@ -39,6 +39,8 @@ changing a variable later has no effect. See [`.env.example`](.env.example) for 
 |---|---|
 | `PLEX_URL`, `PLEX_TOKEN` | Your Plex server |
 | `TMDB_API_KEY` | Your own free v3 key |
+| `FANART_API_KEY` | Optional; adds franchise logos to collection headings |
+| `SHOW_ARTWORK` | `false` turns off all poster and logo images |
 | `RADARR_URL`, `RADARR_API_KEY` | Optional first Radarr; more can be added in the UI |
 | `SONARR_URL`, `SONARR_API_KEY` | Optional first Sonarr |
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD` | Fallback login, created on first boot only |
@@ -46,6 +48,16 @@ changing a variable later has no effect. See [`.env.example`](.env.example) for 
 | `SCAN_SCHEDULE_CRON` | e.g. `0 3 * * *`; empty disables scheduled scans |
 | `TZ` | Which timezone the schedule runs in |
 | `PUID`, `PGID` | Ownership of the config volume, as in the linuxserver.io images |
+
+### Artwork
+
+Collection screens show posters from TMDb. Adding a free
+[fanart.tv key](https://fanart.tv/get-an-api-key/) additionally puts the franchise wordmark over
+a backdrop at the top of each collection — the only thing that key is used for.
+
+Both are fetched by the browser from `image.tmdb.org` and `assets.fanart.tv`, so a client with no
+internet access, or anyone who would rather nothing left their network, can set
+`SHOW_ARTWORK=false` for a text-only interface.
 
 ### Connecting to Radarr and Sonarr
 

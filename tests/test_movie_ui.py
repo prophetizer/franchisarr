@@ -508,3 +508,67 @@ def test_artwork_can_be_turned_off_entirely(client: TestClient, monkeypatch) -> 
     body = client.get(f"{BASE}/collections").text
 
     assert "image.tmdb.org" not in body
+
+
+def test_a_collection_with_a_logo_shows_the_wordmark_instead_of_the_title(
+    client: TestClient,
+) -> None:
+    _seed_collection()
+    with Session(get_engine()) as session:
+        collection = session.get(TmdbCollection, COLLECTION)
+        collection.logo_url = "https://assets.fanart.tv/fanart/bhc-logo.png"
+        collection.backdrop_path = "/backdrop.jpg"
+        session.add(collection)
+        session.commit()
+
+    body = client.get(f"{BASE}/collections/{COLLECTION}").text
+
+    assert "https://assets.fanart.tv/fanart/bhc-logo.png" in body
+    assert "https://image.tmdb.org/t/p/w1280/backdrop.jpg" in body
+    assert "has-backdrop" in body
+
+
+def test_the_logo_keeps_the_collection_name_as_its_alt_text(client: TestClient) -> None:
+    """The wordmark replaces the heading visually, so without this a screen reader gets no
+    heading at all."""
+    _seed_collection()
+    with Session(get_engine()) as session:
+        collection = session.get(TmdbCollection, COLLECTION)
+        collection.logo_url = "https://assets.fanart.tv/fanart/bhc-logo.png"
+        session.add(collection)
+        session.commit()
+
+    body = client.get(f"{BASE}/collections/{COLLECTION}").text
+
+    assert 'alt="Beverly Hills Cop Collection"' in body
+
+
+def test_without_a_logo_the_heading_is_the_name_in_text(client: TestClient) -> None:
+    """No fanart key is the default state, so this is the path most installs take."""
+    _seed_collection()
+
+    body = client.get(f"{BASE}/collections/{COLLECTION}").text
+
+    assert "<h1>Beverly Hills Cop Collection</h1>" in body
+    assert "collection-logo" not in body
+
+
+def test_turning_artwork_off_removes_the_fanart_logo_too(
+    client: TestClient, monkeypatch
+) -> None:
+    """SHOW_ARTWORK is a promise that nothing is fetched from elsewhere; one stray image from a
+    second CDN would quietly break it."""
+    monkeypatch.setenv("SHOW_ARTWORK", "false")
+    _seed_collection()
+    with Session(get_engine()) as session:
+        collection = session.get(TmdbCollection, COLLECTION)
+        collection.logo_url = "https://assets.fanart.tv/fanart/bhc-logo.png"
+        collection.backdrop_path = "/backdrop.jpg"
+        session.add(collection)
+        session.commit()
+
+    body = client.get(f"{BASE}/collections/{COLLECTION}").text
+
+    assert "fanart.tv" not in body
+    assert "image.tmdb.org" not in body
+    assert "<h1>Beverly Hills Cop Collection</h1>" in body

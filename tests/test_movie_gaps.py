@@ -7,6 +7,8 @@ is shared data-quality, a dismissal is one person's preference.
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 import responses
 from sqlmodel import Session, select
 
@@ -365,3 +367,186 @@ def test_scanning_with_no_enabled_libraries_says_so(session: Session) -> None:
 
     assert summary.ok is False
     assert "No movie libraries are enabled" in summary.errors[0]
+
+
+# ------------------------------------------------------------------ fanart enrichment
+
+
+def _tmdb_collection_response(collection_id: int = COLLECTION) -> dict:
+    return {
+        "id": collection_id,
+        "name": "Beverly Hills Cop Collection",
+        "poster_path": "/collection.jpg",
+        "backdrop_path": "/backdrop.jpg",
+        "parts": [
+            {"id": 90, "title": "Beverly Hills Cop", "release_date": "1984-12-05"},
+            {"id": 9836, "title": "Beverly Hills Cop II", "release_date": "1987-05-20"},
+        ],
+    }
+
+
+def _fanart_client(**kwargs):
+    from app.clients.fanart_client import FanartClient
+
+    return FanartClient("0123456789abcdef0123456789abcdef", max_requests_per_second=10_000,
+                        **kwargs)
+
+
+@responses.activate
+def test_a_collection_takes_its_logo_from_the_earliest_film(session: Session) -> None:
+    """fanart.tv has no collection endpoint, so the franchise wordmark comes from the film that
+    established it. Measured on 70 real collections: the anchor film had a logo every time."""
+    from app.clients.fanart_client import FANART_BASE_URL
+
+    _own(session, 90, "Beverly Hills Cop")
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/90",
+                  json={"id": 90, "title": "Beverly Hills Cop",
+                        "belongs_to_collection": {"id": COLLECTION, "name": "BHC"}})
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/collection/{COLLECTION}",
+                  json=_tmdb_collection_response())
+    # The 1984 film, not the 1987 one.
+    responses.add(responses.GET, f"{FANART_BASE_URL}/movies/90",
+                  json={"hdmovielogo": [{"lang": "en", "likes": "9",
+                                         "url": "https://f/bhc-logo.png"}]})
+
+    scan_service._cache_collections(
+        session, TmdbClient("k", max_requests_per_second=10_000), timedelta(0),
+        scan_service.ScanSummary(), fanart=_fanart_client(),
+    )
+
+    cached = session.get(TmdbCollection, COLLECTION)
+    assert cached.logo_url == "https://f/bhc-logo.png"
+    assert cached.backdrop_path == "/backdrop.jpg"
+
+
+@responses.activate
+def test_a_scan_without_a_fanart_key_still_caches_the_collection(session: Session) -> None:
+    """Artwork is optional; no key is the default state, not a misconfiguration."""
+    _own(session, 90, "Beverly Hills Cop")
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/90",
+                  json={"id": 90, "title": "Beverly Hills Cop",
+                        "belongs_to_collection": {"id": COLLECTION, "name": "BHC"}})
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/collection/{COLLECTION}",
+                  json=_tmdb_collection_response())
+
+    scan_service._cache_collections(
+        session, TmdbClient("k", max_requests_per_second=10_000), timedelta(0),
+        scan_service.ScanSummary(), fanart=None,
+    )
+
+    cached = session.get(TmdbCollection, COLLECTION)
+    assert cached is not None
+    assert cached.logo_url is None
+
+
+@responses.activate
+def test_fanart_being_down_does_not_stop_the_scan(session: Session) -> None:
+    from app.clients.fanart_client import FANART_BASE_URL
+
+    _own(session, 90, "Beverly Hills Cop")
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/90",
+                  json={"id": 90, "title": "Beverly Hills Cop",
+                        "belongs_to_collection": {"id": COLLECTION, "name": "BHC"}})
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/collection/{COLLECTION}",
+                  json=_tmdb_collection_response())
+    responses.add(responses.GET, f"{FANART_BASE_URL}/movies/90", status=500)
+
+    summary = scan_service.ScanSummary()
+    scan_service._cache_collections(
+        session, TmdbClient("k", max_requests_per_second=10_000), timedelta(0), summary,
+        fanart=_fanart_client(),
+    )
+
+    assert session.get(TmdbCollection, COLLECTION) is not None
+    assert summary.errors == []  # a missing logo is not worth telling the user about
+
+
+@responses.activate
+def test_a_rejected_fanart_key_stops_it_being_asked_again(session: Session) -> None:
+    """Same lesson as TMDb: a rejected key is rejected for every remaining collection, and
+    finding that out once per collection is minutes of waiting to learn one thing."""
+    from app.clients.fanart_client import FANART_BASE_URL
+
+    _own(session, 90, "First")
+    _own(session, 500, "Second")
+    # _own files everything under COLLECTION; this one needs its own so there are two to fetch.
+    session.get(TmdbMovie, 500).collection_id = 99
+    session.commit()
+
+    for tmdb_id, collection_id in ((90, COLLECTION), (500, 99)):
+        responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/{tmdb_id}",
+                      json={"id": tmdb_id, "title": "x",
+                            "belongs_to_collection": {"id": collection_id, "name": "c"}})
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/collection/{COLLECTION}",
+                  json=_tmdb_collection_response())
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/collection/99",
+                  json=_tmdb_collection_response(99))
+    responses.add(responses.GET, f"{FANART_BASE_URL}/movies/90", status=401, json={})
+
+    summary = scan_service.ScanSummary()
+    scan_service._cache_collections(
+        session, TmdbClient("k", max_requests_per_second=10_000), timedelta(0), summary,
+        fanart=_fanart_client(),
+    )
+
+    fanart_calls = [c for c in responses.calls if "webservice.fanart.tv" in c.request.url]
+    assert len(fanart_calls) == 1, "asked fanart again after the key was rejected"
+    # Both collections still cached: artwork failing must not cost the actual feature.
+    assert session.get(TmdbCollection, COLLECTION) is not None
+    assert session.get(TmdbCollection, 99) is not None
+    assert summary.errors, "a rejected key is worth telling the user about, once"
+
+
+@responses.activate
+def test_recaching_a_collection_whose_films_are_unchanged(session: Session) -> None:
+    """The refetch path, with members that overlap -- which is every refetch in practice, since
+    a collection's membership is the thing that barely changes.
+
+    An ORM delete loop passes a test whose before/after ids differ and fails on real data, so
+    this test's whole point is that the two sets are the same. Same trap as the Radarr cache
+    refresh; this one only surfaced when a migration forced every collection to refetch at once.
+    """
+    _own(session, 90, "Beverly Hills Cop")
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/90",
+                  json={"id": 90, "title": "Beverly Hills Cop",
+                        "belongs_to_collection": {"id": COLLECTION, "name": "BHC"}})
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/collection/{COLLECTION}",
+                  json=_tmdb_collection_response())
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/collection/{COLLECTION}",
+                  json=_tmdb_collection_response())
+
+    tmdb = TmdbClient("k", max_requests_per_second=10_000)
+    for _ in range(2):
+        scan_service._cache_collections(
+            session, tmdb, timedelta(0), scan_service.ScanSummary(),
+        )
+
+    members = session.exec(
+        select(TmdbCollectionMovie).where(TmdbCollectionMovie.collection_id == COLLECTION)
+    ).all()
+    assert sorted(m.tmdb_movie_id for m in members) == [90, 9836], "members duplicated or lost"
+
+
+@responses.activate
+def test_a_film_dropped_from_a_collection_upstream_disappears(session: Session) -> None:
+    """The reason members are replaced wholesale rather than merged."""
+    _own(session, 90, "Beverly Hills Cop")
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/90",
+                  json={"id": 90, "title": "Beverly Hills Cop",
+                        "belongs_to_collection": {"id": COLLECTION, "name": "BHC"}})
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/collection/{COLLECTION}",
+                  json=_tmdb_collection_response())
+    shrunk = _tmdb_collection_response()
+    shrunk["parts"] = shrunk["parts"][:1]
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/collection/{COLLECTION}", json=shrunk)
+
+    tmdb = TmdbClient("k", max_requests_per_second=10_000)
+    for _ in range(2):
+        scan_service._cache_collections(
+            session, tmdb, timedelta(0), scan_service.ScanSummary(),
+        )
+
+    members = session.exec(
+        select(TmdbCollectionMovie).where(TmdbCollectionMovie.collection_id == COLLECTION)
+    ).all()
+    assert [m.tmdb_movie_id for m in members] == [90]

@@ -281,6 +281,12 @@ class TmdbCollection(SQLModel, table=True):
     #: TMDb's path fragment, e.g. "/7TEAr7....jpg". Stored rather than a full URL so the size and
     #: the CDN host stay a rendering decision.
     poster_path: str | None = Field(default=None)
+    #: The wide image behind a collection heading. A TMDb path fragment, like poster_path.
+    backdrop_path: str | None = Field(default=None)
+    #: A full URL, not a fragment: fanart.tv serves one size from its own CDN, so unlike TMDb
+    #: there is no size left to choose at render time. Null whenever no fanart key is configured,
+    #: which is the normal state for an install that never sets one.
+    logo_url: str | None = Field(default=None)
     fetched_at: datetime = Field(default_factory=utcnow, index=True)
 
 

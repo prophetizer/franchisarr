@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from sqlmodel import Session, col, select
 
 from app.clients.plex_client import PlexClient
+from app.clients.fanart_client import FanartClient
 from app.clients.tmdb_client import TmdbClient
 from app.models import ItemType, SeenGap, utcnow
 from app.services import (
@@ -48,20 +49,26 @@ class ScanJobResult:
         return not self.errors
 
 
-def _clients(session: Session) -> tuple[PlexClient | None, TmdbClient | None, list[str]]:
+def _clients(
+    session: Session,
+) -> tuple[PlexClient | None, TmdbClient | None, FanartClient | None, list[str]]:
     errors: list[str] = []
     plex_url = get_setting(session, SettingKey.PLEX_URL)
     plex_token = get_setting(session, SettingKey.PLEX_TOKEN)
     tmdb_key = get_setting(session, SettingKey.TMDB_API_KEY)
+    fanart_key = get_setting(session, SettingKey.FANART_API_KEY)
 
     if not (plex_url and plex_token):
         errors.append("No Plex connection is configured.")
     if not tmdb_key:
         errors.append("No TMDb API key is configured.")
     if errors:
-        return None, None, errors
+        return None, None, None, errors
 
-    return PlexClient(plex_url, plex_token), TmdbClient(tmdb_key), []
+    # Optional, and silently so: a missing fanart key is not a misconfiguration, it is the
+    # default. It costs the franchise logos and nothing else.
+    fanart = FanartClient(fanart_key) if fanart_key else None
+    return PlexClient(plex_url, plex_token), TmdbClient(tmdb_key), fanart, []
 
 
 def _record_new(session: Session, item_type: str, found: dict[int, tuple[str, str]]) -> list[notifier.NewItem]:
@@ -103,12 +110,14 @@ def run(session: Session, *, notify: bool = True, progress=None) -> ScanJobResul
     result = ScanJobResult()
     first_run = not has_ever_scanned(session)
 
-    plex, tmdb, errors = _clients(session)
+    plex, tmdb, fanart, errors = _clients(session)
     if errors:
         result.errors.extend(errors)
         return result
 
-    result.movies = scan_service.scan_movie_libraries(session, plex, tmdb, progress=progress)
+    result.movies = scan_service.scan_movie_libraries(
+        session, plex, tmdb, fanart=fanart, progress=progress
+    )
     result.shows = scan_service.scan_show_libraries(session, plex, tmdb, progress=progress)
     for summary in (result.movies, result.shows):
         # "No movie libraries are enabled" is a normal state for a TV-only install, not a fault.

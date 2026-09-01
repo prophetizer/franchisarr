@@ -62,6 +62,10 @@ class EnvSettings:
     tmdb_api_key: str | None = None
     tmdb_cache_ttl_days: int | None = None
 
+    #: Optional. Buys franchise logos on the collection screens and nothing else; every feature
+    #: works without it.
+    fanart_api_key: str | None = None
+
     scan_schedule_cron: str | None = None
     webhook_url: str | None = None
     webhook_format: str | None = None
@@ -105,6 +109,7 @@ def get_settings() -> EnvSettings:
         plex_url=_env_or_none("PLEX_URL"),
         plex_token=_env_or_none("PLEX_TOKEN"),
         tmdb_api_key=_env_or_none("TMDB_API_KEY"),
+        fanart_api_key=_env_or_none("FANART_API_KEY"),
         tmdb_cache_ttl_days=int(ttl_raw) if ttl_raw.isdigit() else None,
         scan_schedule_cron=_env_or_none("SCAN_SCHEDULE_CRON"),
         webhook_url=_env_or_none("WEBHOOK_URL"),

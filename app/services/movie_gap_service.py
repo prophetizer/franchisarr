@@ -79,12 +79,27 @@ class CollectionGap:
     #: Announced or scheduled but not yet released. Addable, but not a gap to act on today.
     upcoming: tuple[MissingMovie, ...] = ()
     poster_path: str | None = None
+    backdrop_path: str | None = None
+    #: A full fanart.tv URL, or None when no fanart key is configured.
+    logo: str | None = None
 
     @property
     def poster(self) -> str | None:
         from app.services.artwork import CARD_SIZE, poster_url
 
         return poster_url(self.poster_path, CARD_SIZE)
+
+    @property
+    def backdrop(self) -> str | None:
+        from app.services.artwork import backdrop_url
+
+        return backdrop_url(self.backdrop_path)
+
+    @property
+    def logo_image(self) -> str | None:
+        from app.services.artwork import logo_url
+
+        return logo_url(self.logo)
 
     @property
     def total(self) -> int:
@@ -238,6 +253,8 @@ def collection_gaps(
                 missing=tuple(missing_here),
                 upcoming=tuple(upcoming_here),
                 poster_path=collection.poster_path,
+                backdrop_path=collection.backdrop_path,
+                logo=collection.logo_url,
             )
         )
 

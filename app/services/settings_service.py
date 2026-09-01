@@ -27,6 +27,7 @@ class SettingKey:
     PLEX_URL = "plex_url"
     PLEX_TOKEN = "plex_token"
     TMDB_API_KEY = "tmdb_api_key"
+    FANART_API_KEY = "fanart_api_key"
     TMDB_CACHE_TTL_DAYS = "tmdb_cache_ttl_days"
     SCAN_SCHEDULE_CRON = "scan_schedule_cron"
     WEBHOOK_URL = "webhook_url"
@@ -49,6 +50,7 @@ DEFAULTS: dict[str, str] = {
     SettingKey.PLEX_URL: "",
     SettingKey.PLEX_TOKEN: "",
     SettingKey.TMDB_API_KEY: "",
+    SettingKey.FANART_API_KEY: "",
     SettingKey.TMDB_CACHE_TTL_DAYS: "7",
     SettingKey.SCAN_SCHEDULE_CRON: "",
     SettingKey.WEBHOOK_URL: "",
@@ -62,7 +64,9 @@ DEFAULTS: dict[str, str] = {
 #: simply ignored.
 
 #: Settings whose values must never be logged or rendered unmasked.
-SECRET_KEYS = frozenset({SettingKey.PLEX_TOKEN, SettingKey.TMDB_API_KEY})
+SECRET_KEYS = frozenset(
+    {SettingKey.PLEX_TOKEN, SettingKey.TMDB_API_KEY, SettingKey.FANART_API_KEY}
+)
 
 
 def get_setting(session: Session, key: str, default: str | None = None) -> str | None:
@@ -120,6 +124,8 @@ def _env_values(env: EnvSettings) -> dict[str, str]:
         values[SettingKey.PLEX_TOKEN] = env.plex_token
     if env.tmdb_api_key:
         values[SettingKey.TMDB_API_KEY] = env.tmdb_api_key
+    if env.fanart_api_key:
+        values[SettingKey.FANART_API_KEY] = env.fanart_api_key
     if env.tmdb_cache_ttl_days is not None:
         values[SettingKey.TMDB_CACHE_TTL_DAYS] = str(env.tmdb_cache_ttl_days)
     if env.scan_schedule_cron:
