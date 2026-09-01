@@ -1,77 +1,64 @@
 /* theme.park -> Pico variable adapter.
  *
- * Loaded *only* when a theme URL is configured, immediately after it. That ordering matters: the
- * theme file defines theme.park's custom properties on :root, and this file reads them back and
- * assigns them to the Pico variables the rest of the UI is built on. With no theme configured
- * neither file loads, and Pico's own dark palette applies untouched.
+ * Always loaded, which is the important part. A reverse proxy that injects a theme.park
+ * theme-options stylesheet -- nginx sub_filter, a Traefik plugin, theme.park's own Docker mod --
+ * defines its custom properties and nothing else; this is what turns those into the variables
+ * Pico actually paints with. If it only loaded when Franchisarr itself rendered the link, then
+ * externally-injected theming would silently do nothing, which is the normal way theming is
+ * applied in a homelab.
  *
- * Being a separate file is what lets the mapping be unconditional. Trying to do this inside
- * app.css would mean writing var(--main-bg-color, <pico default>) everywhere, which cannot
- * reference the Pico value it is overriding without a circular definition.
- *
- * theme.park's variables are documented by example rather than specification, so every
- * assignment carries a fallback to the theme's own more general colours. A theme that omits, say,
- * --drop-down-menu-bg still produces a coherent page rather than a half-styled one.
+ * Every mapping falls back to Pico's own dark value, so with no theme present the page is
+ * byte-identical to unthemed Pico. Those literals are the one place in this codebase where a
+ * colour is written out: they are Pico's values restated, not design decisions, and they exist
+ * so the mapping can be unconditional. app.css stays free of them, and a test enforces that.
  */
 
 :root,
 :root:not([data-theme="light"]),
 :root[data-theme="dark"] {
   /* Page and surfaces */
-  --pico-background-color: var(--main-bg-color);
-  --pico-card-background-color: var(--modal-bg-color, var(--main-bg-color));
-  --pico-card-sectioning-background-color: var(--modal-header-color, var(--modal-bg-color, var(--main-bg-color)));
-  --pico-dropdown-background-color: var(--drop-down-menu-bg, var(--modal-bg-color, var(--main-bg-color)));
+  --pico-background-color: var(--main-bg-color, rgb(19, 22.5, 30.5));
+  --pico-card-background-color: var(--modal-bg-color, var(--main-bg-color, #181c25));
+  --pico-card-sectioning-background-color:
+    var(--modal-header-color, var(--modal-bg-color, rgb(26, 30.5, 40.25)));
+  --pico-dropdown-background-color: var(--drop-down-menu-bg, var(--modal-bg-color, #181c25));
 
   /* Text */
-  --pico-color: var(--text);
-  --pico-h1-color: var(--text-hover, var(--text));
-  --pico-h2-color: var(--text-hover, var(--text));
-  --pico-h3-color: var(--text-hover, var(--text));
-  --pico-h4-color: var(--text-hover, var(--text));
-  --pico-h5-color: var(--text-hover, var(--text));
-  --pico-h6-color: var(--text-hover, var(--text));
-  --pico-muted-color: var(--text-muted, var(--text));
-  --pico-blockquote-color: var(--text-muted, var(--text));
+  --pico-color: var(--text, #c2c7d0);
+  --pico-h1-color: var(--text-hover, var(--text, #f0f1f3));
+  --pico-h2-color: var(--text-hover, var(--text, #f0f1f3));
+  --pico-h3-color: var(--text-hover, var(--text, #f0f1f3));
+  --pico-h4-color: var(--text-hover, var(--text, #f0f1f3));
+  --pico-h5-color: var(--text-hover, var(--text, #f0f1f3));
+  --pico-h6-color: var(--text-hover, var(--text, #f0f1f3));
+  --pico-muted-color: var(--text-muted, #7b8495);
+  --pico-blockquote-color: var(--text-muted, #7b8495);
 
   /* Links */
-  --pico-primary: var(--link-color, var(--button-color));
-  --pico-primary-hover: var(--link-color-hover, var(--button-color-hover, var(--link-color)));
-  --pico-primary-focus: rgba(var(--accent-color), 0.25);
-  --pico-primary-underline: rgba(var(--accent-color), 0.5);
-  --pico-primary-hover-underline: rgb(var(--accent-color));
+  --pico-primary: var(--link-color, var(--button-color, #01aaff));
+  --pico-primary-hover: var(--link-color-hover, var(--button-color-hover, #79c0ff));
 
   /* Buttons and other primary-coloured surfaces */
-  --pico-primary-background: var(--button-color);
-  --pico-primary-hover-background: var(--button-color-hover, var(--button-color));
-  --pico-primary-inverse: var(--button-text, var(--main-bg-color));
-  --pico-primary-border: var(--button-color);
-  --pico-primary-hover-border: var(--button-color-hover, var(--button-color));
+  --pico-primary-background: var(--button-color, #0172ad);
+  --pico-primary-hover-background: var(--button-color-hover, var(--button-color, #0172ad));
+  --pico-primary-inverse: var(--button-text, #fff);
+  --pico-primary-border: var(--button-color, #0172ad);
+  --pico-primary-hover-border: var(--button-color-hover, var(--button-color, #0172ad));
 
   /* Form controls */
-  --pico-form-element-background-color: var(--modal-bg-color, var(--main-bg-color));
-  --pico-form-element-color: var(--text);
-  --pico-form-element-placeholder-color: var(--text-muted, var(--text));
-  --pico-form-element-border-color: rgba(var(--accent-color), 0.35);
-  --pico-form-element-active-background-color: var(--modal-bg-color, var(--main-bg-color));
-  --pico-form-element-active-border-color: rgb(var(--accent-color));
-  --pico-form-element-focus-color: rgb(var(--accent-color));
+  --pico-form-element-background-color:
+    var(--modal-bg-color, var(--main-bg-color, rgb(28, 33, 43.5)));
+  --pico-form-element-color: var(--text, #c2c7d0);
+  --pico-form-element-placeholder-color: var(--text-muted, #7b8495);
+  --pico-form-element-active-background-color:
+    var(--modal-bg-color, var(--main-bg-color, rgb(28, 33, 43.5)));
 
   /* Borders and rules */
-  --pico-border-color: rgba(var(--accent-color), 0.25);
-  --pico-muted-border-color: rgba(var(--accent-color), 0.18);
-  --pico-table-border-color: rgba(var(--accent-color), 0.18);
-  --pico-table-row-stripped-background-color: rgba(var(--accent-color), 0.05);
+  --pico-muted-border-color: var(--drop-down-menu-bg, #202632);
+  --pico-table-border-color: var(--drop-down-menu-bg, #202632);
 
-  /* Code and marks */
-  --pico-code-background-color: var(--modal-header-color, var(--modal-bg-color, var(--main-bg-color)));
-  --pico-code-color: var(--text-muted, var(--text));
-  --pico-mark-background-color: rgba(var(--accent-color), 0.3);
-  --pico-mark-color: var(--text);
-}
-
-/* theme.park themes are dark designs. Pin the scheme so a viewer whose OS is set to light mode
- * doesn't get Pico's light palette fighting the theme's dark colours. */
-:root {
-  color-scheme: dark;
+  /* Code */
+  --pico-code-background-color:
+    var(--modal-header-color, var(--modal-bg-color, rgb(26, 30.5, 40.25)));
+  --pico-code-color: var(--text-muted, #8891a4);
 }

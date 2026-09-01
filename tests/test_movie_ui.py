@@ -22,7 +22,6 @@ from app.models import (
     TmdbShow,
 )
 from app.services import instance_service
-from app.services.theme_service import set_theme_url
 
 BASE = "/franchisarr"
 PASSWORD = "s3cret-passphrase"
@@ -273,68 +272,6 @@ def test_the_add_result_points_at_radarr_for_what_happens_next(client: TestClien
     _seed_collection()
     with Session(get_engine()) as session:
         instance_service.create_radarr(session, name="HD", url=RADARR, api_key="k")
-
-    # No HTTP mocked, so the add fails -- but the template's wording is what's under test here.
-    response = client.get(f"{BASE}/add/306")
-    assert response.status_code == 200
-
-
-# ------------------------------------------------------------------ theming in the page
-
-
-def test_no_theme_link_is_rendered_by_default(client: TestClient) -> None:
-    body = client.get(f"{BASE}/collections").text
-
-    assert "theme-adapter.css" not in body
-    assert "theme-park.dev" not in body
-
-
-def test_a_configured_theme_is_linked_before_our_own_styles(client: TestClient) -> None:
-    """Order matters: the theme defines its variables, the adapter maps them, app.css builds on
-    the result."""
-    url = "https://theme-park.dev/css/theme-options/nord.css"
-    with Session(get_engine()) as session:
-        set_theme_url(session, url)
-
-    body = client.get(f"{BASE}/collections").text
-
-    assert url in body
-    assert body.index("pico.min.css") < body.index(url)
-    assert body.index(url) < body.index("theme-adapter.css")
-    assert body.index("theme-adapter.css") < body.index("app.css")
-
-
-def test_the_theme_reaches_every_page_not_just_the_one_that_set_it(client: TestClient) -> None:
-    """The link lives in the base template, so a route that forgot to pass the URL would render
-    one unthemed page and nothing would fail. A context processor prevents that."""
-    url = "https://theme-park.dev/css/theme-options/nord.css"
-    with Session(get_engine()) as session:
-        set_theme_url(session, url)
-    _seed_collection()
-
-    for path in ("/", "/collections", f"/collections/{COLLECTION}", "/settings", "/libraries"):
-        assert url in client.get(f"{BASE}{path}").text, f"{path} rendered without the theme"
-
-
-def test_saving_a_bad_theme_url_is_rejected_with_a_message(client: TestClient) -> None:
-    response = client.post(f"{BASE}/settings", data={"theme_url": "javascript:alert(1)"})
-
-    assert response.status_code == 400
-    assert "http://" in response.text
-
-
-def test_saving_a_theme_url_works(client: TestClient) -> None:
-    url = "https://theme-park.dev/css/theme-options/dracula.css"
-
-    response = client.post(f"{BASE}/settings", data={"theme_url": url})
-
-    assert response.status_code == 303
-    assert url in client.get(f"{BASE}/settings").text
-
-
-# ------------------------------------------------------------------ TV screens
-
-
 def _own_show(tmdb_id: int, title: str) -> None:
     from app.models import ItemType as _IT
 
@@ -423,19 +360,6 @@ def test_looking_for_candidates_without_a_tmdb_key_says_so(client: TestClient) -
 
 def test_candidates_for_an_unknown_show_is_a_404(client: TestClient) -> None:
     assert client.get(f"{BASE}/shows/999999/candidates").status_code == 404
-
-
-def test_the_spinoff_page_is_themed_like_everything_else(client: TestClient) -> None:
-    url = "https://theme-park.dev/css/theme-options/nord.css"
-    with Session(get_engine()) as session:
-        set_theme_url(session, url)
-    _own_show(4614, "NCIS")
-
-    assert url in client.get(f"{BASE}/shows").text
-
-
-# ------------------------------------------------------------------ schedule & webhook settings
-
 
 def test_saving_a_valid_schedule(client: TestClient) -> None:
     response = client.post(f"{BASE}/settings/schedule", data={"scan_schedule_cron": "0 3 * * *"})

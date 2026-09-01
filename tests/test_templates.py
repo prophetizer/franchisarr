@@ -54,7 +54,7 @@ def test_theme_is_dark_by_default() -> None:
 def test_theme_can_be_overridden_for_a_future_light_toggle() -> None:
     """Phase 9's toggle should only need to change this attribute."""
     templates = build_templates("")
-    html = templates.get_template("index.html").render(theme="light")
+    html = templates.get_template("index.html").render(color_scheme="light")
     assert 'data-theme="light"' in html
 
 

@@ -20,29 +20,29 @@
 <article>
   <header><strong>Theme</strong></header>
 
-  <form method="post" action="{{ url('/settings') }}">
-    <label for="theme_url">theme.park stylesheet URL</label>
-    <input type="url" id="theme_url" name="theme_url" value="{{ current_theme_url }}"
-           placeholder="https://theme-park.dev/css/theme-options/nord.css"
-           list="suggested-themes" autocomplete="off">
-    <datalist id="suggested-themes">
-      {% for name, href in suggested %}<option value="{{ href }}">{{ name }}</option>{% endfor %}
-    </datalist>
+  {% if theme_config.enabled %}
+    <p>Themed by <code>{{ theme_config.source }}</code>:</p>
+    <p><code>{{ theme_config.url }}</code></p>
+  {% else %}
+    <p>Using the built-in dark theme.</p>
+  {% endif %}
 
-    <small>
-      Leave empty for the built-in dark theme. Any
-      <a href="https://theme-park.dev" target="_blank" rel="noopener noreferrer">theme.park</a>
-      theme-options stylesheet works, including one from your own self-hosted copy — paste its URL.
-    </small>
+  <p><small class="muted">
+    Set with environment variables, not here — so one setting can theme every app in a stack
+    rather than each being configured by hand:
+  </small></p>
 
-    <p><small class="notice-warn">
-      Enabling this makes each visitor's browser fetch a stylesheet from that address, which tells
-      that server their IP address and that they're using Franchisarr. Point it at your own copy if
-      you'd rather it didn't.
-    </small></p>
+  <pre><code>TP_THEME=nord
+TP_DOMAIN=theme-park.dev   # or your own copy
+TP_SCHEME=https
+TP_COMMUNITY_THEME=false</code></pre>
 
-    <button type="submit">Save</button>
-  </form>
+  <p><small class="muted">
+    <code>THEME_CSS_URL</code> overrides those with a literal stylesheet URL. A reverse proxy that
+    injects a
+    <a href="https://theme-park.dev" target="_blank" rel="noopener noreferrer">theme.park</a>
+    stylesheet into the page works too, with nothing set here at all.
+  </small></p>
 </article>
 
 <article>
@@ -121,18 +121,4 @@
   </form>
 </article>
 
-{% if current_theme_url %}
-  <article>
-    <header><strong>Theme preview</strong></header>
-    <p>This page is already using it. Some elements to check it against:</p>
-    <p>
-      <button>Primary button</button>
-      <button class="secondary">Secondary</button>
-      <button class="outline">Outline</button>
-    </p>
-    <p><a href="{{ url('/settings') }}">A link</a>, <mark>a mark</mark>, <code>some code</code>,
-       and <small class="muted">muted text</small>.</p>
-    <input type="text" placeholder="A form field">
-  </article>
-{% endif %}
 {% endblock %}

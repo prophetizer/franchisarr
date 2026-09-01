@@ -108,10 +108,30 @@ Radarr/Sonarr; `instances` and `activity` inspect the rest.
 
 ## Theming
 
-Franchisarr ships dark by default with a light toggle, and supports
-[theme.park](https://theme-park.dev) themes: paste any theme-options stylesheet URL into Settings
-and the whole UI takes it on. Off by default — when it's off, nothing is fetched from anywhere but
-your own server. A self-hosted theme.park works too; it's a URL field, not a fixed list.
+Dark by default, with a light toggle. [theme.park](https://theme-park.dev) themes are set by
+environment variable, using theme.park's own names — so if your stack already sets these,
+Franchisarr picks the theme up with no per-app configuration:
+
+```yaml
+environment:
+  TP_THEME: nord
+  TP_DOMAIN: theme-park.dev     # or your own self-hosted copy
+  TP_SCHEME: https
+  TP_COMMUNITY_THEME: "false"
+```
+
+`THEME_CSS_URL` overrides those with a literal stylesheet URL.
+
+If you theme centrally by injecting a stylesheet at the proxy — nginx `sub_filter`, a Traefik
+plugin, theme.park's Docker mod — that works with **nothing set here at all**. Franchisarr always
+loads a small adapter mapping theme.park's custom properties onto the ones it paints with, so an
+injected theme-options stylesheet takes effect on its own.
+
+There is no upstream `franchisarr-base.css` at theme.park yet, so injecting a *base* stylesheet
+the way you would for Sonarr won't find one — the theme-options file plus the built-in adapter is
+what does the work today.
+
+Leave it all unset and nothing is fetched from anywhere but your own server.
 
 ## Backing up
 

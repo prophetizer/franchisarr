@@ -41,19 +41,11 @@ def _theme_context(request) -> dict:  # noqa: ANN001 - a Starlette Request
 
     A context processor rather than a per-route argument: the theme link lives in the base
     template, so a route that forgot to pass it would render one unthemed page and nothing would
-    fail loudly. One primary-key lookup per render is a fair price for not having that bug.
+    fail loudly. Reading it from the environment costs nothing.
     """
-    from sqlmodel import Session
+    from app.services.theme_service import resolve
 
-    from app.db import get_engine
-    from app.services.theme_service import get_theme_url
-
-    try:
-        with Session(get_engine()) as session:
-            return {"theme_url": get_theme_url(session)}
-    except Exception:  # noqa: BLE001 - a themeless page beats a 500
-        logger.warning("Could not read the theme setting; rendering unthemed", exc_info=True)
-        return {"theme_url": ""}
+    return {"theme_url": resolve().url}
 
 
 def build_templates(base_url: str) -> Jinja2Templates:

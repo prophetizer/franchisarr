@@ -38,9 +38,6 @@ class SettingKey:
     PLEX_CLIENT_ID = "plex_client_id"
     PLEX_MACHINE_IDENTIFIER = "plex_machine_identifier"
 
-    #: Optional theme.park (or self-hosted) stylesheet URL. Empty means the built-in theme.
-    THEME_URL = "theme_url"
-
     #: Where to look for new releases. Empty uses the built-in default; set it to point at a fork,
     #: or at nothing, if you'd rather the install asked no one.
     UPDATE_RELEASES_URL = "update_releases_url"
@@ -57,9 +54,12 @@ DEFAULTS: dict[str, str] = {
     SettingKey.WEBHOOK_URL: "",
     SettingKey.WEBHOOK_FORMAT: WebhookFormat.GENERIC.value,
     SettingKey.CROSS_INSTANCE_DEDUP: "false",
-    SettingKey.THEME_URL: "",
     SettingKey.UPDATE_RELEASES_URL: "",
 }
+
+#: Theming moved to environment variables in 0.2.0 (TP_THEME and friends), so a homelab can set
+#: it once centrally instead of per app. Any `theme_url` row left in an upgraded database is
+#: simply ignored.
 
 #: Settings whose values must never be logged or rendered unmasked.
 SECRET_KEYS = frozenset({SettingKey.PLEX_TOKEN, SettingKey.TMDB_API_KEY})

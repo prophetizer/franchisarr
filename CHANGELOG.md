@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Theming is configured by environment variable, not in the app.** Franchisarr previously asked
+  you to paste a stylesheet URL into its settings page, which is the wrong shape for a homelab
+  that themes every service centrally. It now reads theme.park's own `TP_THEME`, `TP_DOMAIN`,
+  `TP_SCHEME` and `TP_COMMUNITY_THEME`, so a stack already setting those needs no per-app
+  configuration. `THEME_CSS_URL` overrides them with a literal URL. The settings page shows what
+  is active and where it came from, and no longer offers to change it.
+- Themes injected by a reverse proxy now work with nothing configured in Franchisarr at all. The
+  stylesheet that maps theme.park's properties onto the app's is always loaded; previously it only
+  loaded when Franchisarr rendered the theme link itself, so an injected theme silently did
+  nothing.
+
 ## [0.1.1] — 2026-08-31
 
 ### Fixed

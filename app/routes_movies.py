@@ -233,13 +233,12 @@ def _settings_context(session, user, **extra) -> dict:
     and forgotten in one of the handlers that renders it."""
     from app.models import WebhookFormat
     from app.services import scheduler as scheduler_service
-    from app.services.theme_service import SUGGESTED_THEMES, get_theme_url
+    from app.services.theme_service import resolve as resolve_theme
 
     cron = get_setting(session, SettingKey.SCAN_SCHEDULE_CRON) or ""
     context = {
         "user": user,
-        "current_theme_url": get_theme_url(session),
-        "suggested": SUGGESTED_THEMES,
+        "theme_config": resolve_theme(),
         "current_cron": cron,
         "schedule_description": scheduler_service.describe(cron),
         "current_webhook_url": get_setting(session, SettingKey.WEBHOOK_URL) or "",
@@ -256,33 +255,9 @@ def _settings_context(session, user, **extra) -> dict:
 
 @router.get("/settings", response_class=HTMLResponse)
 def settings_page(request: Request, session: DbSession, user: RequiredUser, saved: bool = False):
-    from app.services.theme_service import SUGGESTED_THEMES, get_theme_url
-
     return get_templates().TemplateResponse(
         request, "settings.html", _settings_context(session, user, saved=saved)
     )
-
-
-@router.post("/settings", response_class=HTMLResponse)
-def save_settings(
-    request: Request,
-    session: DbSession,
-    user: RequiredUser,
-    theme_url: Annotated[str, Form()] = "",
-):
-    from app.services.theme_service import InvalidThemeUrl, set_theme_url
-
-    try:
-        set_theme_url(session, theme_url)
-    except InvalidThemeUrl as exc:
-        return get_templates().TemplateResponse(
-            request,
-            "settings.html",
-            _settings_context(session, user, error=str(exc)),
-            status_code=status.HTTP_400_BAD_REQUEST,
-        )
-
-    return RedirectResponse(_url("/settings?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/settings/schedule", response_class=HTMLResponse)
