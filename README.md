@@ -49,6 +49,13 @@ changing a variable later has no effect. See [`.env.example`](.env.example) for 
 | `TZ` | Which timezone the schedule runs in |
 | `PUID`, `PGID` | Ownership of the config volume, as in the linuxserver.io images |
 
+### Spin-offs
+
+Spin-offs of shows you own are discovered from [Wikidata](https://www.wikidata.org) during a
+scan — no key or account needed — and matched on TMDb ids rather than titles, so it finds the
+ones whose names give nothing away (*Family Guy* → *American Dad!*). Weaker evidence is marked
+*possible*, and nothing is ever added without you clicking.
+
 ### Artwork
 
 Collection screens show posters from TMDb. Adding a free

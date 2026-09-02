@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Spin-offs are discovered automatically, from Wikidata.** Previously the page showed nothing
+  until you picked a show and searched it, one at a time — on a 656-show library that is not a
+  feature. Scans now ask Wikidata which of your shows have spin-offs and list them up front.
+  No key and no account: Wikidata is free and needs neither.
+
+  It also finds the ones a name search never could, because it matches on TMDb ids rather than
+  titles: Family Guy → *American Dad!*, black-ish → *Grown-ish*, Young Sheldon → *Georgie &
+  Mandy's First Marriage*, Reacher → *Neagley*. On the test library, 98% of shows resolved to a
+  Wikidata item and 24 spin-offs surfaced with no clicking at all.
+
+  Suggestions are labelled: an explicit "has spin-off" statement is shown plainly, while weaker
+  evidence ("follows", "based on") is marked *possible*. Foreign-language remakes are filtered
+  out — *Brooklyn Nine-Nine → Escouade 99* is a remake, not a spin-off — as are entries Wikidata
+  has no English name for. Nothing is ever added automatically; every suggestion still needs a
+  click.
+
+  The per-show search is still there, under "Search a single show", for when you think one has
+  been missed.
+
 ### Fixed
 
 - **"Sign in with Plex" spun forever instead of signing you in.** The sign-in itself worked — the

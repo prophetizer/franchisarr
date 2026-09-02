@@ -17,6 +17,7 @@ from sqlmodel import Session, col, select
 
 from app.clients.plex_client import PlexClient, PlexClientError
 from app.clients.fanart_client import FanartAuthError, FanartClient, FanartError
+from app.clients.wikidata_client import WikidataClient, WikidataError
 from app.clients.tmdb_client import TmdbAuthError, TmdbClient, TmdbError, TmdbNotFound
 from app.models import (
     ItemType,
@@ -58,6 +59,8 @@ class ScanSummary:
     unmatched: int = 0
     removed: int = 0
     collections_found: int = 0
+    #: Spin-off relations discovered or refreshed from Wikidata.
+    spinoffs_found: int = 0
     tmdb_lookups: int = 0
     errors: list[str] = field(default_factory=list)
 
@@ -146,6 +149,7 @@ def scan_show_libraries(
     plex: PlexClient,
     tmdb: TmdbClient,
     *,
+    wikidata: WikidataClient | None = None,
     force_refresh: bool = False,
     progress=None,
 ) -> ScanSummary:
@@ -153,7 +157,7 @@ def scan_show_libraries(
 
     Deliberately a sibling of the movie scan rather than a generalisation of it: the two share
     the snapshot table but almost nothing else, since shows have no collections to walk and their
-    spin-off relationships come from a curated mapping instead of TMDb.
+    spin-off relationships come from Wikidata and the user rather than from TMDb.
     """
     summary = ScanSummary()
     ttl = timedelta(0) if force_refresh else cache_ttl(session)
@@ -200,7 +204,63 @@ def scan_show_libraries(
         summary.removed += _prune_missing(session, library.plex_library_key, started)
 
     _cache_shows(session, tmdb, ttl, summary, progress)
+    if wikidata is not None:
+        _discover_spinoffs(session, wikidata, tmdb, ttl, summary, progress)
     return summary
+
+
+def _discover_spinoffs(
+    session: Session,
+    wikidata: WikidataClient,
+    tmdb: TmdbClient,
+    ttl: timedelta,
+    summary: ScanSummary,
+    progress=None,
+) -> None:
+    """Ask Wikidata which of the library's shows have spin-offs, and record what it says.
+
+    Never fatal. The scan's job is the library snapshot; this is enrichment on top of it, so a
+    Wikidata outage costs the suggestions and nothing else.
+    """
+    from app.services import tv_spinoff_service
+
+    owned = sorted(tv_spinoff_service.owned_show_ids(session))
+    if not owned:
+        return
+
+    if progress:
+        progress("Looking for spin-offs", 0, len(owned))
+
+    try:
+        relations = wikidata.spinoffs_for(owned)
+    except WikidataError as exc:
+        # Worth recording, not worth failing over.
+        logger.warning("Spin-off discovery skipped: %s", exc)
+        summary.errors.append(f"Spin-off lookup failed: {exc}")
+        return
+
+    # A suggestion needs a name and a year to be worth showing, and those come from TMDb.
+    for index, relation in enumerate(relations, start=1):
+        if progress and index % PROGRESS_EVERY == 0:
+            progress("Looking for spin-offs", index, len(relations))
+        cached = session.get(TmdbShow, relation.spinoff_tmdb_id)
+        if cached is not None and _is_fresh(cached.fetched_at, ttl):
+            continue
+        try:
+            tv_spinoff_service.cache_show(session, tmdb.get_show(relation.spinoff_tmdb_id))
+            summary.tmdb_lookups += 1
+        except TmdbNotFound:
+            continue
+        except TmdbAuthError as exc:
+            summary.errors.append(str(exc))
+            logger.error("Stopping TMDb enrichment: %s", exc)
+            break
+        except TmdbError as exc:
+            logger.debug("Could not cache spin-off %s: %s", relation.spinoff_tmdb_id, exc)
+            continue
+
+    added, refreshed = tv_spinoff_service.import_wikidata_relations(session, relations)
+    summary.spinoffs_found = added + refreshed
 
 
 def _cache_shows(

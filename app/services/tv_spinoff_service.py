@@ -1,7 +1,12 @@
 """TV spin-off detection.
 
 TMDb has no spin-off relation to walk -- there is simply no field for it (PROJECT_PLAN.md
-section 2). So this is a hybrid, and the two halves are deliberately kept apart:
+section 2). So this is a hybrid, and the parts are deliberately kept apart:
+
+* **Wikidata discovery** (`source=wikidata`), refreshed by each scan. The only part that finds a
+  spin-off whose title does not quote its parent -- Family Guy -> American Dad!, black-ish ->
+  Mixed-ish -- which is most of the interesting ones and all of the ones a name heuristic can
+  never reach. See `app/clients/wikidata_client.py` for which properties, and why.
 
 * **Curated mappings** (`spinoff_mappings`, `confidence=confirmed`). Authoritative. These are
   suggestions the user sees as facts: "you have NCIS, you don't have NCIS: Los Angeles".
@@ -19,14 +24,16 @@ matters far more than being clever, because every false positive is a thing a hu
 and reject. A shared network raises confidence but is not required: plenty of real spin-offs
 moved broadcaster.
 
-Every mapping written here is `source=local`. The `community` value exists so a future shared
-dataset is a new writer of existing columns rather than a migration.
+Mappings the user writes are `source=local` and are never overwritten by discovery: a scan may
+add and refresh its own rows, but a human's judgement outranks Wikidata's.
 """
 
 from __future__ import annotations
 
 import logging
 import re
+from typing import TYPE_CHECKING
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 from sqlmodel import Session, col, select
@@ -46,6 +53,9 @@ from app.models import (
 )
 from app.services.settings_service import SettingKey, get_bool_setting
 from app.services.matcher import normalise_title
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from app.clients.wikidata_client import SpinoffRelation
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +182,8 @@ def add_mapping(
     spinoff_show_tmdb_id: int,
     user: User | None = None,
     confidence: str = MappingConfidence.CONFIRMED.value,
+    source: str = MappingSource.LOCAL.value,
+    origin_ref: str | None = None,
 ) -> SpinoffMapping | None:
     """Record that one show is a spin-off of another. Idempotent."""
     if source_show_tmdb_id == spinoff_show_tmdb_id:
@@ -182,10 +194,9 @@ def add_mapping(
     mapping = SpinoffMapping(
         source_show_tmdb_id=source_show_tmdb_id,
         spinoff_show_tmdb_id=spinoff_show_tmdb_id,
-        # v1 only ever writes local; `community` exists so a future sync feature populates
-        # existing columns instead of needing a migration.
-        source=MappingSource.LOCAL.value,
+        source=source,
         confidence=confidence,
+        origin_ref=origin_ref,
         added_by_user_id=user.id if user else None,
     )
     session.add(mapping)
@@ -363,3 +374,62 @@ def cache_show(session: Session, summary: TmdbShowSummary) -> TmdbShow:
     session.merge(row)
     session.commit()
     return row
+
+
+# ------------------------------------------------------------------ Wikidata discovery
+
+
+def import_wikidata_relations(
+    session: Session, relations: Iterable["SpinoffRelation"]
+) -> tuple[int, int]:
+    """Record discovered spin-off relations as mappings. Returns (added, refreshed).
+
+    Only ever touches rows this discovery owns. A mapping the user added by hand, or dismissed
+    the suggestion from, is never rewritten by a scan -- their judgement outranks Wikidata's.
+
+    Relations are not deleted when they stop being returned. Wikidata is edited by anyone, and a
+    statement disappearing is as likely to be vandalism or a batch failure as a correction; a
+    spin-off that quietly vanished from the list would be far harder to notice than one too many.
+    """
+    added = refreshed = 0
+    for relation in relations:
+        if relation.source_tmdb_id == relation.spinoff_tmdb_id:
+            continue
+
+        confidence = (
+            MappingConfidence.CONFIRMED.value
+            if relation.is_explicit_spinoff
+            else MappingConfidence.HEURISTIC.value
+        )
+        existing = session.exec(
+            select(SpinoffMapping).where(
+                col(SpinoffMapping.source_show_tmdb_id) == relation.source_tmdb_id,
+                col(SpinoffMapping.spinoff_show_tmdb_id) == relation.spinoff_tmdb_id,
+            )
+        ).first()
+
+        if existing is not None:
+            if existing.source != MappingSource.WIKIDATA.value:
+                continue  # the user's own mapping; leave it alone
+            if (existing.confidence, existing.origin_ref) != (confidence, relation.relation):
+                existing.confidence = confidence
+                existing.origin_ref = relation.relation
+                session.add(existing)
+                refreshed += 1
+            continue
+
+        session.add(
+            SpinoffMapping(
+                source_show_tmdb_id=relation.source_tmdb_id,
+                spinoff_show_tmdb_id=relation.spinoff_tmdb_id,
+                source=MappingSource.WIKIDATA.value,
+                confidence=confidence,
+                origin_ref=relation.relation,
+            )
+        )
+        added += 1
+
+    session.commit()
+    if added or refreshed:
+        logger.info("Wikidata spin-offs: %d added, %d refreshed", added, refreshed)
+    return added, refreshed

@@ -283,13 +283,26 @@ def _own_show(tmdb_id: int, title: str) -> None:
 
 
 def test_the_spinoff_page_explains_why_it_starts_empty(client: TestClient) -> None:
-    """An empty list looks broken unless you say the mapping list is meant to start that way."""
+    """An empty list looks broken unless you say why it is empty. It used to say there was no
+    spin-off data to import, which stopped being true when Wikidata discovery landed -- so it
+    now points at the thing that fills it, which is running a scan."""
     _own_show(4614, "NCIS")
 
     body = client.get(f"{BASE}/shows").text
 
-    assert "starts empty" in body
-    assert "no reliable spin-off data" in body or "no spin-off data" in body
+    assert "Wikidata" in body
+    assert "run one" in body
+
+
+def test_the_spinoff_page_does_not_demand_a_click_per_show(client: TestClient) -> None:
+    """The per-show search was the only way to see anything, on a library of 656 shows. It is a
+    fallback now, not the main route, so it must not be the first thing presented."""
+    _own_show(4614, "NCIS")
+
+    body = client.get(f"{BASE}/shows").text
+
+    assert "Search a single show" in body
+    assert body.index("Suggested") < body.index("Search a single show")
 
 
 def test_the_spinoff_page_lists_your_shows(client: TestClient) -> None:

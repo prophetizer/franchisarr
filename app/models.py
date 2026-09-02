@@ -40,6 +40,9 @@ class MonitorMode(str, Enum):
 class MappingSource(str, Enum):
     LOCAL = "local"
     COMMUNITY = "community"
+    #: Discovered from Wikidata during a scan. Kept distinct from LOCAL so a re-scan can refresh
+    #: them without touching a mapping the user added by hand.
+    WIKIDATA = "wikidata"
 
 
 class MappingConfidence(str, Enum):

@@ -19,6 +19,7 @@ from sqlmodel import Session, col, select
 
 from app.clients.plex_client import PlexClient
 from app.clients.fanart_client import FanartClient
+from app.clients.wikidata_client import WikidataClient
 from app.clients.tmdb_client import TmdbClient
 from app.models import ItemType, SeenGap, utcnow
 from app.services import (
@@ -118,7 +119,10 @@ def run(session: Session, *, notify: bool = True, progress=None) -> ScanJobResul
     result.movies = scan_service.scan_movie_libraries(
         session, plex, tmdb, fanart=fanart, progress=progress
     )
-    result.shows = scan_service.scan_show_libraries(session, plex, tmdb, progress=progress)
+    # Wikidata needs no key and no account, so spin-off discovery is simply always on.
+    result.shows = scan_service.scan_show_libraries(
+        session, plex, tmdb, wikidata=WikidataClient(), progress=progress
+    )
     for summary in (result.movies, result.shows):
         # "No movie libraries are enabled" is a normal state for a TV-only install, not a fault.
         result.errors.extend(
