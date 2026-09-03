@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-09-03
+
+### Fixed
+
+- **A scan crashed at the spin-off step** with `name 'TmdbShow' is not defined`. A missing import
+  on the one branch no test executed: every scan test passed `wikidata=None`, so discovery was
+  never run by the suite even though its client and its importer were both covered. The library
+  snapshot, collections and artwork had all completed by then — only the spin-off step was lost —
+  but the scan reported itself as failed. There is now a test that runs a TV scan with discovery
+  switched on, and another that pulls the endpoint out from under it mid-scan.
+
 ## [0.4.0] — 2026-09-02
 
 Spin-offs stop being a thing you have to go looking for, and two things that were only findable
@@ -227,7 +238,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.4.1
 [0.4.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.4.0
 [0.3.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.3.0
 [0.2.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.2.1

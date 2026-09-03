@@ -26,6 +26,7 @@ from app.models import (
     TmdbCollection,
     TmdbCollectionMovie,
     TmdbMovie,
+    TmdbShow,
     utcnow,
 )
 from app.services import library_service
@@ -267,7 +268,6 @@ def _cache_shows(
     session: Session, tmdb: TmdbClient, ttl: timedelta, summary: ScanSummary, progress=None
 ) -> None:
     """Fetch and cache details for each owned show, so spin-off views have names to display."""
-    from app.models import TmdbShow
     from app.services.tv_spinoff_service import cache_show
 
     owned = {

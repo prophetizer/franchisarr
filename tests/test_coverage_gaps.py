@@ -311,3 +311,102 @@ def test_a_mapping_of_a_show_to_itself_is_refused(client: TestClient) -> None:
     })
 
     assert response.status_code == 400
+
+
+@responses.activate
+def test_a_tv_scan_discovers_spinoffs_end_to_end(session: Session, fixtures_dir) -> None:
+    """The whole path, not its pieces.
+
+    This is the test that was missing: every other scan test passes `wikidata=None`, so the
+    discovery branch was never executed by the suite at all. It shipped with a NameError in it --
+    a module-level import the branch needed and no other branch did. Unit tests of the client and
+    of the importer both passed, because neither of them runs this function.
+    """
+    from app.clients.wikidata_client import SPARQL_ENDPOINT, WikidataClient
+    from app.models import SpinoffMapping
+
+    plex_dir = fixtures_dir / "plex"
+    for name, url in [
+        ("root.xml", f"{PLEX}/"),
+        ("library.xml", f"{PLEX}/library"),
+        ("library_sections.xml", f"{PLEX}/library/sections"),
+        ("section_2_shows.xml", f"{PLEX}/library/sections/2/all"),
+    ]:
+        responses.add(responses.GET, url, body=(plex_dir / name).read_text(),
+                      content_type="application/xml")
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/tv/1621",
+                  json={"id": 1621, "name": "NCIS", "first_air_date": "2003-09-23",
+                        "networks": [{"name": "CBS"}]})
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/tv/44006",
+                  json={"id": 44006, "name": "Chicago Fire", "first_air_date": "2012-10-10",
+                        "networks": [{"name": "NBC"}]})
+
+    # Wikidata says one of them has a spin-off; the scan has to cache its details from TMDb.
+    def sparql(*bindings):
+        return {"results": {"bindings": list(bindings)}}
+
+    responses.add(responses.GET, SPARQL_ENDPOINT, json=sparql({
+        "tmdb": {"value": "1621"},
+        "spin": {"value": "http://www.wikidata.org/entity/Q123"},
+        "spinLabel": {"value": "NCIS: Los Angeles"},
+        "spinTmdb": {"value": "17610"},
+    }))
+    responses.add(responses.GET, SPARQL_ENDPOINT, json=sparql())
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/tv/17610",
+                  json={"id": 17610, "name": "NCIS: Los Angeles",
+                        "first_air_date": "2009-09-22", "networks": [{"name": "CBS"}]})
+
+    session.add(IncludedLibrary(plex_library_key="2", plex_library_name="TV Shows",
+                                library_type="show", enabled=True))
+    session.commit()
+
+    summary = scan_service.scan_show_libraries(
+        session,
+        PlexClient(PLEX, "token"),
+        TmdbClient("k" * 32, max_requests_per_second=10_000),
+        wikidata=WikidataClient(max_requests_per_second=10_000),
+    )
+
+    assert summary.errors == []
+    assert summary.spinoffs_found == 1
+    mapping = session.exec(select(SpinoffMapping)).one()
+    assert (mapping.source_show_tmdb_id, mapping.spinoff_show_tmdb_id) == (1621, 17610)
+    # The suggestion needs a name to display, which only the TMDb cache has.
+    assert session.get(TmdbShow, 17610).name == "NCIS: Los Angeles"
+
+
+@responses.activate
+def test_a_wikidata_outage_does_not_stop_a_tv_scan(session: Session, fixtures_dir) -> None:
+    """Spin-off discovery is enrichment on top of a scan that has already done its real job."""
+    from app.clients.wikidata_client import SPARQL_ENDPOINT, WikidataClient
+
+    plex_dir = fixtures_dir / "plex"
+    for name, url in [
+        ("root.xml", f"{PLEX}/"),
+        ("library.xml", f"{PLEX}/library"),
+        ("library_sections.xml", f"{PLEX}/library/sections"),
+        ("section_2_shows.xml", f"{PLEX}/library/sections/2/all"),
+    ]:
+        responses.add(responses.GET, url, body=(plex_dir / name).read_text(),
+                      content_type="application/xml")
+    for tmdb_id, name in ((1621, "NCIS"), (44006, "Chicago Fire")):
+        responses.add(responses.GET, f"{TMDB_BASE_URL}/tv/{tmdb_id}",
+                      json={"id": tmdb_id, "name": name, "first_air_date": "2003-09-23",
+                            "networks": [{"name": "CBS"}]})
+    responses.add(responses.GET, SPARQL_ENDPOINT, status=503)
+
+    session.add(IncludedLibrary(plex_library_key="2", plex_library_name="TV Shows",
+                                library_type="show", enabled=True))
+    session.commit()
+
+    summary = scan_service.scan_show_libraries(
+        session,
+        PlexClient(PLEX, "token"),
+        TmdbClient("k" * 32, max_requests_per_second=10_000),
+        wikidata=WikidataClient(max_requests_per_second=10_000),
+    )
+
+    # The library snapshot is what matters and it is intact.
+    assert summary.items_seen == 2
+    assert summary.matched == 2
+    assert {s.name for s in session.exec(select(TmdbShow)).all()} == {"NCIS", "Chicago Fire"}
