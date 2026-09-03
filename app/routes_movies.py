@@ -334,7 +334,12 @@ def save_webhook(
 
 
 @router.post("/scan", response_class=HTMLResponse)
-def trigger_scan(request: Request, session: DbSession, user: RequiredUser):
+def trigger_scan(
+    request: Request,
+    session: DbSession,
+    user: RequiredUser,
+    refresh: Annotated[str, Form()] = "",
+):
     """Start a scan and return immediately.
 
     This used to run the scan inside the request. On a real library that is minutes of waiting on
@@ -356,7 +361,7 @@ def trigger_scan(request: Request, session: DbSession, user: RequiredUser):
 
     # A second click while one is running is a no-op rather than an error: the panel it gets back
     # shows the scan already in progress, which is what the person wanted to see anyway.
-    scan_job.run_in_background("manual")
+    scan_job.run_in_background("manual", force_refresh=bool(refresh))
 
     return get_templates().TemplateResponse(
         request, "partials/scan_status.html", {"user": user, "progress": scan_state.current()}

@@ -250,3 +250,32 @@ def test_the_scheduler_skips_when_a_scan_is_already_running(monkeypatch) -> None
 
     assert started == ["scheduled"], "it should try, and be told no"
     assert scan_state.current().trigger == "manual", "the running scan is untouched"
+
+
+def test_a_normal_scan_respects_the_cache(client, monkeypatch) -> None:
+    """The default has to stay cheap: a nightly scan must not refetch 555 collections."""
+    seen = {}
+
+    def fake(trigger="manual", *, force_refresh=False):
+        seen["force_refresh"] = force_refresh
+        return True
+
+    monkeypatch.setattr(scan_job, "run_in_background", fake)
+    client.post(f"{BASE}/scan")
+
+    assert seen["force_refresh"] is False
+
+
+def test_refresh_everything_ignores_the_cache(client, monkeypatch) -> None:
+    """Without this there is no way to act on a configuration change: adding a fanart.tv key buys
+    nothing until the collections are fetched again, which is otherwise a week away."""
+    seen = {}
+
+    def fake(trigger="manual", *, force_refresh=False):
+        seen["force_refresh"] = force_refresh
+        return True
+
+    monkeypatch.setattr(scan_job, "run_in_background", fake)
+    client.post(f"{BASE}/scan", data={"refresh": "1"})
+
+    assert seen["force_refresh"] is True

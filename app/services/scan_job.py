@@ -99,7 +99,9 @@ def has_ever_scanned(session: Session) -> bool:
     return session.exec(select(SeenGap).limit(1)).first() is not None
 
 
-def run(session: Session, *, notify: bool = True, progress=None) -> ScanJobResult:
+def run(
+    session: Session, *, notify: bool = True, progress=None, force_refresh: bool = False
+) -> ScanJobResult:
     """Do a complete scan and, if anything new turned up, send the webhook.
 
     The very first run never notifies. Everything missing on a fresh install is the state of the
@@ -117,11 +119,12 @@ def run(session: Session, *, notify: bool = True, progress=None) -> ScanJobResul
         return result
 
     result.movies = scan_service.scan_movie_libraries(
-        session, plex, tmdb, fanart=fanart, progress=progress
+        session, plex, tmdb, fanart=fanart, force_refresh=force_refresh, progress=progress
     )
     # Wikidata needs no key and no account, so spin-off discovery is simply always on.
     result.shows = scan_service.scan_show_libraries(
-        session, plex, tmdb, wikidata=WikidataClient(), progress=progress
+        session, plex, tmdb, wikidata=WikidataClient(),
+        force_refresh=force_refresh, progress=progress,
     )
     for summary in (result.movies, result.shows):
         # "No movie libraries are enabled" is a normal state for a TV-only install, not a fault.
@@ -197,8 +200,12 @@ def prime_seen_gaps(session: Session) -> int:
     return primed
 
 
-def run_in_background(trigger: str = "manual") -> bool:
+def run_in_background(trigger: str = "manual", *, force_refresh: bool = False) -> bool:
     """Start a scan on a background thread. False means one is already running.
+
+    `force_refresh` ignores the cache TTL and refetches every collection and show. It exists
+    because the cache hides configuration changes: adding a fanart.tv key buys nothing until the
+    collections are fetched again, which without this is a week away.
 
     A thread rather than a request: a scan of a real library is minutes of waiting on Plex and
     TMDb, and doing that inside a request leaves the page hanging until the proxy gives up.
@@ -218,7 +225,8 @@ def run_in_background(trigger: str = "manual") -> bool:
     def _work() -> None:
         try:
             with DbSession(get_engine()) as session:
-                result = run(session, notify=True, progress=scan_state.update)
+                result = run(session, notify=True, progress=scan_state.update,
+                             force_refresh=force_refresh)
                 scan_state.finish(_describe(result), result.errors)
         except Exception as exc:  # noqa: BLE001
             # Anything escaping here would leave the state stuck on "running" forever, and the

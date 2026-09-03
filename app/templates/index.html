@@ -25,9 +25,19 @@
       <footer>
         <button hx-post="{{ url('/scan') }}" hx-target="#scan-status" hx-swap="outerHTML">
           {{ 'Scan my library' if not scanned else 'Rescan my library' }}</button>
+        {% if scanned %}
+          <button class="secondary outline" hx-post="{{ url('/scan') }}"
+                  hx-vals='{"refresh": "1"}'
+                  hx-target="#scan-status" hx-swap="outerHTML">Refresh everything</button>
+        {% endif %}
         <small class="muted">
           Runs in the background — on a few thousand items it takes a handful of minutes, and you
           don't have to stay on this page.
+          {% if scanned %}
+            <br><strong>Refresh everything</strong> ignores the cache and refetches every
+            collection and show. Use it after changing a key or a setting, which a normal scan
+            won't pick up until the cache expires a week later.
+          {% endif %}
         </small>
       </footer>
     </article>

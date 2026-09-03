@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] — 2026-09-03
+
+### Added
+
+- **"Refresh everything"**, beside the scan button. A normal scan honours the seven-day cache, so
+  a configuration change is invisible until the cache expires — add a fanart.tv key and the
+  franchise logos simply don't appear, because the collections that would carry them were fetched
+  yesterday and won't be fetched again for a week. This refetches every collection and show now.
+  The plumbing existed since the first scan service but was reachable only from Python.
+
 ## [0.4.1] — 2026-09-03
 
 ### Fixed
@@ -238,7 +248,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/prophetizer/franchisarr/releases/tag/v0.4.2
 [0.4.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.4.1
 [0.4.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.4.0
 [0.3.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.3.0
