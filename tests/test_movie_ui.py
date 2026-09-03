@@ -585,3 +585,31 @@ def test_turning_artwork_off_removes_the_fanart_logo_too(
     assert "fanart.tv" not in body
     assert "image.tmdb.org" not in body
     assert "<h1>Beverly Hills Cop Collection</h1>" in body
+
+
+def test_the_home_page_offers_a_scan(client: TestClient) -> None:
+    """Scanning is what every other page depends on, and it used to be reachable only from the
+    collections page — so on a fresh install the primary action was somewhere else entirely."""
+    body = client.get(f"{BASE}/").text
+
+    assert 'hx-post="/franchisarr/scan"' in body
+    assert "Scan my library" in body
+
+
+def test_the_spinoff_page_offers_a_scan_when_it_has_nothing(client: TestClient) -> None:
+    """It is the page that tells you spin-offs come from a scan, so it has to let you run one."""
+    _own_show(4614, "NCIS")
+
+    body = client.get(f"{BASE}/shows").text
+
+    assert 'hx-post="/franchisarr/scan"' in body
+
+
+def test_every_page_with_a_scan_button_shows_its_progress(client: TestClient) -> None:
+    """Without the status region the button posts into nothing and the page looks inert — which
+    is exactly what 'I clicked it and nothing happened' looks like."""
+    _own_show(4614, "NCIS")
+
+    for path in ("/", "/shows", "/collections"):
+        body = client.get(f"{BASE}{path}").text
+        assert 'id="scan-status"' in body, f"{path} has no scan status region"

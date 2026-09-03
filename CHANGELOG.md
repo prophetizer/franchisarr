@@ -30,6 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **You can start a scan from the home page and the spin-offs page.** It was only ever on the
+  collections page, so on a fresh install the one action everything else depends on was somewhere
+  you had no reason to look. All three pages now show the running scan's progress too, wherever
+  it was started from.
+
 - **"Sign in with Plex" spun forever instead of signing you in.** The sign-in itself worked — the
   session was created — but the page never moved, and reloading it by hand was the only way
   through. The popup window was held in the Alpine component's state, and Alpine makes that state

@@ -31,9 +31,19 @@ def test_url_builder(base_url: str, path: str, expected: str) -> None:
     assert make_url_builder(base_url)(path) == expected
 
 
-def _render(base_url: str) -> str:
+def _render(base_url: str, **context) -> str:
+    """Render the home page the way a route would.
+
+    Rendering the template directly skips the context processors, which only run for a real
+    TemplateResponse -- so anything they supply has to be supplied here instead. `progress` is
+    the real object rather than a stub, since it is process-local and needs nothing.
+    """
+    from app.services import scan_state
+
     templates = build_templates(base_url)
-    return templates.get_template("index.html").render()
+    return templates.get_template("index.html").render(
+        {"progress": scan_state.current(), **context}
+    )
 
 
 def test_get_templates_follows_the_configured_base_url(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -54,7 +64,11 @@ def test_theme_is_dark_by_default() -> None:
 def test_theme_can_be_overridden_for_a_future_light_toggle() -> None:
     """Phase 9's toggle should only need to change this attribute."""
     templates = build_templates("")
-    html = templates.get_template("index.html").render(color_scheme="light")
+    from app.services import scan_state
+
+    html = templates.get_template("index.html").render(
+        {"color_scheme": "light", "progress": scan_state.current()}
+    )
     assert 'data-theme="light"' in html
 
 

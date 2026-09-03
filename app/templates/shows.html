@@ -2,6 +2,7 @@
 {% block title %}TV spin-offs — Franchisarr{% endblock %}
 
 {% block content %}
+{% include "partials/scan_status.html" %}
 <hgroup>
   <h1>TV spin-offs</h1>
   <p>Spin-offs of shows you already watch, that aren't in your library.</p>
@@ -42,9 +43,15 @@
 
     {% else %}
       <p class="muted">
-        Nothing found yet. Spin-offs are discovered from Wikidata during a scan, so run one if you
-        haven't since upgrading — or add a mapping by hand below.
+        Nothing found yet. Spin-offs are discovered from Wikidata during a scan — run one and
+        they'll appear here. You can also add a mapping by hand below.
       </p>
+      {% if not progress.running %}
+        <p>
+          <button hx-post="{{ url('/scan') }}" hx-target="#scan-status" hx-swap="outerHTML">
+            Scan my library</button>
+        </p>
+      {% endif %}
     {% endif %}
   </section>
 

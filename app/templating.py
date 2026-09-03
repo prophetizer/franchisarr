@@ -48,9 +48,21 @@ def _theme_context(request) -> dict:  # noqa: ANN001 - a Starlette Request
     return {"theme_url": resolve().url}
 
 
+def _scan_context(request) -> dict:  # noqa: ANN001 - a Starlette Request
+    """Make scan progress available to every template.
+
+    Same reasoning as the theme: the scan status region is included by several pages now, and a
+    route that forgot to pass `progress` would raise at render time on that page alone. The state
+    is a process-local object, so reading it costs nothing.
+    """
+    from app.services import scan_state
+
+    return {"progress": scan_state.current()}
+
+
 def build_templates(base_url: str) -> Jinja2Templates:
     templates = Jinja2Templates(
-        directory=str(TEMPLATES_DIR), context_processors=[_theme_context]
+        directory=str(TEMPLATES_DIR), context_processors=[_theme_context, _scan_context]
     )
     templates.env.globals["url"] = make_url_builder(base_url)
     templates.env.globals["version"] = __version__

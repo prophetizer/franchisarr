@@ -136,6 +136,10 @@ def index(request: Request, session: DbSession, user: RequiredUser):
             "collections_with_gaps": len(gaps),
             "total_missing": sum(len(gap.missing) for gap in gaps),
             "spinoff_count": len(tv_spinoff_service.missing_spinoffs(session, user.id)),
+            # Scanning is the thing the whole app depends on, so its control belongs on the page
+            # people land on -- it used to live only on the collections page. Progress itself
+            # comes from a context processor, since several pages show it now.
+            "scanned": bool(movie_gap_service.owned_tmdb_ids(session)),
         },
     )
 

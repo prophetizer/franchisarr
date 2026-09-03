@@ -6,6 +6,33 @@
     <p>Films missing from collections you already own, and spin-offs of shows you already watch.</p>
   </hgroup>
 
+  {#- Rendered on load so a scan running anywhere -- another tab, the scheduler -- shows here
+      and starts polling without anyone pressing anything. -#}
+  {% include "partials/scan_status.html" %}
+
+  {% if not progress.running %}
+    <article>
+      <header><strong>{{ 'Scan your library' if not scanned else 'Up to date?' }}</strong></header>
+      <p>
+        {% if not scanned %}
+          Nothing has been scanned yet. A scan reads your Plex libraries, looks everything up on
+          TMDb, and finds what's missing — start here.
+        {% else %}
+          Scanning again picks up anything added to Plex since last time, and refreshes the
+          collection and spin-off data.
+        {% endif %}
+      </p>
+      <footer>
+        <button hx-post="{{ url('/scan') }}" hx-target="#scan-status" hx-swap="outerHTML">
+          {{ 'Scan my library' if not scanned else 'Rescan my library' }}</button>
+        <small class="muted">
+          Runs in the background — on a few thousand items it takes a handful of minutes, and you
+          don't have to stay on this page.
+        </small>
+      </footer>
+    </article>
+  {% endif %}
+
   <article>
     <header><strong>Movies</strong></header>
     <p>
@@ -29,8 +56,8 @@
         {{ spinoff_count }} spin-off{{ '' if spinoff_count == 1 else 's' }} of shows you watch
         {{ 'is' if spinoff_count == 1 else 'are' }} missing.
       {% else %}
-        No spin-offs suggested yet. The mapping list starts empty and grows as you confirm
-        suggestions — TMDb has no spin-off data to import.
+        No spin-offs found yet. They're discovered from Wikidata during a scan, so run one if you
+        haven't since upgrading.
       {% endif %}
     </p>
     <footer><a href="{{ url('/shows') }}" role="button">Browse spin-offs</a></footer>
