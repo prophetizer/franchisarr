@@ -1,0 +1,8 @@
+{#- Where to find out what a show actually is. A title and a year cannot tell "Ghosts" from
+    "Ghosts"; a link to IMDb or TVDB can. Only the ids TMDb actually had are rendered, and TMDb
+    itself is always available since the id is the thing we hold. -#}
+<span class="show-links">
+  {% if item.imdb_url %}<a href="{{ item.imdb_url }}" target="_blank" rel="noopener noreferrer">IMDb</a>{% endif %}
+  {% if item.tvdb_url %}<a href="{{ item.tvdb_url }}" target="_blank" rel="noopener noreferrer">TVDB</a>{% endif %}
+  <a href="{{ item.tmdb_url }}" target="_blank" rel="noopener noreferrer">TMDb</a>
+</span>

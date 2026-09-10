@@ -22,9 +22,14 @@
       <ul class="film-list">
         {% for suggestion in suggestions %}
           <li class="film-row missing">
+            {% if suggestion.poster %}
+              <img class="film-poster" src="{{ suggestion.poster }}" alt="" loading="lazy"
+                   decoding="async" width="92" height="138">
+            {% endif %}
             <span class="film-title">
               {{ suggestion.spinoff_name }}
               {% if suggestion.first_air_year %}<small class="muted">({{ suggestion.first_air_year }})</small>{% endif %}
+              {% with item = suggestion %}{% include "partials/show_links.html" %}{% endwith %}
             </span>
             <span class="film-meta muted">
               spin-off of {{ suggestion.source_show_name }}

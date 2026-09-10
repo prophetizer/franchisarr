@@ -231,3 +231,39 @@ def test_the_limiter_spaces_requests_out() -> None:
 
     # 5 requests at 50/s cannot complete in under ~80ms of spacing.
     assert time.monotonic() - started >= 0.06
+
+
+@responses.activate
+def test_get_show_carries_its_poster_and_external_ids() -> None:
+    """One request, with external_ids appended: a show scan makes hundreds of these, and a
+    second call per show would double TMDb's side of it for no gain."""
+    responses.add(
+        responses.GET,
+        f"{TMDB_BASE_URL}/tv/4614",
+        json={
+            "id": 4614, "name": "NCIS", "first_air_date": "2003-09-23",
+            "poster_path": "/ncis.jpg", "networks": [{"name": "CBS"}],
+            "external_ids": {"imdb_id": "tt0364845", "tvdb_id": 72108, "facebook_id": None},
+        },
+    )
+
+    show = _client().get_show(4614)
+
+    assert show.poster_path == "/ncis.jpg"
+    assert show.imdb_id == "tt0364845"
+    assert show.tvdb_id == 72108
+    assert "append_to_response=external_ids" in responses.calls[0].request.url
+
+
+@responses.activate
+def test_get_show_tolerates_missing_external_ids() -> None:
+    """Obscure shows have none, and TMDb sends nulls rather than omitting keys."""
+    responses.add(
+        responses.GET,
+        f"{TMDB_BASE_URL}/tv/9",
+        json={"id": 9, "name": "Obscure", "external_ids": {"imdb_id": None, "tvdb_id": None}},
+    )
+
+    show = _client().get_show(9)
+
+    assert show.imdb_id is None and show.tvdb_id is None and show.poster_path is None

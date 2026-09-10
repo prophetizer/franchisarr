@@ -96,6 +96,28 @@ class SpinoffSuggestion:
     first_air_year: int | None = None
     confidence: str = MappingConfidence.CONFIRMED.value
     reason: str | None = None
+    poster_path: str | None = None
+    imdb_id: str | None = None
+    tvdb_id: int | None = None
+
+    @property
+    def poster(self) -> str | None:
+        from app.services.artwork import THUMB_SIZE, poster_url
+
+        return poster_url(self.poster_path, THUMB_SIZE)
+
+    @property
+    def imdb_url(self) -> str | None:
+        return f"https://www.imdb.com/title/{self.imdb_id}/" if self.imdb_id else None
+
+    @property
+    def tvdb_url(self) -> str | None:
+        # The dereferrer is TVDB's stable form; the slug URLs change when a title is corrected.
+        return f"https://www.thetvdb.com/dereferrer/series/{self.tvdb_id}" if self.tvdb_id else None
+
+    @property
+    def tmdb_url(self) -> str:
+        return f"https://www.themoviedb.org/tv/{self.spinoff_tmdb_id}"
 
     @property
     def is_confirmed(self) -> bool:
@@ -270,6 +292,9 @@ def missing_spinoffs(
                 spinoff_name=_show_name(session, mapping.spinoff_show_tmdb_id),
                 first_air_year=cached.first_air_year if cached else None,
                 confidence=mapping.confidence,
+                poster_path=cached.poster_path if cached else None,
+                imdb_id=cached.imdb_id if cached else None,
+                tvdb_id=cached.tvdb_id if cached else None,
             )
         )
 
@@ -353,6 +378,8 @@ def heuristic_candidates(
                 first_air_year=candidate.year,
                 confidence=MappingConfidence.HEURISTIC.value,
                 reason=f"Its title reads as a spin-off of {show.title}",
+                # Search results carry a poster but not external ids; the TMDb link still works.
+                poster_path=candidate.poster_path,
             )
         )
         if len(found) >= limit:
@@ -369,6 +396,9 @@ def cache_show(session: Session, summary: TmdbShowSummary) -> TmdbShow:
         name=summary.name,
         first_air_year=summary.year,
         network=summary.network,
+        poster_path=summary.poster_path,
+        imdb_id=summary.imdb_id,
+        tvdb_id=summary.tvdb_id,
         fetched_at=utcnow(),
     )
     session.merge(row)

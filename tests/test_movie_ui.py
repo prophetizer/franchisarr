@@ -613,3 +613,55 @@ def test_every_page_with_a_scan_button_shows_its_progress(client: TestClient) ->
     for path in ("/", "/shows", "/collections"):
         body = client.get(f"{BASE}{path}").text
         assert 'id="scan-status"' in body, f"{path} has no scan status region"
+
+
+def _seed_spinoff(
+    *, poster: str | None = None, imdb: str | None = None, tvdb: int | None = None
+) -> None:
+    from app.models import SpinoffMapping, TmdbShow
+
+    _own_show(4614, "NCIS")
+    with Session(get_engine()) as session:
+        session.add(TmdbShow(tmdb_id=17610, name="NCIS: Los Angeles", first_air_year=2009,
+                             poster_path=poster, imdb_id=imdb, tvdb_id=tvdb))
+        session.add(SpinoffMapping(source_show_tmdb_id=4614, spinoff_show_tmdb_id=17610))
+        session.commit()
+
+
+def test_a_spinoff_suggestion_shows_its_poster(client: TestClient) -> None:
+    _seed_spinoff(poster="/la.jpg")
+
+    body = client.get(f"{BASE}/shows").text
+
+    assert "https://image.tmdb.org/t/p/w92/la.jpg" in body
+
+
+def test_a_spinoff_suggestion_links_to_where_you_can_see_what_it_is(client: TestClient) -> None:
+    """A title and a year cannot tell "Ghosts" from "Ghosts"; a link to IMDb or TVDB can."""
+    _seed_spinoff(imdb="tt1355642", tvdb=95441)
+
+    body = client.get(f"{BASE}/shows").text
+
+    assert 'href="https://www.imdb.com/title/tt1355642/"' in body
+    assert 'href="https://www.thetvdb.com/dereferrer/series/95441"' in body
+    assert 'href="https://www.themoviedb.org/tv/17610"' in body
+
+
+def test_links_are_only_offered_for_ids_tmdb_actually_had(client: TestClient) -> None:
+    """A link to imdb.com/title/None/ is worse than no link."""
+    _seed_spinoff()
+
+    body = client.get(f"{BASE}/shows").text
+
+    assert "imdb.com" not in body
+    assert "thetvdb.com" not in body
+    assert 'href="https://www.themoviedb.org/tv/17610"' in body, "TMDb is always known"
+
+
+def test_outbound_show_links_open_safely(client: TestClient) -> None:
+    _seed_spinoff(imdb="tt1")
+
+    body = client.get(f"{BASE}/shows").text
+    link = body[body.index("imdb.com"):body.index("imdb.com") + 120]
+
+    assert 'rel="noopener noreferrer"' in link

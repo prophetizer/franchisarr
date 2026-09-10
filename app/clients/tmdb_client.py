@@ -78,6 +78,9 @@ class TmdbShowSummary:
     name: str
     first_air_date: str | None = None
     network: str | None = None
+    poster_path: str | None = None
+    imdb_id: str | None = None
+    tvdb_id: int | None = None
 
     @property
     def year(self) -> int | None:
@@ -236,13 +239,20 @@ class TmdbClient:
         )
 
     def get_show(self, tmdb_id: int) -> TmdbShowSummary:
-        payload = self._get(f"/tv/{tmdb_id}")
+        # external_ids appended rather than fetched separately: it is one request either way
+        # for us, but appending is one request for TMDb, and a show scan makes hundreds.
+        payload = self._get(f"/tv/{tmdb_id}", {"append_to_response": "external_ids"})
         networks = payload.get("networks") or []
+        external = payload.get("external_ids") or {}
+        tvdb_raw = external.get("tvdb_id")
         return TmdbShowSummary(
             tmdb_id=int(payload.get("id", tmdb_id)),
             name=str(payload.get("name") or payload.get("original_name") or ""),
             first_air_date=payload.get("first_air_date") or None,
             network=str(networks[0]["name"]) if networks and networks[0].get("name") else None,
+            poster_path=payload.get("poster_path") or None,
+            imdb_id=str(external["imdb_id"]) if external.get("imdb_id") else None,
+            tvdb_id=int(tvdb_raw) if isinstance(tvdb_raw, int) or str(tvdb_raw).isdigit() else None,
         )
 
     def find_show_by_external_id(self, external_id: str, source: str) -> TmdbShowSummary | None:
@@ -268,6 +278,7 @@ class TmdbClient:
                 tmdb_id=int(item["id"]),
                 name=str(item.get("name") or item.get("original_name") or ""),
                 first_air_date=item.get("first_air_date") or None,
+                poster_path=item.get("poster_path") or None,
             )
             for item in payload.get("results") or []
             if isinstance(item, dict) and item.get("id")

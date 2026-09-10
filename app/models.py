@@ -272,6 +272,12 @@ class TmdbShow(SQLModel, table=True):
     tmdb_id: int = Field(primary_key=True)
     name: str
     first_air_year: int | None = Field(default=None)
+    #: TMDb's path fragment, as on the movie tables: the size stays a rendering decision.
+    poster_path: str | None = Field(default=None)
+    #: External ids, so a suggestion can link out to a page that says what the show *is*. A title
+    #: and a year are not enough to tell "Ghosts" from "Ghosts" -- IMDb or TVDB usually are.
+    imdb_id: str | None = Field(default=None)
+    tvdb_id: int | None = Field(default=None)
     network: str | None = Field(default=None)
     fetched_at: datetime = Field(default_factory=utcnow, index=True)
 
