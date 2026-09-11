@@ -43,10 +43,13 @@ def _gap_or_404(session, user, collection_id: int):
 
 
 @router.get("/collections", response_class=HTMLResponse)
-def collections(request: Request, session: DbSession, user: RequiredUser):
+def collections(
+    request: Request, session: DbSession, user: RequiredUser, sort: str = "rating"
+):
     from app.services import scan_state
 
-    gaps = movie_gap_service.collections_with_gaps(session, user.id)
+    sort = "name" if sort == "name" else "rating"
+    gaps = movie_gap_service.collections_with_gaps(session, user.id, sort=sort)
     return get_templates().TemplateResponse(
         request,
         "collections.html",
@@ -55,6 +58,9 @@ def collections(request: Request, session: DbSession, user: RequiredUser):
             "progress": scan_state.current(),
             "gaps": gaps,
             "total_missing": sum(len(gap.missing) for gap in gaps),
+            "total_hidden": sum(len(gap.hidden) for gap in gaps),
+            "sort": sort,
+            "min_rating": movie_gap_service.min_gap_rating(session),
             # Distinguishes "you have no gaps" from "you haven't scanned yet", which look
             # identical otherwise and mean completely different things.
             "scanned": session.get(TmdbCollection, 0) is not None
@@ -62,6 +68,23 @@ def collections(request: Request, session: DbSession, user: RequiredUser):
             or bool(movie_gap_service.owned_tmdb_ids(session)),
         },
     )
+
+
+@router.post("/collections/rating-filter")
+def set_rating_filter(
+    session: DbSession, user: RequiredUser, min_rating: Annotated[str, Form()] = "0"
+):
+    """Set the household's rating floor. A shared setting, like the dedup toggle, because the
+    people in one household share one library -- and one opinion of Hellraiser IX is enough."""
+    from app.services.settings_service import SettingKey, set_setting
+
+    try:
+        value = max(0.0, min(10.0, float(min_rating or 0)))
+    except ValueError:
+        value = 0.0
+    set_setting(session, SettingKey.MIN_GAP_RATING, f"{value:g}")
+    session.commit()
+    return RedirectResponse(_url("/collections"), status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.get("/collections/{collection_id}", response_class=HTMLResponse)

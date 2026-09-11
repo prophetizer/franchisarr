@@ -321,6 +321,12 @@ class TmdbCollectionMovie(SQLModel, table=True):
     release_year: int | None = Field(default=None)
     release_date: str | None = Field(default=None)
     poster_path: str | None = Field(default=None)
+    #: TMDb's community score, captured because a flat list of 200 gaps needs an order, and the
+    #: straight-to-video sequels are what most of that list is. vote_count is kept so a film
+    #: nobody has rated is never mistaken for a bad one.
+    vote_average: float | None = Field(default=None)
+    vote_count: int | None = Field(default=None)
+    popularity: float | None = Field(default=None)
     position: int = Field(default=0)
 
 

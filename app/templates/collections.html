@@ -30,10 +30,30 @@
     {% endif %}
   </article>
 {% else %}
-  <p>
-    <button class="secondary" hx-post="{{ url('/scan') }}" hx-target="#scan-status"
+  <div class="gap-controls">
+    <p class="gap-sort">
+      Sort by
+      {% if sort == 'rating' %}<strong>rating</strong>{% else %}<a href="{{ url('/collections') }}">rating</a>{% endif %}
+      ·
+      {% if sort == 'name' %}<strong>name</strong>{% else %}<a href="{{ url('/collections?sort=name') }}">name</a>{% endif %}
+    </p>
+    <form method="post" action="{{ url('/collections/rating-filter') }}" class="gap-filter">
+      <label for="min_rating">Hide films rated below</label>
+      <input type="number" id="min_rating" name="min_rating" min="0" max="10" step="0.1"
+             value="{{ '%g' | format(min_rating) }}" inputmode="decimal">
+      <button type="submit" class="secondary">Apply</button>
+      {% if total_hidden %}
+        <small class="muted">{{ total_hidden }} film{{ '' if total_hidden == 1 else 's' }} hidden —
+          each collection's page shows which.</small>
+      {% elif min_rating %}
+        <small class="muted">Nothing hidden at {{ '%g' | format(min_rating) }}.</small>
+      {% else %}
+        <small class="muted">0 is off. Films with under 10 votes are never hidden.</small>
+      {% endif %}
+    </form>
+    <button class="secondary outline" hx-post="{{ url('/scan') }}" hx-target="#scan-status"
             hx-swap="outerHTML">Rescan my library</button>
-  </p>
+  </div>
   <div class="collection-grid">
     {% for gap in gaps %}
       <article class="collection-card">
@@ -57,7 +77,8 @@
         </p>
         <ul class="missing-preview">
           {% for movie in gap.missing[:3] %}
-            <li>{{ movie.title }}{% if movie.release_year %} <small class="muted">({{ movie.release_year }})</small>{% endif %}</li>
+            <li>{{ movie.title }}{% if movie.release_year %} <small class="muted">({{ movie.release_year }})</small>{% endif %}
+              {% include "partials/rating.html" %}</li>
           {% endfor %}
           {% if gap.missing | length > 3 %}
             <li class="muted">…and {{ gap.missing | length - 3 }} more</li>

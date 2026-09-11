@@ -1,0 +1,3 @@
+{#- A film's TMDb score, or nothing. Nothing rather than "—": an absent badge reads as "not
+    enough votes", a dash reads as "zero". -#}
+{% if movie.rating is not none %}<span class="rating" title="TMDb rating from {{ "{:,}".format(movie.vote_count) }} votes">★ {{ "%.1f" | format(movie.rating) }}</span>{% endif %}

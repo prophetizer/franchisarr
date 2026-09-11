@@ -550,3 +550,124 @@ def test_a_film_dropped_from_a_collection_upstream_disappears(session: Session) 
         select(TmdbCollectionMovie).where(TmdbCollectionMovie.collection_id == COLLECTION)
     ).all()
     assert [m.tmdb_movie_id for m in members] == [90]
+
+
+# ------------------------------------------------------------------ ratings
+
+
+def _rate(session: Session, tmdb_id: int, average: float, count: int = 500) -> None:
+    from sqlmodel import col
+
+    row = session.exec(
+        select(TmdbCollectionMovie).where(col(TmdbCollectionMovie.tmdb_movie_id) == tmdb_id)
+    ).one()
+    row.vote_average, row.vote_count = average, count
+    session.add(row)
+    session.commit()
+
+
+def _set_threshold(session: Session, value: str) -> None:
+    from app.services.settings_service import SettingKey, set_setting
+
+    set_setting(session, SettingKey.MIN_GAP_RATING, value)
+    session.commit()
+
+
+def test_a_low_rated_film_is_hidden_not_missing(session: Session) -> None:
+    _own(session, 90, "Beverly Hills Cop")
+    _collection(session, (90, "Beverly Hills Cop"), (96, "Beverly Hills Cop II"), (306, "III"))
+    _rate(session, 96, 6.6)
+    _rate(session, 306, 5.4)
+    _set_threshold(session, "6")
+
+    gap = movie_gap_service.collection_gaps(session)[0]
+
+    assert [m.tmdb_id for m in gap.missing] == [96]
+    assert [m.tmdb_id for m in gap.hidden] == [306]
+
+
+def test_hidden_films_do_not_count_as_gaps(session: Session) -> None:
+    """A collection whose only absence is a film the user has said isn't worth having is
+    complete, as far as they are concerned -- the same rule as upcoming films."""
+    _own(session, 90, "Beverly Hills Cop")
+    _collection(session, (90, "Beverly Hills Cop"), (306, "III"))
+    _rate(session, 306, 5.4)
+    _set_threshold(session, "6")
+
+    assert movie_gap_service.collections_with_gaps(session) == []
+
+
+def test_a_film_with_too_few_votes_is_never_hidden(session: Session) -> None:
+    """Unknown is not the same as bad. Every obscure film in every collection has a handful of
+    votes, and a filter that hid them would hide most of what the app exists to find."""
+    _own(session, 90, "Beverly Hills Cop")
+    _collection(session, (90, "Beverly Hills Cop"), (306, "III"))
+    _rate(session, 306, 2.0, count=4)
+    _set_threshold(session, "6")
+
+    gap = movie_gap_service.collection_gaps(session)[0]
+
+    assert [m.tmdb_id for m in gap.missing] == [306]
+    assert gap.missing[0].rating is None, "a four-vote average should not be shown as a rating"
+
+
+def test_the_filter_is_off_by_default(session: Session) -> None:
+    _own(session, 90, "Beverly Hills Cop")
+    _collection(session, (90, "Beverly Hills Cop"), (306, "III"))
+    _rate(session, 306, 1.0)
+
+    gap = movie_gap_service.collection_gaps(session)[0]
+
+    assert [m.tmdb_id for m in gap.missing] == [306]
+    assert gap.hidden == ()
+
+
+def test_a_bad_threshold_value_means_off(session: Session) -> None:
+    _set_threshold(session, "lots")
+    assert movie_gap_service.min_gap_rating(session) == 0.0
+    _set_threshold(session, "40")
+    assert movie_gap_service.min_gap_rating(session) == 10.0
+
+
+def test_collections_are_led_by_their_best_missing_film(session: Session) -> None:
+    """The order that answers "what's worth getting?" rather than "what starts with A?"."""
+    _own(session, 90, "Beverly Hills Cop")
+    _collection(session, (90, "Beverly Hills Cop"), (96, "Beverly Hills Cop II"))
+    _rate(session, 96, 6.6)
+    # A second collection, alphabetically first, with a worse gap.
+    session.add(TmdbCollection(tmdb_collection_id=2, name="Aardvark Collection"))
+    session.add(TmdbCollectionMovie(collection_id=2, tmdb_movie_id=500, title="Aardvark",
+                                    release_year=1990, release_date="1990-01-01", position=0))
+    session.add(TmdbCollectionMovie(collection_id=2, tmdb_movie_id=501, title="Aardvark 2",
+                                    release_year=1992, release_date="1992-01-01", position=1,
+                                    vote_average=4.1, vote_count=900))
+    session.add(TmdbMovie(tmdb_id=500, title="Aardvark", collection_id=2))
+    session.add(LibraryItem(plex_library_key="1", rating_key="500", item_type="movie",
+                            title="Aardvark", year=1990, tmdb_id=500, match_source="guid"))
+    session.commit()
+
+    by_rating = [g.name for g in movie_gap_service.collections_with_gaps(session)]
+    by_name = [g.name for g in movie_gap_service.collections_with_gaps(session, sort="name")]
+
+    assert by_rating == ["Beverly Hills Cop Collection", "Aardvark Collection"]
+    assert by_name == ["Aardvark Collection", "Beverly Hills Cop Collection"]
+
+
+def test_unrated_collections_sort_after_rated_ones(session: Session) -> None:
+    """A list led by films nobody has scored would bury the ones people actually want."""
+    _own(session, 90, "Beverly Hills Cop")
+    _collection(session, (90, "Beverly Hills Cop"), (96, "Beverly Hills Cop II"))  # no votes
+    session.add(TmdbCollection(tmdb_collection_id=2, name="Zebra Collection"))
+    session.add(TmdbCollectionMovie(collection_id=2, tmdb_movie_id=500, title="Zebra",
+                                    release_year=1990, release_date="1990-01-01", position=0))
+    session.add(TmdbCollectionMovie(collection_id=2, tmdb_movie_id=501, title="Zebra 2",
+                                    release_year=1992, release_date="1992-01-01", position=1,
+                                    vote_average=5.0, vote_count=900))
+    session.add(TmdbMovie(tmdb_id=500, title="Zebra", collection_id=2))
+    session.add(LibraryItem(plex_library_key="1", rating_key="500", item_type="movie",
+                            title="Zebra", year=1990, tmdb_id=500, match_source="guid"))
+    session.commit()
+
+    names = [g.name for g in movie_gap_service.collections_with_gaps(session)]
+
+    assert names == ["Zebra Collection", "Beverly Hills Cop Collection"]

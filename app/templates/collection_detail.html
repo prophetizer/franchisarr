@@ -73,6 +73,33 @@
   </section>
 {% endif %}
 
+{% if gap.hidden %}
+  {# A fold, not a deletion. The rating filter is a household shortcut past the straight-to-video
+     tail of a franchise, and the cost of a shortcut is being able to see what it skipped. #}
+  <details class="hidden-section">
+    <summary>
+      {{ gap.hidden | length }} film{{ '' if gap.hidden | length == 1 else 's' }} hidden by your
+      rating filter
+    </summary>
+    <ul class="film-list">
+      {% for movie in gap.hidden %}
+        <li class="film-row hidden">
+          {% if movie.poster %}
+            <img class="film-poster" src="{{ movie.poster }}" alt="" loading="lazy"
+                 decoding="async" width="92" height="138">
+          {% endif %}
+          <span class="film-title">{{ movie.title }} {% include "partials/rating.html" %}</span>
+          <span class="film-meta muted">{{ movie.release_year or '' }}</span>
+          <span class="film-actions">
+            <button class="outline" hx-get="{{ url('/add/' ~ movie.tmdb_id) }}"
+                    hx-target="#add-dialog" hx-swap="innerHTML">Add anyway</button>
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  </details>
+{% endif %}
+
 {% if gap.owned %}
   <section>
     <h2>In your library</h2>

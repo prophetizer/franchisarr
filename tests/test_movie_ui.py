@@ -665,3 +665,56 @@ def test_outbound_show_links_open_safely(client: TestClient) -> None:
     link = body[body.index("imdb.com"):body.index("imdb.com") + 120]
 
     assert 'rel="noopener noreferrer"' in link
+
+
+# ------------------------------------------------------------------ ratings
+
+
+def _rate_member(tmdb_id: int, average: float, count: int = 500) -> None:
+    from sqlmodel import col
+
+    with Session(get_engine()) as session:
+        row = session.exec(
+            select(TmdbCollectionMovie).where(col(TmdbCollectionMovie.tmdb_movie_id) == tmdb_id)
+        ).one()
+        row.vote_average, row.vote_count = average, count
+        session.add(row)
+        session.commit()
+
+
+def test_missing_films_show_their_rating(client: TestClient) -> None:
+    _seed_collection()
+    _rate_member(96, 6.6, count=1234)
+
+    body = client.get(f"{BASE}/collections/{COLLECTION}").text
+
+    assert "★ 6.6" in body
+    assert "1,234 votes" in body
+
+
+def test_setting_the_rating_filter_hides_and_explains(client: TestClient) -> None:
+    _seed_collection()
+    _rate_member(96, 7.0)
+    _rate_member(306, 5.0)
+
+    response = client.post(f"{BASE}/collections/rating-filter", data={"min_rating": "6"})
+    assert response.status_code == 303
+
+    page = client.get(f"{BASE}/collections").text
+    assert "1 film hidden" in page
+    assert 'value="6"' in page
+
+    detail = client.get(f"{BASE}/collections/{COLLECTION}").text
+    assert "1 film hidden by your" in detail
+    assert "Add anyway" in detail
+
+
+def test_the_sort_toggle_is_shown_and_honoured(client: TestClient) -> None:
+    _seed_collection()
+
+    page = client.get(f"{BASE}/collections").text
+    assert "<strong>rating</strong>" in page
+    assert 'href="/franchisarr/collections?sort=name"' in page
+
+    page = client.get(f"{BASE}/collections?sort=name").text
+    assert "<strong>name</strong>" in page

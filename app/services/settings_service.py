@@ -33,6 +33,8 @@ class SettingKey:
     WEBHOOK_URL = "webhook_url"
     WEBHOOK_FORMAT = "webhook_format"
     CROSS_INSTANCE_DEDUP = "cross_instance_dedup"
+    #: Missing films rated below this are tucked away rather than listed. "0" is off.
+    MIN_GAP_RATING = "min_gap_rating"
 
     # Generated or discovered at runtime rather than configured, so deliberately absent from
     # DEFAULTS: a default value for either would be actively wrong.
@@ -56,6 +58,7 @@ DEFAULTS: dict[str, str] = {
     SettingKey.WEBHOOK_URL: "",
     SettingKey.WEBHOOK_FORMAT: WebhookFormat.GENERIC.value,
     SettingKey.CROSS_INSTANCE_DEDUP: "false",
+    SettingKey.MIN_GAP_RATING: "0",
     SettingKey.UPDATE_RELEASES_URL: "",
 }
 

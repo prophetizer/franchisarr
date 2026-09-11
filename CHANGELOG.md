@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Gaps are ranked, and can be filtered, by rating.** Every missing film shows its TMDb score,
+  collections are ordered by their best missing film — *A Quiet Place Part II* before *Sinister
+  Squad* — and a household threshold ("hide films rated below 6.0") folds the straight-to-video
+  tail into a collapsed section on each collection's page rather than deleting it. Films with
+  fewer than ten votes are never hidden: unknown is not the same as bad. On the test library,
+  91% of missing films carry a usable rating and a 6.0 floor hid 54 of 215. Sort by name is one
+  click away for finding a known collection.
+
 ## [0.5.0] — 2026-09-10
 
 ### Added

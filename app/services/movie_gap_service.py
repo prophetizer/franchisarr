@@ -44,6 +44,10 @@ from app.services.settings_service import SettingKey, get_bool_setting
 logger = logging.getLogger(__name__)
 
 
+#: Below this many votes a TMDb average is noise. Ten is TMDb's own floor for showing one.
+MIN_VOTES_FOR_A_RATING = 10
+
+
 @dataclass(frozen=True)
 class MissingMovie:
     tmdb_id: int
@@ -51,6 +55,22 @@ class MissingMovie:
     release_year: int | None
     release_date: str | None = None
     poster_path: str | None = None
+    vote_average: float | None = None
+    vote_count: int | None = None
+    popularity: float | None = None
+
+    @property
+    def rating(self) -> float | None:
+        """The score worth showing: None until enough people have voted for it to mean anything.
+        A film with three votes averaging 9.0 is not a 9.0 film."""
+        if self.vote_average is None or (self.vote_count or 0) < MIN_VOTES_FOR_A_RATING:
+            return None
+        return round(self.vote_average, 1)
+
+    def falls_below(self, threshold: float) -> bool:
+        """Whether a rating filter should tuck this away. Unrated films never are: unknown is not
+        the same as bad, and hiding them would hide every obscure film in every collection."""
+        return self.rating is not None and self.rating < threshold
 
     @property
     def poster(self) -> str | None:
@@ -78,6 +98,9 @@ class CollectionGap:
     missing: tuple[MissingMovie, ...]
     #: Announced or scheduled but not yet released. Addable, but not a gap to act on today.
     upcoming: tuple[MissingMovie, ...] = ()
+    #: Missing, released, and rated below the user's threshold. Kept rather than dropped so the
+    #: filter is a fold, not a deletion -- the detail page shows what it hid.
+    hidden: tuple[MissingMovie, ...] = ()
     poster_path: str | None = None
     backdrop_path: str | None = None
     #: A full fanart.tv URL, or None when no fanart key is configured.
@@ -107,9 +130,18 @@ class CollectionGap:
 
     @property
     def has_gaps(self) -> bool:
-        """Deliberately ignores `upcoming`: a collection whose only absence is a film nobody can
-        watch yet is complete as far as the user is concerned."""
+        """Deliberately ignores `upcoming` and `hidden`: a collection whose only absence is a
+        film nobody can watch yet, or one the user has said isn't worth having, is complete as
+        far as they are concerned."""
         return bool(self.missing)
+
+    @property
+    def best_rating(self) -> float:
+        """The strongest reason to look at this collection: its best-rated missing film.
+        Unrated films sort last, not first -- a list led by films nobody has scored would bury
+        the ones people actually want."""
+        rated = [movie.rating for movie in self.missing if movie.rating is not None]
+        return max(rated) if rated else -1.0
 
 
 def owned_tmdb_ids(session: Session) -> set[int]:
@@ -178,12 +210,24 @@ def dismissed_ids(session: Session, user_id: int | None) -> set[int]:
     return {row.tmdb_id for row in rows}
 
 
+def min_gap_rating(session: Session) -> float:
+    """The household's rating floor. 0 means the filter is off."""
+    from app.services.settings_service import SettingKey, get_setting
+
+    raw = get_setting(session, SettingKey.MIN_GAP_RATING) or "0"
+    try:
+        return max(0.0, min(10.0, float(raw)))
+    except ValueError:
+        return 0.0
+
+
 def collection_gaps(
     session: Session,
     user_id: int | None = None,
     *,
     today: date | None = None,
     radarr_instance_id: int | None = None,
+    sort: str = "rating",
 ) -> list[CollectionGap]:
     """Every cached collection the library touches, with its owned and missing films.
 
@@ -206,6 +250,8 @@ def collection_gaps(
         if row.collection_id and row.tmdb_id in in_library
     }
 
+    threshold = min_gap_rating(session)
+
     gaps: list[CollectionGap] = []
     for collection_id in relevant:
         collection = session.get(TmdbCollection, collection_id)
@@ -224,6 +270,7 @@ def collection_gaps(
         owned_here: list[MissingMovie] = []
         missing_here: list[MissingMovie] = []
         upcoming_here: list[MissingMovie] = []
+        hidden_here: list[MissingMovie] = []
 
         for member in members:
             entry = MissingMovie(
@@ -232,15 +279,20 @@ def collection_gaps(
                 release_year=member.release_year,
                 release_date=member.release_date,
                 poster_path=member.poster_path,
+                vote_average=member.vote_average,
+                vote_count=member.vote_count,
+                popularity=member.popularity,
             )
             if member.tmdb_movie_id in owned:
                 owned_here.append(entry)
             elif member.tmdb_movie_id in excluded or member.tmdb_movie_id in dismissed:
                 continue
-            elif entry.is_released(today):
-                missing_here.append(entry)
-            else:
+            elif not entry.is_released(today):
                 upcoming_here.append(entry)
+            elif entry.falls_below(threshold):
+                hidden_here.append(entry)
+            else:
+                missing_here.append(entry)
 
         if not owned_here:
             continue
@@ -252,13 +304,20 @@ def collection_gaps(
                 owned=tuple(owned_here),
                 missing=tuple(missing_here),
                 upcoming=tuple(upcoming_here),
+                hidden=tuple(hidden_here),
                 poster_path=collection.poster_path,
                 backdrop_path=collection.backdrop_path,
                 logo=collection.logo_url,
             )
         )
 
-    gaps.sort(key=lambda gap: (not gap.has_gaps, gap.name.casefold()))
+    # Complete collections always trail. Within the incomplete ones, "rating" leads with the
+    # collection whose best missing film is best -- the order that answers "what's worth
+    # getting?" -- and "name" is the old alphabetical order for finding a known one.
+    if sort == "name":
+        gaps.sort(key=lambda gap: (not gap.has_gaps, gap.name.casefold()))
+    else:
+        gaps.sort(key=lambda gap: (not gap.has_gaps, -gap.best_rating, gap.name.casefold()))
     return gaps
 
 
@@ -268,11 +327,12 @@ def collections_with_gaps(
     *,
     today: date | None = None,
     radarr_instance_id: int | None = None,
+    sort: str = "rating",
 ) -> list[CollectionGap]:
     return [
         gap
         for gap in collection_gaps(
-            session, user_id, today=today, radarr_instance_id=radarr_instance_id
+            session, user_id, today=today, radarr_instance_id=radarr_instance_id, sort=sort
         )
         if gap.has_gaps
     ]

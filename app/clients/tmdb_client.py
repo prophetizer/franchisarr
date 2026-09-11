@@ -51,6 +51,9 @@ class TmdbMovieSummary:
     title: str
     release_date: str | None = None
     poster_path: str | None = None
+    vote_average: float | None = None
+    vote_count: int | None = None
+    popularity: float | None = None
 
     @property
     def year(self) -> int | None:
@@ -105,6 +108,20 @@ class TmdbCollectionDetails:
 #: Kept as a module-level name because this is where the limiter used to live; fanart.tv needs
 #: the same behaviour, so the implementation moved to `rate_limit`.
 _RateLimiter = RateLimiter
+
+
+def _as_float(value) -> float | None:  # noqa: ANN001 - raw JSON
+    try:
+        return float(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _as_int(value) -> int | None:  # noqa: ANN001 - raw JSON
+    try:
+        return int(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
 
 
 def looks_like_v4_token(api_key: str) -> bool:
@@ -213,6 +230,9 @@ class TmdbClient:
                     title=str(part.get("title") or part.get("original_title") or ""),
                     release_date=part.get("release_date") or None,
                     poster_path=part.get("poster_path") or None,
+                    vote_average=_as_float(part.get("vote_average")),
+                    vote_count=_as_int(part.get("vote_count")),
+                    popularity=_as_float(part.get("popularity")),
                 )
                 for part in parts
                 if isinstance(part, dict) and part.get("id")

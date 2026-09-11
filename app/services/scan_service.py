@@ -513,6 +513,9 @@ def _cache_collection(
                 release_year=movie.year,
                 release_date=movie.release_date,
                 poster_path=movie.poster_path,
+                vote_average=movie.vote_average,
+                vote_count=movie.vote_count,
+                popularity=movie.popularity,
                 position=position,
             )
         )
