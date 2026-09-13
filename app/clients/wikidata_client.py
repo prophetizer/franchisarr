@@ -61,6 +61,34 @@ MAX_RETRIES = 3
 BROADCAST_PROGRAMME = "wd:Q15416"
 
 
+#: What each property means for the *spin* relative to the *source*, as a phrase that reads
+#: after the spin's title: "Dragon Ball GT -- follows Dragon Ball Z".
+#:
+#: "Follows" and "precedes" rather than "sequel" and "prequel", deliberately. On the real library
+#: most P156 hits are *originals* -- Bosch before Bosch: Legacy, Dragon Ball before Dragon Ball Z
+#: -- and an original is not a prequel; a prequel is made later and set earlier. And Wikidata
+#: states succession in whichever order its editors had in mind (Yellowstone is "followed by"
+#: nothing and "follows" 1923, which is story order). "Precedes" is true either way; "prequel"
+#: is a claim the data does not make.
+RELATION_LABELS = {
+    "P2512": "spin-off of",
+    "P807": "spin-off of",      # "separated from"
+    "P155": "follows",          # spin *follows* source
+    "P156": "precedes",         # spin is *followed by* source
+    "P144": "based on",
+}
+
+#: Relations specific enough to state as fact rather than mark "possible".
+PRECISE_RELATIONS = frozenset({"P2512", "P807", "P155", "P156"})
+
+#: Most specific first, for when one pair of shows is stated more than one way.
+RELATION_PRIORITY = {"P2512": 0, "P807": 1, "P156": 2, "P155": 2, "P144": 3}
+
+
+def relation_label(relation: str | None) -> str | None:
+    return RELATION_LABELS.get(relation or "")
+
+
 class WikidataError(RuntimeError):
     """Any Wikidata failure. Never fatal: spin-off discovery is an enrichment, not the feature."""
 
@@ -82,6 +110,18 @@ class SpinoffRelation:
         """P2512 is literally "has spin-off". The others are weaker relations that usually, but
         not always, mean the same thing."""
         return self.relation == "P2512"
+
+    @property
+    def is_precise(self) -> bool:
+        """Whether the relation says something specific enough to state as fact. "Based on" is
+        the one that does not: after remake filtering it is usually a spin-off, but "usually" is
+        what the *possible* label is for."""
+        return self.relation in PRECISE_RELATIONS
+
+    @property
+    def rank(self) -> int:
+        """When one pair is stated several ways, keep the most specific statement."""
+        return RELATION_PRIORITY.get(self.relation, 99)
 
 
 def _values_clause(tmdb_ids: list[int]) -> str:
@@ -107,6 +147,12 @@ def _forward_query(tmdb_ids: list[int]) -> str:
 def _inverse_query(tmdb_ids: list[int]) -> str:
     """Shows that point back at something the user owns. The productive direction.
 
+    P155 "follows" and P156 "followed by" are both asked for, because they are the two halves of
+    one fact and Wikidata editors state whichever they think of first. A show that *follows* an
+    owned one comes after it; one *followed by* an owned one comes before -- and without P156,
+    the "before" half was never found at all. On the real library that half was 40 relations,
+    mostly the original series of a franchise the user owns the continuation of.
+
     Both works' original language and title come back too, because P144 "based on" is the
     property a foreign-language *remake* uses -- and a remake is not a spin-off.
     """
@@ -115,7 +161,7 @@ def _inverse_query(tmdb_ids: list[int]) -> str:
       VALUES ?tmdb {{ {_values_clause(tmdb_ids)} }}
       ?series wdt:P4983 ?tmdb .
       ?spin ?p ?series .
-      VALUES ?p {{ wdt:P144 wdt:P155 wdt:P807 }}
+      VALUES ?p {{ wdt:P144 wdt:P155 wdt:P156 wdt:P807 }}
       ?spin wdt:P31/wdt:P279* {BROADCAST_PROGRAMME} .
       ?spin wdt:P4983 ?spinTmdb .
       ?prop wikibase:directClaim ?p .
@@ -257,11 +303,8 @@ class WikidataClient:
                     continue
                 for relation in self._parse(rows, default_relation):
                     key = (relation.source_tmdb_id, relation.spinoff_tmdb_id)
-                    # An explicit "has spin-off" beats a weaker inverse relation for the same pair.
                     existing = relations.get(key)
-                    if existing is None or (
-                        relation.is_explicit_spinoff and not existing.is_explicit_spinoff
-                    ):
+                    if existing is None or relation.rank < existing.rank:
                         relations[key] = relation
 
         logger.info("Wikidata returned %d spin-off relation(s) for %d show(s)",

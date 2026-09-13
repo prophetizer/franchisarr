@@ -171,15 +171,18 @@ def _relation(source: int, spin: int, relation: str = "P2512") -> SpinoffRelatio
 
 
 def test_discovered_relations_become_mappings(session: Session) -> None:
+    """Only "based on" is marked possible: a sequel, prequel or spin-off statement is specific
+    enough to state as fact, while "based on" is the property remakes also use."""
     added, refreshed = tv_spinoff_service.import_wikidata_relations(
-        session, [_relation(1, 2), _relation(1, 3, "P155")]
+        session, [_relation(1, 2), _relation(1, 3, "P155"), _relation(1, 4, "P144")]
     )
 
-    assert (added, refreshed) == (2, 0)
+    assert (added, refreshed) == (3, 0)
     rows = session.exec(select(SpinoffMapping)).all()
     assert {r.spinoff_show_tmdb_id: r.confidence for r in rows} == {
         2: MappingConfidence.CONFIRMED.value,
-        3: MappingConfidence.HEURISTIC.value,
+        3: MappingConfidence.CONFIRMED.value,
+        4: MappingConfidence.HEURISTIC.value,
     }
     assert all(r.source == MappingSource.WIKIDATA.value for r in rows)
 
@@ -194,7 +197,7 @@ def test_importing_the_same_relations_twice_adds_nothing(session: Session) -> No
 
 
 def test_a_relation_that_gets_upgraded_is_refreshed(session: Session) -> None:
-    tv_spinoff_service.import_wikidata_relations(session, [_relation(1, 2, "P155")])
+    tv_spinoff_service.import_wikidata_relations(session, [_relation(1, 2, "P144")])
     added, refreshed = tv_spinoff_service.import_wikidata_relations(session, [_relation(1, 2)])
 
     assert (added, refreshed) == (0, 1)
@@ -208,7 +211,7 @@ def test_a_mapping_the_user_added_is_never_overwritten(session: Session) -> None
     tv_spinoff_service.add_mapping(session, source_show_tmdb_id=1, spinoff_show_tmdb_id=2)
 
     added, refreshed = tv_spinoff_service.import_wikidata_relations(
-        session, [_relation(1, 2, "P155")]
+        session, [_relation(1, 2, "P144")]
     )
 
     assert (added, refreshed) == (0, 0)
@@ -281,3 +284,42 @@ def test_an_item_with_no_english_label_is_skipped() -> None:
     _respond(_sparql(_binding(1, 2, "Q140674509")), _sparql())
 
     assert _client().spinoffs_for([1]) == []
+
+
+
+# ------------------------------------------------------------------ direction and labels
+
+
+@responses.activate
+def test_a_show_that_is_followed_by_an_owned_one_is_its_prequel() -> None:
+    """P156 was not queried at all before this, so prequels were never found: own Yellowstone,
+    and 1883 never surfaced. Both halves of the succession are asked for now."""
+    _respond(_sparql(), _sparql(_binding(1, 2, "1883", "P156")))
+
+    found = _client().spinoffs_for([1])
+
+    assert found[0].relation == "P156"
+    from urllib.parse import parse_qs, urlparse
+
+    query = parse_qs(urlparse(responses.calls[1].request.url).query)["query"][0]
+    assert "wdt:P156" in query
+
+
+@responses.activate
+def test_the_most_specific_statement_wins_for_a_pair() -> None:
+    """Yellowstone states 1923 as both a spin-off and a successor; "spin-off" is the one to keep."""
+    _respond(_sparql(_binding(1, 2, "1923")), _sparql(_binding(1, 2, "1923", "P155")))
+
+    found = _client().spinoffs_for([1])
+
+    assert len(found) == 1 and found[0].relation == "P2512"
+
+
+def test_relation_labels_read_after_the_title() -> None:
+    from app.clients.wikidata_client import relation_label
+
+    assert relation_label("P2512") == "spin-off of"
+    assert relation_label("P155") == "follows"
+    assert relation_label("P156") == "precedes"
+    assert relation_label("P144") == "based on"
+    assert relation_label(None) is None

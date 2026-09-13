@@ -34,7 +34,7 @@ import logging
 import re
 from typing import TYPE_CHECKING
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from sqlmodel import Session, col, select
 
@@ -99,6 +99,31 @@ class SpinoffSuggestion:
     poster_path: str | None = None
     imdb_id: str | None = None
     tvdb_id: int | None = None
+    #: The Wikidata property this came from, or None for a name-based guess.
+    relation: str | None = None
+    #: Further owned shows this one relates to, as (relationship, show name) -- Dexter is the
+    #: prequel to three shows the user owns, and that is one suggestion, not three.
+    also: tuple[tuple[str, str], ...] = ()
+
+    @property
+    def relationship(self) -> str:
+        """How this show relates to the one the user owns, as a phrase after its title."""
+        from app.clients.wikidata_client import relation_label
+
+        return relation_label(self.relation) or "looks like a spin-off of"
+
+    @property
+    def relationships(self) -> str:
+        """Every relationship in one readable phrase: "prequel to Dexter: New Blood, Dexter:
+        Original Sin and Dexter: Resurrection", or "spin-off of Family Guy" when there is one."""
+        by_phrase: dict[str, list[str]] = {}
+        for phrase, name in ((self.relationship, self.source_show_name), *self.also):
+            by_phrase.setdefault(phrase, []).append(name)
+        parts = []
+        for phrase, names in by_phrase.items():
+            joined = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+            parts.append(f"{phrase} {joined}")
+        return "; ".join(parts)
 
     @property
     def poster(self) -> str | None:
@@ -295,11 +320,27 @@ def missing_spinoffs(
                 poster_path=cached.poster_path if cached else None,
                 imdb_id=cached.imdb_id if cached else None,
                 tvdb_id=cached.tvdb_id if cached else None,
+                relation=mapping.origin_ref,
             )
         )
 
-    suggestions.sort(key=lambda s: (s.source_show_name.casefold(), s.spinoff_name.casefold()))
-    return suggestions
+    # One row per show. The mapping table is per pair, so a show related to several owned ones
+    # -- the original of a franchise the user has three sequels to -- would otherwise appear
+    # once per relative, each with its own Add button.
+    grouped: dict[int, SpinoffSuggestion] = {}
+    for entry in sorted(suggestions, key=lambda s: (s.confidence != "confirmed",
+                                                     s.source_show_name.casefold())):
+        first = grouped.get(entry.spinoff_tmdb_id)
+        if first is None:
+            grouped[entry.spinoff_tmdb_id] = entry
+        else:
+            grouped[entry.spinoff_tmdb_id] = replace(
+                first, also=(*first.also, (entry.relationship, entry.source_show_name))
+            )
+
+    merged = list(grouped.values())
+    merged.sort(key=lambda s: (s.source_show_name.casefold(), s.spinoff_name.casefold()))
+    return merged
 
 
 # ---------------------------------------------------------------------- heuristics
@@ -428,7 +469,7 @@ def import_wikidata_relations(
 
         confidence = (
             MappingConfidence.CONFIRMED.value
-            if relation.is_explicit_spinoff
+            if relation.is_precise
             else MappingConfidence.HEURISTIC.value
         )
         existing = session.exec(

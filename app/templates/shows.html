@@ -32,7 +32,7 @@
               {% with item = suggestion %}{% include "partials/show_links.html" %}{% endwith %}
             </span>
             <span class="film-meta muted">
-              spin-off of {{ suggestion.source_show_name }}
+              {{ suggestion.relationships }}
               {% if suggestion.confidence == 'heuristic' %}<small>· possible</small>{% endif %}
             </span>
             <span class="film-actions">

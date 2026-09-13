@@ -718,3 +718,46 @@ def test_the_sort_toggle_is_shown_and_honoured(client: TestClient) -> None:
 
     page = client.get(f"{BASE}/collections?sort=name").text
     assert "<strong>name</strong>" in page
+
+
+
+def test_suggestions_say_how_the_show_relates(client: TestClient) -> None:
+    """"Follows" and "precedes" are different facts from "spin-off of", and Wikidata states
+    which. A flat "spin-off of" made 1923 -> Yellowstone read backwards."""
+    from app.models import SpinoffMapping, TmdbShow
+
+    _own_show(157744, "1923")
+    with Session(get_engine()) as session:
+        session.add(TmdbShow(tmdb_id=73586, name="Yellowstone", first_air_year=2018))
+        session.add(TmdbShow(tmdb_id=118357, name="1883", first_air_year=2021))
+        session.add(SpinoffMapping(source_show_tmdb_id=157744, spinoff_show_tmdb_id=73586,
+                                   source="wikidata", origin_ref="P155"))
+        session.add(SpinoffMapping(source_show_tmdb_id=157744, spinoff_show_tmdb_id=118357,
+                                   source="wikidata", origin_ref="P156"))
+        session.commit()
+
+    body = client.get(f"{BASE}/shows").text
+
+    assert "follows 1923" in body
+    assert "precedes 1923" in body
+    assert "· possible" not in body, "succession is a precise statement, not a guess"
+
+
+def test_a_show_related_to_several_owned_ones_is_listed_once(client: TestClient) -> None:
+    """Dexter comes before three shows in the library. That is one thing to add."""
+    from app.models import SpinoffMapping, TmdbShow
+
+    for tid, name in ((1, "Dexter: New Blood"), (2, "Dexter: Original Sin"), (3, "Dexter: Resurrection")):
+        _own_show(tid, name)
+    with Session(get_engine()) as session:
+        session.add(TmdbShow(tmdb_id=1405, name="Dexter", first_air_year=2006))
+        for tid in (1, 2, 3):
+            session.add(SpinoffMapping(source_show_tmdb_id=tid, spinoff_show_tmdb_id=1405,
+                                       source="wikidata", origin_ref="P156"))
+        session.commit()
+
+    body = client.get(f"{BASE}/shows").text
+
+    assert body.count(f'/shows/add/1405"') == 1, "one row, one Add button"
+    assert ("precedes Dexter: New Blood, Dexter: Original Sin and Dexter: Resurrection"
+            in body)

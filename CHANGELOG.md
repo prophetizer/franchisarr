@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Spin-off suggestions say how a show relates**, and find the other half of every succession.
+  "Dragon Ball GT — follows Dragon Ball Z"; "Bosch — precedes Bosch: Legacy"; "American Dad! —
+  spin-off of Family Guy"; "Escouade 99 — based on Brooklyn Nine-Nine · possible". Before, every
+  row said "spin-off of", which made *1923 → Yellowstone* read backwards. The labels come from
+  which Wikidata property stated the relation, and only "based on" — the property remakes also
+  use — is still marked *possible*.
+
+  Wikidata's "followed by" was never queried, so the *earlier* half of a succession — usually the
+  original series of a franchise you own the continuation of — was never found. On the test
+  library that was 40 relations: *Sons of Anarchy* for *Mayans M.C.*, *Star Trek: Enterprise*
+  for *Discovery*, *Vikings* for *Valhalla*, *The Tracey Ullman Show* for *The Simpsons*.
+
+  A show related to several you own is listed once — *Dexter* precedes three shows in the test
+  library and used to be three rows with three Add buttons.
+
 - **Gaps are ranked, and can be filtered, by rating.** Every missing film shows its TMDb score,
   collections are ordered by their best missing film — *A Quiet Place Part II* before *Sinister
   Squad* — and a household threshold ("hide films rated below 6.0") folds the straight-to-video
