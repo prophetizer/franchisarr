@@ -263,6 +263,25 @@ def _discover_spinoffs(
     added, refreshed = tv_spinoff_service.import_wikidata_relations(session, relations)
     summary.spinoffs_found = added + refreshed
 
+    # Across media too: films for owned shows, shows for owned films. Runs over the whole film
+    # library, so it is the longest Wikidata step -- about three minutes on 3,400 films at the
+    # limiter's pace -- and it is enrichment, so it comes last and a failure costs only itself.
+    from app.services import cross_media_service, movie_gap_service
+
+    movie_ids = sorted(movie_gap_service.owned_tmdb_ids(session))
+    if progress:
+        progress("Looking across films and TV", 0, len(owned) + len(movie_ids))
+    try:
+        cross = wikidata.cross_media_for(show_ids=owned, movie_ids=movie_ids)
+    except WikidataError as exc:
+        logger.warning("Cross-media discovery skipped: %s", exc)
+        summary.errors.append(f"Cross-media lookup failed: {exc}")
+        return
+    try:
+        cross_media_service.import_relations(session, cross, tmdb)
+    except TmdbAuthError as exc:
+        summary.errors.append(str(exc))
+
 
 def _cache_shows(
     session: Session, tmdb: TmdbClient, ttl: timedelta, summary: ScanSummary, progress=None

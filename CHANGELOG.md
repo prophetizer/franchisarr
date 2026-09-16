@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Continuations across media.** The Spin-offs page gains two sections: *TV from films you
+  own* — the series a film was drawn from or continued (*Firefly* for *Serenity*, *Bates Motel*
+  for *Psycho*, *The Sarah Connor Chronicles* for *Terminator 2*) and the original series behind
+  a remake you have (*The A-Team*, *CHiPs*, *21 Jump Street*) — and *Films from shows you own*.
+  Each routes to the other *arr. On the test library: 51 series and 9 films. Measured before it
+  was built, which is how it learned to exclude pornographic parodies (three of the first
+  fourteen films) and why the show-to-film direction is presented as the small one it is.
+
+
 - **An Upcoming page: what's coming to franchises you already own.** Announced-but-unreleased
   films in collections you have part of, grouped by month, soonest first, with how much of each
   franchise you have — "*Shrek 5* · Shrek Collection · you have 4 of 5 · 2027-06-30 · in 288

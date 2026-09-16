@@ -17,6 +17,8 @@ from typing import Annotated
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
+from sqlmodel import col, select
+
 from app.auth.dependencies import AdminUser, DbSession, RequiredUser
 from app.clients.radarr_client import RadarrError
 from app.config import get_settings
@@ -165,10 +167,16 @@ def exclude(
 
 def _film_title(session, tmdb_id: int) -> str:
     for gap in movie_gap_service.collection_gaps(session):
-        for movie in gap.missing + gap.upcoming:
+        for movie in gap.missing + gap.upcoming + gap.hidden:
             if movie.tmdb_id == tmdb_id:
                 return movie.title
-    return f"TMDb {tmdb_id}"
+    # A film reached from a show it relates to is in no collection the user owns part of.
+    from app.models import CrossMediaMapping
+
+    row = session.exec(
+        select(CrossMediaMapping).where(col(CrossMediaMapping.target_tmdb_id) == tmdb_id)
+    ).first()
+    return row.target_title if row else f"TMDb {tmdb_id}"
 
 
 @router.get("/add/close", response_class=HTMLResponse)

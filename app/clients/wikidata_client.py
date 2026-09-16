@@ -51,14 +51,30 @@ USER_AGENT = (
 #: Measured: 40 ids per query is reliable, while 150 drew intermittent 502s from the endpoint.
 BATCH_SIZE = 40
 
-#: Donated infrastructure. One query every other second is far below anything WDQS objects to.
-MAX_REQUESTS_PER_SECOND = 1
+#: Donated infrastructure, so this stays modest -- but the cross-media sweep is two hundred
+#: queries that each answer in a tenth of a second, and at one per second it took four minutes
+#: of a scan doing nothing but waiting. Three per second is still far below anything WDQS
+#: objects to, and takes that step to about a minute.
+MAX_REQUESTS_PER_SECOND = 3
 
 MAX_RETRIES = 3
 
 #: Wikidata's class for a broadcast programme. Filtering on it keeps video games and soundtracks
 #: -- both of which are legitimately "spin-offs" of a TV show -- out of a list meant for Sonarr.
 BROADCAST_PROGRAMME = "wd:Q15416"
+#: Direct classes for the cross-media queries. Direct (P31) rather than the subclass walk used
+#: above, because these run over the whole film library -- 86 batches on the test library --
+#: and the walk inside that many queries is what turns a 0.1s answer into a 65s timeout.
+FILM = "wd:Q11424"
+TV_SERIES = "wd:Q5398426"
+#: TMDb *movie* id, as distinct from P4983 for TV.
+TMDB_MOVIE_ID = "P4947"
+TMDB_TV_ID = "P4983"
+#: Genres to exclude outright. Three of the fourteen films "based on" a show the test library
+#: owned were pornographic parodies, each stated with a straight face on Wikidata. Both the
+#: genre and its parody subgenre are listed, because one of the three carried only the latter --
+#: and a subclass walk here would cost the query time this file is at pains to avoid.
+PORNOGRAPHIC_GENRES = ("wd:Q185529", "wd:Q16254232")
 
 
 #: What each property means for the *spin* relative to the *source*, as a phrase that reads
@@ -124,6 +140,27 @@ class SpinoffRelation:
         return RELATION_PRIORITY.get(self.relation, 99)
 
 
+@dataclass(frozen=True)
+class CrossMediaRelation:
+    """A film related to an owned show, or a show related to an owned film."""
+
+    source_type: str          # "show" or "movie" -- what the user owns
+    source_tmdb_id: int
+    target_type: str          # the other one
+    target_tmdb_id: int
+    target_name: str
+    relation: str
+    wikidata_id: str | None = None
+
+    @property
+    def is_precise(self) -> bool:
+        return self.relation in PRECISE_RELATIONS
+
+    @property
+    def rank(self) -> int:
+        return RELATION_PRIORITY.get(self.relation, 99)
+
+
 def _values_clause(tmdb_ids: list[int]) -> str:
     # TMDb ids are stored as strings on Wikidata, and these are ints from our own database, so
     # there is nothing here that a caller could inject.
@@ -167,6 +204,34 @@ def _inverse_query(tmdb_ids: list[int]) -> str:
       ?prop wikibase:directClaim ?p .
       OPTIONAL {{ ?series wdt:P364 ?srcLang . }}
       OPTIONAL {{ ?spin   wdt:P364 ?spinLang . }}
+      SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en". }}
+    }}
+    """
+
+
+def _cross_media_query(
+    tmdb_ids: list[int], *, mine_id_prop: str, other_class: str, other_id_prop: str,
+    other_points_at_mine: bool,
+) -> str:
+    """One direction of one cross-media relation, kept flat on purpose.
+
+    The obvious form -- a UNION of both directions in one query -- times out at WDQS's limit
+    on a 40-id batch, while each half alone answers in a tenth of a second. Two cheap queries
+    beat one that never returns.
+    """
+    pattern = "?other ?p ?mine ." if other_points_at_mine else "?mine ?p ?other ."
+    return f"""
+    SELECT ?tmdb ?mineLabel ?other ?otherLabel ?otherTmdb ?prop ?srcLang ?otherLang WHERE {{
+      VALUES ?tmdb {{ {_values_clause(tmdb_ids)} }}
+      ?mine wdt:{mine_id_prop} ?tmdb .
+      {pattern}
+      VALUES ?p {{ wdt:P2512 wdt:P144 wdt:P155 wdt:P156 wdt:P807 }}
+      ?other wdt:P31 {other_class} .
+      ?other wdt:{other_id_prop} ?otherTmdb .
+      MINUS {{ ?other wdt:P136 ?excluded . VALUES ?excluded {{ {" ".join(PORNOGRAPHIC_GENRES)} }} }}
+      ?prop wikibase:directClaim ?p .
+      OPTIONAL {{ ?mine  wdt:P364 ?srcLang . }}
+      OPTIONAL {{ ?other wdt:P364 ?otherLang . }}
       SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en". }}
     }}
     """
@@ -310,3 +375,78 @@ class WikidataClient:
         logger.info("Wikidata returned %d spin-off relation(s) for %d show(s)",
                     len(relations), len(unique))
         return sorted(relations.values(), key=lambda r: (r.source_tmdb_id, r.spinoff_tmdb_id))
+
+    def cross_media_for(
+        self, *, show_ids: list[int], movie_ids: list[int]
+    ) -> list[CrossMediaRelation]:
+        """Films related to owned shows, and shows related to owned films.
+
+        Measured before it was built. On the test library the show-to-film direction is small
+        (fourteen films, three of them pornographic parodies), while film-to-show is the real
+        yield: 53 series, in two coherent kinds -- the series a film continued or was drawn from
+        (Firefly for Serenity, Bates Motel for Psycho) and the original series behind a remake
+        the user owns (The A-Team, CHiPs, Baywatch).
+        """
+        found: dict[tuple[str, int, str, int], CrossMediaRelation] = {}
+
+        def sweep(ids: list[int], source_type: str, target_type: str,
+                  mine_id_prop: str, other_class: str, other_id_prop: str) -> None:
+            unique = sorted({int(i) for i in ids})
+            for start in range(0, len(unique), self._batch_size):
+                batch = unique[start:start + self._batch_size]
+                for other_points_at_mine in (True, False):
+                    query = _cross_media_query(
+                        batch, mine_id_prop=mine_id_prop, other_class=other_class,
+                        other_id_prop=other_id_prop, other_points_at_mine=other_points_at_mine,
+                    )
+                    try:
+                        rows = self._run(query)
+                    except WikidataError as exc:
+                        logger.warning("Wikidata cross-media batch failed, continuing: %s", exc)
+                        continue
+                    for row in rows:
+                        relation = self._parse_cross(row, source_type, target_type)
+                        if relation is None:
+                            continue
+                        key = (relation.source_type, relation.source_tmdb_id,
+                               relation.target_type, relation.target_tmdb_id)
+                        existing = found.get(key)
+                        if existing is None or relation.rank < existing.rank:
+                            found[key] = relation
+
+        sweep(show_ids, "show", "movie", TMDB_TV_ID, FILM, TMDB_MOVIE_ID)
+        sweep(movie_ids, "movie", "show", TMDB_MOVIE_ID, TV_SERIES, TMDB_TV_ID)
+
+        logger.info("Wikidata returned %d cross-media relation(s)", len(found))
+        return sorted(found.values(), key=lambda r: (r.source_type, r.source_tmdb_id,
+                                                     r.target_tmdb_id))
+
+    @staticmethod
+    def _parse_cross(row: dict, source_type: str, target_type: str) -> CrossMediaRelation | None:
+        try:
+            source_id = int(row["tmdb"]["value"])
+            target_id = int(row["otherTmdb"]["value"])
+        except (KeyError, TypeError, ValueError):
+            return None
+
+        name = str(row.get("otherLabel", {}).get("value") or "")
+        if not name or _is_bare_entity_id(name):
+            return None
+
+        relation = row.get("prop", {}).get("value", "").rsplit("/", 1)[-1] or "P144"
+        # Only the language half of the remake test applies across media. A same title is the
+        # *norm* for an adaptation -- Fargo the film, Fargo the series; 12 Monkeys; Limitless --
+        # so the same-title rule that catches Ghosts -> Ghosts within TV would throw away the
+        # best of these. A foreign-language series "based on" an owned film is still a remake.
+        src_lang = row.get("srcLang", {}).get("value")
+        other_lang = row.get("otherLang", {}).get("value")
+        if relation == "P144" and src_lang and other_lang and src_lang != other_lang:
+            return None
+
+        entity = row.get("other", {}).get("value", "")
+        return CrossMediaRelation(
+            source_type=source_type, source_tmdb_id=source_id,
+            target_type=target_type, target_tmdb_id=target_id,
+            target_name=name, relation=relation,
+            wikidata_id=entity.rsplit("/", 1)[-1] or None,
+        )

@@ -69,6 +69,7 @@ class TmdbMovieDetails:
     release_date: str | None
     collection_id: int | None
     collection_name: str | None
+    poster_path: str | None = None
 
     @property
     def year(self) -> int | None:
@@ -214,6 +215,7 @@ class TmdbClient:
             release_date=payload.get("release_date") or None,
             collection_id=int(collection["id"]) if collection.get("id") else None,
             collection_name=collection.get("name"),
+            poster_path=payload.get("poster_path") or None,
         )
 
     def get_collection(self, collection_id: int) -> TmdbCollectionDetails:

@@ -16,7 +16,12 @@ from app.auth.dependencies import DbSession, RequiredUser
 from app.clients.sonarr_client import MONITOR_MODE_LABELS, SonarrError
 from app.clients.tmdb_client import TmdbClient
 from app.models import DismissedItem, ItemType, SpinoffMapping
-from app.services import add_service, sonarr_instance_service, tv_spinoff_service
+from app.services import (
+    add_service,
+    cross_media_service,
+    sonarr_instance_service,
+    tv_spinoff_service,
+)
 from app.services.settings_service import SettingKey, get_setting
 from app.templating import get_templates
 
@@ -55,6 +60,10 @@ def shows(request: Request, session: DbSession, user: RequiredUser):
             "shows": tv_spinoff_service.owned_shows(session),
             "suggestions": tv_spinoff_service.missing_spinoffs(session, user.id),
             "mappings": _mapping_rows(session),
+            "shows_from_films": cross_media_service.suggestions(
+                session, ItemType.SHOW.value, user.id),
+            "films_from_shows": cross_media_service.suggestions(
+                session, ItemType.MOVIE.value, user.id),
         },
     )
 

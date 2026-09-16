@@ -60,6 +60,75 @@
     {% endif %}
   </section>
 
+  {% if shows_from_films %}
+    <section>
+      <h2>TV from films you own</h2>
+      <p><small class="muted">
+        The series a film was drawn from or continued — <em>Firefly</em> for <em>Serenity</em> —
+        and the original series behind a remake you have. Add sends it to Sonarr.
+      </small></p>
+      <ul class="film-list">
+        {% for item in shows_from_films %}
+          <li class="film-row missing">
+            {% if item.poster %}
+              <img class="film-poster" src="{{ item.poster }}" alt="" loading="lazy"
+                   decoding="async" width="92" height="138">
+            {% endif %}
+            <span class="film-title">
+              {{ item.target_title }}
+              {% if item.target_year %}<small class="muted">({{ item.target_year }})</small>{% endif %}
+              <span class="show-links"><a href="{{ item.tmdb_url }}" target="_blank" rel="noopener noreferrer">TMDb</a></span>
+            </span>
+            <span class="film-meta muted">
+              {{ item.relationships }}
+              {% if item.confidence == 'heuristic' %}<small>· possible</small>{% endif %}
+            </span>
+            <span class="film-actions">
+              <button hx-get="{{ url('/shows/add/' ~ item.target_tmdb_id) }}"
+                      hx-target="#add-show-dialog" hx-swap="innerHTML">Add</button>
+              <button class="secondary outline"
+                      hx-post="{{ url('/shows/dismiss/' ~ item.target_tmdb_id) }}"
+                      hx-target="#spinoff-lists" hx-swap="innerHTML">Not interested</button>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  {% if films_from_shows %}
+    <section>
+      <h2>Films from shows you own</h2>
+      <p><small class="muted">
+        The film a series was based on, or the one that finished it. Add sends it to Radarr.
+      </small></p>
+      <ul class="film-list">
+        {% for item in films_from_shows %}
+          <li class="film-row missing">
+            {% if item.poster %}
+              <img class="film-poster" src="{{ item.poster }}" alt="" loading="lazy"
+                   decoding="async" width="92" height="138">
+            {% endif %}
+            <span class="film-title">
+              {{ item.target_title }}
+              {% if item.target_year %}<small class="muted">({{ item.target_year }})</small>{% endif %}
+              <span class="show-links"><a href="{{ item.tmdb_url }}" target="_blank" rel="noopener noreferrer">TMDb</a></span>
+            </span>
+            <span class="film-meta muted">
+              {{ item.relationships }}
+              {% if item.confidence == 'heuristic' %}<small>· possible</small>{% endif %}
+            </span>
+            <span class="film-actions">
+              <button hx-get="{{ url('/add/' ~ item.target_tmdb_id) }}"
+                      hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+      <div id="add-dialog"></div>
+    </section>
+  {% endif %}
+
   <div id="spinoff-lists">{% include "partials/spinoff_lists.html" %}</div>
 
   <details>

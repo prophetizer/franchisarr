@@ -166,6 +166,40 @@ class SpinoffMapping(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utcnow)
 
 
+class CrossMediaMapping(SQLModel, table=True):
+    """A film related to a show the user owns, or a show related to a film they own.
+
+    Kept apart from `spinoff_mappings`, which is show-to-show and keyed by TMDb *TV* ids on both
+    sides; putting movie ids in it would make every join a guess about which namespace a number
+    is in. Display fields live on the row because the target is outside every other cache: a
+    film that is not in any owned collection has no TmdbCollectionMovie row to borrow from.
+    """
+
+    __tablename__ = "cross_media_mappings"
+    __table_args__ = (
+        UniqueConstraint(
+            "source_type", "source_tmdb_id", "target_type", "target_tmdb_id",
+            name="uq_cross_media_pair",
+        ),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    #: "movie" or "show" -- what the user owns.
+    source_type: str = Field(index=True)
+    source_tmdb_id: int = Field(index=True)
+    #: The other medium.
+    target_type: str = Field(index=True)
+    target_tmdb_id: int = Field(index=True)
+    target_title: str
+    target_year: int | None = Field(default=None)
+    target_poster_path: str | None = Field(default=None)
+    #: The Wikidata property that stated it, e.g. "P144".
+    relation: str
+    source: str = Field(default=MappingSource.WIKIDATA.value)
+    confidence: str = Field(default=MappingConfidence.CONFIRMED.value)
+    created_at: datetime = Field(default_factory=utcnow)
+
+
 class CollectionExclude(SQLModel, table=True):
     """"Not really part of this collection" — a TMDb data-quality correction scoped to one
     collection, distinct from the per-user dismiss list."""
