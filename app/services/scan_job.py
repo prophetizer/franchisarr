@@ -29,6 +29,7 @@ from app.services import (
     scan_service,
     sonarr_instance_service,
     tv_spinoff_service,
+    upcoming_service,
 )
 from app.services import scan_state
 from app.services.settings_service import SettingKey, get_setting
@@ -148,13 +149,24 @@ def run(
             movie_gaps[movie.tmdb_id] = (movie.title, gap.name)
 
     show_gaps: dict[int, tuple[str, str]] = {
-        suggestion.spinoff_tmdb_id: (suggestion.spinoff_name, f"spin-off of {suggestion.source_show_name}")
+        suggestion.spinoff_tmdb_id: (suggestion.spinoff_name, suggestion.relationships)
         for suggestion in tv_spinoff_service.missing_spinoffs(session)
     }
+
+    # Release-date news is diffed against the last scan rather than against "ever seen": a film
+    # that gets a date is news once, and a film that gets a *new* date is news again.
+    date_events = upcoming_service.record_and_diff(
+        session, upcoming_service.upcoming_films(session)
+    )
 
     result.report = notifier.ScanReport(
         new_movies=_record_new(session, ItemType.MOVIE.value, movie_gaps),
         new_shows=_record_new(session, ItemType.SHOW.value, show_gaps),
+        release_dates=[
+            notifier.NewItem(item_type=ItemType.MOVIE.value, tmdb_id=event.film.tmdb_id,
+                             title=event.film.title, detail=event.detail)
+            for event in date_events
+        ],
     )
 
     if first_run and result.report.has_news:

@@ -56,10 +56,12 @@ class ScanReport:
 
     new_movies: list[NewItem] = field(default_factory=list)
     new_shows: list[NewItem] = field(default_factory=list)
+    #: Announced films in owned franchises that gained a release date, or whose date moved.
+    release_dates: list[NewItem] = field(default_factory=list)
 
     @property
     def total(self) -> int:
-        return len(self.new_movies) + len(self.new_shows)
+        return len(self.new_movies) + len(self.new_shows) + len(self.release_dates)
 
     @property
     def has_news(self) -> bool:
@@ -73,12 +75,25 @@ class ScanReport:
         if self.new_shows:
             count = len(self.new_shows)
             parts.append(f"{count} spin-off{'' if count == 1 else 's'}")
-        return " and ".join(parts) if parts else "nothing new"
+        if self.release_dates:
+            count = len(self.release_dates)
+            parts.append(f"{count} release date{'' if count == 1 else 's'}")
+        if not parts:
+            return "nothing new"
+        return parts[0] if len(parts) == 1 else ", ".join(parts[:-1]) + " and " + parts[-1]
 
 
 def _listed(items: list[NewItem]) -> tuple[list[NewItem], int]:
     """Return the items to show and how many were left out."""
     return items[:MAX_LISTED], max(0, len(items) - MAX_LISTED)
+
+
+def _sections(report: ScanReport) -> tuple[tuple[str, list[NewItem]], ...]:
+    return (
+        ("Missing films", report.new_movies),
+        ("Spin-offs", report.new_shows),
+        ("Release dates", report.release_dates),
+    )
 
 
 def build_generic(report: ScanReport) -> dict:
@@ -96,8 +111,12 @@ def build_generic(report: ScanReport) -> dict:
             for item in report.new_movies
         ],
         "shows": [
-            {"tmdb_id": item.tmdb_id, "title": item.title, "spinoff_of": item.detail}
+            {"tmdb_id": item.tmdb_id, "title": item.title, "relation": item.detail}
             for item in report.new_shows
+        ],
+        "release_dates": [
+            {"tmdb_id": item.tmdb_id, "title": item.title, "detail": item.detail}
+            for item in report.release_dates
         ],
     }
 
@@ -109,7 +128,7 @@ def build_discord(report: ScanReport) -> dict:
     each has its own 1024-character cap, which a list of film titles will not approach.
     """
     fields = []
-    for title, items in (("Missing films", report.new_movies), ("Spin-offs", report.new_shows)):
+    for title, items in _sections(report):
         if not items:
             continue
         shown, omitted = _listed(items)
@@ -144,7 +163,7 @@ def build_slack(report: ScanReport) -> dict:
         }
     ]
 
-    for title, items in (("Missing films", report.new_movies), ("Spin-offs", report.new_shows)):
+    for title, items in _sections(report):
         if not items:
             continue
         shown, omitted = _listed(items)

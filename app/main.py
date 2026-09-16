@@ -124,9 +124,17 @@ def index(request: Request, session: DbSession, user: RequiredUser):
             f"{settings.base_url}/libraries", status_code=status.HTTP_303_SEE_OTHER
         )
 
-    from app.services import movie_gap_service, tv_spinoff_service
+    from datetime import date
+
+    from app.services import movie_gap_service, tv_spinoff_service, upcoming_service
 
     gaps = movie_gap_service.collections_with_gaps(session, user.id)
+    today = date.today()
+    upcoming = upcoming_service.upcoming_films(session, user.id, today=today)
+    upcoming_soon = sum(
+        1 for f in upcoming
+        if f.days_until(today) is not None and 0 <= f.days_until(today) <= 90
+    )
     return get_templates().TemplateResponse(
         request,
         "index.html",
@@ -136,6 +144,8 @@ def index(request: Request, session: DbSession, user: RequiredUser):
             "collections_with_gaps": len(gaps),
             "total_missing": sum(len(gap.missing) for gap in gaps),
             "spinoff_count": len(tv_spinoff_service.missing_spinoffs(session, user.id)),
+            "upcoming_count": len(upcoming),
+            "upcoming_soon": upcoming_soon,
             # Scanning is the thing the whole app depends on, so its control belongs on the page
             # people land on -- it used to live only on the collections page. Progress itself
             # comes from a context processor, since several pages show it now.

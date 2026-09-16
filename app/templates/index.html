@@ -60,6 +60,19 @@
   </article>
 
   <article>
+    <header><strong>Coming soon</strong></header>
+    <p>
+      {% if upcoming_count %}
+        {{ upcoming_count }} announced film{{ '' if upcoming_count == 1 else 's' }} in franchises
+        you own{% if upcoming_soon %} — {{ upcoming_soon }} due in the next 90 days{% endif %}.
+      {% else %}
+        Nothing announced in a franchise you own, or nothing scanned yet.
+      {% endif %}
+    </p>
+    <footer><a href="{{ url('/upcoming') }}" role="button">See what's coming</a></footer>
+  </article>
+
+  <article>
     <header><strong>TV spin-offs</strong></header>
     <p>
       {% if spinoff_count %}

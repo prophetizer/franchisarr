@@ -70,6 +70,27 @@ def collections(
     )
 
 
+@router.get("/upcoming", response_class=HTMLResponse)
+def upcoming(request: Request, session: DbSession, user: RequiredUser):
+    """Announced films in franchises the user owns part of, soonest first.
+
+    The one thing no *arr calendar can show: Radarr knows what has been added, this knows what
+    the user would want added, because it knows what they already have.
+    """
+    from datetime import date
+
+    from app.services import upcoming_service
+
+    films = upcoming_service.upcoming_films(session, user.id)
+    today = date.today()
+    soon = sum(1 for f in films if f.days_until(today) is not None and 0 <= f.days_until(today) <= 90)
+    return get_templates().TemplateResponse(
+        request,
+        "upcoming.html",
+        {"user": user, "films": films, "today": today, "soon": soon},
+    )
+
+
 @router.post("/collections/rating-filter")
 def set_rating_filter(
     session: DbSession, user: RequiredUser, min_rating: Annotated[str, Form()] = "0"

@@ -377,6 +377,29 @@ class SonarrSeries(SQLModel, table=True):
     fetched_at: datetime = Field(default_factory=utcnow)
 
 
+class UpcomingWatch(SQLModel, table=True):
+    """The last known release date of each announced-but-unreleased film in a collection the
+    user owns part of.
+
+    Exists so a scan can say what *changed*: a film that has just been given a release date, or
+    whose date moved. The collection cache cannot answer that -- its rows are replaced wholesale
+    on refetch, so there is no "before" to compare against. Rows come and go: a film leaves this
+    table when it is released (at which point it is an ordinary gap, and `seen_gaps` takes over)
+    or when TMDb drops it.
+    """
+
+    __tablename__ = "upcoming_watch"
+
+    tmdb_id: int = Field(primary_key=True)
+    title: str
+    collection_id: int = Field(index=True)
+    collection_name: str
+    #: ISO date, or None while TMDb has the film announced but undated.
+    release_date: str | None = Field(default=None)
+    first_seen_at: datetime = Field(default_factory=utcnow)
+    last_seen_at: datetime = Field(default_factory=utcnow)
+
+
 class SeenGap(SQLModel, table=True):
     """A gap Franchisarr has already told someone about.
 

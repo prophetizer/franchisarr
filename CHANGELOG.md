@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **An Upcoming page: what's coming to franchises you already own.** Announced-but-unreleased
+  films in collections you have part of, grouped by month, soonest first, with how much of each
+  franchise you have — "*Shrek 5* · Shrek Collection · you have 4 of 5 · 2027-06-30 · in 288
+  days". Undated announcements gather at the end. Nothing else in the *arr stack can show this:
+  Radarr's calendar knows what has been added, this knows what you'd want added.
+
+  Scans now notice when one of these films **gains a release date, or its date moves**, and the
+  webhook says so — once, when it happens, not every night. On the test library that is 150
+  films, 46 dated, 11 due within 90 days.
+
 ### Fixed
 
 - **The update banner picks the highest version, not the first release listed.** Forges sort
