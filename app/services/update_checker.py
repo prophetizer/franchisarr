@@ -80,20 +80,31 @@ def check(url: str = DEFAULT_RELEASES_URL, *, timeout: int = DEFAULT_TIMEOUT) ->
 
     # `/releases` gives a list, `/releases/latest` a single object. Accept either, so pointing
     # this at a different forge or endpoint doesn't need a code change.
-    if isinstance(payload, list):
-        payload = payload[0] if payload else None
-    if not isinstance(payload, dict):
-        return UpdateStatus(current=__version__)
+    candidates = payload if isinstance(payload, list) else [payload]
+    candidates = [c for c in candidates if isinstance(c, dict)]
 
-    if payload.get("draft") or payload.get("prerelease"):
-        # Announcing a draft or pre-release as "an update is available" would send people to
-        # something not meant for them yet.
-        return UpdateStatus(current=__version__)
+    # Drafts and pre-releases are never announced: "an update is available" would send people to
+    # something not meant for them yet.
+    candidates = [c for c in candidates if not (c.get("draft") or c.get("prerelease"))]
 
-    tag = payload.get("tag_name") or payload.get("name")
-    if not tag:
-        return UpdateStatus(current=__version__)
+    # The highest version, not the first in the list. A forge sorts by creation time, and that
+    # is not the same thing: Forgejo once stamped a release with the epoch because the tag push
+    # and the release request landed together, and it sorted last -- so every install would
+    # have been told it was up to date when it was not. Version numbers are the fact; list order
+    # is someone else's implementation detail.
+    best = None
+    for candidate in candidates:
+        tag = candidate.get("tag_name") or candidate.get("name")
+        if not tag:
+            continue
+        version = str(tag).lstrip("v")
+        if not _VERSION_PART.findall(version):
+            continue  # a tag with no digits in it is not a version
+        if best is None or _as_tuple(version) > _as_tuple(best[0]):
+            best = (version, candidate)
 
-    return UpdateStatus(
-        current=__version__, latest=str(tag).lstrip("v"), url=payload.get("html_url")
-    )
+    if best is None:
+        return UpdateStatus(current=__version__)
+    tag, payload = best
+
+    return UpdateStatus(current=__version__, latest=tag, url=payload.get("html_url"))

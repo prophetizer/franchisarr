@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The update banner picks the highest version, not the first release listed.** Forges sort
+  releases by creation time, and Forgejo stamped one with the epoch when the tag push and the
+  release request landed together — so it sorted last, and every install would have been told it
+  was up to date when it was not. Version numbers are the fact; list order is not.
+
 ## [0.6.0] — 2026-09-15
 
 The first two of a run of features being built and tried one at a time against a real library.

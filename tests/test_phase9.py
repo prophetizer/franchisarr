@@ -304,6 +304,44 @@ def test_an_available_update_is_detected_from_a_release_list() -> None:
 
 
 @responses.activate
+def test_the_highest_version_wins_regardless_of_list_order() -> None:
+    """A forge sorts releases by creation time, and that is not the same thing as newest
+    version. Forgejo once stamped v0.6.0 with the epoch -- the tag push and the release request
+    landed together -- so it sorted *last*, and this checker would have told every install on
+    0.5.0 it was up to date. Version numbers are the fact; list order is someone else's detail."""
+    responses.add(responses.GET, update_checker.DEFAULT_RELEASES_URL, json=[
+        {"tag_name": "v98.0.0", "html_url": "https://example/98"},
+        {"tag_name": "v97.5.0", "html_url": "https://example/97"},
+        {"tag_name": "v99.0.0", "html_url": "https://example/99"},   # mis-stamped, sorted last
+    ])
+
+    status = update_checker.check()
+
+    assert status.latest == "99.0.0"
+    assert status.url == "https://example/99"
+
+
+@responses.activate
+def test_a_draft_that_happens_to_be_first_does_not_hide_the_real_latest() -> None:
+    responses.add(responses.GET, update_checker.DEFAULT_RELEASES_URL, json=[
+        {"tag_name": "v100.0.0", "draft": True},
+        {"tag_name": "v99.0.0"},
+    ])
+
+    assert update_checker.check().latest == "99.0.0"
+
+
+@responses.activate
+def test_a_tag_that_is_not_a_version_is_ignored() -> None:
+    responses.add(responses.GET, update_checker.DEFAULT_RELEASES_URL, json=[
+        {"tag_name": "nightly"},
+        {"tag_name": "v99.0.0"},
+    ])
+
+    assert update_checker.check().latest == "99.0.0"
+
+
+@responses.activate
 def test_a_single_release_object_also_works() -> None:
     """So pointing this at /releases/latest, or a different forge, needs no code change."""
     responses.add(responses.GET, update_checker.DEFAULT_RELEASES_URL,
