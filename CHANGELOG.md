@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-09-15
+
+The first two of a run of features being built and tried one at a time against a real library.
+Both are about the same thing: the lists were complete but unordered and unexplained, and a list
+of 215 films or 38 shows needs to say what is worth looking at and why.
+
 ### Added
 
 - **Spin-off suggestions say how a show relates**, and find the other half of every succession.
@@ -284,7 +290,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.6.0
 [0.5.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.5.0
 [0.4.2]: https://github.com/prophetizer/franchisarr/releases/tag/v0.4.2
 [0.4.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.4.1
