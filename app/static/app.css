@@ -20,8 +20,46 @@ body > header.container {
   text-decoration: none;
 }
 
+/* The nav wraps; it never widens the page. Pico lays nav lists out as a single flex row, and
+   with eleven items that row is wider than a phone -- which pushes the whole document wider,
+   so every card below it sizes to that width and its text runs off the screen. Wrapping here is
+   what makes everything below behave. */
+.app-nav {
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
+}
+
 .app-nav ul {
+  flex-wrap: wrap;
   margin-bottom: 0;
+  row-gap: 0.25rem;
+}
+
+/* On a phone the wrapped nav is three rows; Pico's link padding makes that a third of the
+   screen. Tighter rows, and the brand on its own line so the links start flush left. */
+@media (max-width: 767px) {
+  .app-nav { flex-direction: column; align-items: flex-start; }
+  .app-nav ul:first-of-type { margin-left: 0; }
+  .app-nav li { padding: 0.15rem var(--pico-nav-link-spacing-horizontal); }
+  .app-nav li:first-child { padding-left: 0; }
+}
+
+/* Pico gives any aria-busy element a spinner -- and white-space: nowrap, which is right for a
+   button and wrong for a card: the scan panel's text stopped wrapping and ran off the screen.
+   The spinner stays; the text wraps. */
+article[aria-busy="true"] {
+  white-space: normal;
+}
+
+/* Belt and braces: nothing else gets to widen the page either. Long unbroken strings -- a
+   webhook URL, a Plex path -- wrap instead. */
+body {
+  overflow-x: hidden;
+}
+
+main.container,
+header.container {
+  overflow-wrap: anywhere;
 }
 
 /* Shown while an htmx request is in flight. htmx toggles .htmx-request on the element. */

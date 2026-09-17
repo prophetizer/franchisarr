@@ -172,3 +172,19 @@ def test_the_light_dark_attribute_is_not_shadowed_by_the_theme_config() -> None:
 
     assert 'data-theme="dark"' in html
     assert "ThemeConfig" not in html
+
+
+def test_the_layout_cannot_widen_the_page_on_a_phone() -> None:
+    """Two rules, each found from a phone screenshot. Pico lays the nav out as one flex row and
+    eleven items are wider than a phone, which pushed the whole document wide and every card
+    with it; and Pico's aria-busy spinner comes with white-space: nowrap, meant for a button,
+    which stopped the scan card's text wrapping. Neither is visible to any other test."""
+    css = (STATIC_DIR / "app.css").read_text()
+
+    nav_rule = css[css.index(".app-nav ul {"):]
+    nav_rule = nav_rule[:nav_rule.index("}")]
+    assert "flex-wrap: wrap" in nav_rule
+
+    busy_rule = css[css.index('article[aria-busy="true"] {'):]
+    busy_rule = busy_rule[:busy_rule.index("}")]
+    assert "white-space: normal" in busy_rule

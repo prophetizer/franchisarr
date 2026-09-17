@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The layout no longer runs off the edge of a phone.** Two causes, neither the theme. The nav
+  was one unwrapped row, and with eleven items that is wider than a phone — which pushed the
+  whole page wide, so every card below sized to it and its text ran off screen. And the scan
+  panel's spinner came with a `white-space: nowrap` from Pico, meant for buttons, so its text
+  couldn't wrap at all. The nav wraps now, compactly on small screens, and the scan panel wraps.
+
 ## [0.7.0] — 2026-09-17
 
 Three more features from the run, and the one they were building towards. Upcoming films in
