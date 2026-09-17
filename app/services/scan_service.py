@@ -281,6 +281,17 @@ def _discover_spinoffs(
         cross_media_service.import_relations(session, cross, tmdb)
     except TmdbAuthError as exc:
         summary.errors.append(str(exc))
+        return
+
+    from app.services import franchise_service
+
+    try:
+        franchise_service.discover(session, wikidata, tmdb, ttl=ttl, progress=progress)
+    except WikidataError as exc:
+        logger.warning("Franchise discovery skipped: %s", exc)
+        summary.errors.append(f"Franchise lookup failed: {exc}")
+    except TmdbAuthError as exc:
+        summary.errors.append(str(exc))
 
 
 def _cache_shows(

@@ -48,6 +48,7 @@
         <ul>
           {% block nav %}{% endblock %}
           {% if user %}
+            <li><a href="{{ url('/franchises') }}">Franchises</a></li>
             <li><a href="{{ url('/collections') }}">Collections</a></li>
             <li><a href="{{ url('/shows') }}">Spin-offs</a></li>
             <li><a href="{{ url('/upcoming') }}">Upcoming</a></li>

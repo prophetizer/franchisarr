@@ -200,6 +200,39 @@ class CrossMediaMapping(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utcnow)
 
 
+class Franchise(SQLModel, table=True):
+    """A franchise as Wikidata files it -- "Star Wars", "Marvel Cinematic Universe" -- with every
+    film and series Wikidata knows belongs to it that also has a TMDb id.
+
+    Membership is stored for owned and unowned titles alike; which is which is a join against
+    the library at read time, so a film arriving in Plex moves columns without a rescan.
+    """
+
+    __tablename__ = "franchises"
+
+    wikidata_id: str = Field(primary_key=True)
+    name: str
+    #: Wikidata's class label for the group -- "media franchise", "film series" -- kept so the
+    #: index can say what kind of thing a group is when the name alone doesn't.
+    kind: str | None = Field(default=None)
+    fetched_at: datetime = Field(default_factory=utcnow, index=True)
+
+
+class FranchiseMember(SQLModel, table=True):
+    __tablename__ = "franchise_members"
+    __table_args__ = (
+        UniqueConstraint("franchise_id", "item_type", "tmdb_id", name="uq_franchise_member"),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    franchise_id: str = Field(foreign_key="franchises.wikidata_id", ondelete="CASCADE", index=True)
+    item_type: str = Field(index=True)
+    tmdb_id: int = Field(index=True)
+    title: str
+    year: int | None = Field(default=None)
+    poster_path: str | None = Field(default=None)
+
+
 class CollectionExclude(SQLModel, table=True):
     """"Not really part of this collection" — a TMDb data-quality correction scoped to one
     collection, distinct from the per-user dismiss list."""

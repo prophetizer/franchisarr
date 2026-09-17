@@ -161,6 +161,45 @@ class CrossMediaRelation:
         return RELATION_PRIORITY.get(self.relation, 99)
 
 
+@dataclass(frozen=True)
+class FranchiseGroup:
+    wikidata_id: str
+    name: str
+    kind: str | None
+    #: Other Wikidata items folded into this one -- sub-groups and same-named twins. The roster
+    #: is queried for all of them, so nothing filed only on the twin is lost in the merge.
+    aliases: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class FranchiseTitle:
+    """A film or series Wikidata files under a franchise, resolved to a TMDb id."""
+
+    franchise_id: str
+    item_type: str          # "movie" or "show"
+    tmdb_id: int
+    name: str
+
+
+#: Group classes worth treating as a franchise. P179 "part of the series" points at all sorts
+#: -- studio catalogues, Wikimedia list articles, "Batman in film" -- so it is admitted only
+#: when the target is one of these. P8345 "media franchise" is trusted as it comes.
+FRANCHISE_KINDS = frozenset({
+    "media franchise", "film series", "film franchise", "anime film series",
+    "animated film series", "shared universe", "brand", "crossover fiction",
+    "television franchise", "literary cycle",
+})
+
+#: Labels that mark a P179 target as a catalogue rather than a franchise, whatever its class.
+CATALOGUE_WORDS = ("list of", "feature films", "productions", "greatest", " in film")
+
+#: Class labels that make a franchise member worth listing: whole films and whole series.
+MEMBER_ALLOW = ("film", "series")
+#: ...and the ones that don't, even when the item somehow carries a TMDb id. Star Wars has
+#: 3,178 members on Wikidata and most of the ones with an id are one of these.
+MEMBER_DENY = ("episode", "short", "project", "web series", "4d", "special", "trailer", "video game")
+
+
 def _values_clause(tmdb_ids: list[int]) -> str:
     # TMDb ids are stored as strings on Wikidata, and these are ints from our own database, so
     # there is nothing here that a caller could inject.
@@ -232,6 +271,44 @@ def _cross_media_query(
       ?prop wikibase:directClaim ?p .
       OPTIONAL {{ ?mine  wdt:P364 ?srcLang . }}
       OPTIONAL {{ ?other wdt:P364 ?otherLang . }}
+      SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en". }}
+    }}
+    """
+
+
+def _membership_query(tmdb_ids: list[int], *, id_prop: str) -> str:
+    """Which franchises each owned title belongs to, by either property, with the group's class
+    so P179 targets can be filtered."""
+    return f"""
+    SELECT ?tmdb ?p ?fr ?frLabel ?frClassLabel WHERE {{
+      VALUES ?tmdb {{ {_values_clause(tmdb_ids)} }}
+      ?item wdt:{id_prop} ?tmdb .
+      VALUES ?p {{ wdt:P8345 wdt:P179 }}
+      ?item ?p ?fr .
+      OPTIONAL {{ ?fr wdt:P31 ?frClass . }}
+      SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en". }}
+    }}
+    """
+
+
+def _parents_query(franchise_ids: list[str]) -> str:
+    """P361 "part of", so "The Infinity Saga" folds into "Marvel Cinematic Universe"."""
+    values = " ".join(f"wd:{q}" for q in franchise_ids if q.startswith("Q") and q[1:].isdigit())
+    return f"""
+    SELECT ?child ?parent WHERE {{
+      VALUES ?child {{ {values} }}
+      ?child wdt:P361 ?parent .
+    }}
+    """
+
+
+def _members_query(franchise_id: str) -> str:
+    """Everything filed under one franchise that carries a TMDb id, with classes for filtering."""
+    return f"""
+    SELECT ?m ?mLabel ?tmdbF ?tmdbT ?classLabel WHERE {{
+      ?m (wdt:P8345|wdt:P179) wd:{franchise_id} .
+      {{ ?m wdt:{TMDB_MOVIE_ID} ?tmdbF . }} UNION {{ ?m wdt:{TMDB_TV_ID} ?tmdbT . }}
+      OPTIONAL {{ ?m wdt:P31 ?class . }}
       SERVICE wikibase:label {{ bd:serviceParam wikibase:language "en". }}
     }}
     """
@@ -420,6 +497,166 @@ class WikidataClient:
         logger.info("Wikidata returned %d cross-media relation(s)", len(found))
         return sorted(found.values(), key=lambda r: (r.source_type, r.source_tmdb_id,
                                                      r.target_tmdb_id))
+
+    def franchises_for(
+        self, *, show_ids: list[int], movie_ids: list[int]
+    ) -> tuple[list[FranchiseGroup], dict[tuple[str, int], set[str]]]:
+        """Which franchises the library's titles belong to.
+
+        Returns the groups and a membership map of (item_type, tmdb_id) -> franchise ids, with
+        sub-groups folded into their parents: a film filed under "The Infinity Saga" is filed
+        under "Marvel Cinematic Universe" here, because that is the page the user wants.
+
+        Measured on the real library: P8345 "media franchise" gave 100 groups with two or more
+        owned titles and is clean; P179 "part of the series" gave three times the statements but
+        includes studio catalogues and Wikimedia list articles, so it is admitted only for group
+        classes that mean "franchise" and labels that don't mean "catalogue". It has to be in:
+        the MCU is 9 films under P8345 and 111 under P179.
+        """
+        groups: dict[str, FranchiseGroup] = {}
+        membership: dict[tuple[str, int], set[str]] = {}
+
+        for ids, id_prop, item_type in ((show_ids, TMDB_TV_ID, "show"),
+                                         (movie_ids, TMDB_MOVIE_ID, "movie")):
+            unique = sorted({int(i) for i in ids})
+            for start in range(0, len(unique), self._batch_size):
+                batch = unique[start:start + self._batch_size]
+                try:
+                    rows = self._run(_membership_query(batch, id_prop=id_prop))
+                except WikidataError as exc:
+                    logger.warning("Wikidata franchise batch failed, continuing: %s", exc)
+                    continue
+                for row in rows:
+                    group = self._parse_group(row)
+                    if group is None:
+                        continue
+                    groups.setdefault(group.wikidata_id, group)
+                    try:
+                        tmdb_id = int(row["tmdb"]["value"])
+                    except (KeyError, TypeError, ValueError):
+                        continue
+                    membership.setdefault((item_type, tmdb_id), set()).add(group.wikidata_id)
+
+        # Fold sub-groups into any parent that is itself a group here.
+        parents = self._parents(list(groups))
+        def top(qid: str, seen: frozenset[str] = frozenset()) -> str:
+            parent = parents.get(qid)
+            if parent and parent in groups and parent not in seen:
+                return top(parent, seen | {qid})
+            return qid
+        folded_to = {qid: top(qid) for qid in groups}
+
+        # Then fold same-named groups into one. Wikidata routinely has a "media franchise" item
+        # and a "film series" item with the same label and no link between them -- twenty of
+        # them on the test library, Jurassic Park to Transformers. To the user they are one
+        # thing. The franchise item is kept as canonical, since it is the broader of the two.
+        by_name: dict[str, list[str]] = {}
+        for qid in groups:
+            by_name.setdefault(groups[qid].name.casefold(), []).append(qid)
+        for qids in by_name.values():
+            tops = sorted({folded_to[q] for q in qids})
+            if len(tops) < 2:
+                continue
+            canonical = min(tops, key=lambda q: (groups[q].kind != "media franchise", q))
+            # Every group that folded to one of the merged tops moves too -- a sub-group that
+            # had already resolved to the film-series item must end at the franchise item.
+            merged = set(tops) - {canonical}
+            for q, target in folded_to.items():
+                if target in merged:
+                    folded_to[q] = canonical
+
+        for key, ids in membership.items():
+            membership[key] = {folded_to[q] for q in ids}
+        kept = {q for ids in membership.values() for q in ids}
+        aliases: dict[str, list[str]] = {}
+        for q, target in folded_to.items():
+            if q != target:
+                aliases.setdefault(target, []).append(q)
+        result = [
+            FranchiseGroup(g.wikidata_id, g.name, g.kind, tuple(sorted(aliases.get(q, []))))
+            for q, g in groups.items() if q in kept
+        ]
+
+        logger.info("Wikidata filed %d title(s) under %d franchise(s)", len(membership), len(result))
+        return result, membership
+
+    @staticmethod
+    def _parse_group(row: dict) -> FranchiseGroup | None:
+        qid = row.get("fr", {}).get("value", "").rsplit("/", 1)[-1]
+        name = str(row.get("frLabel", {}).get("value") or "")
+        if not qid or not name or _is_bare_entity_id(name):
+            return None
+        kind = (row.get("frClassLabel", {}).get("value") or "").strip().lower() or None
+        prop = row.get("p", {}).get("value", "").rsplit("/", 1)[-1]
+        if prop == "P179":
+            if kind not in FRANCHISE_KINDS:
+                return None
+            if any(word in name.lower() for word in CATALOGUE_WORDS):
+                return None
+        return FranchiseGroup(wikidata_id=qid, name=name, kind=kind)
+
+    def _parents(self, franchise_ids: list[str]) -> dict[str, str]:
+        found: dict[str, str] = {}
+        for start in range(0, len(franchise_ids), self._batch_size * 2):
+            batch = franchise_ids[start:start + self._batch_size * 2]
+            try:
+                rows = self._run(_parents_query(batch))
+            except WikidataError as exc:
+                logger.warning("Wikidata parent lookup failed, continuing: %s", exc)
+                continue
+            for row in rows:
+                child = row.get("child", {}).get("value", "").rsplit("/", 1)[-1]
+                parent = row.get("parent", {}).get("value", "").rsplit("/", 1)[-1]
+                if child and parent:
+                    found.setdefault(child, parent)
+        return found
+
+    def franchise_titles(self, franchise_id: str) -> list[FranchiseTitle]:
+        """Every whole film or series Wikidata files under a franchise that has a TMDb id.
+
+        Filtered by class label: Star Wars has 3,178 members and the ones with a TMDb id are
+        mostly episodes, shorts, a cancelled "film project" and LEGO specials. Whole films and
+        whole series are what the user can add.
+        """
+        try:
+            rows = self._run(_members_query(franchise_id))
+        except WikidataError as exc:
+            logger.warning("Wikidata members of %s unavailable: %s", franchise_id, exc)
+            return []
+
+        classes: dict[str, set[str]] = {}
+        base: dict[str, tuple[str, str | None, str | None]] = {}
+        for row in rows:
+            qid = row.get("m", {}).get("value", "").rsplit("/", 1)[-1]
+            if not qid:
+                continue
+            base.setdefault(qid, (
+                str(row.get("mLabel", {}).get("value") or ""),
+                row.get("tmdbF", {}).get("value"),
+                row.get("tmdbT", {}).get("value"),
+            ))
+            label = (row.get("classLabel", {}).get("value") or "").lower()
+            if label:
+                classes.setdefault(qid, set()).add(label)
+
+        # Keyed by TMDb id, not Wikidata item: a film and its extended edition are two items
+        # on Wikidata carrying one TMDb id, and to Radarr they are one film.
+        titles: dict[tuple[str, int], FranchiseTitle] = {}
+        for qid, (name, film_id, tv_id) in base.items():
+            if not name or _is_bare_entity_id(name):
+                continue
+            kinds = classes.get(qid, set())
+            if any(deny in k for k in kinds for deny in MEMBER_DENY):
+                continue
+            if kinds and not any(allow in k for k in kinds for allow in MEMBER_ALLOW):
+                continue
+            if film_id and str(film_id).isdigit():
+                titles.setdefault(("movie", int(film_id)),
+                                  FranchiseTitle(franchise_id, "movie", int(film_id), name))
+            elif tv_id and str(tv_id).isdigit():
+                titles.setdefault(("show", int(tv_id)),
+                                  FranchiseTitle(franchise_id, "show", int(tv_id), name))
+        return list(titles.values())
 
     @staticmethod
     def _parse_cross(row: dict, source_type: str, target_type: str) -> CrossMediaRelation | None:

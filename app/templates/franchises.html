@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Franchises — Franchisarr{% endblock %}
+
+{% block content %}
+{% include "partials/scan_status.html" %}
+<hgroup>
+  <h1>Franchises</h1>
+  <p>
+    {% if franchises %}
+      {{ franchises | length }} franchise{{ '' if franchises | length == 1 else 's' }} you own part
+      of{% if both %}, {{ both }} across both films and TV{% endif %}, missing
+      {{ total_missing }} title{{ '' if total_missing == 1 else 's' }} between them.
+    {% else %}
+      Nothing grouped yet — franchises are worked out from Wikidata during a scan.
+    {% endif %}
+  </p>
+</hgroup>
+
+{% if franchises %}
+  <div class="collection-grid">
+    {% for f in franchises %}
+      <article class="collection-card">
+        {% if f.poster %}
+          <a href="{{ url('/franchises/' ~ f.wikidata_id) }}" class="collection-poster">
+            <img src="{{ f.poster }}" alt="" loading="lazy" decoding="async" width="342" height="513">
+          </a>
+        {% endif %}
+        <header>
+          <a href="{{ url('/franchises/' ~ f.wikidata_id) }}"><strong>{{ f.name }}</strong></a>
+          {% if f.kind and f.kind != 'media franchise' %}<br><small class="muted">{{ f.kind }}</small>{% endif %}
+        </header>
+        <p class="collection-counts">
+          <span class="count-owned">{{ f.owned }} owned</span>
+          {% if f.missing %}<span class="count-missing">{{ f.missing }} missing</span>{% endif %}
+          {% if f.upcoming_films %}<span class="count-upcoming">{{ f.upcoming_films | length }} coming</span>{% endif %}
+        </p>
+        <p><small class="muted">
+          {% if f.owned_films %}{{ f.owned_films | length }} film{{ '' if f.owned_films | length == 1 else 's' }}{% endif %}{% if f.owned_films and f.owned_shows %} · {% endif %}{% if f.owned_shows %}{{ f.owned_shows | length }} show{{ '' if f.owned_shows | length == 1 else 's' }}{% endif %}
+        </small></p>
+      </article>
+    {% endfor %}
+  </div>
+{% else %}
+  <p><a href="{{ url('/') }}" role="button" class="secondary">Run a scan</a></p>
+{% endif %}
+{% endblock %}

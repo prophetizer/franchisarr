@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ f.name }} — Franchisarr{% endblock %}
+
+{% macro row(t, css) -%}
+  <li class="film-row {{ css }}">
+    {% if t.poster %}
+      <img class="film-poster" src="{{ t.poster }}" alt="" loading="lazy" decoding="async"
+           width="92" height="138">
+    {% endif %}
+    <span class="film-title">
+      {{ t.title }}{% if t.year %} <small class="muted">({{ t.year }})</small>{% endif %}
+      <small class="muted">{{ 'film' if t.item_type == 'movie' else 'TV' }}</small>
+    </span>
+    <span class="film-meta muted">
+      {% if t.release_date and css == 'upcoming' %}expected {{ t.release_date }} · {% endif %}
+      {% if t.via == 'collection' %}in the {{ t.note }}
+      {% elif t.via == 'franchise' %}{{ t.note }}
+      {% else %}{{ t.note }}{% endif %}
+    </span>
+    {% if css != 'owned' %}
+      <span class="film-actions">
+        {% if t.item_type == 'movie' %}
+          <button class="{{ 'outline' if css == 'upcoming' else '' }}"
+                  hx-get="{{ url('/add/' ~ t.tmdb_id) }}" hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
+        {% else %}
+          <button hx-get="{{ url('/shows/add/' ~ t.tmdb_id) }}" hx-target="#add-show-dialog" hx-swap="innerHTML">Add</button>
+        {% endif %}
+      </span>
+    {% endif %}
+  </li>
+{%- endmacro %}
+
+{% block content %}
+<p><a href="{{ url('/franchises') }}">← Franchises</a></p>
+
+<div class="collection-heading{% if f.backdrop %} has-backdrop{% endif %}">
+  {% if f.backdrop %}
+    <img class="collection-backdrop" src="{{ f.backdrop }}" alt="" decoding="async" aria-hidden="true">
+  {% endif %}
+  <div class="collection-heading-inner">
+    {% if f.poster %}
+      <img class="collection-heading-poster" src="{{ f.poster }}" alt="" decoding="async" width="342" height="513">
+    {% endif %}
+    <hgroup>
+      {% if f.logo_image %}
+        <h1 class="collection-logo-title"><img class="collection-logo" src="{{ f.logo_image }}" alt="{{ f.name }}" decoding="async"></h1>
+      {% else %}
+        <h1>{{ f.name }}</h1>
+      {% endif %}
+      <p>
+        You have {{ f.owned }} of {{ f.total }} —
+        {{ f.owned_films | length }} film{{ '' if f.owned_films | length == 1 else 's' }} and
+        {{ f.owned_shows | length }} show{{ '' if f.owned_shows | length == 1 else 's' }}.
+      </p>
+    </hgroup>
+  </div>
+</div>
+
+{% if f.missing_films %}
+  <section><h2>Missing films</h2>
+    <ul class="film-list">{% for t in f.missing_films %}{{ row(t, 'missing') }}{% endfor %}</ul>
+  </section>
+{% endif %}
+{% if f.missing_shows %}
+  <section><h2>Missing shows</h2>
+    <ul class="film-list">{% for t in f.missing_shows %}{{ row(t, 'missing') }}{% endfor %}</ul>
+  </section>
+{% endif %}
+{% if f.upcoming_films %}
+  <section class="upcoming-section"><h2>Coming soon</h2>
+    <ul class="film-list">{% for t in f.upcoming_films %}{{ row(t, 'upcoming') }}{% endfor %}</ul>
+  </section>
+{% endif %}
+{% if not f.missing and not f.upcoming_films %}
+  <p role="status" class="notice-good">Complete, as far as anything knows.</p>
+{% endif %}
+
+{% if f.owned_films or f.owned_shows %}
+  <section><h2>In your library</h2>
+    <ul class="film-list">
+      {% for t in f.owned_films %}{{ row(t, 'owned') }}{% endfor %}
+      {% for t in f.owned_shows %}{{ row(t, 'owned') }}{% endfor %}
+    </ul>
+  </section>
+{% endif %}
+
+<div id="add-dialog"></div>
+<div id="add-show-dialog"></div>
+{% endblock %}

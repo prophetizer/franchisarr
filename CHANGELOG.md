@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Franchise pages.** One page per franchise, across both media: *Star Trek — you have 6 of 27*,
+  with the TOS films, TNG, DS9 and Voyager listed as missing; *Stargate — 5 of 9*, with SG-1.
+  Franchises come from how Wikidata files things ("media franchise", "part of the series"),
+  folded so *The Infinity Saga* lands under *Marvel Cinematic Universe* and the twenty
+  franchises Wikidata keeps as two unlinked items (*Jurassic Park*, *James Bond*, *Terminator*…)
+  are one. Each page pulls together the collection gaps of its films, the spin-offs and
+  continuations of its shows, upcoming films, and a third source that is new: every whole film
+  or series Wikidata itself files under the franchise — the only way to learn about *Deep Space
+  Nine* from owning *Voyager*. Each missing title says which of those it came from. On the test
+  library: 206 franchises, 72 spanning both films and TV, 481 missing titles between them.
+  Discovery runs on the seven-day cache like collections do — it is the longest Wikidata step.
+
+
 - **Continuations across media.** The Spin-offs page gains two sections: *TV from films you
   own* — the series a film was drawn from or continued (*Firefly* for *Serenity*, *Bates Motel*
   for *Psycho*, *The Sarah Connor Chronicles* for *Terminator 2*) and the original series behind
