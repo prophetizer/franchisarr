@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Director pages.** "You own 11 Nolan films — missing *Following* and *Insomnia*." Every
+  director you own five or more films by (the floor is yours to set), their filmography against
+  your library, rated and addable to Radarr. Documentaries and unreleased films are listed apart;
+  the rating filter from Collections applies here too. On the test library: 148 directors, and
+  the missing lists are *Schindler's List*, *Fargo*, *Black Hawk Down*, *Ed Wood*, *Contact*.
+  Credits are read once per owned film — 3,400 requests the first time, a few minutes — and
+  never again; filmographies refresh on the seven-day cache.
+
 ### Fixed
 
 - **The layout no longer runs off the edge of a phone.** Two causes, neither the theme. The nav

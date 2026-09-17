@@ -35,6 +35,8 @@ class SettingKey:
     CROSS_INSTANCE_DEDUP = "cross_instance_dedup"
     #: Missing films rated below this are tucked away rather than listed. "0" is off.
     MIN_GAP_RATING = "min_gap_rating"
+    #: A director appears on the Directors page once this many of their films are owned.
+    MIN_DIRECTOR_FILMS = "min_director_films"
 
     # Generated or discovered at runtime rather than configured, so deliberately absent from
     # DEFAULTS: a default value for either would be actively wrong.
@@ -59,6 +61,7 @@ DEFAULTS: dict[str, str] = {
     SettingKey.WEBHOOK_FORMAT: WebhookFormat.GENERIC.value,
     SettingKey.CROSS_INSTANCE_DEDUP: "false",
     SettingKey.MIN_GAP_RATING: "0",
+    SettingKey.MIN_DIRECTOR_FILMS: "5",
     SettingKey.UPDATE_RELEASES_URL: "",
 }
 

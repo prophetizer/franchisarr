@@ -32,6 +32,9 @@ MAX_REQUESTS_PER_SECOND = 20
 #: A 429 should be rare given the limiter, but TMDb's own accounting is what counts.
 MAX_RETRIES = 3
 
+#: TMDb's genre id for Documentary.
+DOCUMENTARY_GENRE = 99
+
 
 class TmdbError(RuntimeError):
     """Any TMDb failure. Its message is safe to show a user."""
@@ -104,6 +107,27 @@ class TmdbCollectionDetails:
     poster_path: str | None = None
     backdrop_path: str | None = None
     movies: tuple[TmdbMovieSummary, ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True)
+class TmdbPerson:
+    person_id: int
+    name: str
+
+
+@dataclass(frozen=True)
+class TmdbDirectedFilm:
+    tmdb_id: int
+    title: str
+    release_date: str | None = None
+    poster_path: str | None = None
+    vote_average: float | None = None
+    vote_count: int | None = None
+    is_documentary: bool = False
+
+    @property
+    def year(self) -> int | None:
+        return TmdbMovieSummary(self.tmdb_id, self.title, self.release_date).year
 
 
 #: Kept as a module-level name because this is where the limiter used to live; fanart.tv needs
@@ -240,6 +264,44 @@ class TmdbClient:
                 if isinstance(part, dict) and part.get("id")
             ),
         )
+
+    def get_movie_directors(self, tmdb_id: int) -> list[TmdbPerson]:
+        """Who directed a film. Only the Director credit -- not co-, assistant or second unit."""
+        payload = self._get(f"/movie/{tmdb_id}/credits")
+        seen: dict[int, TmdbPerson] = {}
+        for member in payload.get("crew") or []:
+            if not isinstance(member, dict) or member.get("job") != "Director":
+                continue
+            try:
+                pid = int(member["id"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            seen.setdefault(pid, TmdbPerson(person_id=pid, name=str(member.get("name") or "")))
+        return list(seen.values())
+
+    def get_directed_films(self, person_id: int) -> list[TmdbDirectedFilm]:
+        """Everything a person is credited as Director on. One film per id even when TMDb lists
+        the credit twice, which it does when someone is both director and co-director."""
+        payload = self._get(f"/person/{person_id}/movie_credits")
+        films: dict[int, TmdbDirectedFilm] = {}
+        for credit in payload.get("crew") or []:
+            if not isinstance(credit, dict) or credit.get("job") != "Director":
+                continue
+            try:
+                tmdb_id = int(credit["id"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            genres = credit.get("genre_ids") or []
+            films.setdefault(tmdb_id, TmdbDirectedFilm(
+                tmdb_id=tmdb_id,
+                title=str(credit.get("title") or credit.get("original_title") or ""),
+                release_date=credit.get("release_date") or None,
+                poster_path=credit.get("poster_path") or None,
+                vote_average=_as_float(credit.get("vote_average")),
+                vote_count=_as_int(credit.get("vote_count")),
+                is_documentary=DOCUMENTARY_GENRE in genres if isinstance(genres, list) else False,
+            ))
+        return list(films.values())
 
     def find_by_external_id(self, external_id: str, source: str) -> TmdbMovieSummary | None:
         """Resolve an IMDb or TVDb id to a TMDb movie.

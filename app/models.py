@@ -233,6 +233,41 @@ class FranchiseMember(SQLModel, table=True):
     poster_path: str | None = Field(default=None)
 
 
+class MovieDirector(SQLModel, table=True):
+    """Who directed an owned film. Its own table rather than a column on tmdb_movies because a
+    film can have several directors, and because it is filled by a separate credits request --
+    the film cache does not have to be invalidated to learn this."""
+
+    __tablename__ = "movie_directors"
+    __table_args__ = (UniqueConstraint("tmdb_movie_id", "person_id", name="uq_movie_director"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    tmdb_movie_id: int = Field(index=True)
+    person_id: int = Field(index=True)
+    name: str
+    fetched_at: datetime = Field(default_factory=utcnow)
+
+
+class DirectorFilm(SQLModel, table=True):
+    """A director's filmography, as TMDb has it. Replaced wholesale per director on refetch."""
+
+    __tablename__ = "director_films"
+    __table_args__ = (UniqueConstraint("person_id", "tmdb_movie_id", name="uq_director_film"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    person_id: int = Field(index=True)
+    tmdb_movie_id: int = Field(index=True)
+    title: str
+    release_date: str | None = Field(default=None)
+    poster_path: str | None = Field(default=None)
+    vote_average: float | None = Field(default=None)
+    vote_count: int | None = Field(default=None)
+    #: TMDb genre 99. Listed apart: a documentary by a feature director is rarely what someone
+    #: completing that director's work is after, but sometimes exactly what they are.
+    is_documentary: bool = Field(default=False)
+    fetched_at: datetime = Field(default_factory=utcnow, index=True)
+
+
 class CollectionExclude(SQLModel, table=True):
     """"Not really part of this collection" — a TMDb data-quality correction scoped to one
     collection, distinct from the per-user dismiss list."""

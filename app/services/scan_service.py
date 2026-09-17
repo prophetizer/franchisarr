@@ -62,6 +62,10 @@ class ScanSummary:
     collections_found: int = 0
     #: Spin-off relations discovered or refreshed from Wikidata.
     spinoffs_found: int = 0
+    #: Set once TMDb has rejected the key. Every later step that would call TMDb checks it: a
+    #: rejected key is rejected for every remaining request, and the point of stopping is to
+    #: stop -- not to stop one step and let the next one make three thousand doomed calls.
+    tmdb_auth_failed: bool = False
     tmdb_lookups: int = 0
     errors: list[str] = field(default_factory=list)
 
@@ -142,6 +146,20 @@ def scan_movie_libraries(
     summary.collections_found = _cache_collections(
         session, tmdb, ttl, summary, progress, fanart=fanart
     )
+
+    # Directors last: it is the one step that touches every owned film, and on a first run
+    # that is 3,400 credits requests. Enrichment, so a failure costs only the Directors page.
+    from app.services import director_service
+
+    if summary.tmdb_auth_failed:
+        return summary
+    try:
+        director_service.discover(session, tmdb, ttl=ttl, progress=progress)
+    except TmdbAuthError as exc:
+        summary.errors.append(str(exc))
+        summary.tmdb_auth_failed = True
+    except TmdbError as exc:
+        summary.errors.append(f"Director lookup failed: {exc}")
     return summary
 
 
@@ -254,6 +272,7 @@ def _discover_spinoffs(
             continue
         except TmdbAuthError as exc:
             summary.errors.append(str(exc))
+            summary.tmdb_auth_failed = True
             logger.error("Stopping TMDb enrichment: %s", exc)
             break
         except TmdbError as exc:
@@ -281,6 +300,7 @@ def _discover_spinoffs(
         cross_media_service.import_relations(session, cross, tmdb)
     except TmdbAuthError as exc:
         summary.errors.append(str(exc))
+        summary.tmdb_auth_failed = True
         return
 
     from app.services import franchise_service
@@ -292,6 +312,7 @@ def _discover_spinoffs(
         summary.errors.append(f"Franchise lookup failed: {exc}")
     except TmdbAuthError as exc:
         summary.errors.append(str(exc))
+        summary.tmdb_auth_failed = True
 
 
 def _cache_shows(
@@ -325,6 +346,7 @@ def _cache_shows(
         except TmdbAuthError as exc:
             # Same reasoning as the movie scan: a rejected key stays rejected.
             summary.errors.append(str(exc))
+            summary.tmdb_auth_failed = True
             logger.error("Stopping TMDb enrichment: %s", exc)
             return
         except TmdbError as exc:
@@ -439,6 +461,7 @@ def _cache_collections(
                 # mean thousands of pointless requests, thousands of identical errors, and
                 # minutes of waiting to be told one thing that was knowable at the first call.
                 summary.errors.append(str(exc))
+                summary.tmdb_auth_failed = True
                 logger.error("Stopping TMDb enrichment: %s", exc)
                 return 0
             except TmdbError as exc:
@@ -471,6 +494,7 @@ def _cache_collections(
                 fanart = None
         except TmdbAuthError as exc:
             summary.errors.append(str(exc))
+            summary.tmdb_auth_failed = True
             logger.error("Stopping TMDb enrichment: %s", exc)
             break
 

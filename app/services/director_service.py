@@ -1,0 +1,275 @@
+"""Director completion: "you own 11 Nolan films; missing Following and Insomnia".
+
+The same shape as collections -- a set you own most of, and what would finish it -- on a
+different key. TMDb's collections are a curator's grouping; a director's filmography is a fact,
+and on the real library it is a rich one: 148 directors with five or more owned films, and the
+missing lists are Schindler's List, Fargo, Black Hawk Down.
+
+Two fetches, both cached. Who directed each owned film comes from that film's credits, once,
+and never again -- credits do not change. A qualifying director's filmography comes from their
+credits and is refreshed on the cache TTL, because it grows.
+"""
+
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass, field
+from datetime import date, datetime, timedelta, timezone
+
+from sqlmodel import Session, col, delete, select
+
+from app.clients.tmdb_client import TmdbAuthError, TmdbClient, TmdbError, TmdbNotFound
+from app.models import DirectorFilm, DismissedItem, ItemType, MovieDirector, utcnow
+from app.services import movie_gap_service
+from app.services.movie_gap_service import MIN_VOTES_FOR_A_RATING
+
+logger = logging.getLogger(__name__)
+
+PROGRESS_EVERY = 25
+
+
+@dataclass(frozen=True)
+class DirectorTitle:
+    tmdb_id: int
+    title: str
+    release_date: str | None
+    poster_path: str | None
+    vote_average: float | None
+    vote_count: int | None
+    is_documentary: bool = False
+
+    @property
+    def year(self) -> int | None:
+        return int(self.release_date[:4]) if self.release_date and self.release_date[:4].isdigit() else None
+
+    @property
+    def rating(self) -> float | None:
+        if self.vote_average is None or (self.vote_count or 0) < MIN_VOTES_FOR_A_RATING:
+            return None
+        return round(self.vote_average, 1)
+
+    @property
+    def poster(self) -> str | None:
+        from app.services.artwork import THUMB_SIZE, poster_url
+
+        return poster_url(self.poster_path, THUMB_SIZE)
+
+    def is_released(self, today: date) -> bool:
+        if not self.release_date:
+            return False
+        try:
+            return date.fromisoformat(self.release_date) <= today
+        except ValueError:
+            return False
+
+    def falls_below(self, threshold: float) -> bool:
+        return self.rating is not None and self.rating < threshold
+
+
+@dataclass
+class DirectorView:
+    person_id: int
+    name: str
+    owned: list[DirectorTitle] = field(default_factory=list)
+    missing: list[DirectorTitle] = field(default_factory=list)
+    upcoming: list[DirectorTitle] = field(default_factory=list)
+    hidden: list[DirectorTitle] = field(default_factory=list)
+    documentaries: list[DirectorTitle] = field(default_factory=list)
+    #: True until the filmography has been fetched at least once.
+    pending: bool = False
+
+    @property
+    def total(self) -> int:
+        return len(self.owned) + len(self.missing) + len(self.hidden) + len(self.documentaries)
+
+    @property
+    def best_rating(self) -> float:
+        rated = [t.rating for t in self.missing if t.rating is not None]
+        return max(rated) if rated else -1.0
+
+
+def min_director_films(session: Session) -> int:
+    from app.services.settings_service import SettingKey, get_setting
+
+    raw = get_setting(session, SettingKey.MIN_DIRECTOR_FILMS) or "5"
+    try:
+        return max(2, min(50, int(raw)))
+    except ValueError:
+        return 5
+
+
+def _as_utc(value: datetime) -> datetime:
+    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+
+
+# ------------------------------------------------------------------ discovery (scan time)
+
+
+def discover(
+    session: Session, tmdb: TmdbClient, *, ttl: timedelta, progress=None
+) -> tuple[int, int]:
+    """Learn who directed each owned film, then fetch the filmography of every director who
+    clears the floor. Returns (films credited, filmographies fetched).
+
+    Credits are fetched only for films that have none recorded -- 3,400 requests once on the
+    test library, then only for new arrivals. Filmographies honour the TTL like collections do.
+    """
+    owned = movie_gap_service.owned_tmdb_ids(session)
+    credited = {row.tmdb_movie_id for row in session.exec(select(MovieDirector))}
+    # Films fetched and found to have no director credit are recorded with person_id 0 so they
+    # are not asked about on every scan.
+    todo = sorted(owned - credited)
+
+    fetched = 0
+    for index, tmdb_id in enumerate(todo, start=1):
+        if progress and index % PROGRESS_EVERY == 0:
+            progress("Reading film credits", index, len(todo))
+        try:
+            people = tmdb.get_movie_directors(tmdb_id)
+        except TmdbNotFound:
+            people = []
+        except TmdbAuthError:
+            raise
+        except TmdbError as exc:
+            logger.debug("Credits unavailable for %s: %s", tmdb_id, exc)
+            continue
+        if not people:
+            session.add(MovieDirector(tmdb_movie_id=tmdb_id, person_id=0, name=""))
+        for person in people:
+            session.add(MovieDirector(tmdb_movie_id=tmdb_id, person_id=person.person_id,
+                                      name=person.name))
+        fetched += 1
+        if index % 100 == 0:
+            session.commit()
+    session.commit()
+
+    floor = min_director_films(session)
+    counts: dict[int, int] = {}
+    for row in session.exec(select(MovieDirector).where(col(MovieDirector.person_id) != 0)):
+        if row.tmdb_movie_id in owned:
+            counts[row.person_id] = counts.get(row.person_id, 0) + 1
+    qualifying = sorted(pid for pid, n in counts.items() if n >= floor)
+
+    fresh_until = utcnow() - ttl
+    stale: list[int] = []
+    for pid in qualifying:
+        newest = session.exec(
+            select(DirectorFilm.fetched_at).where(col(DirectorFilm.person_id) == pid)
+            .order_by(col(DirectorFilm.fetched_at).desc()).limit(1)
+        ).first()
+        if newest is None or _as_utc(newest) < _as_utc(fresh_until):
+            stale.append(pid)
+
+    refreshed = 0
+    for index, pid in enumerate(stale, start=1):
+        if progress:
+            progress("Reading filmographies", index, len(stale))
+        try:
+            films = tmdb.get_directed_films(pid)
+        except TmdbNotFound:
+            films = []
+        except TmdbAuthError:
+            raise
+        except TmdbError as exc:
+            logger.debug("Filmography unavailable for %s: %s", pid, exc)
+            continue
+        # Bulk delete then insert, for the reason documented on every other cache here.
+        session.exec(delete(DirectorFilm).where(col(DirectorFilm.person_id) == pid))
+        session.flush()
+        now = utcnow()
+        for f in films:
+            session.add(DirectorFilm(person_id=pid, tmdb_movie_id=f.tmdb_id, title=f.title,
+                                     release_date=f.release_date, poster_path=f.poster_path,
+                                     vote_average=f.vote_average, vote_count=f.vote_count,
+                                     is_documentary=f.is_documentary, fetched_at=now))
+        session.commit()
+        refreshed += 1
+
+    logger.info("Directors: %d film(s) credited, %d filmograph(ies) refreshed, %d qualify",
+                fetched, refreshed, len(qualifying))
+    return fetched, refreshed
+
+
+# ------------------------------------------------------------------ views (read time)
+
+
+def director_views(
+    session: Session, user_id: int | None = None, *, today: date | None = None,
+    sort: str = "owned",
+) -> list[DirectorView]:
+    today = today or date.today()
+    owned = movie_gap_service.owned_tmdb_ids(session)
+    in_radarr = movie_gap_service.radarr_known_ids(session)
+    threshold = movie_gap_service.min_gap_rating(session)
+    floor = min_director_films(session)
+    dismissed = {
+        row.tmdb_id for row in session.exec(select(DismissedItem).where(
+            col(DismissedItem.user_id) == user_id,
+            col(DismissedItem.item_type) == ItemType.MOVIE.value))
+    } if user_id is not None else set()
+
+    names: dict[int, str] = {}
+    owned_by: dict[int, set[int]] = {}
+    for row in session.exec(select(MovieDirector).where(col(MovieDirector.person_id) != 0)):
+        if row.tmdb_movie_id in owned:
+            owned_by.setdefault(row.person_id, set()).add(row.tmdb_movie_id)
+            names[row.person_id] = row.name
+
+    films_by: dict[int, list[DirectorFilm]] = {}
+    for row in session.exec(select(DirectorFilm)):
+        films_by.setdefault(row.person_id, []).append(row)
+
+    views: list[DirectorView] = []
+    for pid, owned_ids in owned_by.items():
+        if len(owned_ids) < floor:
+            continue
+        view = DirectorView(person_id=pid, name=names[pid])
+        rows = films_by.get(pid)
+        if rows is None:
+            view.pending = True
+            views.append(view)
+            continue
+        seen: set[int] = set()
+        for row in rows:
+            if row.tmdb_movie_id in seen:
+                continue
+            seen.add(row.tmdb_movie_id)
+            t = DirectorTitle(row.tmdb_movie_id, row.title, row.release_date, row.poster_path,
+                              row.vote_average, row.vote_count, row.is_documentary)
+            if t.tmdb_id in owned_ids or t.tmdb_id in owned:
+                view.owned.append(t)
+            elif t.tmdb_id in in_radarr or t.tmdb_id in dismissed:
+                continue
+            elif not t.is_released(today):
+                view.upcoming.append(t)
+            elif t.is_documentary:
+                view.documentaries.append(t)
+            elif t.falls_below(threshold):
+                view.hidden.append(t)
+            else:
+                view.missing.append(t)
+        # An owned film TMDb's filmography somehow omits still counts as owned.
+        listed = {t.tmdb_id for t in view.owned}
+        for tmdb_id in owned_ids - listed:
+            cached = session.get(movie_gap_service.TmdbMovie, tmdb_id)
+            view.owned.append(DirectorTitle(tmdb_id, cached.title if cached else f"TMDb {tmdb_id}",
+                                            f"{cached.release_year}-01-01" if cached and cached.release_year else None,
+                                            None, None, None))
+        for lst in (view.owned, view.missing, view.upcoming, view.hidden, view.documentaries):
+            lst.sort(key=lambda t: (t.year or 9999, t.title.casefold()))
+        views.append(view)
+
+    if sort == "name":
+        views.sort(key=lambda v: v.name.casefold())
+    elif sort == "rating":
+        views.sort(key=lambda v: (-v.best_rating, -len(v.owned), v.name.casefold()))
+    else:
+        views.sort(key=lambda v: (-len(v.owned), v.name.casefold()))
+    return views
+
+
+def director_view(session: Session, person_id: int, user_id: int | None = None) -> DirectorView | None:
+    for view in director_views(session, user_id):
+        if view.person_id == person_id:
+            return view
+    return None

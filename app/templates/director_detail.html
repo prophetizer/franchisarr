@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ d.name }} — Franchisarr{% endblock %}
+
+{% macro row(movie, css, addable=True) -%}
+  <li class="film-row {{ css }}">
+    {% if movie.poster %}
+      <img class="film-poster" src="{{ movie.poster }}" alt="" loading="lazy" decoding="async" width="92" height="138">
+    {% endif %}
+    <span class="film-title">{{ movie.title }} {% include "partials/rating.html" %}</span>
+    <span class="film-meta muted">
+      {% if css == 'upcoming' %}{% if movie.release_date %}expected {{ movie.release_date }}{% else %}no release date{% endif %}
+      {% else %}{{ movie.year or '' }}{% endif %}
+    </span>
+    {% if addable %}
+      <span class="film-actions">
+        <button class="{{ 'outline' if css != 'missing' else '' }}" hx-get="{{ url('/add/' ~ movie.tmdb_id) }}"
+                hx-target="#add-dialog" hx-swap="innerHTML">{{ 'Add anyway' if css == 'hidden' else 'Add' }}</button>
+      </span>
+    {% endif %}
+  </li>
+{%- endmacro %}
+
+{% block content %}
+<p><a href="{{ url('/directors') }}">← Directors</a></p>
+<hgroup>
+  <h1>{{ d.name }}</h1>
+  <p>You have {{ d.owned | length }} of {{ d.total }} film{{ '' if d.total == 1 else 's' }} they directed.</p>
+</hgroup>
+
+{% if d.pending %}
+  <p class="muted">Filmography not fetched yet — the next scan will.</p>
+{% endif %}
+
+{% if d.missing %}
+  <section><h2>Missing</h2>
+    <ul class="film-list">{% for m in d.missing %}{{ row(m, 'missing') }}{% endfor %}</ul>
+  </section>
+{% endif %}
+{% if d.upcoming %}
+  <section class="upcoming-section"><h2>Coming soon</h2>
+    <ul class="film-list">{% for m in d.upcoming %}{{ row(m, 'upcoming') }}{% endfor %}</ul>
+  </section>
+{% endif %}
+{% if d.hidden %}
+  <details class="hidden-section">
+    <summary>{{ d.hidden | length }} film{{ '' if d.hidden | length == 1 else 's' }} hidden by your rating filter</summary>
+    <ul class="film-list">{% for m in d.hidden %}{{ row(m, 'hidden') }}{% endfor %}</ul>
+  </details>
+{% endif %}
+{% if d.documentaries %}
+  <details class="hidden-section">
+    <summary>{{ d.documentaries | length }} documentar{{ 'y' if d.documentaries | length == 1 else 'ies' }}</summary>
+    <ul class="film-list">{% for m in d.documentaries %}{{ row(m, 'hidden') }}{% endfor %}</ul>
+  </details>
+{% endif %}
+{% if not d.pending and not d.missing and not d.upcoming %}
+  <p role="status" class="notice-good">Complete.</p>
+{% endif %}
+
+{% if d.owned %}
+  <section><h2>In your library</h2>
+    <ul class="film-list">{% for m in d.owned %}{{ row(m, 'owned', addable=False) }}{% endfor %}</ul>
+  </section>
+{% endif %}
+<div id="add-dialog"></div>
+{% endblock %}
