@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Stylesheets and scripts now carry the app version in their URL**, so a release invalidates
+  every browser's cached copy. Without it a phone kept the previous `app.css` straight across
+  the deploy that fixed its layout — the files have an ETag but no `Cache-Control`, and Safari's
+  heuristic freshness was enough to skip asking.
+
 ## [0.8.0] — 2026-09-17
 
 The last of the feature run. Director pages are the one new thing; the seventh idea — anime

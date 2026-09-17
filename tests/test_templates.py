@@ -81,7 +81,7 @@ def test_assets_are_served_from_base_url(asset: str) -> None:
 @pytest.mark.parametrize("asset", VENDORED_ASSETS)
 def test_assets_are_served_from_root_when_base_url_is_unset(asset: str) -> None:
     html = _render("")
-    assert f'"/static/{asset}"' in html
+    assert f'"/static/{asset}?v=' in html, "root-served, and versioned"
 
 
 def test_no_link_escapes_the_base_url() -> None:
@@ -108,3 +108,15 @@ def test_vendored_assets_exist_on_disk(asset: str) -> None:
     path = STATIC_DIR / asset
     assert path.is_file(), f"{asset} is referenced by the templates but not vendored"
     assert path.stat().st_size > 0
+
+
+def test_static_assets_carry_the_version_so_a_release_invalidates_caches() -> None:
+    """A phone kept the previous app.css across the deploy that fixed its layout: the files have
+    an ETag but no Cache-Control, and Safari's heuristic freshness skipped the revalidation. A
+    changed query string is a different URL, and nothing is heuristic about that."""
+    from app import __version__
+
+    html = _render("/franchisarr")
+
+    for name in ("pico.min.css", "theme-adapter.css", "app.css", "htmx.min.js", "alpine.min.js"):
+        assert f"/franchisarr/static/{name}?v={__version__}" in html, name

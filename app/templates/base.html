@@ -25,7 +25,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Franchisarr{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url('/static/pico.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('/static/pico.min.css') }}">
     {#- A theme.park stylesheet, when TP_THEME or THEME_CSS_URL says so. The URL is validated
         server-side (http/https only) before it reaches this attribute. -#}
     {% if theme_url %}<link rel="stylesheet" href="{{ theme_url }}">{% endif %}
@@ -33,10 +33,10 @@
         onto Pico's and falls back to Pico's own values when none are present. That is what lets a
         reverse proxy inject a theme-options stylesheet and have it take effect without
         Franchisarr being configured at all. -#}
-    <link rel="stylesheet" href="{{ url('/static/theme-adapter.css') }}">
-    <link rel="stylesheet" href="{{ url('/static/app.css') }}">
-    <script src="{{ url('/static/htmx.min.js') }}" defer></script>
-    <script src="{{ url('/static/alpine.min.js') }}" defer></script>
+    <link rel="stylesheet" href="{{ asset('/static/theme-adapter.css') }}">
+    <link rel="stylesheet" href="{{ asset('/static/app.css') }}">
+    <script src="{{ asset('/static/htmx.min.js') }}" defer></script>
+    <script src="{{ asset('/static/alpine.min.js') }}" defer></script>
     {% block head %}{% endblock %}
   </head>
   <body>

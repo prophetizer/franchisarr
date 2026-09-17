@@ -36,6 +36,22 @@ def make_url_builder(base_url: str) -> Callable[[str], str]:
     return url
 
 
+def make_asset_builder(base_url: str):
+    """Static asset URLs carry the app version, so a release invalidates every browser's copy.
+
+    Without this a phone kept the previous app.css across a deploy that fixed its layout: the
+    files are served with an ETag but no Cache-Control, and Safari's heuristic freshness is
+    enough to skip the revalidation. A changed query string is a different URL, and there is
+    nothing heuristic about that.
+    """
+    url = make_url_builder(base_url)
+
+    def asset(path: str) -> str:
+        return f"{url(path)}?v={__version__}"
+
+    return asset
+
+
 def _theme_context(request) -> dict:  # noqa: ANN001 - a Starlette Request
     """Make the configured theme URL available to every template.
 
@@ -66,6 +82,7 @@ def build_templates(base_url: str) -> Jinja2Templates:
     )
     templates.env.globals["url"] = make_url_builder(base_url)
     templates.env.globals["version"] = __version__
+    templates.env.globals["asset"] = make_asset_builder(base_url)
     return templates
 
 
