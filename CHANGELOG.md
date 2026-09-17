@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-09-17
+
+The last of the feature run. Director pages are the one new thing; the seventh idea — anime
+relations via AniList — was measured against the real library and not built, because after
+what Wikidata already finds it would have added one suggestion. The measurement is in the
+repository so nobody has to make it twice.
+
 ### Added
 
 - **Director pages.** "You own 11 Nolan films — missing *Following* and *Insomnia*." Every
@@ -356,7 +363,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.8.0
 [0.7.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.7.0
 [0.6.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.6.0
 [0.5.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.5.0
