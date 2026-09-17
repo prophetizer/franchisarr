@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-09-17
+
+Three more features from the run, and the one they were building towards. Upcoming films in
+franchises you own, continuations that cross between film and TV, and franchise pages that put
+all of it — films, shows, gaps, what's coming — on one page per franchise. Also a fix to the
+update checker that this release itself would have tripped over.
+
 ### Added
 
 - **Franchise pages.** One page per franchise, across both media: *Star Trek — you have 6 of 27*,
@@ -331,7 +338,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.7.0
 [0.6.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.6.0
 [0.5.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.5.0
 [0.4.2]: https://github.com/prophetizer/franchisarr/releases/tag/v0.4.2
