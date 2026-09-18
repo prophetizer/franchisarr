@@ -22,6 +22,18 @@ jobs:
       - run: pip install -r requirements.txt
       - run: pytest -q
 
+  audit:
+    # Known-vulnerable pins fail the build. The 0.11.1 upgrade happened because someone asked
+    # for a security check before going public; this is that check, on every push.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pip-audit
+      - run: pip-audit -r requirements.txt --desc off
+
   image:
     # Builds for both architectures on every push, so a broken arm64 build is caught before a
     # release. Pushes only for a version tag: ghcr.io/<owner>/franchisarr:<version> and :latest.
