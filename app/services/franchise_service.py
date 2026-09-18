@@ -64,6 +64,9 @@ class FranchiseView:
     missing_films: list[Title] = field(default_factory=list)
     upcoming_films: list[Title] = field(default_factory=list)
     missing_shows: list[Title] = field(default_factory=list)
+    #: TV films, specials and shorts on the roster, folded away unless the preference says
+    #: otherwise. Never counted as missing.
+    specials: list[Title] = field(default_factory=list)
     #: A poster for the card and a logo for the heading, borrowed from any owned collection.
     poster_path: str | None = None
     backdrop_path: str | None = None
@@ -169,7 +172,7 @@ def discover(
         for qid in (group.wikidata_id, *group.aliases):
             for t in wikidata.franchise_titles(qid):
                 roster.setdefault((t.item_type, t.tmdb_id),
-                                  FranchiseTitle(group.wikidata_id, t.item_type, t.tmdb_id, t.name))
+                                  FranchiseTitle(group.wikidata_id, t.item_type, t.tmdb_id, t.name, t.kind))
         for (item_type, tmdb_id), ids in membership.items():
             if group.wikidata_id in ids and (item_type, tmdb_id) not in roster:
                 lib = library_titles.get((item_type, tmdb_id))
@@ -191,7 +194,7 @@ def _member_for(
     if previous is not None:
         return FranchiseMember(franchise_id=t.franchise_id, item_type=t.item_type,
                               tmdb_id=t.tmdb_id, title=previous.title, year=previous.year,
-                              poster_path=previous.poster_path)
+                              poster_path=previous.poster_path, kind=t.kind or previous.kind)
     title, year, poster = t.name, None, None
     if lib is not None:
         # Owned: the library already knows the title and year, and the collection or show
@@ -200,7 +203,8 @@ def _member_for(
         title, year = lib.title, lib.year
         poster = _cached_poster(session, t.item_type, t.tmdb_id)
         return FranchiseMember(franchise_id=t.franchise_id, item_type=t.item_type,
-                              tmdb_id=t.tmdb_id, title=title, year=year, poster_path=poster)
+                              tmdb_id=t.tmdb_id, title=title, year=year, poster_path=poster,
+                              kind=t.kind)
     if t.item_type == ItemType.MOVIE.value:
         cached = session.get(TmdbMovie, t.tmdb_id)
         if cached is not None:
@@ -216,7 +220,8 @@ def _member_for(
         except TmdbError as exc:
             logger.debug("No TMDb details for %s %s: %s", t.item_type, t.tmdb_id, exc)
     return FranchiseMember(franchise_id=t.franchise_id, item_type=t.item_type,
-                          tmdb_id=t.tmdb_id, title=title, year=year, poster_path=poster)
+                          tmdb_id=t.tmdb_id, title=title, year=year, poster_path=poster,
+                          kind=t.kind)
 
 
 def _cached_poster(session: Session, item_type: str, tmdb_id: int) -> str | None:
@@ -241,6 +246,18 @@ def _as_utc(value: datetime) -> datetime:
 # ------------------------------------------------------------------ views (read time)
 
 
+def include_tv_films(session: Session) -> bool:
+    from app.services.settings_service import SettingKey, get_setting
+
+    return (get_setting(session, SettingKey.FRANCHISE_INCLUDE_TV_FILMS) or "false").lower() == "true"
+
+
+def _is_minor(kind: str | None) -> bool:
+    from app.clients.wikidata_client import MINOR_KINDS
+
+    return bool(kind) and any(word in kind for word in MINOR_KINDS)
+
+
 def _dismissed(session: Session, user_id: int | None) -> set[tuple[str, int]]:
     if user_id is None:
         return set()
@@ -259,6 +276,7 @@ def franchise_views(
     in_radarr = movie_gap_service.radarr_known_ids(session)
     in_sonarr = tv_spinoff_service.sonarr_known_ids(session)
     dismissed = _dismissed(session, user_id)
+    include_minor = include_tv_films(session)
 
     gaps = movie_gap_service.collection_gaps(session, user_id, today=today)
     gap_by_film: dict[int, movie_gap_service.CollectionGap] = {}
@@ -336,12 +354,21 @@ def franchise_views(
                                   s.target_year, s.target_poster_path, via="continuation",
                                   note=s.relationships))
         # Last, the franchise's own roster -- lowest trust, so it never outranks a collection.
+        # TV films, specials and shorts are folded away unless the preference says otherwise.
         for m in by_franchise.get(franchise.wikidata_id, []):
-            add_missing(Title(m.item_type, m.tmdb_id, m.title, m.year, m.poster_path,
-                              via="franchise", note=f"Wikidata files it under {franchise.name}"))
+            t = Title(m.item_type, m.tmdb_id, m.title, m.year, m.poster_path,
+                      via="franchise", note=(m.kind or f"Wikidata files it under {franchise.name}"))
+            if _is_minor(m.kind) and not include_minor:
+                key = (m.item_type, m.tmdb_id)
+                owned_it = (m.tmdb_id in owned_films) if m.item_type == ItemType.MOVIE.value else (m.tmdb_id in owned_shows)
+                if key not in seen_missing and key not in dismissed and not owned_it:
+                    seen_missing.add(key)
+                    view.specials.append(t)
+                continue
+            add_missing(t)
 
         for lst in (view.owned_films, view.owned_shows, view.missing_films,
-                    view.missing_shows, view.upcoming_films):
+                    view.missing_shows, view.upcoming_films, view.specials):
             lst.sort(key=lambda t: (t.year or 9999, t.title.casefold()))
         views.append(view)
 

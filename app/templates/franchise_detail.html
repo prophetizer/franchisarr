@@ -71,6 +71,12 @@
     <ul class="film-list">{% for t in f.upcoming_films %}{{ row(t, 'upcoming') }}{% endfor %}</ul>
   </section>
 {% endif %}
+{% if f.specials %}
+  <details class="hidden-section">
+    <summary>{{ f.specials | length }} TV film{{ '' if f.specials | length == 1 else 's' }}, special{{ '' if f.specials | length == 1 else 's' }} or short{{ '' if f.specials | length == 1 else 's' }} — folded away by your preferences</summary>
+    <ul class="film-list">{% for t in f.specials %}{{ row(t, 'hidden') }}{% endfor %}</ul>
+  </details>
+{% endif %}
 {% if not f.missing and not f.upcoming_films %}
   <p role="status" class="notice-good">Complete, as far as anything knows.</p>
 {% endif %}

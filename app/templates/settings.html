@@ -4,7 +4,9 @@
 {% block content %}
 <hgroup>
   <h1>Settings</h1>
-  <p>More settings arrive in a later phase; this covers appearance for now.</p>
+  <p>Connections, scheduling, notifications and backup. What the lists <em>show</em> — rating
+     floor, which directors get a page, whether specials and shorts count — lives under
+     <a href="{{ url('/preferences') }}">Preferences</a>.</p>
 </hgroup>
 
 {% if saved %}<p role="status" class="notice-good">Saved.</p>{% endif %}

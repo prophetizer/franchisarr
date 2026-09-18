@@ -140,7 +140,8 @@ def _member_row(qid: str, name: str, cls: str, film: int | None = None, tv: int 
 
 @responses.activate
 def test_discovery_folds_subgroups_and_filters_the_roster(session: Session) -> None:
-    """Infinity Saga folds into the MCU; episodes, shorts and cancelled projects are dropped."""
+    """Infinity Saga folds into the MCU; episodes and cancelled projects are dropped, and a
+    short is kept but tagged so a preference can decide."""
     _own_film(session, 1, "Iron Man"); _own_film(session, 2, "Thor")
     session.commit()
     # membership: shows batch (none), films batch
@@ -173,8 +174,10 @@ def test_discovery_folds_subgroups_and_filters_the_roster(session: Session) -> N
     assert kept == 1
     franchise = session.exec(select(Franchise)).one()
     assert franchise.name == "Marvel Cinematic Universe"
-    members = {(m.item_type, m.title) for m in session.exec(select(FranchiseMember))}
-    assert members == {("movie", "Iron Man"), ("movie", "Thor"), ("show", "Loki")}
+    members = {(m.item_type, m.title, m.kind) for m in session.exec(select(FranchiseMember))}
+    assert members == {("movie", "Iron Man", "film"), ("movie", "Thor", "film"),
+                       ("show", "Loki", "television series"),
+                       ("movie", "Team Thor", "short film")}, "the short is kept and tagged, not dropped"
 
 
 @responses.activate
@@ -352,3 +355,28 @@ def test_owned_titles_do_not_cost_a_tmdb_request(session: Session) -> None:
 
     tmdb_calls = [c for c in responses.calls if "themoviedb" in c.request.url]
     assert len(tmdb_calls) == 1, "only the unowned title needed TMDb"
+
+
+
+def test_tv_films_and_shorts_fold_away_unless_the_preference_says_otherwise(session: Session) -> None:
+    """The Star Wars Holiday Special is filed under Star Wars on Wikidata, as a television film.
+    It is on the page -- folded, never counted as missing -- until someone says they want it."""
+    from app.services.settings_service import SettingKey, set_setting
+
+    _own_film(session, 11, "A New Hope"); _own_film(session, 1891, "Empire")
+    session.add(Franchise(wikidata_id="Q462", name="Star Wars", kind="media franchise"))
+    for tid, title, kind in ((11, "A New Hope", "film"), (1891, "Empire", "film"),
+                             (74849, "The Star Wars Holiday Special", "television film"),
+                             (1893, "Return of the Jedi", "film")):
+        session.add(FranchiseMember(franchise_id="Q462", item_type="movie", tmdb_id=tid, title=title, kind=kind))
+    session.commit()
+
+    view = franchise_service.franchise_views(session)[0]
+    assert [t.title for t in view.missing_films] == ["Return of the Jedi"]
+    assert [t.title for t in view.specials] == ["The Star Wars Holiday Special"]
+    assert view.missing == 1
+
+    set_setting(session, SettingKey.FRANCHISE_INCLUDE_TV_FILMS, "true"); session.commit()
+    view = franchise_service.franchise_views(session)[0]
+    assert {t.title for t in view.missing_films} == {"Return of the Jedi", "The Star Wars Holiday Special"}
+    assert view.specials == []

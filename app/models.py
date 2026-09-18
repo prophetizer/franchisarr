@@ -231,6 +231,9 @@ class FranchiseMember(SQLModel, table=True):
     title: str
     year: int | None = Field(default=None)
     poster_path: str | None = Field(default=None)
+    #: Wikidata's class labels for the title, joined with " / " -- "television film", "short
+    #: film". What the "include TV films and specials" preference reads.
+    kind: str | None = Field(default=None)
 
 
 class MovieDirector(SQLModel, table=True):
@@ -265,6 +268,9 @@ class DirectorFilm(SQLModel, table=True):
     #: TMDb genre 99. Listed apart: a documentary by a feature director is rarely what someone
     #: completing that director's work is after, but sometimes exactly what they are.
     is_documentary: bool = Field(default=False)
+    #: Minutes. Not in the credits payload, so filled by a later per-film lookup; None until then
+    #: -- and an unknown runtime is never treated as a short.
+    runtime: int | None = Field(default=None)
     fetched_at: datetime = Field(default_factory=utcnow, index=True)
 
 

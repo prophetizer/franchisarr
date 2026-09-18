@@ -27,6 +27,10 @@ logger = logging.getLogger(__name__)
 
 PROGRESS_EVERY = 25
 
+#: Under this many minutes a film is a short. The Academy's line is 40; TMDb's credits carry no
+#: runtime, so it is learned per film afterwards, and an unknown runtime is never a short.
+SHORT_RUNTIME_MINUTES = 40
+
 
 @dataclass(frozen=True)
 class DirectorTitle:
@@ -37,6 +41,11 @@ class DirectorTitle:
     vote_average: float | None
     vote_count: int | None
     is_documentary: bool = False
+    runtime: int | None = None
+
+    @property
+    def is_short(self) -> bool:
+        return self.runtime is not None and self.runtime < SHORT_RUNTIME_MINUTES
 
     @property
     def year(self) -> int | None:
@@ -75,12 +84,15 @@ class DirectorView:
     upcoming: list[DirectorTitle] = field(default_factory=list)
     hidden: list[DirectorTitle] = field(default_factory=list)
     documentaries: list[DirectorTitle] = field(default_factory=list)
+    #: Under forty minutes. Folded away unless the preference says otherwise.
+    shorts: list[DirectorTitle] = field(default_factory=list)
     #: True until the filmography has been fetched at least once.
     pending: bool = False
 
     @property
     def total(self) -> int:
-        return len(self.owned) + len(self.missing) + len(self.hidden) + len(self.documentaries)
+        return (len(self.owned) + len(self.missing) + len(self.hidden)
+                + len(self.documentaries) + len(self.shorts))
 
     @property
     def best_rating(self) -> float:
@@ -96,6 +108,12 @@ def min_director_films(session: Session) -> int:
         return max(2, min(50, int(raw)))
     except ValueError:
         return 5
+
+
+def include_shorts(session: Session) -> bool:
+    from app.services.settings_service import SettingKey, get_setting
+
+    return (get_setting(session, SettingKey.DIRECTOR_INCLUDE_SHORTS) or "false").lower() == "true"
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -185,6 +203,35 @@ def discover(
         session.commit()
         refreshed += 1
 
+    # Runtimes, for the shorts preference. The credits payload has none, so each unowned film
+    # in a qualifying filmography is looked up once; an owned film needs no runtime because it
+    # is never a candidate to hide. On the test library that is ~1,500 requests, once.
+    need_runtime = session.exec(
+        select(DirectorFilm).where(
+            col(DirectorFilm.person_id).in_(qualifying), col(DirectorFilm.runtime).is_(None))
+    ).all()
+    need_runtime = [row for row in need_runtime if row.tmdb_movie_id not in owned]
+    for index, row in enumerate(need_runtime, start=1):
+        if progress and index % PROGRESS_EVERY == 0:
+            progress("Reading runtimes", index, len(need_runtime))
+        try:
+            details = tmdb.get_movie(row.tmdb_movie_id)
+        except TmdbNotFound:
+            details = None
+        except TmdbAuthError:
+            raise
+        except TmdbError as exc:
+            logger.debug("Runtime unavailable for %s: %s", row.tmdb_movie_id, exc)
+            continue
+        # 0 from TMDb means "not recorded"; store 0 so it is not asked for nightly, and treat it
+        # as unknown at read time.
+        for same in session.exec(select(DirectorFilm).where(col(DirectorFilm.tmdb_movie_id) == row.tmdb_movie_id)):
+            same.runtime = (details.runtime if details and details.runtime else 0)
+            session.add(same)
+        if index % 100 == 0:
+            session.commit()
+    session.commit()
+
     logger.info("Directors: %d film(s) credited, %d filmograph(ies) refreshed, %d qualify",
                 fetched, refreshed, len(qualifying))
     return fetched, refreshed
@@ -202,6 +249,7 @@ def director_views(
     in_radarr = movie_gap_service.radarr_known_ids(session)
     threshold = movie_gap_service.min_gap_rating(session)
     floor = min_director_films(session)
+    show_shorts = include_shorts(session)
     dismissed = {
         row.tmdb_id for row in session.exec(select(DismissedItem).where(
             col(DismissedItem.user_id) == user_id,
@@ -235,13 +283,16 @@ def director_views(
                 continue
             seen.add(row.tmdb_movie_id)
             t = DirectorTitle(row.tmdb_movie_id, row.title, row.release_date, row.poster_path,
-                              row.vote_average, row.vote_count, row.is_documentary)
+                              row.vote_average, row.vote_count, row.is_documentary,
+                              row.runtime or None)
             if t.tmdb_id in owned_ids or t.tmdb_id in owned:
                 view.owned.append(t)
             elif t.tmdb_id in in_radarr or t.tmdb_id in dismissed:
                 continue
             elif not t.is_released(today):
                 view.upcoming.append(t)
+            elif t.is_short and not show_shorts:
+                view.shorts.append(t)
             elif t.is_documentary:
                 view.documentaries.append(t)
             elif t.falls_below(threshold):
@@ -255,7 +306,8 @@ def director_views(
             view.owned.append(DirectorTitle(tmdb_id, cached.title if cached else f"TMDb {tmdb_id}",
                                             f"{cached.release_year}-01-01" if cached and cached.release_year else None,
                                             None, None, None))
-        for lst in (view.owned, view.missing, view.upcoming, view.hidden, view.documentaries):
+        for lst in (view.owned, view.missing, view.upcoming, view.hidden, view.documentaries,
+                    view.shorts):
             lst.sort(key=lambda t: (t.year or 9999, t.title.casefold()))
         views.append(view)
 

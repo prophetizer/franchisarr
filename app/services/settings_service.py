@@ -37,6 +37,12 @@ class SettingKey:
     MIN_GAP_RATING = "min_gap_rating"
     #: A director appears on the Directors page once this many of their films are owned.
     MIN_DIRECTOR_FILMS = "min_director_films"
+    #: Taste settings, each defaulting to the cleaner list. Off means "folded away", never
+    #: "deleted": the hidden things stay reachable on each page.
+    FRANCHISE_INCLUDE_TV_FILMS = "franchise_include_tv_films"
+    DIRECTOR_INCLUDE_SHORTS = "director_include_shorts"
+    #: Set once the first-run preferences page has been seen (saved or skipped).
+    PREFERENCES_REVIEWED = "preferences_reviewed"
 
     # Generated or discovered at runtime rather than configured, so deliberately absent from
     # DEFAULTS: a default value for either would be actively wrong.
@@ -62,6 +68,9 @@ DEFAULTS: dict[str, str] = {
     SettingKey.CROSS_INSTANCE_DEDUP: "false",
     SettingKey.MIN_GAP_RATING: "0",
     SettingKey.MIN_DIRECTOR_FILMS: "5",
+    SettingKey.FRANCHISE_INCLUDE_TV_FILMS: "false",
+    SettingKey.DIRECTOR_INCLUDE_SHORTS: "false",
+    SettingKey.PREFERENCES_REVIEWED: "false",
     SettingKey.UPDATE_RELEASES_URL: "",
 }
 

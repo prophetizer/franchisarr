@@ -47,6 +47,12 @@
     <ul class="film-list">{% for m in d.hidden %}{{ row(m, 'hidden') }}{% endfor %}</ul>
   </details>
 {% endif %}
+{% if d.shorts %}
+  <details class="hidden-section">
+    <summary>{{ d.shorts | length }} short{{ '' if d.shorts | length == 1 else 's' }} — folded away by your preferences</summary>
+    <ul class="film-list">{% for m in d.shorts %}{{ row(m, 'hidden') }}{% endfor %}</ul>
+  </details>
+{% endif %}
 {% if d.documentaries %}
   <details class="hidden-section">
     <summary>{{ d.documentaries | length }} documentar{{ 'y' if d.documentaries | length == 1 else 'ies' }}</summary>

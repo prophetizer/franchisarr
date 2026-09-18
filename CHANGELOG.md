@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-09-18
+
+### Added
+
+- **A Preferences page, shown once on a fresh install** right after you choose libraries, and
+  under Settings forever after. Four taste settings, each with an example of what it changes:
+  the rating floor, which directors get a page, whether TV films and specials in a franchise
+  count as missing, and whether shorts in a filmography do. Skip keeps the defaults. Nothing
+  these hide is thrown away — every page keeps a folded section of what its settings filtered.
+- **TV films, specials and shorts in franchise rosters are a preference now**, off by default.
+  Wikidata files *The Star Wars Holiday Special* and the LEGO tie-ins under Star Wars as
+  "television film" and "short film"; they used to be either listed as gaps or dropped
+  entirely. They sit in a folded section until you say you want them.
+- **Shorts in director filmographies are a preference now**, off by default. TMDb's credits
+  carry no runtime, so it is learned once per unowned film (about 1,500 requests on the test
+  library, then never again); under forty minutes is a short, and an unknown runtime never is.
+
 ## [0.8.1] — 2026-09-18
 
 ### Fixed
@@ -377,7 +394,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.8.1...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.9.0
 [0.8.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.8.1
 [0.8.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.8.0
 [0.7.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.7.0

@@ -179,6 +179,16 @@ class FranchiseTitle:
     item_type: str          # "movie" or "show"
     tmdb_id: int
     name: str
+    #: Wikidata's class labels, joined with " / ". Kept so a preference can decide what to show
+    #: without another query -- "television film" is what separates the Star Wars Holiday
+    #: Special and the LEGO tie-ins from the features.
+    kind: str | None = None
+
+    @property
+    def is_minor(self) -> bool:
+        """A TV film, special or short: filed under the franchise, but not the sort of thing
+        most people mean when they say they are collecting it. Hidden by default."""
+        return bool(self.kind) and any(word in self.kind for word in MINOR_KINDS)
 
 
 #: Group classes worth treating as a franchise. P179 "part of the series" points at all sorts
@@ -195,9 +205,13 @@ CATALOGUE_WORDS = ("list of", "feature films", "productions", "greatest", " in f
 
 #: Class labels that make a franchise member worth listing: whole films and whole series.
 MEMBER_ALLOW = ("film", "series")
-#: ...and the ones that don't, even when the item somehow carries a TMDb id. Star Wars has
-#: 3,178 members on Wikidata and most of the ones with an id are one of these.
-MEMBER_DENY = ("episode", "short", "project", "web series", "4d", "special", "trailer", "video game")
+#: ...and the ones that never are, even when the item carries a TMDb id: an episode, a
+#: cancelled project, a web series, a trailer. Star Wars has 3,178 members on Wikidata and most
+#: of the ones with an id are one of these.
+MEMBER_DENY = ("episode", "project", "web series", "4d", "trailer", "video game", "music video")
+#: ...and the ones that are a matter of taste, kept but tagged: the Holiday Special, the LEGO
+#: tie-ins, a short. A preference decides whether they show; nothing is thrown away.
+MINOR_KINDS = ("television film", "short", "special")
 
 
 def _values_clause(tmdb_ids: list[int]) -> str:
@@ -650,12 +664,13 @@ class WikidataClient:
                 continue
             if kinds and not any(allow in k for k in kinds for allow in MEMBER_ALLOW):
                 continue
+            kind = " / ".join(sorted(kinds)) or None
             if film_id and str(film_id).isdigit():
                 titles.setdefault(("movie", int(film_id)),
-                                  FranchiseTitle(franchise_id, "movie", int(film_id), name))
+                                  FranchiseTitle(franchise_id, "movie", int(film_id), name, kind))
             elif tv_id and str(tv_id).isdigit():
                 titles.setdefault(("show", int(tv_id)),
-                                  FranchiseTitle(franchise_id, "show", int(tv_id), name))
+                                  FranchiseTitle(franchise_id, "show", int(tv_id), name, kind))
         return list(titles.values())
 
     @staticmethod

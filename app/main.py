@@ -35,6 +35,7 @@ from app.routes_instances import router as instances_router
 from app.routes_movies import router as movies_router
 from app.routes_directors import router as directors_router
 from app.routes_franchises import router as franchises_router
+from app.routes_preferences import router as preferences_router
 from app.routes_tv import router as tv_router
 from app.routes_auth import router as auth_router
 from app.services import library_service
@@ -191,6 +192,13 @@ def libraries_save(
     keys: Annotated[list[str], Form()] = [],
 ):
     library_service.set_enabled_libraries(session, keys)
+    # First run: one skippable page of taste settings, each with an example. Never shown twice.
+    from app.routes_preferences import preferences_reviewed
+
+    if keys and not preferences_reviewed(session):
+        return RedirectResponse(
+            f"{settings.base_url}/preferences?first=1", status_code=status.HTTP_303_SEE_OTHER
+        )
     return RedirectResponse(f"{settings.base_url}/", status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -201,6 +209,7 @@ app.include_router(instances_router, prefix=settings.base_url)
 app.include_router(tv_router, prefix=settings.base_url)
 app.include_router(franchises_router, prefix=settings.base_url)
 app.include_router(directors_router, prefix=settings.base_url)
+app.include_router(preferences_router, prefix=settings.base_url)
 app.include_router(api_router, prefix=settings.base_url)
 
 # Mounted under BASE_URL for the same reason the routes are: behind a subpath proxy, /static

@@ -203,3 +203,48 @@ def test_the_pages_render_and_route_adds_to_radarr(client: TestClient) -> None:
 
     assert client.post(f"{BASE}/directors/floor", data={"floor": "3"}).status_code == 303
     assert "Christopher Nolan" not in client.get(f"{BASE}/directors").text
+
+
+def test_shorts_fold_away_unless_the_preference_says_otherwise(session: Session) -> None:
+    """Doodlebug is three minutes long and rated 6.5. It is Nolan's; it is not what someone
+    completing Nolan is after -- until they say it is. An unknown runtime is never a short."""
+    _floor(session, 2)
+    _own(session, 1, "A"); _own(session, 2, "B")
+    session.add(DirectorFilm(person_id=NOLAN, tmdb_movie_id=3, title="Doodlebug", release_date="1997-01-01",
+                             vote_count=500, vote_average=6.5, runtime=3))
+    session.add(DirectorFilm(person_id=NOLAN, tmdb_movie_id=4, title="Insomnia", release_date="2002-05-24",
+                             vote_count=500, vote_average=7.0, runtime=118))
+    session.add(DirectorFilm(person_id=NOLAN, tmdb_movie_id=5, title="Unknown length", release_date="2000-01-01",
+                             vote_count=500, vote_average=7.0, runtime=None))
+    session.commit()
+
+    view = director_service.director_views(session, today=TODAY)[0]
+    assert [t.title for t in view.missing] == ["Unknown length", "Insomnia"]
+    assert [t.title for t in view.shorts] == ["Doodlebug"]
+
+    set_setting(session, SettingKey.DIRECTOR_INCLUDE_SHORTS, "true"); session.commit()
+    view = director_service.director_views(session, today=TODAY)[0]
+    assert "Doodlebug" in [t.title for t in view.missing] and view.shorts == []
+
+
+@responses.activate
+def test_discovery_learns_runtimes_for_unowned_films_once(session: Session) -> None:
+    _floor(session, 2)
+    _own(session, 1, "A", director=None); _own(session, 2, "B", director=None)
+    for tid in (1, 2):
+        responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/{tid}/credits",
+                      json={"crew": [{"id": NOLAN, "name": "Christopher Nolan", "job": "Director"}]})
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/person/{NOLAN}/movie_credits", json={"crew": [
+        {"id": 1, "title": "A", "job": "Director", "release_date": "2000-01-01"},
+        {"id": 3, "title": "Doodlebug", "job": "Director", "release_date": "1997-01-01"}]})
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/3", json={"id": 3, "title": "Doodlebug", "runtime": 3})
+    tmdb = TmdbClient("k" * 32, max_requests_per_second=10_000)
+
+    director_service.discover(session, tmdb, ttl=timedelta(days=7))
+    director_service.discover(session, tmdb, ttl=timedelta(days=7))
+
+    row = session.exec(select(DirectorFilm).where(DirectorFilm.tmdb_movie_id == 3)).one()
+    assert row.runtime == 3
+    assert len([c for c in responses.calls if c.request.url.endswith("/movie/3?api_key=" + "k" * 32)]) == 1, "once"
+    owned_row = session.exec(select(DirectorFilm).where(DirectorFilm.tmdb_movie_id == 1)).one()
+    assert owned_row.runtime is None, "owned films are never candidates to hide, so no lookup"
