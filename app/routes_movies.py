@@ -417,16 +417,15 @@ def trigger_scan(
     invisibly, or died with the request. It now starts a background task and hands back a panel
     that polls for progress.
     """
-    from app.services import scan_job, scan_state
+    from app.services import media_server_service, scan_job, scan_state
 
-    plex_url = get_setting(session, SettingKey.PLEX_URL)
-    plex_token = get_setting(session, SettingKey.PLEX_TOKEN)
     tmdb_key = get_setting(session, SettingKey.TMDB_API_KEY)
 
-    if not (plex_url and plex_token and tmdb_key):
+    if not (media_server_service.is_configured(session) and tmdb_key):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Plex and TMDb both need configuring before a scan can run.",
+            detail=(f"{media_server_service.label(session)} and TMDb both need configuring "
+                    "before a scan can run."),
         )
 
     # A second click while one is running is a no-op rather than an error: the panel it gets back

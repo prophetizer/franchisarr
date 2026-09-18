@@ -178,3 +178,39 @@ def test_server_sign_in_is_refused_on_a_plex_install(client: TestClient) -> None
     _seed("plex")
     response = client.post(f"{BASE}/auth/server/login", data={"username": "a", "password": "b"})
     assert response.status_code == 502 and "Plex sign-in isn" in response.text
+
+
+# ------------------------------------------------------------------ scanning from the UI
+
+
+def test_the_scan_button_works_on_a_jellyfin_only_install(client: TestClient, monkeypatch) -> None:
+    """0.12.0 shipped with the scan route still asking for PLEX_URL, so a Jellyfin install got a
+    409 from its own scan button. The check has to be about *the* configured server."""
+    from app.services import scan_job
+
+    _seed("jellyfin")
+    with Session(get_engine()) as session:
+        set_setting(session, SettingKey.TMDB_API_KEY, "t" * 32); session.commit()
+        create_local_admin(session, "admin", "correct horse battery")
+    client.post(f"{BASE}/login", data={"username": "admin", "password": "correct horse battery"})
+    started: list[str] = []
+    monkeypatch.setattr(scan_job, "run_in_background",
+                        lambda trigger="manual", *, force_refresh=False: started.append(trigger) or True)
+
+    response = client.post(f"{BASE}/scan")
+
+    assert response.status_code == 200, response.text[:200]
+    assert started == ["manual"]
+
+
+def test_the_scan_button_names_the_missing_server(client: TestClient) -> None:
+    with Session(get_engine()) as session:
+        set_setting(session, SettingKey.MEDIA_SERVER, "emby")
+        set_setting(session, SettingKey.TMDB_API_KEY, "t" * 32); session.commit()
+        create_local_admin(session, "admin", "correct horse battery")
+    client.post(f"{BASE}/login", data={"username": "admin", "password": "correct horse battery"})
+
+    response = client.post(f"{BASE}/scan")
+
+    assert response.status_code == 409
+    assert "Emby and TMDb both need configuring" in response.text

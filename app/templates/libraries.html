@@ -11,9 +11,9 @@
 
 {% if not libraries %}
   <article>
-    <p>No Plex movie or TV libraries were found.</p>
+    <p>No {{ server_label }} movie or TV libraries were found.</p>
     <p><small>
-      Check the Plex connection, then <a href="{{ url('/libraries') }}">try again</a>.
+      Check the {{ server_label }} connection, then <a href="{{ url('/libraries') }}">try again</a>.
     </small></p>
   </article>
 {% else %}

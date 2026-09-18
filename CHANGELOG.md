@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] — 2026-09-18
+
+### Fixed
+
+- **The scan button on a Jellyfin or Emby install.** It still asked for the Plex connection
+  before starting and answered 409 without one, so a Jellyfin-only install could not scan from
+  the page (the scheduled scan was fine). The empty-libraries message also named Plex whatever
+  the server was.
+
 ## [0.12.0] — 2026-09-18
 
 ### Added
@@ -467,7 +476,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.12.1...HEAD
+[0.12.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.12.1
 [0.12.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.12.0
 [0.11.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.11.1
 [0.11.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.11.0
