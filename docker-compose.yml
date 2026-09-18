@@ -1,7 +1,7 @@
 services:
   franchisarr:
-    build: .
-    # Once published: image: ghcr.io/<you>/franchisarr:latest
+    image: ghcr.io/prophetizer/franchisarr:latest
+    # To build from source instead: replace the line above with `build: .`
     container_name: franchisarr
     restart: unless-stopped
     environment:

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Franchisarr lives on GitHub now** — https://github.com/prophetizer/franchisarr — and the image
+  is published to GHCR for amd64 and arm64 on every release: `ghcr.io/prophetizer/franchisarr`.
+  The quick start no longer needs a clone. The update checker reads GitHub's releases (and now
+  looks at twenty of them rather than one, which had been quietly undoing the 0.6.0 fix that
+  picks the highest version). Security reports can use GitHub's private advisories.
+
 ## [0.10.0] — 2026-09-18
 
 The pre-public release: the things a stranger's install hits that the developer's never did,

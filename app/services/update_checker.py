@@ -30,7 +30,7 @@ DEFAULT_TIMEOUT = 10
 #: rather than a code change. Overridable per install via the `update_releases_url` setting, for
 #: forks and for anyone who would rather it asked nothing at all.
 DEFAULT_RELEASES_URL = (
-    "https://github.com/api/v1/repos/michael/franchisarr/releases?limit=1"
+    "https://api.github.com/repos/prophetizer/franchisarr/releases?per_page=20"
 )
 
 _VERSION_PART = re.compile(r"\d+")

@@ -5,22 +5,34 @@ Franchisarr looks at your Plex library and finds two things you probably want an
 - **Films missing from collections you already own part of.** You have *Beverly Hills Cop* and
   *II* but not *III* — one click sends it to Radarr.
 - **Spin-offs of shows you already watch.** You have *NCIS* but not *NCIS: Los Angeles* — one
-  click sends it to Sonarr.
+  click sends it to Sonarr. Found through Wikidata, so it also knows *Family Guy* → *American
+  Dad!* and *Serenity* → *Firefly*, which no name search could.
+
+And, built on the same data: **franchise pages** that put films and TV together (*Star Trek —
+you have 6 of 27*), **director pages** (*you own 11 Nolan films; missing* Following *and*
+Insomnia), an **Upcoming** page of announced films in franchises you own with release-date
+notifications, and **import lists** Radarr and Sonarr can poll so you never have to click Add.
 
 It supports multiple Radarr and Sonarr instances, signs you in with Plex, scans on a schedule,
-and can shout into Discord or Slack when it finds something new. There's a web UI and a CLI.
+shouts into Discord or Slack when it finds something new, and has a web UI and a CLI. Everything
+it hides — low-rated films, TV specials, shorts — is a preference, folded away rather than
+deleted.
 
-**Status:** feature-complete and running against a real library, but not yet released. Version
-`0.1.0` is the first tag.
+**Status:** pre-1.0 and in daily use against a real library of ~3,400 films and ~660 shows.
+Images are published to GHCR for amd64 and arm64.
 
 ## Quick start
 
 ```bash
-git clone <this-repo>
-cd franchisarr
-cp .env.example .env      # at minimum: PLEX_URL, PLEX_TOKEN, TMDB_API_KEY, ADMIN_* 
+mkdir franchisarr && cd franchisarr
+curl -fsSLO https://raw.githubusercontent.com/prophetizer/franchisarr/master/docker-compose.yml
+curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env.example -o .env
+# edit .env — at minimum: PLEX_URL, PLEX_TOKEN, TMDB_API_KEY, ADMIN_USERNAME, ADMIN_PASSWORD
 docker compose up -d
 ```
+
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.10.0`). To build
+from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which Plex libraries to scan, and run a scan.
 

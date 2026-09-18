@@ -20,10 +20,9 @@ window.
 
 **Please do not open a public issue for security vulnerabilities.**
 
-Report vulnerabilities privately by emailing **franchisarr@ihatemikeg.com**.
-
-Once the project moves to GitHub, GitHub's private security advisories will become available as an
-alternative route; this address will remain valid either way.
+Report vulnerabilities privately through
+[GitHub's private vulnerability reporting](https://github.com/prophetizer/franchisarr/security/advisories/new),
+or by emailing **franchisarr@ihatemikeg.com**. Either route reaches the same person.
 
 Please include:
 

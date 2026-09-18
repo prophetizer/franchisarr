@@ -157,7 +157,7 @@ def test_requests_identify_themselves() -> None:
     client = _client()
 
     agent = client._session.headers["User-Agent"]
-    assert "Franchisarr" in agent and "forgejo" in agent
+    assert "Franchisarr" in agent and "github.com/prophetizer/franchisarr" in agent
 
 
 # ------------------------------------------------------------------ importing
