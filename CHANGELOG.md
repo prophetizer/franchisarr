@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-09-18
+
 ### Added
 
 - **Jellyfin and Emby.** Set `JELLYFIN_URL` + `JELLYFIN_API_KEY` (or the Emby pair) instead of
@@ -14,7 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Jellyfin or Emby username and password; an administrator there administers here. One media
   server per install for now — several at once is the next release. Matching is simpler than
   on Plex, because both servers hand over TMDb ids directly: 99.7–100% of items on the test
-  servers, no GUID parsing.
+  servers, no GUID parsing. Sign-in was verified live against Jellyfin 10.11.11 and Emby
+  4.9.5.0 with a throwaway account.
 
 ### Changed
 
@@ -464,7 +467,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.11.1...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.12.0
 [0.11.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.11.1
 [0.11.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.11.0
 [0.10.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.10.0
