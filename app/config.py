@@ -2,7 +2,7 @@
 
 Env vars are a *convenience path*, not the only path: they seed the DB `settings` table on first
 boot so a docker-compose/Unraid deployment comes up configured, after which the setup wizard and
-Settings UI own the values (PROJECT_PLAN.md section 6). Nothing here is read at request time
+Settings UI own the values (docs/DESIGN.md section 6). Nothing here is read at request time
 except BASE_URL and LOG_LEVEL, which have to be known before the database is even open.
 """
 

@@ -1,6 +1,6 @@
 """Outgoing webhooks when a scheduled scan finds something new.
 
-Three payload shapes (PROJECT_PLAN.md decision log): a plain generic JSON body, and pre-shaped
+Three payload shapes (docs/DESIGN.md decision log): a plain generic JSON body, and pre-shaped
 Discord and Slack ones, since those two are what this community actually uses.
 
 The limits are the interesting part. A first scan on a real library found 227 missing films, and

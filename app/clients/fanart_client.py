@@ -1,6 +1,6 @@
 """fanart.tv API v3 client.
 
-An *optional* enrichment layer, not a metadata source. PROJECT_PLAN.md commits to TMDb as the
+An *optional* enrichment layer, not a metadata source. docs/DESIGN.md commits to TMDb as the
 only thing Franchisarr requires, and that stands: without a fanart key every screen still works,
 just without the franchise logos.
 

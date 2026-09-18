@@ -1,4 +1,4 @@
-"""Plex GUID -> external ID parsing (PROJECT_PLAN.md technical challenge #1).
+"""Plex GUID -> external ID parsing (docs/DESIGN.md technical challenge #1).
 
 Deliberately I/O-free. Every format quirk a real library throws at us gets fixed here, in pure
 functions with a table-driven test, rather than somewhere that needs a Plex server to reproduce.

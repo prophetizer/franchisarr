@@ -1,6 +1,6 @@
 """TMDb API v3 client.
 
-Kept behind a clean boundary on purpose: PROJECT_PLAN.md commits to TMDb as the only metadata
+Kept behind a clean boundary on purpose: docs/DESIGN.md commits to TMDb as the only metadata
 source for v1, with an optional TVDb enrichment layer possible later. Services depend on the
 typed results here, not on TMDb's JSON shapes.
 

@@ -1,4 +1,4 @@
-"""SQLModel table definitions (PROJECT_PLAN.md section 5).
+"""SQLModel table definitions (docs/DESIGN.md section 5).
 
 Constrained columns (library type, mapping confidence, monitor mode, ...) are declared as
 `str`-backed enums for type safety in Python but stored as plain VARCHAR. SQLite has no native
@@ -146,7 +146,7 @@ class DismissedItem(SQLModel, table=True):
 class SpinoffMapping(SQLModel, table=True):
     """Show -> spin-off relation. v1 only ever writes source='local'; the `source`/`confidence`/
     `origin_ref` columns exist from day one so a future community-sync feature is additive
-    (PROJECT_PLAN.md section 2)."""
+    (docs/DESIGN.md section 2)."""
 
     __tablename__ = "spinoff_mappings"
     __table_args__ = (

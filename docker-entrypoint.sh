@@ -1,5 +1,5 @@
 #!/bin/sh
-# Standard linuxserver.io-style PUID/PGID entrypoint (PROJECT_PLAN.md technical challenge #19):
+# Standard linuxserver.io-style PUID/PGID entrypoint (docs/DESIGN.md technical challenge #19):
 # the container starts as root just long enough to create a matching user/group and chown the
 # mounted config volume, then re-execs the real command as that user via gosu.
 set -e

@@ -213,7 +213,7 @@ uvicorn app.main:app --reload
 ```
 
 Tests never touch the network — Plex, TMDb, Radarr and Sonarr are all mocked. See `docs/DEVELOPMENT.md` for
-the conventions this codebase holds itself to, and `PROJECT_PLAN.md` for the design and the
+the conventions this codebase holds itself to, and `docs/DESIGN.md` for the design and the
 28 documented technical challenges behind it.
 
 ## License

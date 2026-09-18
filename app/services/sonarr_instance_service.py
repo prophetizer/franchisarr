@@ -105,7 +105,7 @@ def remember_choice(session: Session, user: User, instance_id: int) -> None:
 
 
 def remember_monitor_mode(session: Session, instance: SonarrInstance, mode: str) -> None:
-    """The add dialog pre-selects the last mode used on this instance (PROJECT_PLAN.md section 5)."""
+    """The add dialog pre-selects the last mode used on this instance (docs/DESIGN.md section 5)."""
     if instance.default_monitor_mode != mode:
         instance.default_monitor_mode = mode
         session.add(instance)

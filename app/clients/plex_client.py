@@ -1,7 +1,7 @@
 """Plex Media Server client.
 
 Returns plain frozen dataclasses, never plexapi objects. Services must not grow a dependency on
-plexapi's object model -- PROJECT_PLAN.md commits to an adapter pattern so Emby/Jellyfin can be
+plexapi's object model -- docs/DESIGN.md commits to an adapter pattern so Emby/Jellyfin can be
 added later, and that only works if the seam is real.
 
 Two things here exist because of the scale this runs at (~3,600 movies, a few hundred shows):

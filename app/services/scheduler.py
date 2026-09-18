@@ -1,6 +1,6 @@
 """In-process APScheduler.
 
-One background scheduler inside the web process (PROJECT_PLAN.md technical challenge #9). At a
+One background scheduler inside the web process (docs/DESIGN.md technical challenge #9). At a
 few thousand items a scan is minutes of mostly-waiting, so a separate worker container would be
 infrastructure for its own sake.
 

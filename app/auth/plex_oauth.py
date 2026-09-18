@@ -1,4 +1,4 @@
-"""Plex sign-in via plex.tv's PIN flow (PROJECT_PLAN.md technical challenge #2).
+"""Plex sign-in via plex.tv's PIN flow (docs/DESIGN.md technical challenge #2).
 
 The flow, which is what Overseerr and Tautulli use:
 

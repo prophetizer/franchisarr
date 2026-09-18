@@ -43,6 +43,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request,os; urllib.request.urlopen('http://localhost:8000' + os.environ.get('BASE_URL','').rstrip('/') + '/health', timeout=3)" || exit 1
 
 # Entrypoint runs as root just long enough to chown /config to PUID/PGID, then drops privileges
-# (see PROJECT_PLAN.md technical challenge #19) — do not set USER here, the entrypoint does it.
+# (see docs/DESIGN.md technical challenge #19) — do not set USER here, the entrypoint does it.
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

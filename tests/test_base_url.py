@@ -1,4 +1,4 @@
-"""Guards against regressing base-URL handling (PROJECT_PLAN.md technical challenge #10):
+"""Guards against regressing base-URL handling (docs/DESIGN.md technical challenge #10):
 every route must be reachable under a configured BASE_URL subpath, not just at root.
 """
 

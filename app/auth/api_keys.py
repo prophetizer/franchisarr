@@ -1,7 +1,7 @@
 """Per-user API keys for the CLI and any future non-browser client.
 
 The CLI is a thin HTTP client against this app's own API rather than a direct database caller
-(PROJECT_PLAN.md decision log), so it needs a credential of its own: `docker exec franchisarr
+(docs/DESIGN.md decision log), so it needs a credential of its own: `docker exec franchisarr
 cli.py scan movies` has no browser session to borrow.
 
 Unlike session tokens, the key itself is stored. It has to be: the user keeps it in a config file

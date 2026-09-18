@@ -1,7 +1,7 @@
 """JSON API.
 
 The CLI and the web UI both come through here, which is the whole point of making the CLI an HTTP
-client: there is one code path to keep correct, not two (PROJECT_PLAN.md decision log).
+client: there is one code path to keep correct, not two (docs/DESIGN.md decision log).
 """
 
 from __future__ import annotations
@@ -311,7 +311,7 @@ def test_instance(session: DbSession, user: RequiredUser, instance_id: int) -> d
 def instance_options(session: DbSession, user: RequiredUser, instance_id: int) -> dict:
     """Quality profiles and root folders, fetched live at add time.
 
-    Options are never stored -- only the chosen default is (PROJECT_PLAN.md section 5). An
+    Options are never stored -- only the chosen default is (docs/DESIGN.md section 5). An
     unreachable instance returns ok=false with a message rather than empty lists, so the add
     dialog can say "can't reach this instance" instead of silently offering nothing
     (technical challenge #15).

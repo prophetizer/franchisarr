@@ -1,4 +1,4 @@
-# Franchisarr — Project Plan
+# Franchisarr — Design
 
 A self-hosted *arr-stack companion app: scans your Plex library, finds movies missing from franchise/collections and TV spin-offs you don't have, and lets you add them to Radarr/Sonarr in one click. Built to be shared publicly with the *arr community, not just for personal use.
 

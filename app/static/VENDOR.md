@@ -3,7 +3,7 @@
 Franchisarr serves these from its own `/static` path rather than a CDN. A self-hosted app on a
 home network should not need outbound internet access to render its own UI, and pinning the files
 here means a CDN outage, a network policy, or an upstream release cannot change what users get.
-There is no build step and no npm (PROJECT_PLAN.md, "Frontend stack").
+There is no build step and no npm (docs/DESIGN.md, "Frontend stack").
 
 | File | Package | Version | Licence | SHA-256 |
 |---|---|---|---|---|

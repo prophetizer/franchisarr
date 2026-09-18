@@ -213,7 +213,7 @@ class RadarrClient:
         """Add a film, monitored and searched immediately by default.
 
         That default matches adding through Radarr's own UI with "search on add" ticked, which is
-        what someone clicking "Add" here means (PROJECT_PLAN.md decision log).
+        what someone clicking "Add" here means (docs/DESIGN.md decision log).
         """
         payload = self.lookup(tmdb_id)
 

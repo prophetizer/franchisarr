@@ -1,7 +1,7 @@
 """The JSON API, and the API-key credential the CLI authenticates with.
 
 The CLI is a thin HTTP client against these same endpoints, so what's covered here covers both
-(PROJECT_PLAN.md decision log).
+(docs/DESIGN.md decision log).
 """
 
 from __future__ import annotations

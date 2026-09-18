@@ -1,6 +1,6 @@
 """TV spin-off detection.
 
-TMDb has no spin-off relation to walk -- there is simply no field for it (PROJECT_PLAN.md
+TMDb has no spin-off relation to walk -- there is simply no field for it (docs/DESIGN.md
 section 2). So this is a hybrid, and the parts are deliberately kept apart:
 
 * **Wikidata discovery** (`source=wikidata`), refreshed by each scan. The only part that finds a

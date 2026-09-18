@@ -1,6 +1,6 @@
 """Read/write access to the install-wide `settings` key/value table, plus first-boot seeding.
 
-Seeding rule (PROJECT_PLAN.md section 6): env vars populate the table **only when it is
+Seeding rule (docs/DESIGN.md section 6): env vars populate the table **only when it is
 completely empty**. Once a single row exists, this module never writes from the environment
 again. The alternative -- filling in individually missing keys on every boot -- resurrects
 settings the user deliberately cleared in the UI, because a stale value in docker-compose

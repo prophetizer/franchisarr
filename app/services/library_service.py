@@ -2,7 +2,7 @@
 
 New libraries arrive disabled. A fresh install scanning everything it finds would go looking for
 franchise gaps in home videos, concert rips and calibration clips -- and the plan is explicit that
-the user chooses (PROJECT_PLAN.md: "not an automatic 'every movie/TV library' scan"). Re-syncing
+the user chooses (docs/DESIGN.md: "not an automatic 'every movie/TV library' scan"). Re-syncing
 never overrides a choice already made.
 """
 

@@ -1,4 +1,4 @@
-"""Resolve a Plex item to a TMDb id (PROJECT_PLAN.md technical challenges #1 and #14).
+"""Resolve a Plex item to a TMDb id (docs/DESIGN.md technical challenges #1 and #14).
 
 Four tiers, most trustworthy first:
 

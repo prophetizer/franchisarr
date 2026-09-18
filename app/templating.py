@@ -3,7 +3,7 @@
 The `url()` global is the single place a link becomes a path. Templates never write a literal
 "/something": Franchisarr is expected to run behind a reverse proxy at a subpath, and one
 hardcoded path breaks the UI for those users while looking perfectly fine at the root
-(PROJECT_PLAN.md technical challenge #10).
+(docs/DESIGN.md technical challenge #10).
 """
 
 from __future__ import annotations

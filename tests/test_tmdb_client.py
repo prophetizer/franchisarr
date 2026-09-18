@@ -1,6 +1,6 @@
 """TMDb client, with particular attention to explaining a bad API key.
 
-Every user brings their own key (PROJECT_PLAN.md decision log), so "my key doesn't work" is the
+Every user brings their own key (docs/DESIGN.md decision log), so "my key doesn't work" is the
 support question this project will get most. Technical challenge #11 lists the failure modes;
 they each get a test.
 """

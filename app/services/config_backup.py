@@ -1,4 +1,4 @@
-"""Config export and import (PROJECT_PLAN.md technical challenge #23).
+"""Config export and import (docs/DESIGN.md technical challenge #23).
 
 Covers what a person configured: settings, instances, spin-off mappings, collection excludes,
 library selection, and each person's dismissals. Not the activity log, and not the scan cache --

@@ -2,7 +2,7 @@
 """Franchisarr command line.
 
 A thin HTTP client against Franchisarr's own API, not a direct database caller
-(PROJECT_PLAN.md decision log). Every command here goes through exactly the same endpoints the
+(docs/DESIGN.md decision log). Every command here goes through exactly the same endpoints the
 web UI uses, so the two can't drift apart, and it works over `docker exec` or remotely.
 
 Configure it with:

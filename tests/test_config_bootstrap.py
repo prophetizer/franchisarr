@@ -1,4 +1,4 @@
-"""Env-var bootstrap of the settings table (PROJECT_PLAN.md section 6)."""
+"""Env-var bootstrap of the settings table (docs/DESIGN.md section 6)."""
 
 from __future__ import annotations
 
