@@ -95,9 +95,15 @@ def scan_movie_libraries(
     *,
     fanart: FanartClient | None = None,
     force_refresh: bool = False,
+    enrich: bool = True,
     progress=None,
 ) -> ScanSummary:
-    """Refresh the snapshot for every enabled movie library, then cache their collections."""
+    """Refresh the snapshot for every enabled movie library, then cache their collections.
+
+    `enrich=False` stops after the collections -- the part the Collections page needs -- and
+    leaves directors to `enrich_movies`. A first scan uses that split so the pages fill in
+    minutes rather than after every film's credits have been read.
+    """
     summary = ScanSummary()
     ttl = timedelta(0) if force_refresh else cache_ttl(session)
     started = utcnow()
@@ -146,13 +152,19 @@ def scan_movie_libraries(
     summary.collections_found = _cache_collections(
         session, tmdb, ttl, summary, progress, fanart=fanart
     )
+    if enrich and not summary.tmdb_auth_failed:
+        enrich_movies(session, tmdb, ttl, summary, progress)
+    return summary
 
-    # Directors last: it is the one step that touches every owned film, and on a first run
-    # that is 3,400 credits requests. Enrichment, so a failure costs only the Directors page.
+
+def enrich_movies(
+    session: Session, tmdb: TmdbClient, ttl: timedelta, summary: ScanSummary, progress=None
+) -> None:
+    """The film-side enrichment: directors. Touches every owned film -- 3,400 credits requests
+    on a first run -- so it is the step a first scan defers. A failure costs only the Directors
+    page."""
     from app.services import director_service
 
-    if summary.tmdb_auth_failed:
-        return summary
     try:
         director_service.discover(session, tmdb, ttl=ttl, progress=progress)
     except TmdbAuthError as exc:
@@ -160,7 +172,6 @@ def scan_movie_libraries(
         summary.tmdb_auth_failed = True
     except TmdbError as exc:
         summary.errors.append(f"Director lookup failed: {exc}")
-    return summary
 
 
 def scan_show_libraries(
@@ -170,9 +181,13 @@ def scan_show_libraries(
     *,
     wikidata: WikidataClient | None = None,
     force_refresh: bool = False,
+    enrich: bool = True,
     progress=None,
 ) -> ScanSummary:
     """Refresh the snapshot for every enabled TV library, and cache each show's TMDb details.
+
+    `enrich=False` stops after the show cache and leaves spin-offs, continuations and franchises
+    to `enrich_shows`, for the same reason the movie scan defers directors.
 
     Deliberately a sibling of the movie scan rather than a generalisation of it: the two share
     the snapshot table but almost nothing else, since shows have no collections to walk and their
@@ -223,9 +238,18 @@ def scan_show_libraries(
         summary.removed += _prune_missing(session, library.plex_library_key, started)
 
     _cache_shows(session, tmdb, ttl, summary, progress)
-    if wikidata is not None:
-        _discover_spinoffs(session, wikidata, tmdb, ttl, summary, progress)
+    if enrich and wikidata is not None:
+        enrich_shows(session, wikidata, tmdb, ttl, summary, progress)
     return summary
+
+
+def enrich_shows(
+    session: Session, wikidata: WikidataClient, tmdb: TmdbClient, ttl: timedelta,
+    summary: ScanSummary, progress=None,
+) -> None:
+    """The TV-side enrichment, all from Wikidata: spin-offs, continuations across media, and
+    franchises. The franchise step alone is minutes on a first run."""
+    _discover_spinoffs(session, wikidata, tmdb, ttl, summary, progress)
 
 
 def _discover_spinoffs(

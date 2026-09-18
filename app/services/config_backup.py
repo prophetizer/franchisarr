@@ -1,8 +1,13 @@
 """Config export and import (PROJECT_PLAN.md technical challenge #23).
 
-Covers what a person configured: settings, instances, spin-off mappings, collection excludes and
-library selection. Not the activity log, and not the scan cache -- those are local history and
-re-derivable data, and shipping them would make the file enormous for no gain.
+Covers what a person configured: settings, instances, spin-off mappings, collection excludes,
+library selection, and each person's dismissals. Not the activity log, and not the scan cache --
+those are local history and re-derivable data, and shipping them would make the file enormous
+for no gain.
+
+Dismissals are keyed by username rather than user id, because ids are assigned in whatever order
+people first signed in and will not match on a new install. A dismissal whose user does not
+exist yet is skipped and counted, not attached to whoever ran the import.
 
 A restorable export necessarily contains live API keys, so the file is as sensitive as the
 credentials in it. Two things follow. The UI must say so plainly rather than presenting it as a
@@ -24,11 +29,13 @@ from sqlmodel import Session, select
 from app import __version__
 from app.models import (
     CollectionExclude,
+    DismissedItem,
     IncludedLibrary,
     RadarrInstance,
     Setting,
     SonarrInstance,
     SpinoffMapping,
+    User,
 )
 from app.services.settings_service import SECRET_KEYS
 
@@ -109,7 +116,29 @@ def export_config(session: Session, *, redact: bool = False) -> dict:
             }
             for lib in session.exec(select(IncludedLibrary)).all()
         ],
+        "dismissed_items": [
+            {
+                "username": _username(session, d.user_id),
+                "item_type": d.item_type,
+                "tmdb_id": d.tmdb_id,
+            }
+            for d in session.exec(select(DismissedItem)).all()
+            if _username(session, d.user_id)
+        ],
     }
+
+
+def _username(session: Session, user_id: int) -> str | None:
+    user = session.get(User, user_id)
+    if user is None:
+        return None
+    return user.plex_username or user.local_username
+
+
+def _user_by_name(session: Session, name: str) -> User | None:
+    return session.exec(
+        select(User).where((User.plex_username == name) | (User.local_username == name))
+    ).first()
 
 
 def validate(document: Any) -> dict:
@@ -135,6 +164,7 @@ def validate(document: Any) -> dict:
         ("spinoff_mappings", list),
         ("collection_excludes", list),
         ("included_libraries", list),
+        ("dismissed_items", list),
     ):
         if key in document and not isinstance(document[key], expected):
             raise InvalidBackup(f"The '{key}' section is the wrong shape.")
@@ -162,6 +192,7 @@ def import_config(session: Session, document: Any, *, replace: bool = False) -> 
     """
     document = validate(document)
     counts = {"settings": 0, "radarr": 0, "sonarr": 0, "mappings": 0, "excludes": 0,
+              "dismissals": 0, "dismissals_unmatched": 0,
               "libraries": 0, "skipped_redacted": 0, "already_present": 0}
 
     from app.services.settings_service import set_setting
@@ -228,6 +259,31 @@ def import_config(session: Session, document: Any, *, replace: bool = False) -> 
                                          if hasattr(CollectionExclude, k)}))
         session.flush()
         counts["excludes"] += 1
+
+    for entry in document.get("dismissed_items", []):
+        if not isinstance(entry, dict) or not entry.get("username"):
+            continue
+        user = _user_by_name(session, str(entry["username"]))
+        if user is None:
+            counts["dismissals_unmatched"] += 1
+            continue
+        try:
+            tmdb_id = int(entry.get("tmdb_id"))
+        except (TypeError, ValueError):
+            continue
+        item_type = str(entry.get("item_type") or "")
+        if session.exec(
+            select(DismissedItem).where(
+                DismissedItem.user_id == user.id,
+                DismissedItem.item_type == item_type,
+                DismissedItem.tmdb_id == tmdb_id,
+            )
+        ).first():
+            counts["already_present"] += 1
+            continue
+        session.add(DismissedItem(user_id=user.id, item_type=item_type, tmdb_id=tmdb_id))
+        session.flush()
+        counts["dismissals"] += 1
 
     for entry in document.get("included_libraries", []):
         existing = session.exec(

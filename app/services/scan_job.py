@@ -13,6 +13,7 @@ of things already dealt with, which is how people learn to ignore notifications.
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 from dataclasses import dataclass, field
 
 from sqlmodel import Session, col, select
@@ -43,6 +44,8 @@ class ScanJobResult:
     shows: scan_service.ScanSummary | None = None
     instances_refreshed: int = 0
     report: notifier.ScanReport = field(default_factory=notifier.ScanReport)
+    #: True when this was a first scan and the enrichment steps were left for a follow-up job.
+    enrichment_deferred: bool = False
     notified: bool = False
     errors: list[str] = field(default_factory=list)
 
@@ -113,6 +116,10 @@ def run(
     """
     result = ScanJobResult()
     first_run = not has_ever_scanned(session)
+    # A first scan does the core work only -- Plex, TMDb, collections -- so the pages fill in
+    # minutes. Directors, spin-offs, continuations and franchises are minutes more on a real
+    # library and follow in a second job, which run_in_background starts when this one ends.
+    result.enrichment_deferred = first_run
 
     plex, tmdb, fanart, errors = _clients(session)
     if errors:
@@ -120,12 +127,13 @@ def run(
         return result
 
     result.movies = scan_service.scan_movie_libraries(
-        session, plex, tmdb, fanart=fanart, force_refresh=force_refresh, progress=progress
+        session, plex, tmdb, fanart=fanart, force_refresh=force_refresh,
+        enrich=not first_run, progress=progress,
     )
     # Wikidata needs no key and no account, so spin-off discovery is simply always on.
     result.shows = scan_service.scan_show_libraries(
         session, plex, tmdb, wikidata=WikidataClient(),
-        force_refresh=force_refresh, progress=progress,
+        force_refresh=force_refresh, enrich=not first_run, progress=progress,
     )
     for summary in (result.movies, result.shows):
         # "No movie libraries are enabled" is a normal state for a TV-only install, not a fault.
@@ -212,6 +220,24 @@ def prime_seen_gaps(session: Session) -> int:
     return primed
 
 
+def run_enrichment(session: Session, *, progress=None, force_refresh: bool = False) -> list[str]:
+    """The deferred half of a first scan: directors, spin-offs, continuations, franchises.
+
+    Its own job with its own progress, so the page says what is happening and a scheduled scan
+    cannot collide with it. Returns the errors, if any.
+    """
+    plex, tmdb, fanart, errors = _clients(session)
+    if errors:
+        return errors
+    ttl = timedelta(0) if force_refresh else scan_service.cache_ttl(session)
+    movies = scan_service.ScanSummary()
+    scan_service.enrich_movies(session, tmdb, ttl, movies, progress)
+    shows = scan_service.ScanSummary()
+    if not movies.tmdb_auth_failed:
+        scan_service.enrich_shows(session, WikidataClient(), tmdb, ttl, shows, progress)
+    return [*movies.errors, *shows.errors]
+
+
 def run_in_background(trigger: str = "manual", *, force_refresh: bool = False) -> bool:
     """Start a scan on a background thread. False means one is already running.
 
@@ -235,18 +261,51 @@ def run_in_background(trigger: str = "manual", *, force_refresh: bool = False) -
         return False
 
     def _work() -> None:
+        deferred = False
         try:
             with DbSession(get_engine()) as session:
                 result = run(session, notify=True, progress=scan_state.update,
                              force_refresh=force_refresh)
-                scan_state.finish(_describe(result), result.errors)
+                deferred = result.enrichment_deferred
+                summary = _describe(result)
+                if deferred:
+                    summary += (" Directors, spin-offs and franchises are being worked out now"
+                                " -- a few minutes more, in the background.")
+                scan_state.finish(summary, result.errors)
         except Exception as exc:  # noqa: BLE001
             # Anything escaping here would leave the state stuck on "running" forever, and the
             # button would never come back.
             logger.exception("Background scan failed")
             scan_state.fail(str(exc) or exc.__class__.__name__)
+            return
+        if deferred:
+            _start_enrichment(force_refresh=force_refresh)
 
     threading.Thread(target=_work, name="franchisarr-scan", daemon=True).start()
+    return True
+
+
+def _start_enrichment(*, force_refresh: bool = False) -> bool:
+    import threading
+
+    from sqlmodel import Session as DbSession
+
+    from app.db import get_engine
+
+    if not scan_state.begin("enrichment"):
+        return False
+
+    def _work() -> None:
+        try:
+            with DbSession(get_engine()) as session:
+                errors = run_enrichment(session, progress=scan_state.update,
+                                        force_refresh=force_refresh)
+                scan_state.finish("Directors, spin-offs and franchises are ready.", errors)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Background enrichment failed")
+            scan_state.fail(str(exc) or exc.__class__.__name__)
+
+    threading.Thread(target=_work, name="franchisarr-enrich", daemon=True).start()
     return True
 
 

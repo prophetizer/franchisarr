@@ -497,3 +497,32 @@ def test_the_theme_toggle_is_present_and_defaults_to_dark(client: TestClient) ->
     assert 'data-theme="dark"' in body
     assert "franchisarrToggleTheme" in body
     assert "franchisarr-theme" in body, "the preference should persist per viewer"
+
+
+def test_dismissals_are_exported_by_username_and_restored_to_the_same_person(session: Session) -> None:
+    """Every 'Not interested' ever clicked, keyed by name: user ids are assigned in sign-in
+    order and will not match on a new install. A dismissal whose person does not exist yet is
+    counted, not handed to whoever ran the import."""
+    from app.models import DismissedItem, User
+
+    alice = User(plex_username="alice"); bob = User(local_username="bob")
+    session.add(alice); session.add(bob); session.commit()
+    session.add(DismissedItem(user_id=alice.id, item_type="movie", tmdb_id=306))
+    session.add(DismissedItem(user_id=bob.id, item_type="show", tmdb_id=17610))
+    session.commit()
+
+    document = config_backup.export_config(session)
+    assert sorted((d["username"], d["item_type"], d["tmdb_id"]) for d in document["dismissed_items"]) == [
+        ("alice", "movie", 306), ("bob", "show", 17610)]
+
+    # A new install where only alice has signed in so far.
+    for row in session.exec(select(DismissedItem)).all():
+        session.delete(row)
+    session.delete(bob); session.commit()
+
+    counts = config_backup.import_config(session, document)
+
+    assert counts["dismissals"] == 1 and counts["dismissals_unmatched"] == 1
+    restored = session.exec(select(DismissedItem)).one()
+    assert (restored.user_id, restored.tmdb_id) == (alice.id, 306)
+    assert config_backup.import_config(session, document)["dismissals"] == 0, "idempotent"

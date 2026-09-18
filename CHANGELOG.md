@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Config export now includes dismissals** — every "Not interested" ever clicked, keyed by
+  username so they land on the right person on a new install. A dismissal whose person hasn't
+  signed in yet is counted and skipped, never handed to whoever ran the import.
+
+### Changed
+
+- **A first scan is two passes.** Plex, TMDb and collections first, so the pages fill in a few
+  minutes; directors, spin-offs, continuations and franchises follow in a second background job
+  with its own progress. Same total work, but a new install sees results in three minutes
+  instead of fifteen. Later scans are one pass, cheaply, inside the cache.
+
 ## [0.9.0] — 2026-09-18
 
 ### Added

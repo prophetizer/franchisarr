@@ -295,3 +295,63 @@ def test_a_scan_without_tmdb_configured_reports_why(session: Session) -> None:
     result = scan_job.run(session, notify=False)
 
     assert any("TMDb" in error for error in result.errors)
+
+
+def _configured(session: Session) -> None:
+    set_setting(session, SettingKey.PLEX_URL, "http://plex.test:32400")
+    set_setting(session, SettingKey.PLEX_TOKEN, "t")
+    set_setting(session, SettingKey.TMDB_API_KEY, "k" * 32)
+    session.commit()
+
+
+def test_a_first_scan_defers_enrichment_and_a_later_one_does_not(session: Session, monkeypatch) -> None:
+    """On a real library the enrichment steps -- every film's credits, every franchise's roster
+    -- are ten minutes on top of a three-minute scan. A new user clicking "Scan" waits for the
+    three, and the rest follows in a second job."""
+    _library_with_gap(session)
+    _configured(session)
+    seen: list[bool] = []
+
+    def fake_scan(*a, enrich=True, **k):
+        seen.append(enrich)
+        return scan_job.scan_service.ScanSummary()
+
+    monkeypatch.setattr(scan_job.scan_service, "scan_movie_libraries", fake_scan)
+    monkeypatch.setattr(scan_job.scan_service, "scan_show_libraries", fake_scan)
+    monkeypatch.setattr(scan_job.instance_service, "refresh_all", lambda s: [])
+    monkeypatch.setattr(scan_job.sonarr_instance_service, "refresh_all", lambda s: [])
+
+    first = scan_job.run(session)
+    assert first.enrichment_deferred is True
+    assert seen == [False, False], "core only on the first scan"
+
+    second = scan_job.run(session)
+    assert second.enrichment_deferred is False
+    assert seen[2:] == [True, True], "a later scan does everything, cheaply, inside the TTL"
+
+
+def test_the_enrichment_job_runs_both_halves_and_stops_on_a_dead_key(session: Session, monkeypatch) -> None:
+    _configured(session)
+    calls: list[str] = []
+
+    def movies(session, tmdb, ttl, summary, progress=None):
+        calls.append("movies")
+
+    def shows(session, wikidata, tmdb, ttl, summary, progress=None):
+        calls.append("shows")
+
+    monkeypatch.setattr(scan_job.scan_service, "enrich_movies", movies)
+    monkeypatch.setattr(scan_job.scan_service, "enrich_shows", shows)
+    assert scan_job.run_enrichment(session) == []
+    assert calls == ["movies", "shows"]
+
+    def movies_dead_key(session, tmdb, ttl, summary, progress=None):
+        calls.append("movies")
+        summary.errors.append("TMDb rejected that API key.")
+        summary.tmdb_auth_failed = True
+
+    calls.clear()
+    monkeypatch.setattr(scan_job.scan_service, "enrich_movies", movies_dead_key)
+    errors = scan_job.run_enrichment(session)
+    assert calls == ["movies"], "the TV half is not attempted with a key TMDb just rejected"
+    assert errors == ["TMDb rejected that API key."]
