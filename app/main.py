@@ -26,7 +26,7 @@ from app.auth.dependencies import (
 from app.auth.local_admin import seed_local_admin_from_env
 from app.services.instance_service import seed_radarr_from_env
 from app.services.sonarr_instance_service import seed_sonarr_from_env
-from app.clients.media_server import MediaServerError, MediaServerKind
+
 from app.config import get_settings
 from app.db import get_engine, run_migrations
 from app.logging_config import configure_logging, register_secret
@@ -36,10 +36,11 @@ from app.routes_movies import router as movies_router
 from app.routes_directors import router as directors_router
 from app.routes_franchises import router as franchises_router
 from app.routes_lists import router as lists_router
+from app.routes_media_servers import router as media_servers_router
 from app.routes_preferences import router as preferences_router
 from app.routes_tv import router as tv_router
 from app.routes_auth import router as auth_router
-from app.services import library_service
+from app.services import library_service, media_server_service
 from app.services.auth_service import discover_machine_identifier
 from app.services import scheduler as scheduler_service
 from app.services.settings_service import SettingKey, get_setting, seed_settings_from_env
@@ -63,20 +64,17 @@ def _discover_plex_server(session: Session) -> None:
     """
     from app.services import media_server_service
 
-    if media_server_service.kind(session) != MediaServerKind.PLEX:
-        return  # the server-identity check is a Plex sign-in concern only
-    client = media_server_service.client_for(session)
-    if client is None:
-        return
-
-    identifier = discover_machine_identifier(session, client)
-    if identifier:
-        logger.info("Plex sign-in is available")
-    else:
-        logger.warning(
-            "Could not reach Plex at startup, so Plex sign-in stays unavailable until the next "
-            "restart. The local admin account is unaffected."
-        )
+    for server in media_server_service.plex_servers(session):
+        client = media_server_service.client_for(server)
+        identifier = discover_machine_identifier(session, server, client)
+        if identifier:
+            logger.info("Plex sign-in is available through %r", server.name)
+        else:
+            logger.warning(
+                "Could not reach Plex server %r at startup, so Plex sign-in through it stays "
+                "unavailable until the next restart. The local admin account is unaffected.",
+                server.name,
+            )
 
 
 @asynccontextmanager
@@ -96,6 +94,7 @@ async def lifespan(app: FastAPI):
         seed_local_admin_from_env(session, settings)
         seed_radarr_from_env(session, settings)
         seed_sonarr_from_env(session, settings)
+        media_server_service.seed_from_env(session, settings)
         _discover_plex_server(session)
         scheduler_service.start(session)
 
@@ -163,30 +162,16 @@ def index(request: Request, session: DbSession, user: RequiredUser):
 
 @router.get("/libraries", response_class=HTMLResponse)
 def libraries_form(request: Request, session: DbSession, user: RequiredUser):
-    """Show the library checkboxes, refreshing the list from Plex when it's reachable."""
-    error = None
+    """Show the library checkboxes, per server, refreshing each list when its server is up."""
     from app.services import media_server_service
 
-    client = media_server_service.client_for(session)
-    if client is None:
-        error = (f"{media_server_service.missing_message(session)[:-1]}, "
-                 "so no libraries could be listed.")
-    else:
-        try:
-            library_service.sync_from_plex(session, client)
-            # Learning the server's identity here is what makes Plex sign-in possible at all.
-            if client.kind == MediaServerKind.PLEX:
-                discover_machine_identifier(session, client)
-        except MediaServerError as exc:
-            # Fall back to what was stored: an unreachable Plex must not make the page unusable,
-            # or a user could be stuck unable to change their selection until Plex comes back.
-            error = f"{exc}. Showing the libraries last seen."
-
+    groups = library_service.sync_all(session)
     return get_templates().TemplateResponse(
         request,
         "libraries.html",
-        {"user": user, "libraries": library_service.list_libraries(session), "error": error,
-         "server_label": media_server_service.label(session)},
+        {"user": user, "groups": groups,
+         "no_servers": not media_server_service.is_configured(session),
+         "libraries": [lib for group in groups for lib in group.libraries]},
     )
 
 
@@ -195,7 +180,7 @@ def libraries_save(
     request: Request,
     session: DbSession,
     user: RequiredUser,
-    keys: Annotated[list[str], Form()] = [],
+    keys: Annotated[list[int], Form()] = [],
 ):
     library_service.set_enabled_libraries(session, keys)
     # First run: one skippable page of taste settings, each with an example. Never shown twice.
@@ -212,6 +197,7 @@ app.include_router(router, prefix=settings.base_url)
 app.include_router(auth_router, prefix=settings.base_url)
 app.include_router(movies_router, prefix=settings.base_url)
 app.include_router(instances_router, prefix=settings.base_url)
+app.include_router(media_servers_router, prefix=settings.base_url)
 app.include_router(tv_router, prefix=settings.base_url)
 app.include_router(franchises_router, prefix=settings.base_url)
 app.include_router(directors_router, prefix=settings.base_url)

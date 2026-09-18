@@ -27,7 +27,7 @@
       {% else %}
         <h1>{{ gap.name }}</h1>
       {% endif %}
-      <p>{{ gap.owned | length }} of {{ gap.total }} in your library.</p>
+      <p>{{ gap.owned | length }} of {{ gap.total }} in your library{% if gap.watched_count %}, {{ gap.watched_count }} watched{% endif %}.</p>
     </hgroup>
   </div>
 </div>
@@ -110,7 +110,7 @@
             <img class="film-poster" src="{{ movie.poster }}" alt="" loading="lazy"
                  decoding="async" width="92" height="138">
           {% endif %}
-          <span class="film-title">{{ movie.title }}</span>
+          <span class="film-title">{{ movie.title }}{% with entry=movie %}{% include "partials/owned_mark.html" %}{% endwith %}</span>
           <span class="film-meta muted">{{ movie.release_year or '' }}</span>
         </li>
       {% endfor %}

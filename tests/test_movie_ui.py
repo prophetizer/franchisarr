@@ -22,6 +22,7 @@ from app.models import (
     TmdbShow,
 )
 from app.services import instance_service
+from tests.conftest import ensure_server
 
 BASE = "/franchisarr"
 PASSWORD = "s3cret-passphrase"
@@ -35,7 +36,7 @@ def client(app_factory):
     with TestClient(module.app, follow_redirects=False) as test_client:
         with Session(get_engine()) as session:
             create_local_admin(session, "admin", PASSWORD)
-            session.add(IncludedLibrary(library_key="1", library_name="Movies",
+            session.add(IncludedLibrary(server_id=ensure_server(session), library_key="1", library_name="Movies",
                                         library_type="movie", enabled=True))
             session.commit()
         test_client.post(f"{BASE}/login", data={"username": "admin", "password": PASSWORD})
@@ -57,7 +58,7 @@ def _seed_collection(*, with_upcoming: bool = False) -> None:
             session.add(TmdbCollectionMovie(collection_id=COLLECTION, tmdb_movie_id=tmdb_id,
                                             title=title, release_year=year, release_date=date,
                                             position=position))
-        session.add(LibraryItem(library_key="1", item_key="1",
+        session.add(LibraryItem(server_id=ensure_server(session), library_key="1", item_key="1",
                                 item_type=ItemType.MOVIE.value, title="Beverly Hills Cop",
                                 year=1984, tmdb_id=90, match_source=MatchSource.GUID.value))
         session.add(TmdbMovie(tmdb_id=90, title="Beverly Hills Cop", collection_id=COLLECTION))
@@ -276,7 +277,7 @@ def _own_show(tmdb_id: int, title: str) -> None:
     from app.models import ItemType as _IT
 
     with Session(get_engine()) as session:
-        session.add(LibraryItem(library_key="2", item_key=str(tmdb_id),
+        session.add(LibraryItem(server_id=ensure_server(session), library_key="2", item_key=str(tmdb_id),
                                 item_type=_IT.SHOW.value, title=title, year=2003,
                                 tmdb_id=tmdb_id, match_source=MatchSource.GUID.value))
         session.commit()

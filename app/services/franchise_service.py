@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 
 from sqlmodel import Session, col, delete, select
@@ -46,6 +46,13 @@ class Title:
     #: "franchise". Shown so the user knows how much to trust it.
     via: str = ""
     note: str = ""
+    #: For owned titles: which servers hold it, and whether it has been watched on any.
+    servers: tuple[str, ...] = ()
+    watched: bool | None = None
+
+    @property
+    def where(self) -> str:
+        return ", ".join(self.servers)
 
     @property
     def poster(self) -> str | None:
@@ -279,6 +286,15 @@ def franchise_views(
     in_radarr = movie_gap_service.radarr_known_ids(session)
     in_sonarr = tv_spinoff_service.sonarr_known_ids(session)
     dismissed = _dismissed(session, user_id)
+    from app.services.ownership_service import owned_details
+
+    film_details = owned_details(session, ItemType.MOVIE.value)
+    show_details = owned_details(session, ItemType.SHOW.value)
+
+    def with_ownership(t: Title) -> Title:
+        info = (film_details if t.item_type == ItemType.MOVIE.value else show_details).get(t.tmdb_id)
+        return replace(t, servers=info.servers, watched=info.watched) if info else t
+
     include_minor = include_tv_films(session)
 
     gaps = movie_gap_service.collection_gaps(session, user_id, today=today)
@@ -319,9 +335,9 @@ def franchise_views(
                       poster_path=m.poster_path, via="franchise",
                       note=f"Wikidata files it under {franchise.name}")
             if m.item_type == ItemType.MOVIE.value and m.tmdb_id in owned_films:
-                view.owned_films.append(t); film_ids.add(m.tmdb_id)
+                view.owned_films.append(with_ownership(t)); film_ids.add(m.tmdb_id)
             elif m.item_type == ItemType.SHOW.value and m.tmdb_id in owned_shows:
-                view.owned_shows.append(t); show_ids.add(m.tmdb_id)
+                view.owned_shows.append(with_ownership(t)); show_ids.add(m.tmdb_id)
 
         # Collections the owned films belong to: their gaps and upcoming films, and artwork.
         seen_gaps: set[int] = set()

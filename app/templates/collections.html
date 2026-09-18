@@ -33,9 +33,15 @@
   <div class="gap-controls">
     <p class="gap-sort">
       Sort by
-      {% if sort == 'rating' %}<strong>rating</strong>{% else %}<a href="{{ url('/collections') }}">rating</a>{% endif %}
+      {% if sort == 'rating' %}<strong>rating</strong>{% else %}<a href="{{ url('/collections' ~ ('?started=1' if started else '')) }}">rating</a>{% endif %}
       ·
-      {% if sort == 'name' %}<strong>name</strong>{% else %}<a href="{{ url('/collections?sort=name') }}">name</a>{% endif %}
+      {% if sort == 'name' %}<strong>name</strong>{% else %}<a href="{{ url('/collections?sort=name' ~ ('&started=1' if started else '')) }}">name</a>{% endif %}
+      {% if watched_known %}
+        · Show
+        {% if started %}<strong>started watching</strong>{% else %}<a href="{{ url('/collections?started=1' ~ ('&sort=name' if sort == 'name' else '')) }}">started watching</a>{% endif %}
+        /
+        {% if not started %}<strong>all</strong>{% else %}<a href="{{ url('/collections' ~ ('?sort=name' if sort == 'name' else '')) }}">all</a>{% endif %}
+      {% endif %}
     </p>
     <form method="post" action="{{ url('/collections/rating-filter') }}" class="gap-filter">
       <label for="min_rating">Hide films rated below</label>
@@ -69,7 +75,7 @@
           <a href="{{ url('/collections/' ~ gap.collection_id) }}"><strong>{{ gap.name }}</strong></a>
         </header>
         <p class="collection-counts">
-          <span class="count-owned">{{ gap.owned | length }} owned</span>
+          <span class="count-owned">{{ gap.owned | length }} owned{% if gap.watched_count %}, {{ gap.watched_count }} watched{% endif %}</span>
           <span class="count-missing">{{ gap.missing | length }} missing</span>
           {% if gap.upcoming %}
             <span class="count-upcoming">{{ gap.upcoming | length }} coming soon</span>

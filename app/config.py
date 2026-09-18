@@ -35,16 +35,10 @@ def _env_or_none(name: str) -> str | None:
 
 
 def _media_server_kind() -> str | None:
-    """MEDIA_SERVER if set; otherwise inferred from which server has a URL, Plex first."""
+    """MEDIA_SERVER, when it names a real kind. It only limits first-boot seeding now: with it
+    unset, every server that has a URL and credential in the environment is added."""
     explicit = _env("MEDIA_SERVER").lower()
-    if explicit in ("plex", "jellyfin", "emby"):
-        return explicit
-    if explicit:
-        return None  # a typo falls back to the stored default rather than picking something
-    for kind, var in (("plex", "PLEX_URL"), ("jellyfin", "JELLYFIN_URL"), ("emby", "EMBY_URL")):
-        if _env(var):
-            return kind
-    return None
+    return explicit if explicit in ("plex", "jellyfin", "emby") else None
 
 
 def parse_bool(raw: str | None, default: bool = False) -> bool:
@@ -69,8 +63,8 @@ class EnvSettings:
     #: plain HTTP, where a Secure cookie would simply never be sent and nobody could log in.
     session_cookie_secure: bool = False
 
-    #: plex | jellyfin | emby. Defaults to plex, and to whichever server has a URL configured
-    #: when plex does not -- so a Jellyfin-only .env needs no extra line.
+    #: plex | jellyfin | emby. Optional: limits the first-boot bootstrap to one kind. Unset,
+    #: every server with a URL and credential below is added, and all are scanned together.
     media_server: str | None = None
     plex_url: str | None = None
     plex_token: str | None = None

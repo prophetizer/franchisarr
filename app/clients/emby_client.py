@@ -48,6 +48,24 @@ class EmbyAuthError(EmbyClientError):
     """The API key was rejected."""
 
 
+def _watched(item: dict) -> bool | None:
+    """Played state from the UserData a user-scoped listing carries. A film is watched when
+    played; a series when any of it has been (`Played` there means every episode)."""
+    data = item.get("UserData")
+    if not isinstance(data, dict):
+        return None
+    if data.get("Played"):
+        return True
+    percent = data.get("PlayedPercentage")
+    if isinstance(percent, (int, float)) and percent > 0:
+        return True
+    unplayed = data.get("UnplayedItemCount")
+    child_count = item.get("RecursiveItemCount") or item.get("ChildCount")
+    if isinstance(unplayed, int) and isinstance(child_count, int) and child_count > 0:
+        return unplayed < child_count
+    return False
+
+
 def _external_ids(provider_ids: dict | None) -> ExternalIds:
     """`ProviderIds` keys are capitalised inconsistently across plugins ("Tmdb", "tmdb",
     "TMDB"); compare case-insensitively."""
@@ -72,8 +90,13 @@ class EmbyLikeClient:
         kind: MediaServerKind = MediaServerKind.JELLYFIN,
         timeout: int = DEFAULT_TIMEOUT,
         session: requests.Session | None = None,
+        watched_user: str | None = None,
     ) -> None:
         self.kind = kind
+        #: Whose watched state to read. An API key belongs to no one, so the server has to be
+        #: asked on behalf of a user; None means the first administrator.
+        self._watched_user = (watched_user or "").strip() or None
+        self._watched_user_id: str | None | bool = False  # False: not looked up yet
         self._base = base_url.rstrip("/")
         self._api_key = api_key.strip()
         self._timeout = timeout
@@ -137,17 +160,54 @@ class EmbyLikeClient:
                                           library_type=library_type))
         return libraries
 
+    def list_users(self) -> list[dict]:
+        """Accounts on the server: {"id", "name", "is_admin"}."""
+        payload = self._get("/Users")
+        users = []
+        for user in payload if isinstance(payload, list) else []:
+            if isinstance(user, dict) and user.get("Id"):
+                users.append({
+                    "id": str(user["Id"]),
+                    "name": str(user.get("Name") or ""),
+                    "is_admin": bool((user.get("Policy") or {}).get("IsAdministrator")),
+                })
+        return users
+
+    def watched_user_id(self) -> str | None:
+        """The account whose play state the listings carry, looked up once per client."""
+        if self._watched_user_id is False:
+            self._watched_user_id = None
+            try:
+                users = self.list_users()
+            except EmbyClientError as exc:
+                logger.warning("%s: could not list users, so watched state is unknown: %s",
+                               self.label, exc)
+                return None
+            if self._watched_user:
+                match = next((u for u in users if u["name"].lower() == self._watched_user.lower()), None)
+                if match is None:
+                    logger.warning("%s has no user named %r; watched state is unknown",
+                                   self.label, self._watched_user)
+            else:
+                match = next((u for u in users if u["is_admin"]), None) or (users[0] if users else None)
+            self._watched_user_id = match["id"] if match else None
+        return self._watched_user_id
+
     def _iter_items(self, library_key: str | int, item_type: str) -> Iterator[dict]:
         start = 0
+        user_id = self.watched_user_id()
         while True:
-            page = self._get("/Items", {
+            params = {
                 "ParentId": str(library_key),
                 "Recursive": "true",
                 "IncludeItemTypes": item_type,
                 "Fields": "ProviderIds,ProductionYear",
                 "StartIndex": start,
                 "Limit": PAGE_SIZE,
-            })
+            }
+            if user_id:
+                params["UserId"] = user_id  # makes each item carry that account's UserData
+            page = self._get("/Items", params)
             items = page.get("Items") if isinstance(page, dict) else None
             if not items:
                 return
@@ -163,6 +223,7 @@ class EmbyLikeClient:
                 title=str(item.get("Name") or ""),
                 year=item.get("ProductionYear") if isinstance(item.get("ProductionYear"), int) else None,
                 external_ids=_external_ids(item.get("ProviderIds")),
+                watched=_watched(item),
             )
 
     def iter_shows(self, library_key: str | int) -> Iterator[MediaShow]:
@@ -172,6 +233,7 @@ class EmbyLikeClient:
                 title=str(item.get("Name") or ""),
                 year=item.get("ProductionYear") if isinstance(item.get("ProductionYear"), int) else None,
                 external_ids=_external_ids(item.get("ProviderIds")),
+                watched=_watched(item),
             )
 
     # ---------------------------------------------------------------- sign-in

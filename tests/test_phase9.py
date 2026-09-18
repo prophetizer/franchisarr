@@ -22,6 +22,7 @@ from app.models import (
     User,
 )
 from app.services import config_backup, instance_service, sonarr_instance_service, update_checker
+from tests.conftest import seed_server
 from app.services.settings_service import SettingKey, get_setting, set_setting
 
 BASE = "/franchisarr"
@@ -152,9 +153,9 @@ def test_the_activity_page_says_it_is_not_tracking_downloads(client: TestClient)
 
 def _seed_config(session: Session) -> None:
     set_setting(session, SettingKey.TMDB_API_KEY, "tmdb-secret-key")
-    set_setting(session, SettingKey.PLEX_TOKEN, "plex-secret-token")
     set_setting(session, SettingKey.SCAN_SCHEDULE_CRON, "0 3 * * *")
     session.commit()
+    seed_server(session, "plex", credential="plex-secret-token")
     instance_service.create_radarr(session, name="HD", url=RADARR, api_key="radarr-secret")
     sonarr_instance_service.create_sonarr(session, name="TV", url="http://sonarr.test:8989",
                                           api_key="sonarr-secret")
@@ -529,14 +530,53 @@ def test_dismissals_are_exported_by_username_and_restored_to_the_same_person(ses
 
 
 def test_an_export_from_before_the_media_server_rename_still_imports(session: Session) -> None:
-    """0.12 renamed plex_library_key to library_key. A backup taken on 0.11 has the old names."""
-    from app.models import IncludedLibrary
+    """0.12 renamed plex_library_key to library_key, and 0.13 moved the server itself out of the
+    settings. A backup taken on 0.11 has the old names and describes its Plex in settings; the
+    import makes a server row from that and hangs the library off it."""
+    from app.models import IncludedLibrary, MediaServer
 
-    old = {"franchisarr_export_version": 1, "included_libraries": [
-        {"plex_library_key": "1", "plex_library_name": "Movies", "library_type": "movie", "enabled": True}]}
+    old = {"franchisarr_export_version": 1,
+           "settings": {"plex_url": "http://plex.old:32400", "plex_token": "old-token-old-token",
+                        "plex_machine_identifier": "abc", "scan_schedule_cron": "0 4 * * *"},
+           "included_libraries": [
+               {"plex_library_key": "1", "plex_library_name": "Movies", "library_type": "movie", "enabled": True}]}
 
     counts = config_backup.import_config(session, old)
 
-    assert counts["libraries"] == 1
+    assert counts["libraries"] == 1 and counts["media_servers"] == 1 and counts["settings"] == 1
+    server = session.exec(select(MediaServer)).one()
+    assert (server.kind, server.url, server.credential, server.machine_identifier) == ("plex", "http://plex.old:32400", "old-token-old-token", "abc")
     lib = session.exec(select(IncludedLibrary)).one()
-    assert (lib.library_key, lib.library_name, lib.enabled) == ("1", "Movies", True)
+    assert (lib.server_id, lib.library_key, lib.library_name, lib.enabled) == (server.id, "1", "Movies", True)
+    assert get_setting(session, "plex_url") is None, "nothing reads that key any more"
+
+
+def test_exported_libraries_name_their_server_and_find_it_again(session: Session) -> None:
+    from app.models import IncludedLibrary, MediaServer
+
+    plex = seed_server(session, "plex"); jellyfin = seed_server(session, "jellyfin")
+    session.add(IncludedLibrary(server_id=jellyfin.id, library_key="abc", library_name="Films", library_type="movie", enabled=True))
+    session.commit()
+
+    document = config_backup.export_config(session)
+    assert sorted(s["name"] for s in document["media_servers"]) == ["Jellyfin", "Plex"]
+    assert document["included_libraries"][0]["server"] == "Jellyfin"
+
+    for row in session.exec(select(IncludedLibrary)).all():
+        session.delete(row)
+    session.commit()
+    counts = config_backup.import_config(session, document)
+
+    assert counts["already_present"] == 2 and counts["libraries"] == 1
+    lib = session.exec(select(IncludedLibrary)).one()
+    assert lib.server_id == jellyfin.id
+
+
+def test_a_redacted_export_masks_the_server_credential(session: Session) -> None:
+    seed_server(session, "emby", credential="emby-secret-key-emby-secret-key")
+
+    document = config_backup.export_config(session, redact=True)
+
+    assert document["media_servers"][0]["credential"] == config_backup.REDACTED
+    assert "emby-secret-key" not in json.dumps(document)
+    assert config_backup.import_config(session, document)["skipped_redacted"] >= 1

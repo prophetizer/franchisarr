@@ -72,10 +72,15 @@ Numbered because code comments cite them.
 `app/clients/media_server.py` is the boundary: four methods and two neutral item types, and
 nothing downstream knows which server it is talking to. `PlexClient` and `EmbyLikeClient`
 (Jellyfin and Emby, one client, `kind` is configuration) implement it;
-`media_server_service.client_for()` picks one from the `MEDIA_SERVER` setting. One server per
-install for now. Sign-in: Plex by PIN with a server-access check; Jellyfin/Emby by the person's
-own username and password against that server, which is the same authorisation in different
-clothes. Measured before building: both of the developer's servers carry a TMDb id on
+servers are rows in `media_servers`, and `media_server_service.client_for(server)` builds the
+client for one. There is never "the media server": the scan takes a list of `ScanSource`s and
+every `IncludedLibrary` and `LibraryItem` carries a `server_id`. Ownership is a set of TMDb ids,
+so a film on two servers is owned once; `ownership_service` adds which servers hold it and whether
+it was watched on any. Sign-in: Plex by PIN with a server-access check against every known Plex
+row (owning any of them administers); Jellyfin/Emby by the person's own username and password
+against the server they pick, which is the same authorisation in different clothes. Watched state
+is per account, and an API key is nobody's, so a Jellyfin/Emby row names a `watched_user`
+(default: the first administrator); Plex reports the token owner's. Measured before building: both of the developer's servers carry a TMDb id on
 99.7–100% of items, so matching is id-first with the IMDb `/find` fallback for the rest.
 
 ## Optional data sources

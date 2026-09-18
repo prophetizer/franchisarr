@@ -367,3 +367,13 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
   .collection-heading.has-backdrop { min-height: 0; }
   .collection-logo { max-height: 4rem; }
 }
+
+/* Media servers: the inline edit form sits below the row it belongs to. */
+.server-edit { flex-basis: 100%; margin-top: var(--pico-spacing); }
+[x-cloak] { display: none !important; }
+
+/* Watched state on owned titles: a quiet tick, coloured like the "owned" count. */
+.watched-mark { color: var(--pico-primary); margin-left: 0.3em; font-weight: 700; }
+.owned-where { white-space: nowrap; }
+.server-meta { flex: 1 1 100%; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.plex-signin small { display: block; margin-top: calc(var(--pico-spacing) / 2); }

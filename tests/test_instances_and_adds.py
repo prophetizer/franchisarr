@@ -25,6 +25,7 @@ from app.models import (
 )
 from app.services import add_service, instance_service, movie_gap_service
 from app.services.settings_service import SettingKey, set_setting
+from tests.conftest import ensure_server
 
 COLLECTION = 85861
 HD = "http://radarr-hd.test:7878"
@@ -59,7 +60,7 @@ def _library_with_gap(session: Session) -> None:
             )
         )
     session.add(
-        LibraryItem(library_key="1", item_key="1", item_type=ItemType.MOVIE.value,
+        LibraryItem(server_id=ensure_server(session), library_key="1", item_key="1", item_type=ItemType.MOVIE.value,
                     title="Beverly Hills Cop", year=1984, tmdb_id=90,
                     match_source=MatchSource.GUID.value)
     )

@@ -21,7 +21,7 @@ from app.auth.sessions import COOKIE_NAME, SESSION_LIFETIME, create_session, del
 from app.config import get_settings
 from app.services.auth_service import (
     PlexAccessDenied,
-    get_machine_identifier,
+    plex_sign_in_available,
     get_or_create_client_id,
     sign_in_with_plex_token,
 )
@@ -81,17 +81,22 @@ def _login_context(session, *, next: str = "", error: str | None = None) -> dict
     Plex signs in by PIN and needs the server's identity known first; Jellyfin and Emby sign in
     with the person's own username and password on that server, so all they need is a URL.
     """
-    from app.clients.media_server import MediaServerKind
     from app.services import media_server_service
 
-    kind = media_server_service.kind(session)
+    password_servers = media_server_service.password_servers(session)
     return {
         "next": next,
         "error": error,
         "local_login_available": has_local_admin(session),
-        "plex_login_available": kind == MediaServerKind.PLEX and get_machine_identifier(session) is not None,
-        "server_login_available": kind != MediaServerKind.PLEX and media_server_service.is_configured(session),
-        "server_label": media_server_service.label(session),
+        "plex_login_available": plex_sign_in_available(session),
+        "plex_configured": bool(media_server_service.plex_servers(session)),
+        "server_login_available": bool(password_servers),
+        # One server: its name is the heading. Several: a choice, so the person picks which
+        # account they are typing.
+        "password_servers": password_servers,
+        "server_label": (media_server_service.label(password_servers[0].kind)
+                         if len(password_servers) == 1 else "Jellyfin or Emby"),
+        "server_name": password_servers[0].name if len(password_servers) == 1 else None,
     }
 
 
@@ -134,6 +139,7 @@ def server_login_submit(
     username: Annotated[str, Form()] = "",
     password: Annotated[str, Form()] = "",
     next: Annotated[str, Form()] = "",
+    server_id: Annotated[int | None, Form()] = None,
 ):
     """Sign in with a Jellyfin or Emby account. The credentials go to that server and are not
     stored here; what comes back is the server's word that this person has an account on it."""
@@ -141,7 +147,7 @@ def server_login_submit(
     from app.services.auth_service import MediaServerSignInUnavailable, sign_in_with_media_server
 
     try:
-        user = sign_in_with_media_server(session, username, password)
+        user = sign_in_with_media_server(session, server_id, username, password)
     except EmbyAuthError:
         # The server's own message would say which was wrong; ours does not.
         return get_templates().TemplateResponse(
@@ -173,7 +179,7 @@ def logout(request: Request, session: DbSession):
 @router.post("/auth/plex/start")
 def plex_start(session: DbSession):
     """Create a sign-in PIN and hand back the app.plex.tv URL for the popup."""
-    if get_machine_identifier(session) is None:
+    if not plex_sign_in_available(session):
         return JSONResponse(
             {
                 "error": "Plex sign-in isn't available until this install's Plex server "

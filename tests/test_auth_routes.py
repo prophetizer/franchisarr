@@ -15,8 +15,9 @@ from app.auth.local_admin import create_local_admin
 from app.auth.plex_oauth import PLEX_PINS_URL, PLEX_RESOURCES_URL, PLEX_USER_URL
 from app.auth.sessions import COOKIE_NAME
 from app.db import get_engine
-from app.models import IncludedLibrary, User
+from app.models import IncludedLibrary, MediaServer, User
 from app.services.settings_service import SettingKey, set_setting
+from tests.conftest import ensure_server
 
 BASE = "/franchisarr"
 PASSWORD = "s3cret-passphrase"
@@ -48,10 +49,18 @@ def _seed(**settings: str) -> None:
         session.commit()
 
 
+def _known_plex_server() -> None:
+    """A Plex row whose identity has been learned -- what Plex sign-in needs."""
+    with Session(get_engine()) as session:
+        server = session.get(MediaServer, ensure_server(session))
+        server.machine_identifier = OUR_SERVER
+        session.add(server); session.commit()
+
+
 def _add_library(*, enabled: bool = True, key: str = "1") -> None:
     with Session(get_engine()) as session:
         session.add(
-            IncludedLibrary(
+            IncludedLibrary(server_id=ensure_server(session), 
                 library_key=key,
                 library_name="Movies",
                 library_type="movie",
@@ -195,7 +204,7 @@ def test_plex_sign_in_is_unavailable_until_the_server_is_known(client: TestClien
 def test_the_login_page_hides_plex_sign_in_until_it_is_usable(client: TestClient) -> None:
     assert "Sign in with Plex" not in client.get(f"{BASE}/login").text
 
-    _seed(**{SettingKey.PLEX_MACHINE_IDENTIFIER: OUR_SERVER})
+    _known_plex_server()
     assert "Sign in with Plex" in client.get(f"{BASE}/login").text
 
 
@@ -209,7 +218,7 @@ def test_the_popup_is_not_kept_in_alpine_reactive_state(client: TestClient) -> N
     existed, but the page never redirected and the button spun until the user reloaded by hand.
     Keeping the window in a closure instead of in the component keeps it un-proxied.
     """
-    _seed(**{SettingKey.PLEX_MACHINE_IDENTIFIER: OUR_SERVER})
+    _known_plex_server()
 
     page = client.get(f"{BASE}/login").text
     component = page.split("return {", 1)[1].split("\n    };", 1)[0]
@@ -222,7 +231,7 @@ def test_the_popup_is_not_kept_in_alpine_reactive_state(client: TestClient) -> N
 def test_a_failure_while_polling_cannot_leave_the_button_spinning(client: TestClient) -> None:
     """poll() is deliberately not awaited, so without a catch any exception inside it becomes an
     unhandled rejection -- the spinner runs forever and the user is never told why."""
-    _seed(**{SettingKey.PLEX_MACHINE_IDENTIFIER: OUR_SERVER})
+    _known_plex_server()
 
     page = client.get(f"{BASE}/login").text
 
@@ -232,7 +241,7 @@ def test_a_failure_while_polling_cannot_leave_the_button_spinning(client: TestCl
 def test_closing_the_popup_cannot_block_the_redirect(client: TestClient) -> None:
     """Closing it is a courtesy. If it throws -- and cross-origin windows can -- the sign-in must
     still complete."""
-    _seed(**{SettingKey.PLEX_MACHINE_IDENTIFIER: OUR_SERVER})
+    _known_plex_server()
 
     page = client.get(f"{BASE}/login").text
     close_body = page.split("const closePopup", 1)[1].split("};", 1)[0]
@@ -242,7 +251,7 @@ def test_closing_the_popup_cannot_block_the_redirect(client: TestClient) -> None
 
 @responses.activate
 def test_plex_start_returns_an_auth_url(client: TestClient) -> None:
-    _seed(**{SettingKey.PLEX_MACHINE_IDENTIFIER: OUR_SERVER})
+    _known_plex_server()
     responses.add(responses.POST, PLEX_PINS_URL, json={"id": 77, "code": "WXYZ"})
 
     response = client.post(f"{BASE}/auth/plex/start")
@@ -254,7 +263,7 @@ def test_plex_start_returns_an_auth_url(client: TestClient) -> None:
 
 @responses.activate
 def test_polling_reports_pending_until_the_user_signs_in(client: TestClient) -> None:
-    _seed(**{SettingKey.PLEX_MACHINE_IDENTIFIER: OUR_SERVER})
+    _known_plex_server()
     responses.add(responses.POST, PLEX_PINS_URL, json={"id": 77, "code": "WXYZ"})
     responses.add(responses.GET, f"{PLEX_PINS_URL}/77", json={"id": 77, "authToken": None})
 
@@ -268,7 +277,7 @@ def test_polling_reports_pending_until_the_user_signs_in(client: TestClient) -> 
 @responses.activate
 def test_a_plex_user_with_server_access_is_signed_in(client: TestClient) -> None:
     _add_library()
-    _seed(**{SettingKey.PLEX_MACHINE_IDENTIFIER: OUR_SERVER})
+    _known_plex_server()
     responses.add(responses.POST, PLEX_PINS_URL, json={"id": 77, "code": "WXYZ"})
     responses.add(responses.GET, f"{PLEX_PINS_URL}/77", json={"id": 77, "authToken": "tok"})
     responses.add(
@@ -295,7 +304,7 @@ def test_a_plex_user_with_server_access_is_signed_in(client: TestClient) -> None
 @responses.activate
 def test_a_stranger_with_a_valid_plex_account_is_refused(client: TestClient) -> None:
     """The security property of technical challenge #2, enforced at the route."""
-    _seed(**{SettingKey.PLEX_MACHINE_IDENTIFIER: OUR_SERVER})
+    _known_plex_server()
     responses.add(responses.POST, PLEX_PINS_URL, json={"id": 77, "code": "WXYZ"})
     responses.add(responses.GET, f"{PLEX_PINS_URL}/77", json={"id": 77, "authToken": "tok"})
     responses.add(
@@ -318,7 +327,7 @@ def test_a_stranger_with_a_valid_plex_account_is_refused(client: TestClient) -> 
 @responses.activate
 def test_a_shared_user_is_signed_in_without_admin(client: TestClient) -> None:
     _add_library()
-    _seed(**{SettingKey.PLEX_MACHINE_IDENTIFIER: OUR_SERVER})
+    _known_plex_server()
     responses.add(responses.POST, PLEX_PINS_URL, json={"id": 77, "code": "WXYZ"})
     responses.add(responses.GET, f"{PLEX_PINS_URL}/77", json={"id": 77, "authToken": "tok"})
     responses.add(
@@ -338,7 +347,7 @@ def test_a_shared_user_is_signed_in_without_admin(client: TestClient) -> None:
 
 
 def test_polling_without_having_started_is_rejected(client: TestClient) -> None:
-    _seed(**{SettingKey.PLEX_MACHINE_IDENTIFIER: OUR_SERVER})
+    _known_plex_server()
 
     response = client.post(f"{BASE}/auth/plex/poll")
 

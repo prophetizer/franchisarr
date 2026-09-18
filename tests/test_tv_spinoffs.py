@@ -24,6 +24,7 @@ from app.models import (
     User,
 )
 from app.services import tv_spinoff_service as svc
+from tests.conftest import ensure_server
 
 NCIS = 4614
 NCIS_LA = 17610
@@ -41,7 +42,7 @@ def _own_show(session: Session, tmdb_id: int, title: str, **kwargs) -> LibraryIt
         "match_source": MatchSource.GUID.value,
         **kwargs,
     }
-    item = LibraryItem(**fields)
+    item = LibraryItem(server_id=ensure_server(session), **fields)
     session.add(item)
     session.commit()
     return item
@@ -252,7 +253,7 @@ def test_an_unconfirmed_show_match_does_not_count_as_owned(session: Session) -> 
 def test_movies_are_not_mistaken_for_shows(session: Session) -> None:
     """The snapshot table holds both, so every query has to filter on item_type."""
     session.add(
-        LibraryItem(library_key="1", item_key="x", item_type=ItemType.MOVIE.value,
+        LibraryItem(server_id=ensure_server(session), library_key="1", item_key="x", item_type=ItemType.MOVIE.value,
                     title="A Film", tmdb_id=NCIS, match_source=MatchSource.GUID.value)
     )
     session.commit()

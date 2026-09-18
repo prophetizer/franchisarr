@@ -65,6 +65,9 @@ class MediaItem:
     year: int | None
     external_ids: ExternalIds
     guids: tuple[str, ...] = field(default_factory=tuple)
+    #: Played by the account the server was asked as; for a show, any episode played. None when
+    #: the server gave no answer.
+    watched: bool | None = None
 
     @property
     def has_external_ids(self) -> bool:

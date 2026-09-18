@@ -23,6 +23,7 @@ from app.auth.local_admin import create_local_admin
 from app.db import get_engine
 from app.models import User
 from app.services import instance_service, sonarr_instance_service
+from tests.conftest import seed_server
 from app.services.settings_service import SettingKey, set_setting
 
 BASE = "/franchisarr"
@@ -44,8 +45,7 @@ def client(app_factory):
     with TestClient(module.app, follow_redirects=False) as test_client:
         with Session(get_engine()) as session:
             create_local_admin(session, "admin", PASSWORD)
-            set_setting(session, SettingKey.PLEX_URL, "http://plex.test:32400")
-            set_setting(session, SettingKey.PLEX_TOKEN, SECRETS["plex_token"])
+            seed_server(session, "plex", credential=SECRETS["plex_token"])
             set_setting(session, SettingKey.TMDB_API_KEY, SECRETS["tmdb_key"])
             set_setting(session, SettingKey.FANART_API_KEY, SECRETS["fanart_key"])
             set_setting(session, SettingKey.WEBHOOK_URL, "https://hooks.example.com/abc")

@@ -38,6 +38,7 @@ from app.models import (
 )
 from app.services import add_service, sonarr_instance_service as svc, tv_spinoff_service
 from app.services.settings_service import SettingKey, set_setting
+from tests.conftest import ensure_server
 
 URL = "http://sonarr.test:8989"
 ANIME = "http://sonarr-anime.test:8989"
@@ -256,7 +257,7 @@ def test_series_with_no_tmdb_id_are_not_cached(session: Session) -> None:
 
 
 def _own_show(session: Session, tmdb_id: int, title: str) -> None:
-    session.add(LibraryItem(library_key="2", item_key=str(tmdb_id),
+    session.add(LibraryItem(server_id=ensure_server(session), library_key="2", item_key=str(tmdb_id),
                             item_type=ItemType.SHOW.value, title=title, year=2003,
                             tmdb_id=tmdb_id, match_source=MatchSource.GUID.value))
     session.commit()

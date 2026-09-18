@@ -46,12 +46,18 @@ def _gap_or_404(session, user, collection_id: int):
 
 @router.get("/collections", response_class=HTMLResponse)
 def collections(
-    request: Request, session: DbSession, user: RequiredUser, sort: str = "rating"
+    request: Request, session: DbSession, user: RequiredUser, sort: str = "rating",
+    started: bool = False,
 ):
     from app.services import scan_state
 
     sort = "name" if sort == "name" else "rating"
     gaps = movie_gap_service.collections_with_gaps(session, user.id, sort=sort)
+    # The filter is offered only once a server has reported watched state at all; before that
+    # it would hide everything and look like a bug.
+    watched_known = any(movie.watched is not None for gap in gaps for movie in gap.owned)
+    if started and watched_known:
+        gaps = [gap for gap in gaps if gap.started]
     return get_templates().TemplateResponse(
         request,
         "collections.html",
@@ -59,6 +65,8 @@ def collections(
             "user": user,
             "progress": scan_state.current(),
             "gaps": gaps,
+            "started": started and watched_known,
+            "watched_known": watched_known,
             "total_missing": sum(len(gap.missing) for gap in gaps),
             "total_hidden": sum(len(gap.hidden) for gap in gaps),
             "sort": sort,
@@ -115,8 +123,12 @@ def collection_detail(
     request: Request, session: DbSession, user: RequiredUser, collection_id: int
 ):
     gap = _gap_or_404(session, user, collection_id)
+    from app.services import media_server_service
+
     return get_templates().TemplateResponse(
-        request, "collection_detail.html", {"user": user, "gap": gap}
+        request, "collection_detail.html",
+        {"user": user, "gap": gap,
+         "multi_server": len(media_server_service.list_servers(session)) > 1}
     )
 
 
@@ -424,8 +436,7 @@ def trigger_scan(
     if not (media_server_service.is_configured(session) and tmdb_key):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=(f"{media_server_service.label(session)} and TMDb both need configuring "
-                    "before a scan can run."),
+            detail="A media server and TMDb both need configuring before a scan can run.",
         )
 
     # A second click while one is running is a no-op rather than an error: the panel it gets back

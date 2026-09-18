@@ -6,7 +6,7 @@
     {% if movie.poster %}
       <img class="film-poster" src="{{ movie.poster }}" alt="" loading="lazy" decoding="async" width="92" height="138">
     {% endif %}
-    <span class="film-title">{{ movie.title }} {% include "partials/rating.html" %}</span>
+    <span class="film-title">{{ movie.title }} {% include "partials/rating.html" %}{% if css == 'owned' %}{% with entry=movie %}{% include "partials/owned_mark.html" %}{% endwith %}{% endif %}</span>
     <span class="film-meta muted">
       {% if css == 'upcoming' %}{% if movie.release_date %}expected {{ movie.release_date }}{% else %}no release date{% endif %}
       {% else %}{{ movie.year or '' }}{% endif %}
