@@ -206,3 +206,18 @@ app.include_router(api_router, prefix=settings.base_url)
 # Mounted under BASE_URL for the same reason the routes are: behind a subpath proxy, /static
 # would not reach us.
 app.mount(f"{settings.base_url}/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+@app.middleware("http")
+async def html_is_never_stale(request, call_next):  # noqa: ANN001 - Starlette signature
+    """Pages must be revalidated on every load.
+
+    Static assets carry the app version in their URL, so a new release is a new URL. That only
+    helps if the *page* that links them is fresh too -- and Safari on a phone was found holding
+    a page from before a deploy, still pointing at the previous stylesheet. no-cache means
+    "ask before reusing", which is exactly the deal for a server-rendered page.
+    """
+    response = await call_next(request)
+    if response.headers.get("content-type", "").startswith("text/html"):
+        response.headers.setdefault("Cache-Control", "no-cache")
+    return response

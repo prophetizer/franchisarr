@@ -35,13 +35,31 @@ body > header.container {
   row-gap: 0.25rem;
 }
 
-/* On a phone the wrapped nav is three rows; Pico's link padding makes that a third of the
-   screen. Tighter rows, and the brand on its own line so the links start flush left. */
+/* On a phone the nav stops being flex at all. Plain block flow with inline-block links is the
+   one layout every engine wraps the same way -- the flex-wrap version was verified in Chromium
+   and still scrolled sideways on an iPhone. The brand sits on its own line, links start flush
+   left, and the rows are tighter than Pico's default so three of them are not a third of the
+   screen. */
 @media (max-width: 767px) {
-  .app-nav { flex-direction: column; align-items: flex-start; }
-  .app-nav ul:first-of-type { margin-left: 0; }
-  .app-nav li { padding: 0.15rem var(--pico-nav-link-spacing-horizontal); }
-  .app-nav li:first-child { padding-left: 0; }
+  .app-nav,
+  .app-nav ul {
+    display: block;
+    max-width: 100%;
+  }
+  .app-nav ul:first-of-type,
+  .app-nav ul:last-of-type {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .app-nav li {
+    display: inline-block;
+    padding: 0.15rem var(--pico-nav-link-spacing-horizontal) 0.15rem 0;
+    vertical-align: middle;
+  }
+  .app-nav .nav-form,
+  .app-nav .theme-toggle {
+    vertical-align: middle;
+  }
 }
 
 /* Pico gives any aria-busy element a spinner -- and white-space: nowrap, which is right for a
@@ -53,6 +71,8 @@ article[aria-busy="true"] {
 
 /* Belt and braces: nothing else gets to widen the page either. Long unbroken strings -- a
    webhook URL, a Plex path -- wrap instead. */
+/* On both, because iOS Safari ignores it on body alone. */
+html,
 body {
   overflow-x: hidden;
 }

@@ -120,3 +120,17 @@ def test_static_assets_carry_the_version_so_a_release_invalidates_caches() -> No
 
     for name in ("pico.min.css", "theme-adapter.css", "app.css", "htmx.min.js", "alpine.min.js"):
         assert f"/franchisarr/static/{name}?v={__version__}" in html, name
+
+
+def test_html_pages_are_marked_no_cache(app_factory) -> None:
+    """Versioned asset URLs only help if the page linking them is fresh; a phone was found
+    holding a pre-deploy page that still pointed at the previous stylesheet."""
+    from fastapi.testclient import TestClient
+
+    module = app_factory("")
+    with TestClient(module.app, follow_redirects=False) as client:
+        page = client.get("/login")
+        asset = client.get("/static/app.css")
+
+    assert page.headers["cache-control"] == "no-cache"
+    assert "cache-control" not in asset.headers, "assets are versioned, so they may be cached"

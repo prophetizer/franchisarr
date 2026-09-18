@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] — 2026-09-18
+
 ### Fixed
 
+- **The menu no longer scrolls sideways on a phone.** The 0.8.0 fix relied on flex wrapping and
+  was verified in Chromium; an iPhone still scrolled. On small screens the nav is now plain
+  block flow with inline links — the one layout every engine wraps identically — and pages are
+  sent `Cache-Control: no-cache` so a phone cannot keep a pre-deploy page pointing at an old
+  stylesheet.
 - **Stylesheets and scripts now carry the app version in their URL**, so a release invalidates
   every browser's cached copy. Without it a phone kept the previous `app.css` straight across
   the deploy that fixed its layout — the files have an ETag but no `Cache-Control`, and Safari's
@@ -370,7 +377,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.8.1
 [0.8.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.8.0
 [0.7.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.7.0
 [0.6.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.6.0
