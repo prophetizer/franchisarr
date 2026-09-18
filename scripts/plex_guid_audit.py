@@ -14,7 +14,7 @@ those are a normal state, not a parser gap.
 
 Usage:
 
-    export PLEX_URL=http://192.168.1.10:32400
+    export PLEX_URL=http://192.168.1.100:32400
     export PLEX_TOKEN=...
     python scripts/plex_guid_audit.py
 

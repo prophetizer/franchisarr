@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.1] — 2026-09-18
+
+### Security
+
+- **Dependencies upgraded for published advisories.** Starlette 0.41 → 1.6 (a Range-header
+  denial of service in `FileResponse`, which serves this app's static files; form-parsing limits
+  not enforced; `Host`-header URL reconstruction), python-multipart 0.0.20 → 0.0.32 (several
+  form-parsing denial-of-service issues), Jinja2 3.1.5 → 3.1.6. FastAPI moves to 0.141 to carry
+  them. No behaviour change; the full suite passes and `pip-audit` is clean.
+
 ## [0.11.0] — 2026-09-18
 
 ### Changed
@@ -439,7 +449,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.11.1...HEAD
+[0.11.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.11.1
 [0.11.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.11.0
 [0.10.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.10.0
 [0.9.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.9.0
