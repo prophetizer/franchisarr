@@ -210,6 +210,19 @@ class SonarrClient:
 
     # ---------------------------------------------------------------- writes
 
+    def ensure_tag(self, label: str = "franchisarr") -> int | None:
+        """The id of a tag, creating it if needed. None if tags are unavailable -- tagging is a
+        courtesy to the person looking at their library later, never a reason an add fails."""
+        try:
+            for tag in self._get_json("/tag") or []:
+                if isinstance(tag, dict) and str(tag.get("label", "")).lower() == label:
+                    return int(tag["id"])
+            created = self._request("POST", "/tag", json={"label": label}).json()
+            return int(created["id"])
+        except Exception as exc:  # noqa: BLE001 - deliberately broad: see docstring
+            logger.debug("Could not ensure tag %r: %s", label, exc)
+            return None
+
     def add_series(
         self,
         tmdb_id: int,
@@ -228,8 +241,10 @@ class SonarrClient:
                 f"{payload.get('title') or tmdb_id} is already in this Sonarr instance."
             )
 
+        tag_id = self.ensure_tag()
         payload.update(
             {
+                "tags": [tag_id] if tag_id is not None else payload.get("tags") or [],
                 "qualityProfileId": quality_profile_id,
                 "rootFolderPath": root_folder_path,
                 "monitored": True,

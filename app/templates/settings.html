@@ -20,6 +20,54 @@
 {% if error %}<p role="alert" class="notice-bad">{{ error }}</p>{% endif %}
 
 <article>
+  <header><strong>Import lists for Radarr and Sonarr</strong></header>
+  <p>
+    Everything Franchisarr finds, as lists the *arrs can poll. In Radarr: <em>Settings → Import
+    Lists → Add → Custom List</em>, paste a films URL. In Sonarr: the same, with the shows URL.
+    Radarr's own rules then decide what to monitor and where — Franchisarr never adds anything
+    itself.
+  </p>
+  {% if new_api_key %}
+    <p role="status" class="notice-good">
+      Your new key — shown once, so copy it now: <code>{{ new_api_key }}</code>
+    </p>
+  {% endif %}
+  {% if has_api_key or new_api_key %}
+    <ul>
+      {% for name in list_names %}
+        <li><code class="list-url" data-path="{{ list_base }}/{{ name }}.json?api_key=">{{ list_base }}/{{ name }}.json?api_key=<em>your key</em></code>
+          <small class="muted">
+            {% if name == 'collections' %}— missing films from collections you own part of
+            {% elif name == 'upcoming' %}— announced films in those collections (Radarr pre-monitors them)
+            {% elif name == 'directors' %}— missing films by directors you collect
+            {% elif name == 'franchises' %}— missing films across franchise pages
+            {% elif name == 'films' %}— every film list at once, each film once
+            {% else %}— Sonarr: missing shows from spin-offs, continuations and franchises{% endif %}
+          </small></li>
+      {% endfor %}
+    </ul>
+    <p><small class="muted">
+      Add <code>&amp;min_rating=7</code> to a films URL to raise the floor for that list only, or
+      <code>&amp;min_rating=0</code> to ignore the household one. <code>&amp;include_upcoming=1</code>
+      adds announced films to the collections list. Your dismissals and preferences apply.
+      The key sits in the URL, as with any *arr list — it is read-only and revocable below.
+    </small></p>
+  {% endif %}
+  <script>
+    // The address Radarr needs is the one the browser is using, which behind a reverse proxy
+    // the server cannot know reliably. Filled in here; the relative path stands without JS.
+    document.querySelectorAll('code.list-url').forEach(function (el) {
+      el.innerHTML = location.origin + el.dataset.path + '<em>your key</em>';
+    });
+  </script>
+  <form method="post" action="{{ url('/settings/api-key') }}">
+    <button type="submit" class="{{ 'secondary outline' if has_api_key else '' }}">
+      {{ 'Generate a new key (revokes the old one)' if has_api_key else 'Generate your key' }}
+    </button>
+  </form>
+</article>
+
+<article>
   <header><strong>Theme</strong></header>
 
   {% if theme_config.enabled %}

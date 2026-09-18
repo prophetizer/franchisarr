@@ -35,6 +35,7 @@ from app.routes_instances import router as instances_router
 from app.routes_movies import router as movies_router
 from app.routes_directors import router as directors_router
 from app.routes_franchises import router as franchises_router
+from app.routes_lists import router as lists_router
 from app.routes_preferences import router as preferences_router
 from app.routes_tv import router as tv_router
 from app.routes_auth import router as auth_router
@@ -210,6 +211,7 @@ app.include_router(tv_router, prefix=settings.base_url)
 app.include_router(franchises_router, prefix=settings.base_url)
 app.include_router(directors_router, prefix=settings.base_url)
 app.include_router(preferences_router, prefix=settings.base_url)
+app.include_router(lists_router, prefix=settings.base_url)
 app.include_router(api_router, prefix=settings.base_url)
 
 # Mounted under BASE_URL for the same reason the routes are: behind a subpath proxy, /static

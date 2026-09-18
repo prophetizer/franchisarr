@@ -264,3 +264,46 @@ def test_a_genuine_key_rejection_still_says_so() -> None:
         _client().test_connection()
 
     assert "rejected the API key" in str(exc_info.value)
+
+
+# ------------------------------------------------------------------ tagging
+
+
+@responses.activate
+def test_an_add_is_tagged_franchisarr_reusing_the_tag_if_it_exists() -> None:
+    """The convention Overseerr set: what came from here is visible in Radarr later."""
+    responses.add(responses.GET, f"{URL}/api/v3/movie/lookup", json=[{"tmdbId": 306, "title": "X"}])
+    responses.add(responses.GET, f"{URL}/api/v3/tag", json=[{"id": 3, "label": "other"}, {"id": 9, "label": "Franchisarr"}])
+    responses.add(responses.POST, f"{URL}/api/v3/movie", json={"id": 7, "tmdbId": 306})
+
+    _client().add_movie(306, quality_profile_id=1, root_folder_path="/m")
+
+    import json
+    sent = json.loads([c for c in responses.calls if c.request.url.endswith("/movie")][0].request.body)
+    assert sent["tags"] == [9], "matched case-insensitively, not created twice"
+
+
+@responses.activate
+def test_the_tag_is_created_on_a_fresh_instance() -> None:
+    responses.add(responses.GET, f"{URL}/api/v3/movie/lookup", json=[{"tmdbId": 306, "title": "X"}])
+    responses.add(responses.GET, f"{URL}/api/v3/tag", json=[])
+    responses.add(responses.POST, f"{URL}/api/v3/tag", json={"id": 12, "label": "franchisarr"})
+    responses.add(responses.POST, f"{URL}/api/v3/movie", json={"id": 7, "tmdbId": 306})
+
+    _client().add_movie(306, quality_profile_id=1, root_folder_path="/m")
+
+    import json
+    sent = json.loads([c for c in responses.calls if c.request.url.endswith("/movie")][0].request.body)
+    assert sent["tags"] == [12]
+
+
+@responses.activate
+def test_tagging_failing_never_fails_the_add() -> None:
+    """Tagging is a courtesy. A Radarr that refuses /tag still gets the film."""
+    responses.add(responses.GET, f"{URL}/api/v3/movie/lookup", json=[{"tmdbId": 306, "title": "X"}])
+    responses.add(responses.GET, f"{URL}/api/v3/tag", status=500)
+    responses.add(responses.POST, f"{URL}/api/v3/movie", json={"id": 7, "tmdbId": 306})
+
+    added = _client().add_movie(306, quality_profile_id=1, root_folder_path="/m")
+
+    assert added.tmdb_id == 306

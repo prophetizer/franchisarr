@@ -408,3 +408,19 @@ def test_a_genuine_sonarr_key_rejection_still_says_so() -> None:
         _client().test_connection()
 
     assert "rejected the API key" in str(exc_info.value)
+
+
+@responses.activate
+def test_a_sonarr_add_is_tagged_franchisarr() -> None:
+    import json
+
+    responses.add(responses.GET, f"{URL}/api/v3/series/lookup",
+                  json=[{"tmdbId": NCIS_LA, "title": "NCIS: Los Angeles", "seasons": []}])
+    responses.add(responses.GET, f"{URL}/api/v3/tag", json=[])
+    responses.add(responses.POST, f"{URL}/api/v3/tag", json={"id": 4, "label": "franchisarr"})
+    responses.add(responses.POST, f"{URL}/api/v3/series", json={"id": 9, "tmdbId": NCIS_LA})
+
+    _client().add_series(NCIS_LA, quality_profile_id=1, root_folder_path="/tv")
+
+    sent = json.loads([c for c in responses.calls if c.request.url.endswith("/series")][0].request.body)
+    assert sent["tags"] == [4]

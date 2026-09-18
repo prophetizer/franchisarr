@@ -56,6 +56,20 @@ scan — no key or account needed — and matched on TMDb ids rather than titles
 ones whose names give nothing away (*Family Guy* → *American Dad!*). Weaker evidence is marked
 *possible*, and nothing is ever added without you clicking.
 
+### Import lists for Radarr and Sonarr
+
+Rather than clicking Add per film, let the *arrs pull from Franchisarr. Under **Settings →
+Import lists**, generate a key; then in Radarr, *Settings → Import Lists → Add → Custom List*
+and paste a films URL, for example:
+
+```
+https://franchisarr.example.com/api/lists/films.json?api_key=YOUR_KEY&min_rating=7
+```
+
+Sonarr takes the `shows` URL the same way. Radarr's own settings then decide what to monitor
+and where — Franchisarr never adds anything itself. Your dismissals and preferences apply to the
+lists; `min_rating` on the URL overrides the household floor for that list only.
+
 ### Artwork
 
 Collection screens show posters from TMDb. Adding a free

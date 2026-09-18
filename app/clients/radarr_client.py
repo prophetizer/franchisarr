@@ -187,6 +187,19 @@ class RadarrClient:
 
     # ---------------------------------------------------------------- writes
 
+    def ensure_tag(self, label: str = "franchisarr") -> int | None:
+        """The id of a tag, creating it if needed. None if tags are unavailable -- tagging is a
+        courtesy to the person looking at their library later, never a reason an add fails."""
+        try:
+            for tag in self._get_json("/tag") or []:
+                if isinstance(tag, dict) and str(tag.get("label", "")).lower() == label:
+                    return int(tag["id"])
+            created = self._request("POST", "/tag", json={"label": label}).json()
+            return int(created["id"])
+        except Exception as exc:  # noqa: BLE001 - deliberately broad: see docstring
+            logger.debug("Could not ensure tag %r: %s", label, exc)
+            return None
+
     def add_movie(
         self,
         tmdb_id: int,
@@ -210,12 +223,16 @@ class RadarrClient:
                 f"{payload.get('title') or tmdb_id} is already in this Radarr instance."
             )
 
+        # Tagged, so what came from here is visible and filterable in Radarr later -- the
+        # convention Overseerr set and users expect.
+        tag_id = self.ensure_tag()
         payload.update(
             {
                 "qualityProfileId": quality_profile_id,
                 "rootFolderPath": root_folder_path,
                 "monitored": monitored,
                 "minimumAvailability": minimum_availability,
+                "tags": [tag_id] if tag_id is not None else payload.get("tags") or [],
                 "addOptions": {
                     "searchForMovie": search_on_add,
                     "monitor": "movieOnly",

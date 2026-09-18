@@ -303,6 +303,12 @@ def _settings_context(session, user, **extra) -> dict:
         "error": None,
         "import_note": None,
         "update": _update_status(session),
+        # Import lists: the URLs Radarr and Sonarr can poll. The key is never rendered; the page
+        # shows whether one exists and mints a new one on request, shown once.
+        "has_api_key": bool(user.api_key),
+        "new_api_key": None,
+        "list_base": get_settings().base_url + "/api/lists",
+        "list_names": ["collections", "upcoming", "directors", "franchises", "films", "shows"],
     }
     context.update(extra)
     return context
@@ -312,6 +318,18 @@ def _settings_context(session, user, **extra) -> dict:
 def settings_page(request: Request, session: DbSession, user: RequiredUser, saved: bool = False):
     return get_templates().TemplateResponse(
         request, "settings.html", _settings_context(session, user, saved=saved)
+    )
+
+
+@router.post("/settings/api-key", response_class=HTMLResponse)
+def settings_new_api_key(request: Request, session: DbSession, user: RequiredUser):
+    """Mint the per-user key the import lists and the CLI use. Shown once, in full, here."""
+    from app.auth.api_keys import generate_api_key
+
+    key = generate_api_key(session, user)
+    session.commit()
+    return get_templates().TemplateResponse(
+        request, "settings.html", _settings_context(session, user, new_api_key=key)
     )
 
 

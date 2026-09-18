@@ -7,11 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-09-18
+
+The pre-public release: the things a stranger's install hits that the developer's never did,
+and the feature the *arr community actually wants.
+
 ### Added
 
+- **Import lists.** Everything Franchisarr finds, as JSON Radarr and Sonarr can poll as a
+  *Custom List*: `collections`, `upcoming`, `directors`, `franchises`, `films` (all of those,
+  each film once) and `shows`. Point Radarr at one and its own rules — monitor, root folder,
+  quality, search — take over; Franchisarr still adds nothing itself. `min_rating` on the URL
+  overrides the household floor for that list; `include_upcoming` adds announced films; your
+  dismissals and preferences apply. The key sits in the URL, as with any *arr list — read-only
+  and revocable. Settings shows the URLs and mints the key, shown once.
+- **Adds are tagged `franchisarr`** in Radarr and Sonarr, the convention Overseerr set, so what
+  came from here is visible and filterable later. The tag is created if missing; tagging
+  failing never fails an add.
 - **Config export now includes dismissals** — every "Not interested" ever clicked, keyed by
   username so they land on the right person on a new install. A dismissal whose person hasn't
   signed in yet is counted and skipped, never handed to whoever ran the import.
+
+### Fixed
+
+- **The Spin-offs page's "TV from films you own" and every franchise page were far slower than
+  they needed to be** — 62 seconds and 59 seconds on the test library — because a title lookup
+  recomputed the collection gaps once per row. Both are now under two seconds. Found by timing
+  the import lists, which inherited it.
 
 ### Changed
 
@@ -407,7 +429,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.10.0
 [0.9.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.9.0
 [0.8.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.8.1
 [0.8.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.8.0

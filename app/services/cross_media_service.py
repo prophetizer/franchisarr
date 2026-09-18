@@ -112,6 +112,7 @@ def import_relations(
                 else:
                     show = tmdb.get_show(relation.target_tmdb_id)
                     title, year, poster = show.name or title, show.year, show.poster_path
+                    tv_spinoff_service.cache_show(session, show)
             except TmdbError as exc:
                 logger.debug("No TMDb details for %s %s: %s",
                              relation.target_type, relation.target_tmdb_id, exc)
@@ -138,17 +139,24 @@ def import_relations(
     return added, refreshed
 
 
-def _source_title(session: Session, source_type: str, tmdb_id: int) -> str:
-    if source_type == ItemType.SHOW.value:
-        return tv_spinoff_service._show_name(session, tmdb_id)
-    for gap in movie_gap_service.collection_gaps(session):
-        for movie in gap.owned:
-            if movie.tmdb_id == tmdb_id:
-                return movie.title
-    from app.models import TmdbMovie
+def _source_titles(session: Session, source_type: str) -> dict[int, str]:
+    """Every owned title of one medium, once. This used to be a per-row lookup that recomputed
+    the collection gaps each time -- 62 seconds for the shows-from-films list on the real
+    library, which is timeout territory for an *arr polling it."""
+    from app.models import LibraryItem, TmdbMovie, TmdbShow
 
-    cached = session.get(TmdbMovie, tmdb_id)
-    return cached.title if cached else f"TMDb {tmdb_id}"
+    titles: dict[int, str] = {}
+    if source_type == ItemType.SHOW.value:
+        for row in session.exec(select(TmdbShow)):
+            titles[row.tmdb_id] = row.name
+    else:
+        for row in session.exec(select(TmdbMovie)):
+            titles[row.tmdb_id] = row.title
+    # The library's own title wins: it is what the user sees in Plex.
+    for row in session.exec(select(LibraryItem).where(col(LibraryItem.item_type) == source_type)):
+        if row.tmdb_id is not None:
+            titles[row.tmdb_id] = row.title
+    return titles
 
 
 def suggestions(
@@ -183,6 +191,7 @@ def suggestions(
             col(CrossMediaMapping.target_type) == target_type,
         )
     ).all()
+    titles = _source_titles(session, source_type)
 
     grouped: dict[int, CrossMediaSuggestion] = {}
     for row in sorted(rows, key=lambda r: (r.confidence != MappingConfidence.CONFIRMED.value,
@@ -197,7 +206,7 @@ def suggestions(
             target_poster_path=row.target_poster_path, relation=row.relation,
             confidence=row.confidence, source_type=row.source_type,
             source_tmdb_id=row.source_tmdb_id,
-            source_title=_source_title(session, row.source_type, row.source_tmdb_id),
+            source_title=titles.get(row.source_tmdb_id, f"TMDb {row.source_tmdb_id}"),
         )
         first = grouped.get(row.target_tmdb_id)
         if first is None:

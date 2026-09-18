@@ -217,6 +217,9 @@ def _member_for(
             else:
                 d = tmdb.get_show(t.tmdb_id)
                 title, year, poster = d.name or title, d.year or year, d.poster_path
+                # Into the show cache too: that is where a TVDB id lives, and Sonarr's import
+                # list needs one for every show it is handed.
+                tv_spinoff_service.cache_show(session, d)
         except TmdbError as exc:
             logger.debug("No TMDb details for %s %s: %s", t.item_type, t.tmdb_id, exc)
     return FranchiseMember(franchise_id=t.franchise_id, item_type=t.item_type,
