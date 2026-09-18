@@ -75,20 +75,32 @@ def _safe_next(raw: str | None) -> str:
     return raw
 
 
+def _login_context(session, *, next: str = "", error: str | None = None) -> dict:  # noqa: ANN001
+    """What the login page needs: which sign-in routes this install offers.
+
+    Plex signs in by PIN and needs the server's identity known first; Jellyfin and Emby sign in
+    with the person's own username and password on that server, so all they need is a URL.
+    """
+    from app.clients.media_server import MediaServerKind
+    from app.services import media_server_service
+
+    kind = media_server_service.kind(session)
+    return {
+        "next": next,
+        "error": error,
+        "local_login_available": has_local_admin(session),
+        "plex_login_available": kind == MediaServerKind.PLEX and get_machine_identifier(session) is not None,
+        "server_login_available": kind != MediaServerKind.PLEX and media_server_service.is_configured(session),
+        "server_label": media_server_service.label(session),
+    }
+
+
 @router.get("/login", response_class=HTMLResponse)
 def login_form(request: Request, session: DbSession, user: CurrentUser, next: str | None = None):
     if user is not None:
         return RedirectResponse(_safe_next(next), status_code=status.HTTP_303_SEE_OTHER)
 
-    return get_templates().TemplateResponse(
-        request,
-        "login.html",
-        {
-            "next": next or "",
-            "local_login_available": has_local_admin(session),
-            "plex_login_available": get_machine_identifier(session) is not None,
-        },
-    )
+    return get_templates().TemplateResponse(request, "login.html", _login_context(session, next=next or ""))
 
 
 @router.post("/login", response_class=HTMLResponse)
@@ -104,15 +116,43 @@ def login_submit(
         # One message for both causes: saying which was wrong tells an attacker which usernames
         # exist.
         return get_templates().TemplateResponse(
-            request,
-            "login.html",
-            {
-                "error": "Incorrect username or password.",
-                "next": next,
-                "local_login_available": has_local_admin(session),
-                "plex_login_available": get_machine_identifier(session) is not None,
-            },
+            request, "login.html",
+            _login_context(session, next=next, error="Incorrect username or password."),
             status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    token = create_session(session, user)
+    response = RedirectResponse(_safe_next(next), status_code=status.HTTP_303_SEE_OTHER)
+    _set_session_cookie(response, token)
+    return response
+
+
+@router.post("/auth/server/login", response_class=HTMLResponse)
+def server_login_submit(
+    request: Request,
+    session: DbSession,
+    username: Annotated[str, Form()] = "",
+    password: Annotated[str, Form()] = "",
+    next: Annotated[str, Form()] = "",
+):
+    """Sign in with a Jellyfin or Emby account. The credentials go to that server and are not
+    stored here; what comes back is the server's word that this person has an account on it."""
+    from app.clients.emby_client import EmbyAuthError, EmbyClientError
+    from app.services.auth_service import MediaServerSignInUnavailable, sign_in_with_media_server
+
+    try:
+        user = sign_in_with_media_server(session, username, password)
+    except EmbyAuthError:
+        # The server's own message would say which was wrong; ours does not.
+        return get_templates().TemplateResponse(
+            request, "login.html",
+            _login_context(session, next=next, error="Incorrect username or password."),
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+    except (EmbyClientError, MediaServerSignInUnavailable) as exc:
+        return get_templates().TemplateResponse(
+            request, "login.html", _login_context(session, next=next, error=str(exc)),
+            status_code=status.HTTP_502_BAD_GATEWAY,
         )
 
     token = create_session(session, user)

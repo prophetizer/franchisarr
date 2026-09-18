@@ -71,8 +71,11 @@ class User(SQLModel, table=True):
     __tablename__ = "users"
 
     id: int | None = Field(default=None, primary_key=True)
-    plex_user_id: str | None = Field(default=None, index=True, unique=True)
-    plex_username: str | None = Field(default=None)
+    #: Which server vouched for this person: "plex", "jellyfin" or "emby". None for the local
+    #: admin. The pair (auth_provider, external_user_id) identifies an account.
+    auth_provider: str | None = Field(default=None)
+    external_user_id: str | None = Field(default=None, index=True, unique=True)
+    external_username: str | None = Field(default=None)
     local_username: str | None = Field(default=None, index=True, unique=True)
     password_hash: str | None = Field(default=None)
     is_admin: bool = Field(default=False)
@@ -300,8 +303,8 @@ class IncludedLibrary(SQLModel, table=True):
     __tablename__ = "included_libraries"
 
     id: int | None = Field(default=None, primary_key=True)
-    plex_library_key: str = Field(index=True, unique=True)
-    plex_library_name: str
+    library_key: str = Field(index=True, unique=True)
+    library_name: str
     library_type: str
     enabled: bool = Field(default=True)
 
@@ -326,12 +329,12 @@ class LibraryItem(SQLModel, table=True):
 
     __tablename__ = "library_items"
     __table_args__ = (
-        UniqueConstraint("plex_library_key", "rating_key", name="uq_library_item"),
+        UniqueConstraint("library_key", "item_key", name="uq_library_item"),
     )
 
     id: int | None = Field(default=None, primary_key=True)
-    plex_library_key: str = Field(index=True)
-    rating_key: str = Field(index=True)
+    library_key: str = Field(index=True)
+    item_key: str = Field(index=True)
     item_type: str = Field(default=ItemType.MOVIE.value)
     title: str
     year: int | None = Field(default=None)

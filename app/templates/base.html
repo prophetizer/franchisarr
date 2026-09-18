@@ -58,7 +58,7 @@
             <li><a href="{{ url('/instances') }}">Instances</a></li>
             <li><a href="{{ url('/settings') }}">Settings</a></li>
             <li>
-              <small>{{ user.plex_username or user.local_username }}</small>
+              <small>{{ user.external_username or user.local_username }}</small>
             </li>
             <li>
               <button type="button" class="secondary outline theme-toggle"

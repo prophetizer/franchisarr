@@ -27,13 +27,13 @@ def _sparql(*rows): return {"results": {"bindings": list(rows)}}
 
 def _own_film(session, tmdb_id, title, collection_id=None):
     session.add(TmdbMovie(tmdb_id=tmdb_id, title=title, collection_id=collection_id))
-    session.add(LibraryItem(plex_library_key="1", rating_key=f"f{tmdb_id}", item_type="movie",
+    session.add(LibraryItem(library_key="1", item_key=f"f{tmdb_id}", item_type="movie",
                             title=title, year=1990, tmdb_id=tmdb_id, match_source="guid"))
 
 
 def _own_show(session, tmdb_id, name):
     session.add(TmdbShow(tmdb_id=tmdb_id, name=name))
-    session.add(LibraryItem(plex_library_key="2", rating_key=f"s{tmdb_id}", item_type="show",
+    session.add(LibraryItem(library_key="2", item_key=f"s{tmdb_id}", item_type="show",
                             title=name, year=1990, tmdb_id=tmdb_id, match_source="guid"))
 
 
@@ -200,7 +200,7 @@ def client(app_factory):
     with TestClient(module.app, follow_redirects=False) as test_client:
         with Session(get_engine()) as session:
             create_local_admin(session, "admin", PASSWORD)
-            session.add(IncludedLibrary(plex_library_key="1", plex_library_name="Movies",
+            session.add(IncludedLibrary(library_key="1", library_name="Movies",
                                         library_type="movie", enabled=True))
             session.commit()
         test_client.post(f"{BASE}/login", data={"username": "admin", "password": PASSWORD})

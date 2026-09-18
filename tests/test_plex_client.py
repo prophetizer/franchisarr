@@ -137,7 +137,7 @@ def test_movies_from_a_new_agent_library(
         "An Unmatched Film",
     ]
     first = movies[0]
-    assert first.rating_key == "1001"
+    assert first.item_key == "1001"
     assert first.year == 1984
     assert first.external_ids == ExternalIds(tmdb_id=90, imdb_id="tt0086960", tvdb_id=12345)
     assert first.has_external_ids is True

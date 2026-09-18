@@ -142,7 +142,7 @@ def test_import_fetches_display_details_once(session: Session) -> None:
 
 def _own_film(session: Session, tmdb_id: int, title: str) -> None:
     session.add(TmdbMovie(tmdb_id=tmdb_id, title=title))
-    session.add(LibraryItem(plex_library_key="1", rating_key=f"f{tmdb_id}",
+    session.add(LibraryItem(library_key="1", item_key=f"f{tmdb_id}",
                             item_type=ItemType.MOVIE.value, title=title, year=2005,
                             tmdb_id=tmdb_id, match_source=MatchSource.GUID.value))
     session.commit()
@@ -166,7 +166,7 @@ def test_suggestions_route_to_the_other_medium(session: Session) -> None:
 def test_a_target_already_owned_is_not_suggested(session: Session) -> None:
     _own_film(session, 16320, "Serenity")
     session.add(TmdbShow(tmdb_id=1437, name="Firefly"))
-    session.add(LibraryItem(plex_library_key="2", rating_key="s1437", item_type="show",
+    session.add(LibraryItem(library_key="2", item_key="s1437", item_type="show",
                             title="Firefly", year=2002, tmdb_id=1437, match_source="guid"))
     session.add(CrossMediaMapping(source_type="movie", source_tmdb_id=16320, target_type="show",
                                   target_tmdb_id=1437, target_title="Firefly", relation="P156"))
@@ -215,7 +215,7 @@ def test_a_tv_scan_runs_cross_media_discovery(session: Session, fixtures_dir) ->
     responses.add(responses.GET, SPARQL_ENDPOINT, json=_sparql())
     responses.add(responses.GET, SPARQL_ENDPOINT, json=_sparql())
 
-    session.add(IncludedLibrary(plex_library_key="2", plex_library_name="TV Shows",
+    session.add(IncludedLibrary(library_key="2", library_name="TV Shows",
                                 library_type="show", enabled=True))
     session.commit()
 
@@ -238,7 +238,7 @@ def client(app_factory):
     with TestClient(module.app, follow_redirects=False) as test_client:
         with Session(get_engine()) as session:
             create_local_admin(session, "admin", PASSWORD)
-            session.add(IncludedLibrary(plex_library_key="2", plex_library_name="TV",
+            session.add(IncludedLibrary(library_key="2", library_name="TV",
                                         library_type="show", enabled=True))
             session.commit()
         test_client.post(f"{BASE}/login", data={"username": "admin", "password": PASSWORD})
@@ -248,7 +248,7 @@ def client(app_factory):
 def test_the_spinoff_page_lists_shows_from_films_with_a_sonarr_add(client: TestClient) -> None:
     with Session(get_engine()) as session:
         _own_film(session, 16320, "Serenity")
-        session.add(LibraryItem(plex_library_key="2", rating_key="s1", item_type="show",
+        session.add(LibraryItem(library_key="2", item_key="s1", item_type="show",
                                 title="Some Show", year=2000, tmdb_id=99, match_source="guid"))
         session.add(TmdbShow(tmdb_id=99, name="Some Show"))
         session.add(CrossMediaMapping(source_type="movie", source_tmdb_id=16320, target_type="show",
@@ -266,7 +266,7 @@ def test_the_spinoff_page_lists_shows_from_films_with_a_sonarr_add(client: TestC
 
 def test_the_spinoff_page_lists_films_from_shows_with_a_radarr_add(client: TestClient) -> None:
     with Session(get_engine()) as session:
-        session.add(LibraryItem(plex_library_key="2", rating_key="s275", item_type="show",
+        session.add(LibraryItem(library_key="2", item_key="s275", item_type="show",
                                 title="Fargo", year=2014, tmdb_id=60622, match_source="guid"))
         session.add(TmdbShow(tmdb_id=60622, name="Fargo"))
         session.add(CrossMediaMapping(source_type="show", source_tmdb_id=60622, target_type="movie",

@@ -26,7 +26,7 @@ def client(app_factory):
     with TestClient(module.app, follow_redirects=False) as test_client:
         with Session(get_engine()) as session:
             create_local_admin(session, "admin", PASSWORD)
-            session.add(IncludedLibrary(plex_library_key="1", plex_library_name="Movies",
+            session.add(IncludedLibrary(library_key="1", library_name="Movies",
                                         library_type="movie", enabled=True))
             session.commit()
         yield test_client
@@ -50,7 +50,7 @@ def _seed_films() -> None:
                                             release_year=year, release_date=f"{year}-06-01", position=pos,
                                             vote_average=avg, vote_count=500 if avg else None))
         session.add(TmdbMovie(tmdb_id=90, title="Beverly Hills Cop", collection_id=COLLECTION))
-        session.add(LibraryItem(plex_library_key="1", rating_key="90", item_type="movie", title="Beverly Hills Cop",
+        session.add(LibraryItem(library_key="1", item_key="90", item_type="movie", title="Beverly Hills Cop",
                                 year=1984, tmdb_id=90, match_source="guid"))
         session.commit()
 
@@ -107,8 +107,8 @@ def test_dismissals_apply_to_the_lists(client: TestClient) -> None:
 def test_the_shows_list_carries_tvdb_ids_and_counts_what_it_could_not(client: TestClient) -> None:
     key = _key()
     with Session(get_engine()) as session:
-        session.add(IncludedLibrary(plex_library_key="2", plex_library_name="TV", library_type="show", enabled=True))
-        session.add(LibraryItem(plex_library_key="2", rating_key="s4614", item_type="show", title="NCIS",
+        session.add(IncludedLibrary(library_key="2", library_name="TV", library_type="show", enabled=True))
+        session.add(LibraryItem(library_key="2", item_key="s4614", item_type="show", title="NCIS",
                                 year=2003, tmdb_id=4614, match_source="guid"))
         session.add(TmdbShow(tmdb_id=4614, name="NCIS"))
         session.add(TmdbShow(tmdb_id=17610, name="NCIS: Los Angeles", first_air_year=2009, tvdb_id=95441))
@@ -157,8 +157,8 @@ def test_the_shows_list_learns_a_missing_show_on_demand_and_caches_it(client: Te
     key = _key()
     with Session(get_engine()) as session:
         set_setting(session, SettingKey.TMDB_API_KEY, "k" * 32)
-        session.add(IncludedLibrary(plex_library_key="2", plex_library_name="TV", library_type="show", enabled=True))
-        session.add(LibraryItem(plex_library_key="2", rating_key="s1855", item_type="show", title="Voyager",
+        session.add(IncludedLibrary(library_key="2", library_name="TV", library_type="show", enabled=True))
+        session.add(LibraryItem(library_key="2", item_key="s1855", item_type="show", title="Voyager",
                                 year=1995, tmdb_id=1855, match_source="guid"))
         session.add(TmdbShow(tmdb_id=1855, name="Voyager"))
         session.add(Franchise(wikidata_id="Q1092", name="Star Trek", kind="media franchise"))

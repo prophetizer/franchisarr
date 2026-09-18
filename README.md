@@ -13,7 +13,8 @@ you have 6 of 27*), **director pages** (*you own 11 Nolan films; missing* Follow
 Insomnia), an **Upcoming** page of announced films in franchises you own with release-date
 notifications, and **import lists** Radarr and Sonarr can poll so you never have to click Add.
 
-It supports multiple Radarr and Sonarr instances, signs you in with Plex, scans on a schedule,
+It reads **Plex, Jellyfin or Emby**, supports multiple Radarr and Sonarr instances, signs you
+in with your media server account, scans on a schedule,
 shouts into Discord or Slack when it finds something new, and has a web UI and a CLI. Everything
 it hides — low-rated films, TV specials, shorts — is a preference, folded away rather than
 deleted.
@@ -27,7 +28,8 @@ Images are published to GHCR for amd64 and arm64.
 mkdir franchisarr && cd franchisarr
 curl -fsSLO https://raw.githubusercontent.com/prophetizer/franchisarr/master/docker-compose.yml
 curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env.example -o .env
-# edit .env — at minimum: PLEX_URL, PLEX_TOKEN, TMDB_API_KEY, ADMIN_USERNAME, ADMIN_PASSWORD
+# edit .env — at minimum: your media server (PLEX_URL+PLEX_TOKEN, or JELLYFIN_URL+JELLYFIN_API_KEY,
+#   or EMBY_URL+EMBY_API_KEY), TMDB_API_KEY, ADMIN_USERNAME, ADMIN_PASSWORD
 docker compose up -d
 ```
 
@@ -49,7 +51,10 @@ changing a variable later has no effect. See [`.env.example`](.env.example) for 
 
 | Variable | Purpose |
 |---|---|
+| `MEDIA_SERVER` | `plex` (default), `jellyfin` or `emby`; inferred from whichever URL is set |
 | `PLEX_URL`, `PLEX_TOKEN` | Your Plex server |
+| `JELLYFIN_URL`, `JELLYFIN_API_KEY` | …or your Jellyfin server (Dashboard → API Keys) |
+| `EMBY_URL`, `EMBY_API_KEY` | …or your Emby server |
 | `TMDB_API_KEY` | Your own free v3 key |
 | `FANART_API_KEY` | Optional; adds franchise logos to collection headings |
 | `SHOW_ARTWORK` | `false` turns off all poster and logo images |

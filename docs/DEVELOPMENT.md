@@ -67,6 +67,17 @@ Numbered because code comments cite them.
 - **Wait a few seconds between pushing a tag and creating its release.** A release created in the
   same instant as the tag push has been stamped with the epoch and sorted last.
 
+## Media servers
+
+`app/clients/media_server.py` is the boundary: four methods and two neutral item types, and
+nothing downstream knows which server it is talking to. `PlexClient` and `EmbyLikeClient`
+(Jellyfin and Emby, one client, `kind` is configuration) implement it;
+`media_server_service.client_for()` picks one from the `MEDIA_SERVER` setting. One server per
+install for now. Sign-in: Plex by PIN with a server-access check; Jellyfin/Emby by the person's
+own username and password against that server, which is the same authorisation in different
+clothes. Measured before building: both of the developer's servers carry a TMDb id on
+99.7–100% of items, so matching is id-first with the IMDb `/find` fallback for the rest.
+
 ## Optional data sources
 
 - **fanart.tv** (`FANART_API_KEY`): franchise wordmarks for collection headings. Measured as

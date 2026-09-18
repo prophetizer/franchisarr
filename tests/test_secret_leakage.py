@@ -184,7 +184,7 @@ def test_a_non_admin_cannot_reach_the_export(client: TestClient) -> None:
     """It contains every credential in the install; an ordinary household account must not have
     it."""
     with Session(get_engine()) as session:
-        ordinary = User(plex_user_id="99", plex_username="housemate", is_admin=False)
+        ordinary = User(external_user_id="99", external_username="housemate", is_admin=False)
         session.add(ordinary)
         session.commit()
         session.refresh(ordinary)

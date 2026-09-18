@@ -19,7 +19,7 @@ from scripts.plex_guid_audit import audit_items, load_env_file
 
 def _movie(title: str, ids: ExternalIds, *guids: str, year: int | None = 2001) -> PlexMovie:
     return PlexMovie(
-        rating_key="1", title=title, year=year, external_ids=ids, guids=tuple(guids)
+        item_key="1", title=title, year=year, external_ids=ids, guids=tuple(guids)
     )
 
 

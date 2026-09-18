@@ -52,8 +52,8 @@ def _add_library(*, enabled: bool = True, key: str = "1") -> None:
     with Session(get_engine()) as session:
         session.add(
             IncludedLibrary(
-                plex_library_key=key,
-                plex_library_name="Movies",
+                library_key=key,
+                library_name="Movies",
                 library_type="movie",
                 enabled=enabled,
             )
@@ -286,9 +286,9 @@ def test_a_plex_user_with_server_access_is_signed_in(client: TestClient) -> None
     assert COOKIE_NAME in response.cookies
 
     with Session(get_engine()) as session:
-        user = session.exec(select(User).where(col(User.plex_user_id) == "5551234")).first()
+        user = session.exec(select(User).where(col(User.external_user_id) == "5551234")).first()
     assert user is not None
-    assert user.plex_username == "michael"
+    assert user.external_username == "michael"
     assert user.is_admin is True, "the server owner administers the install"
 
 
@@ -311,7 +311,7 @@ def test_a_stranger_with_a_valid_plex_account_is_refused(client: TestClient) -> 
     assert COOKIE_NAME not in response.cookies
 
     with Session(get_engine()) as session:
-        provisioned = session.exec(select(User).where(col(User.plex_user_id).is_not(None))).all()
+        provisioned = session.exec(select(User).where(col(User.external_user_id).is_not(None))).all()
     assert provisioned == [], "a refused sign-in must not leave an account behind"
 
 
@@ -332,7 +332,7 @@ def test_a_shared_user_is_signed_in_without_admin(client: TestClient) -> None:
     assert client.post(f"{BASE}/auth/plex/poll").json()["status"] == "ok"
 
     with Session(get_engine()) as session:
-        user = session.exec(select(User).where(col(User.plex_username) == "housemate")).first()
+        user = session.exec(select(User).where(col(User.external_username) == "housemate")).first()
     assert user is not None
     assert user.is_admin is False
 

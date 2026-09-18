@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def list_libraries(session: Session) -> list[IncludedLibrary]:
     return list(
-        session.exec(select(IncludedLibrary).order_by(col(IncludedLibrary.plex_library_name))).all()
+        session.exec(select(IncludedLibrary).order_by(col(IncludedLibrary.library_name))).all()
     )
 
 
@@ -35,7 +35,7 @@ def sync_libraries(session: Session, libraries: list[PlexLibrary]) -> list[Inclu
     Plex doesn't silently drop it from scans. Libraries that have disappeared from Plex are
     removed -- keeping them would offer the user checkboxes for things that no longer exist.
     """
-    existing = {library.plex_library_key: library for library in list_libraries(session)}
+    existing = {library.library_key: library for library in list_libraries(session)}
     seen: set[str] = set()
 
     for library in libraries:
@@ -44,21 +44,21 @@ def sync_libraries(session: Session, libraries: list[PlexLibrary]) -> list[Inclu
         if row is None:
             session.add(
                 IncludedLibrary(
-                    plex_library_key=library.key,
-                    plex_library_name=library.title,
+                    library_key=library.key,
+                    library_name=library.title,
                     library_type=library.library_type,
                     enabled=False,
                 )
             )
             logger.info("Discovered Plex library %r (disabled until selected)", library.title)
         else:
-            row.plex_library_name = library.title
+            row.library_name = library.title
             row.library_type = library.library_type
             session.add(row)
 
     for key, row in existing.items():
         if key not in seen:
-            logger.info("Plex library %r no longer exists; removing", row.plex_library_name)
+            logger.info("Library %r no longer exists on the media server; removing", row.library_name)
             session.delete(row)
 
     session.commit()
@@ -74,7 +74,7 @@ def set_enabled_libraries(session: Session, keys: list[str]) -> list[IncludedLib
     was deliberately unticked."""
     wanted = set(keys)
     for row in list_libraries(session):
-        row.enabled = row.plex_library_key in wanted
+        row.enabled = row.library_key in wanted
         session.add(row)
     session.commit()
 

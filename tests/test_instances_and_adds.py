@@ -59,7 +59,7 @@ def _library_with_gap(session: Session) -> None:
             )
         )
     session.add(
-        LibraryItem(plex_library_key="1", rating_key="1", item_type=ItemType.MOVIE.value,
+        LibraryItem(library_key="1", item_key="1", item_type=ItemType.MOVIE.value,
                     title="Beverly Hills Cop", year=1984, tmdb_id=90,
                     match_source=MatchSource.GUID.value)
     )

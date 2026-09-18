@@ -75,18 +75,19 @@ def provision_plex_user(session: Session, account: plex_oauth.PlexAccount, *, is
     The server owner administers the install. Someone the library is shared with gets an ordinary
     account: their own dismiss list, but no settings or instance configuration.
     """
-    user = session.exec(select(User).where(col(User.plex_user_id) == account.id)).first()
+    user = session.exec(select(User).where(col(User.external_user_id) == account.id)).first()
 
     if user is None:
         user = User(
-            plex_user_id=account.id,
-            plex_username=account.username,
+            auth_provider="plex",
+            external_user_id=account.id,
+            external_username=account.username,
             is_admin=is_owner,
         )
         session.add(user)
         logger.info("Provisioned Plex user %r (admin=%s)", account.username, is_owner)
     else:
-        user.plex_username = account.username
+        user.external_username = account.username
         # Ownership can change -- a server can be handed over, or sharing revoked and regranted.
         user.is_admin = user.is_admin or is_owner
         session.add(user)
@@ -113,3 +114,46 @@ def sign_in_with_plex_token(session: Session, token: str) -> User:
     account = plex_oauth.get_account(client_id, token)
     is_owner = plex_oauth.owns_server(client_id, token, machine_identifier)
     return provision_plex_user(session, account, is_owner=is_owner)
+
+
+
+class MediaServerSignInUnavailable(RuntimeError):
+    """The configured server is Plex (which signs in by PIN) or nothing is configured."""
+
+
+def sign_in_with_media_server(session: Session, username: str, password: str) -> User:
+    """Sign in with a Jellyfin or Emby account on the configured server.
+
+    The server itself is the authorisation: an account that can sign in there is an account on
+    *this* install's server, which is what the Plex flow establishes with its server-access
+    check. An administrator there administers here; anyone else gets an ordinary account with
+    their own dismiss list.
+
+    Raises EmbyAuthError for a wrong username or password, EmbyClientError when the server can't
+    be reached, and MediaServerSignInUnavailable when this install isn't set up for it.
+    """
+    from app.clients.emby_client import EmbyLikeClient
+    from app.services import media_server_service
+
+    client = media_server_service.client_for(session)
+    if not isinstance(client, EmbyLikeClient):
+        raise MediaServerSignInUnavailable(
+            f"{media_server_service.label(session)} sign-in isn't available on this install."
+        )
+    account = client.authenticate(username, password)
+    provider = client.kind.value
+    external_id = f"{provider}:{account['user_id']}"
+
+    user = session.exec(select(User).where(col(User.external_user_id) == external_id)).first()
+    if user is None:
+        user = User(auth_provider=provider, external_user_id=external_id,
+                    external_username=account["username"], is_admin=account["is_admin"])
+        session.add(user)
+        logger.info("Provisioned %s user %r (admin=%s)", provider, account["username"], account["is_admin"])
+    else:
+        user.external_username = account["username"]
+        user.is_admin = user.is_admin or account["is_admin"]
+        session.add(user)
+    session.commit()
+    session.refresh(user)
+    return user

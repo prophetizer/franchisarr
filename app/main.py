@@ -26,7 +26,7 @@ from app.auth.dependencies import (
 from app.auth.local_admin import seed_local_admin_from_env
 from app.services.instance_service import seed_radarr_from_env
 from app.services.sonarr_instance_service import seed_sonarr_from_env
-from app.clients.plex_client import PlexClient, PlexClientError
+from app.clients.media_server import MediaServerError, MediaServerKind
 from app.config import get_settings
 from app.db import get_engine, run_migrations
 from app.logging_config import configure_logging, register_secret
@@ -61,12 +61,15 @@ def _discover_plex_server(session: Session) -> None:
     Failure is not fatal: an unreachable Plex simply leaves Plex sign-in unavailable until the
     next restart, which is the same conservative outcome as before.
     """
-    plex_url = get_setting(session, SettingKey.PLEX_URL)
-    plex_token = get_setting(session, SettingKey.PLEX_TOKEN)
-    if not (plex_url and plex_token):
+    from app.services import media_server_service
+
+    if media_server_service.kind(session) != MediaServerKind.PLEX:
+        return  # the server-identity check is a Plex sign-in concern only
+    client = media_server_service.client_for(session)
+    if client is None:
         return
 
-    identifier = discover_machine_identifier(session, PlexClient(plex_url, plex_token))
+    identifier = discover_machine_identifier(session, client)
     if identifier:
         logger.info("Plex sign-in is available")
     else:
@@ -162,18 +165,19 @@ def index(request: Request, session: DbSession, user: RequiredUser):
 def libraries_form(request: Request, session: DbSession, user: RequiredUser):
     """Show the library checkboxes, refreshing the list from Plex when it's reachable."""
     error = None
-    plex_url = get_setting(session, SettingKey.PLEX_URL)
-    plex_token = get_setting(session, SettingKey.PLEX_TOKEN)
+    from app.services import media_server_service
 
-    if not (plex_url and plex_token):
-        error = "No Plex connection is configured yet, so no libraries could be listed."
+    client = media_server_service.client_for(session)
+    if client is None:
+        error = (f"{media_server_service.missing_message(session)[:-1]}, "
+                 "so no libraries could be listed.")
     else:
         try:
-            client = PlexClient(plex_url, plex_token)
             library_service.sync_from_plex(session, client)
             # Learning the server's identity here is what makes Plex sign-in possible at all.
-            discover_machine_identifier(session, client)
-        except PlexClientError as exc:
+            if client.kind == MediaServerKind.PLEX:
+                discover_machine_identifier(session, client)
+        except MediaServerError as exc:
             # Fall back to what was stored: an unreachable Plex must not make the page unusable,
             # or a user could be stuck unable to change their selection until Plex comes back.
             error = f"{exc}. Showing the libraries last seen."

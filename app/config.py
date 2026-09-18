@@ -34,6 +34,19 @@ def _env_or_none(name: str) -> str | None:
     return value or None
 
 
+def _media_server_kind() -> str | None:
+    """MEDIA_SERVER if set; otherwise inferred from which server has a URL, Plex first."""
+    explicit = _env("MEDIA_SERVER").lower()
+    if explicit in ("plex", "jellyfin", "emby"):
+        return explicit
+    if explicit:
+        return None  # a typo falls back to the stored default rather than picking something
+    for kind, var in (("plex", "PLEX_URL"), ("jellyfin", "JELLYFIN_URL"), ("emby", "EMBY_URL")):
+        if _env(var):
+            return kind
+    return None
+
+
 def parse_bool(raw: str | None, default: bool = False) -> bool:
     if raw is None:
         return default
@@ -56,8 +69,15 @@ class EnvSettings:
     #: plain HTTP, where a Secure cookie would simply never be sent and nobody could log in.
     session_cookie_secure: bool = False
 
+    #: plex | jellyfin | emby. Defaults to plex, and to whichever server has a URL configured
+    #: when plex does not -- so a Jellyfin-only .env needs no extra line.
+    media_server: str | None = None
     plex_url: str | None = None
     plex_token: str | None = None
+    jellyfin_url: str | None = None
+    jellyfin_api_key: str | None = None
+    emby_url: str | None = None
+    emby_api_key: str | None = None
 
     tmdb_api_key: str | None = None
     tmdb_cache_ttl_days: int | None = None
@@ -106,7 +126,12 @@ def get_settings() -> EnvSettings:
         base_url=_normalize_base_url(os.environ.get("BASE_URL", "/")),
         log_level=(_env("LOG_LEVEL") or "INFO").upper(),
         session_cookie_secure=parse_bool(_env("SESSION_COOKIE_SECURE"), False),
+        media_server=_media_server_kind(),
         plex_url=_env_or_none("PLEX_URL"),
+        jellyfin_url=_env_or_none("JELLYFIN_URL"),
+        jellyfin_api_key=_env_or_none("JELLYFIN_API_KEY"),
+        emby_url=_env_or_none("EMBY_URL"),
+        emby_api_key=_env_or_none("EMBY_API_KEY"),
         plex_token=_env_or_none("PLEX_TOKEN"),
         tmdb_api_key=_env_or_none("TMDB_API_KEY"),
         fanart_api_key=_env_or_none("FANART_API_KEY"),
