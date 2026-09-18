@@ -185,7 +185,8 @@ def libraries_form(request: Request, session: DbSession, user: RequiredUser):
     return get_templates().TemplateResponse(
         request,
         "libraries.html",
-        {"user": user, "libraries": library_service.list_libraries(session), "error": error},
+        {"user": user, "libraries": library_service.list_libraries(session), "error": error,
+         "server_label": media_server_service.label(session)},
     )
 
 
