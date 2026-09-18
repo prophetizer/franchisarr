@@ -57,7 +57,7 @@ def test_a_renamed_library_keeps_its_selection(session: Session) -> None:
     library_service.sync_libraries(session, [_lib("1", "Films")])
 
     rows = library_service.list_libraries(session)
-    assert rows[0].plex_library_name == "Films"
+    assert rows[0].library_name == "Films"
     assert rows[0].enabled is True
 
 
@@ -67,7 +67,7 @@ def test_a_library_removed_from_plex_disappears(session: Session) -> None:
 
     library_service.sync_libraries(session, [_lib("1", "Movies")])
 
-    assert [lib.plex_library_key for lib in library_service.list_libraries(session)] == ["1"]
+    assert [lib.library_key for lib in library_service.list_libraries(session)] == ["1"]
 
 
 def test_setting_the_selection_replaces_it_wholesale(session: Session) -> None:
@@ -77,7 +77,7 @@ def test_setting_the_selection_replaces_it_wholesale(session: Session) -> None:
 
     library_service.set_enabled_libraries(session, ["2"])
 
-    assert [lib.plex_library_key for lib in library_service.enabled_libraries(session)] == ["2"]
+    assert [lib.library_key for lib in library_service.enabled_libraries(session)] == ["2"]
 
 
 def test_has_selection_reflects_reality(session: Session) -> None:
@@ -99,7 +99,7 @@ def test_the_server_owner_is_provisioned_as_an_admin(session: Session) -> None:
     user = auth_service.provision_plex_user(session, _account(), is_owner=True)
 
     assert user.is_admin is True
-    assert user.plex_username == "michael"
+    assert user.external_username == "michael"
 
 
 def test_a_shared_user_is_provisioned_without_admin(session: Session) -> None:
@@ -116,7 +116,7 @@ def test_signing_in_again_updates_the_username_without_duplicating(session: Sess
 
     users = session.exec(select(User)).all()
     assert len(users) == 1
-    assert users[0].plex_username == "new"
+    assert users[0].external_username == "new"
 
 
 def test_admin_is_not_revoked_by_a_later_non_owner_sign_in(session: Session) -> None:
@@ -192,7 +192,7 @@ def test_a_tv_scan_populates_the_snapshot_and_show_cache(session: Session, fixtu
                   json={"id": 44006, "name": "Chicago Fire", "first_air_date": "2012-10-10",
                         "networks": [{"name": "NBC"}]})
 
-    session.add(IncludedLibrary(plex_library_key="2", plex_library_name="TV Shows",
+    session.add(IncludedLibrary(library_key="2", library_name="TV Shows",
                                 library_type="show", enabled=True))
     session.commit()
 
@@ -217,7 +217,7 @@ def test_a_tv_scan_with_no_enabled_libraries_says_so(session: Session) -> None:
 
 def test_the_movie_scan_ignores_show_libraries_and_vice_versa(session: Session) -> None:
     """They share the snapshot table, so each has to filter by type."""
-    session.add(IncludedLibrary(plex_library_key="2", plex_library_name="TV",
+    session.add(IncludedLibrary(library_key="2", library_name="TV",
                                 library_type="show", enabled=True))
     session.commit()
 
@@ -243,7 +243,7 @@ def client(app_factory):
 
 def _own_show(tmdb_id: int, title: str) -> None:
     with Session(get_engine()) as session:
-        session.add(LibraryItem(plex_library_key="2", rating_key=str(tmdb_id),
+        session.add(LibraryItem(library_key="2", item_key=str(tmdb_id),
                                 item_type=ItemType.SHOW.value, title=title, year=2003,
                                 tmdb_id=tmdb_id, match_source=MatchSource.GUID.value))
         session.commit()
@@ -356,7 +356,7 @@ def test_a_tv_scan_discovers_spinoffs_end_to_end(session: Session, fixtures_dir)
                   json={"id": 17610, "name": "NCIS: Los Angeles",
                         "first_air_date": "2009-09-22", "networks": [{"name": "CBS"}]})
 
-    session.add(IncludedLibrary(plex_library_key="2", plex_library_name="TV Shows",
+    session.add(IncludedLibrary(library_key="2", library_name="TV Shows",
                                 library_type="show", enabled=True))
     session.commit()
 
@@ -395,7 +395,7 @@ def test_a_wikidata_outage_does_not_stop_a_tv_scan(session: Session, fixtures_di
                             "networks": [{"name": "CBS"}]})
     responses.add(responses.GET, SPARQL_ENDPOINT, status=503)
 
-    session.add(IncludedLibrary(plex_library_key="2", plex_library_name="TV Shows",
+    session.add(IncludedLibrary(library_key="2", library_name="TV Shows",
                                 library_type="show", enabled=True))
     session.commit()
 

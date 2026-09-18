@@ -32,8 +32,8 @@ NCIS_NOLA = 61387
 
 def _own_show(session: Session, tmdb_id: int, title: str, **kwargs) -> LibraryItem:
     fields = {
-        "plex_library_key": "2",
-        "rating_key": str(tmdb_id),
+        "library_key": "2",
+        "item_key": str(tmdb_id),
         "item_type": ItemType.SHOW.value,
         "title": title,
         "year": 2003,
@@ -252,7 +252,7 @@ def test_an_unconfirmed_show_match_does_not_count_as_owned(session: Session) -> 
 def test_movies_are_not_mistaken_for_shows(session: Session) -> None:
     """The snapshot table holds both, so every query has to filter on item_type."""
     session.add(
-        LibraryItem(plex_library_key="1", rating_key="x", item_type=ItemType.MOVIE.value,
+        LibraryItem(library_key="1", item_key="x", item_type=ItemType.MOVIE.value,
                     title="A Film", tmdb_id=NCIS, match_source=MatchSource.GUID.value)
     )
     session.commit()

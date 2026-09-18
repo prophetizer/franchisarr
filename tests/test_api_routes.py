@@ -204,7 +204,7 @@ def test_creating_an_instance_requires_an_admin(client: TestClient) -> None:
     from app.models import User
 
     with Session(get_engine()) as session:
-        ordinary = User(plex_user_id="99", plex_username="housemate", is_admin=False)
+        ordinary = User(external_user_id="99", external_username="housemate", is_admin=False)
         session.add(ordinary)
         session.commit()
         session.refresh(ordinary)

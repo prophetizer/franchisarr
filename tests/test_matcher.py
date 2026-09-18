@@ -27,7 +27,7 @@ from app.services.matcher import (
 
 def _movie(title: str, year: int | None = 2001, ids: ExternalIds | None = None) -> PlexMovie:
     return PlexMovie(
-        rating_key="1", title=title, year=year, external_ids=ids or ExternalIds(), guids=()
+        item_key="1", title=title, year=year, external_ids=ids or ExternalIds(), guids=()
     )
 
 

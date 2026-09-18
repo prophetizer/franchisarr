@@ -33,8 +33,8 @@ COLLECTION = 85861
 
 def _own(session: Session, tmdb_id: int, title: str, **kwargs) -> LibraryItem:
     fields = {
-        "plex_library_key": "1",
-        "rating_key": str(tmdb_id),
+        "library_key": "1",
+        "item_key": str(tmdb_id),
         "item_type": ItemType.MOVIE.value,
         "title": title,
         "year": 1984,
@@ -255,7 +255,7 @@ def test_items_needing_review_are_listed_rather_than_silently_dropped(session: S
 
 def test_unmatched_items_are_listed(session: Session) -> None:
     session.add(
-        LibraryItem(plex_library_key="1", rating_key="x", title="Christmas 2019",
+        LibraryItem(library_key="1", item_key="x", title="Christmas 2019",
                     item_type=ItemType.MOVIE.value)
     )
     session.commit()
@@ -296,7 +296,7 @@ def test_a_scan_populates_the_snapshot_and_the_cache(
             {"id": 306, "title": "Beverly Hills Cop III", "release_date": "1994-05-24"},
         ]})
 
-    session.add(IncludedLibrary(plex_library_key="1", plex_library_name="Movies",
+    session.add(IncludedLibrary(library_key="1", library_name="Movies",
                                 library_type="movie", enabled=True))
     session.commit()
 
@@ -341,7 +341,7 @@ def test_a_rejected_tmdb_key_stops_the_scan_instead_of_retrying_every_film(
     responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/96", status=401)
     responses.add(responses.GET, f"{TMDB_BASE_URL}/search/movie", json={"results": []})
 
-    session.add(IncludedLibrary(plex_library_key="1", plex_library_name="Movies",
+    session.add(IncludedLibrary(library_key="1", library_name="Movies",
                                 library_type="movie", enabled=True))
     session.commit()
 
@@ -642,7 +642,7 @@ def test_collections_are_led_by_their_best_missing_film(session: Session) -> Non
                                     release_year=1992, release_date="1992-01-01", position=1,
                                     vote_average=4.1, vote_count=900))
     session.add(TmdbMovie(tmdb_id=500, title="Aardvark", collection_id=2))
-    session.add(LibraryItem(plex_library_key="1", rating_key="500", item_type="movie",
+    session.add(LibraryItem(library_key="1", item_key="500", item_type="movie",
                             title="Aardvark", year=1990, tmdb_id=500, match_source="guid"))
     session.commit()
 
@@ -664,7 +664,7 @@ def test_unrated_collections_sort_after_rated_ones(session: Session) -> None:
                                     release_year=1992, release_date="1992-01-01", position=1,
                                     vote_average=5.0, vote_count=900))
     session.add(TmdbMovie(tmdb_id=500, title="Zebra", collection_id=2))
-    session.add(LibraryItem(plex_library_key="1", rating_key="500", item_type="movie",
+    session.add(LibraryItem(library_key="1", item_key="500", item_type="movie",
                             title="Zebra", year=1990, tmdb_id=500, match_source="guid"))
     session.commit()
 

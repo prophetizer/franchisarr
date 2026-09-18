@@ -14,7 +14,6 @@ from pydantic import BaseModel
 
 from app.auth.api_keys import generate_api_key
 from app.auth.dependencies import AdminUser, DbSession, RequiredUser
-from app.clients.plex_client import PlexClient
 from app.clients.radarr_client import RadarrClient, RadarrError
 from app.clients.sonarr_client import MONITOR_MODE_LABELS, SonarrError
 from app.clients.tmdb_client import TmdbAuthError, TmdbClient, TmdbError
@@ -33,15 +32,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api")
 
 
-def _plex(session) -> PlexClient:
-    url = get_setting(session, SettingKey.PLEX_URL)
-    token = get_setting(session, SettingKey.PLEX_TOKEN)
-    if not url or not token:
+def _plex(session):  # noqa: ANN202 - kept under its old name; returns whichever server is configured
+    from app.services import media_server_service
+
+    client = media_server_service.client_for(session)
+    if client is None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="No Plex connection is configured yet.",
+            detail=media_server_service.missing_message(session),
         )
-    return PlexClient(url, token)
+    return client
 
 
 def _tmdb(session) -> TmdbClient:
@@ -58,7 +58,7 @@ def _tmdb(session) -> TmdbClient:
 def whoami(user: RequiredUser) -> dict:
     return {
         "id": user.id,
-        "username": user.plex_username or user.local_username,
+        "username": user.external_username or user.local_username,
         "is_admin": user.is_admin,
     }
 

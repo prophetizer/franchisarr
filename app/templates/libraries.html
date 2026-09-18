@@ -25,9 +25,9 @@
           <legend><strong>{{ heading }}</strong></legend>
           {% for library in group %}
             <label>
-              <input type="checkbox" name="keys" value="{{ library.plex_library_key }}"
+              <input type="checkbox" name="keys" value="{{ library.library_key }}"
                      {% if library.enabled %}checked{% endif %}>
-              {{ library.plex_library_name }}
+              {{ library.library_name }}
             </label>
           {% endfor %}
         </fieldset>

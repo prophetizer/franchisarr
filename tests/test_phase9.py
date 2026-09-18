@@ -505,7 +505,7 @@ def test_dismissals_are_exported_by_username_and_restored_to_the_same_person(ses
     counted, not handed to whoever ran the import."""
     from app.models import DismissedItem, User
 
-    alice = User(plex_username="alice"); bob = User(local_username="bob")
+    alice = User(external_username="alice"); bob = User(local_username="bob")
     session.add(alice); session.add(bob); session.commit()
     session.add(DismissedItem(user_id=alice.id, item_type="movie", tmdb_id=306))
     session.add(DismissedItem(user_id=bob.id, item_type="show", tmdb_id=17610))
@@ -526,3 +526,17 @@ def test_dismissals_are_exported_by_username_and_restored_to_the_same_person(ses
     restored = session.exec(select(DismissedItem)).one()
     assert (restored.user_id, restored.tmdb_id) == (alice.id, 306)
     assert config_backup.import_config(session, document)["dismissals"] == 0, "idempotent"
+
+
+def test_an_export_from_before_the_media_server_rename_still_imports(session: Session) -> None:
+    """0.12 renamed plex_library_key to library_key. A backup taken on 0.11 has the old names."""
+    from app.models import IncludedLibrary
+
+    old = {"franchisarr_export_version": 1, "included_libraries": [
+        {"plex_library_key": "1", "plex_library_name": "Movies", "library_type": "movie", "enabled": True}]}
+
+    counts = config_backup.import_config(session, old)
+
+    assert counts["libraries"] == 1
+    lib = session.exec(select(IncludedLibrary)).one()
+    assert (lib.library_key, lib.library_name, lib.enabled) == ("1", "Movies", True)

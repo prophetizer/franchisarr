@@ -109,8 +109,8 @@ def export_config(session: Session, *, redact: bool = False) -> dict:
         ],
         "included_libraries": [
             {
-                "plex_library_key": lib.plex_library_key,
-                "plex_library_name": lib.plex_library_name,
+                "library_key": lib.library_key,
+                "library_name": lib.library_name,
                 "library_type": lib.library_type,
                 "enabled": lib.enabled,
             }
@@ -132,12 +132,12 @@ def _username(session: Session, user_id: int) -> str | None:
     user = session.get(User, user_id)
     if user is None:
         return None
-    return user.plex_username or user.local_username
+    return user.external_username or user.local_username
 
 
 def _user_by_name(session: Session, name: str) -> User | None:
     return session.exec(
-        select(User).where((User.plex_username == name) | (User.local_username == name))
+        select(User).where((User.external_username == name) | (User.local_username == name))
     ).first()
 
 
@@ -286,9 +286,15 @@ def import_config(session: Session, document: Any, *, replace: bool = False) -> 
         counts["dismissals"] += 1
 
     for entry in document.get("included_libraries", []):
+        # Exports from before 0.12 used Plex's names for these fields.
+        entry = {
+            **entry,
+            "library_key": entry.get("library_key") or entry.get("plex_library_key"),
+            "library_name": entry.get("library_name") or entry.get("plex_library_name"),
+        }
         existing = session.exec(
             select(IncludedLibrary).where(
-                IncludedLibrary.plex_library_key == entry.get("plex_library_key")
+                IncludedLibrary.library_key == entry.get("library_key")
             )
         ).first()
         if existing:

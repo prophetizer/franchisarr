@@ -34,7 +34,7 @@ def client(app_factory):
     with TestClient(module.app, follow_redirects=False) as test_client:
         with Session(get_engine()) as session:
             create_local_admin(session, "admin", PASSWORD)
-            session.add(IncludedLibrary(plex_library_key="1", plex_library_name="Movies",
+            session.add(IncludedLibrary(library_key="1", library_name="Movies",
                                         library_type="movie", enabled=True))
             session.commit()
         test_client.post(f"{BASE}/login", data={"username": "admin", "password": PASSWORD})
@@ -52,7 +52,7 @@ def _franchise(session: Session, *films: tuple[int, str, str | None]) -> None:
         ))
     owned_id, owned_title, _ = films[0]
     session.add(TmdbMovie(tmdb_id=owned_id, title=owned_title, collection_id=COLLECTION))
-    session.add(LibraryItem(plex_library_key="1", rating_key=str(owned_id),
+    session.add(LibraryItem(library_key="1", item_key=str(owned_id),
                             item_type=ItemType.MOVIE.value, title=owned_title, year=2001,
                             tmdb_id=owned_id, match_source=MatchSource.GUID.value))
     session.commit()

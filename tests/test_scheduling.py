@@ -44,7 +44,7 @@ def _library_with_gap(session: Session) -> None:
         session.add(TmdbCollectionMovie(collection_id=COLLECTION, tmdb_movie_id=tmdb_id,
                                         title=title, release_year=1984 + position,
                                         release_date=f"{1984 + position}-06-01", position=position))
-    session.add(LibraryItem(plex_library_key="1", rating_key="1", item_type=ItemType.MOVIE.value,
+    session.add(LibraryItem(library_key="1", item_key="1", item_type=ItemType.MOVIE.value,
                             title="Beverly Hills Cop", year=1984, tmdb_id=90,
                             match_source=MatchSource.GUID.value))
     session.add(TmdbMovie(tmdb_id=90, title="Beverly Hills Cop", collection_id=COLLECTION))

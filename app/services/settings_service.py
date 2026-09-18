@@ -24,8 +24,14 @@ class SettingKey:
     AttributeError at import time instead of a silently missing setting at runtime."""
 
     BASE_URL = "base_url"
+    #: Which media server this install reads: plex, jellyfin or emby. One per install for now.
+    MEDIA_SERVER = "media_server"
     PLEX_URL = "plex_url"
     PLEX_TOKEN = "plex_token"
+    JELLYFIN_URL = "jellyfin_url"
+    JELLYFIN_API_KEY = "jellyfin_api_key"
+    EMBY_URL = "emby_url"
+    EMBY_API_KEY = "emby_api_key"
     TMDB_API_KEY = "tmdb_api_key"
     FANART_API_KEY = "fanart_api_key"
     TMDB_CACHE_TTL_DAYS = "tmdb_cache_ttl_days"
@@ -57,8 +63,13 @@ class SettingKey:
 #: Values used when neither the environment nor the user has said otherwise.
 DEFAULTS: dict[str, str] = {
     SettingKey.BASE_URL: "",
+    SettingKey.MEDIA_SERVER: "plex",
     SettingKey.PLEX_URL: "",
     SettingKey.PLEX_TOKEN: "",
+    SettingKey.JELLYFIN_URL: "",
+    SettingKey.JELLYFIN_API_KEY: "",
+    SettingKey.EMBY_URL: "",
+    SettingKey.EMBY_API_KEY: "",
     SettingKey.TMDB_API_KEY: "",
     SettingKey.FANART_API_KEY: "",
     SettingKey.TMDB_CACHE_TTL_DAYS: "7",
@@ -79,9 +90,10 @@ DEFAULTS: dict[str, str] = {
 #: simply ignored.
 
 #: Settings whose values must never be logged or rendered unmasked.
-SECRET_KEYS = frozenset(
-    {SettingKey.PLEX_TOKEN, SettingKey.TMDB_API_KEY, SettingKey.FANART_API_KEY}
-)
+SECRET_KEYS = frozenset({
+    SettingKey.PLEX_TOKEN, SettingKey.TMDB_API_KEY, SettingKey.FANART_API_KEY,
+    SettingKey.JELLYFIN_API_KEY, SettingKey.EMBY_API_KEY,
+})
 
 
 def get_setting(session: Session, key: str, default: str | None = None) -> str | None:
@@ -133,6 +145,16 @@ def _env_values(env: EnvSettings) -> dict[str, str]:
     values: dict[str, str] = {}
     if env.base_url:
         values[SettingKey.BASE_URL] = env.base_url
+    if env.media_server:
+        values[SettingKey.MEDIA_SERVER] = env.media_server
+    if env.jellyfin_url:
+        values[SettingKey.JELLYFIN_URL] = env.jellyfin_url
+    if env.jellyfin_api_key:
+        values[SettingKey.JELLYFIN_API_KEY] = env.jellyfin_api_key
+    if env.emby_url:
+        values[SettingKey.EMBY_URL] = env.emby_url
+    if env.emby_api_key:
+        values[SettingKey.EMBY_API_KEY] = env.emby_api_key
     if env.plex_url:
         values[SettingKey.PLEX_URL] = env.plex_url
     if env.plex_token:

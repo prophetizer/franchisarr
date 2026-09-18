@@ -470,7 +470,7 @@ def activity_page(request: Request, session: DbSession, user: RequiredUser, page
             who = "A deleted account"
         else:
             account = session.get(User, entry.triggered_by)
-            who = (account.plex_username or account.local_username) if account else "Unknown"
+            who = (account.external_username or account.local_username) if account else "Unknown"
 
         model = RadarrInstance if entry.item_type == "movie" else SonarrInstance
         instance = session.get(model, entry.instance_id) if entry.instance_id else None

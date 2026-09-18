@@ -18,12 +18,13 @@ from dataclasses import dataclass, field
 
 from sqlmodel import Session, col, select
 
-from app.clients.plex_client import PlexClient
+from app.clients.media_server import MediaServerClient
 from app.clients.fanart_client import FanartClient
 from app.clients.wikidata_client import WikidataClient
 from app.clients.tmdb_client import TmdbClient
 from app.models import ItemType, SeenGap, utcnow
 from app.services import (
+    media_server_service,
     instance_service,
     movie_gap_service,
     notifier,
@@ -56,15 +57,14 @@ class ScanJobResult:
 
 def _clients(
     session: Session,
-) -> tuple[PlexClient | None, TmdbClient | None, FanartClient | None, list[str]]:
+) -> tuple[MediaServerClient | None, TmdbClient | None, FanartClient | None, list[str]]:
     errors: list[str] = []
-    plex_url = get_setting(session, SettingKey.PLEX_URL)
-    plex_token = get_setting(session, SettingKey.PLEX_TOKEN)
     tmdb_key = get_setting(session, SettingKey.TMDB_API_KEY)
     fanart_key = get_setting(session, SettingKey.FANART_API_KEY)
+    media = media_server_service.client_for(session)
 
-    if not (plex_url and plex_token):
-        errors.append("No Plex connection is configured.")
+    if media is None:
+        errors.append(media_server_service.missing_message(session))
     if not tmdb_key:
         errors.append("No TMDb API key is configured.")
     if errors:
@@ -73,7 +73,7 @@ def _clients(
     # Optional, and silently so: a missing fanart key is not a misconfiguration, it is the
     # default. It costs the franchise logos and nothing else.
     fanart = FanartClient(fanart_key) if fanart_key else None
-    return PlexClient(plex_url, plex_token), TmdbClient(tmdb_key), fanart, []
+    return media, TmdbClient(tmdb_key), fanart, []
 
 
 def _record_new(session: Session, item_type: str, found: dict[int, tuple[str, str]]) -> list[notifier.NewItem]:

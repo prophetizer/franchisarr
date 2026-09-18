@@ -10,6 +10,22 @@
 
   {% if error %}<p role="alert" class="login-error">{{ error }}</p>{% endif %}
 
+  {% if server_login_available %}
+    <form method="post" action="{{ url('/auth/server/login') }}">
+      <input type="hidden" name="next" value="{{ next }}">
+      <h2>Sign in with {{ server_label }}</h2>
+      <label>{{ server_label }} username
+        <input type="text" name="username" autocomplete="username" required autofocus>
+      </label>
+      <label>Password
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <button type="submit">Sign in with {{ server_label }}</button>
+      <small>Checked against your {{ server_label }} server; the password isn't stored here.</small>
+    </form>
+    {% if local_login_available %}<hr>{% endif %}
+  {% endif %}
+
   {% if plex_login_available %}
     <div x-data="plexSignIn()">
       <button type="button" @click="start()" :aria-busy="busy" :disabled="busy"
@@ -21,26 +37,29 @@
     </div>
     {% if local_login_available %}<hr>{% endif %}
   {% else %}
-    <p><small>
-      Plex sign-in becomes available once this install's Plex server connection is configured.
-    </small></p>
+    {% if not server_login_available %}
+      <p><small>
+        {{ server_label }} sign-in becomes available once this install's {{ server_label }} connection
+        is configured.
+      </small></p>
+    {% endif %}
   {% endif %}
 
   {% if local_login_available %}
     <form method="post" action="{{ url('/login') }}">
       <input type="hidden" name="next" value="{{ next }}">
       <label>Username
-        <input type="text" name="username" autocomplete="username" required autofocus>
+        <input type="text" name="username" autocomplete="username" required{% if not server_login_available %} autofocus{% endif %}>
       </label>
       <label>Password
         <input type="password" name="password" autocomplete="current-password" required>
       </label>
       <button type="submit">Sign in</button>
     </form>
-  {% elif not plex_login_available %}
+  {% elif not plex_login_available and not server_login_available %}
     <p role="alert" class="login-error">
       No sign-in method is configured yet. Set <code>ADMIN_USERNAME</code> and
-      <code>ADMIN_PASSWORD</code> and restart, or configure the Plex connection.
+      <code>ADMIN_PASSWORD</code> and restart, or configure the {{ server_label }} connection.
     </p>
   {% endif %}
 </article>

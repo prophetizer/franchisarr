@@ -26,6 +26,15 @@ from plexapi.exceptions import BadRequest, NotFound, Unauthorized
 from plexapi.server import PlexServer
 from requests.exceptions import RequestException
 
+from app.clients.media_server import (
+    MediaItem,
+    MediaLibrary,
+    MediaLibraryNotFoundError,
+    MediaMovie,
+    MediaServerError,
+    MediaServerKind,
+    MediaShow,
+)
 from app.clients.plex_guid import ExternalIds, extract_external_ids, unknown_schemes
 from app.logging_config import register_secret
 from app.models import LibraryType
@@ -42,7 +51,7 @@ DEFAULT_TIMEOUT = 30
 _SECTION_TYPES = {"movie": LibraryType.MOVIE, "show": LibraryType.SHOW}
 
 
-class PlexClientError(RuntimeError):
+class PlexClientError(MediaServerError):
     """Base for every failure this client reports."""
 
 
@@ -54,56 +63,20 @@ class PlexUnauthorizedError(PlexClientError):
     """The token was rejected."""
 
 
-class PlexLibraryNotFoundError(PlexClientError):
+class PlexLibraryNotFoundError(PlexClientError, MediaLibraryNotFoundError):
     """No library section with that key."""
 
 
-@dataclass(frozen=True)
-class PlexLibrary:
-    key: str
-    title: str
-    library_type: str
-    agent: str | None = None
-
-    @property
-    def is_movie_library(self) -> bool:
-        return self.library_type == LibraryType.MOVIE.value
-
-    @property
-    def is_show_library(self) -> bool:
-        return self.library_type == LibraryType.SHOW.value
-
-
-@dataclass(frozen=True)
-class PlexItem:
-    """One movie or show, with whatever external IDs Plex could give us.
-
-    `guids` keeps the raw strings. When a library turns up an agent format we don't parse yet,
-    that field is the evidence needed to add it -- so it is worth the few bytes.
-    """
-
-    rating_key: str
-    title: str
-    year: int | None
-    external_ids: ExternalIds
-    guids: tuple[str, ...] = field(default_factory=tuple)
-
-    @property
-    def has_external_ids(self) -> bool:
-        return not self.external_ids.is_empty
-
-
-@dataclass(frozen=True)
-class PlexMovie(PlexItem):
-    pass
-
-
-@dataclass(frozen=True)
-class PlexShow(PlexItem):
-    pass
+# Plex's items are the neutral ones; these names remain for the parser and audit script.
+PlexLibrary = MediaLibrary
+PlexItem = MediaItem
+PlexMovie = MediaMovie
+PlexShow = MediaShow
 
 
 class PlexClient:
+    kind = MediaServerKind.PLEX
+
     """Thin, typed wrapper over plexapi.
 
     The connection is lazy: constructing a client must not perform I/O, so config can be built
@@ -219,18 +192,18 @@ class PlexClient:
     def list_shows(self, library_key: str | int) -> list[PlexShow]:
         return list(self.iter_shows(library_key))
 
-    def fetch_external_ids(self, rating_key: str | int) -> ExternalIds:
+    def fetch_external_ids(self, item_key: str | int) -> ExternalIds:
         """Per-item fallback for servers whose section listing omits <Guid> children.
 
         One HTTP request per call, so callers must use it for the items that need it, not as the
         default path.
         """
         try:
-            item = self.server.fetchItem(int(rating_key))
+            item = self.server.fetchItem(int(item_key))
         except NotFound:
             return ExternalIds()
         except (BadRequest, RequestException) as exc:
-            raise PlexUnreachableError(f"Could not fetch Plex item {rating_key}") from exc
+            raise PlexUnreachableError(f"Could not fetch Plex item {item_key}") from exc
         return _external_ids_of(item)
 
 
@@ -298,7 +271,7 @@ def _to_item(raw, seen_unknown: set[str]) -> PlexItem:  # noqa: ANN001 - a plexa
             )
 
     return PlexItem(
-        rating_key=str(_attr(raw, "ratingKey", "")),
+        item_key=str(_attr(raw, "ratingKey", "")),
         title=_attr(raw, "title", "") or "",
         year=_attr(raw, "year"),
         external_ids=external_ids,

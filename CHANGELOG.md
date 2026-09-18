@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Jellyfin and Emby.** Set `JELLYFIN_URL` + `JELLYFIN_API_KEY` (or the Emby pair) instead of
+  the Plex ones and everything works the same: libraries, scans, every page. Sign in with your
+  Jellyfin or Emby username and password; an administrator there administers here. One media
+  server per install for now — several at once is the next release. Matching is simpler than
+  on Plex, because both servers hand over TMDb ids directly: 99.7–100% of items on the test
+  servers, no GUID parsing.
+
+### Changed
+
+- Database columns named for Plex (`plex_library_key`, `rating_key`, `plex_user_id`…) are
+  renamed neutrally by migrations 0018 and 0019. Data is untouched. Config exports made before
+  this release import fine.
+
 ## [0.11.1] — 2026-09-18
 
 ### Security
