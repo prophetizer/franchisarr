@@ -142,6 +142,8 @@ def test_movies_from_a_new_agent_library(
     assert first.external_ids == ExternalIds(tmdb_id=90, imdb_id="tt0086960", tvdb_id=12345)
     assert first.has_external_ids is True
     assert "plex://movie/5d7768ba96b655001fdc0408" in first.guids
+    assert first.watched is True, "viewCount=2 on the listing"
+    assert movies[1].watched is False, "no viewCount attribute: plexapi casts it to 0"
 
 
 def test_new_agent_item_with_no_guid_children_resolves_to_nothing(
@@ -167,6 +169,8 @@ def test_shows_from_a_new_agent_library(
     assert [show.title for show in shows] == ["NCIS", "Chicago Fire"]
     assert shows[0].external_ids == ExternalIds(tmdb_id=1621, imdb_id="tt0364845", tvdb_id=72108)
     assert shows[1].external_ids.tmdb_id == 44006
+    assert shows[0].watched is True, "viewedLeafCount=12: some episodes played counts as started"
+    assert shows[1].watched is None, "no viewedLeafCount on the listing: unknown, not unwatched"
 
 
 # --------------------------------------------------------------------------- legacy agents

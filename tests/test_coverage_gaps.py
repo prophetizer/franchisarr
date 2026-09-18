@@ -16,9 +16,10 @@ from app.auth.local_admin import create_local_admin
 from app.clients.plex_client import PlexClient, PlexLibrary
 from app.clients.tmdb_client import TMDB_BASE_URL, TmdbClient
 from app.db import get_engine
-from app.models import IncludedLibrary, ItemType, LibraryItem, MatchSource, TmdbShow, User
+from app.models import MediaServer, IncludedLibrary, ItemType, LibraryItem, MatchSource, TmdbShow, User
 from app.services import auth_service, library_service, scan_service, tv_spinoff_service
 from app.services.settings_service import SettingKey, get_setting, set_setting
+from tests.conftest import ensure_server, plex_source, seed_server
 
 BASE = "/franchisarr"
 PASSWORD = "s3cret-passphrase"
@@ -30,31 +31,40 @@ def _lib(key: str, title: str, kind: str = "movie") -> PlexLibrary:
     return PlexLibrary(key=key, title=title, library_type=kind)
 
 
+def _server(session: Session):
+    return session.get(MediaServer, ensure_server(session))
+
+
+def _ids(session: Session, keys: list[str]) -> list[int]:
+    """The form posts row ids now, not library keys."""
+    return [lib.id for lib in library_service.list_libraries(session) if lib.library_key in keys]
+
+
 # ------------------------------------------------------------------ library syncing
 
 
 def test_new_libraries_arrive_disabled(session: Session) -> None:
     """A fresh install must not start scanning home videos on its own."""
-    library_service.sync_libraries(session, [_lib("1", "Movies"), _lib("2", "TV", "show")])
+    library_service.sync_libraries(session, _server(session), [_lib("1", "Movies"), _lib("2", "TV", "show")])
 
     assert all(not lib.enabled for lib in library_service.list_libraries(session))
 
 
 def test_a_resync_preserves_the_users_choice(session: Session) -> None:
-    library_service.sync_libraries(session, [_lib("1", "Movies")])
-    library_service.set_enabled_libraries(session, ["1"])
+    library_service.sync_libraries(session, _server(session), [_lib("1", "Movies")])
+    library_service.set_enabled_libraries(session, _ids(session, ["1"]))
 
-    library_service.sync_libraries(session, [_lib("1", "Movies")])
+    library_service.sync_libraries(session, _server(session), [_lib("1", "Movies")])
 
     assert library_service.list_libraries(session)[0].enabled is True
 
 
 def test_a_renamed_library_keeps_its_selection(session: Session) -> None:
     """Renaming it in Plex shouldn't silently drop it out of scans."""
-    library_service.sync_libraries(session, [_lib("1", "Movies")])
-    library_service.set_enabled_libraries(session, ["1"])
+    library_service.sync_libraries(session, _server(session), [_lib("1", "Movies")])
+    library_service.set_enabled_libraries(session, _ids(session, ["1"]))
 
-    library_service.sync_libraries(session, [_lib("1", "Films")])
+    library_service.sync_libraries(session, _server(session), [_lib("1", "Films")])
 
     rows = library_service.list_libraries(session)
     assert rows[0].library_name == "Films"
@@ -63,28 +73,28 @@ def test_a_renamed_library_keeps_its_selection(session: Session) -> None:
 
 def test_a_library_removed_from_plex_disappears(session: Session) -> None:
     """Offering a checkbox for something that no longer exists is just confusing."""
-    library_service.sync_libraries(session, [_lib("1", "Movies"), _lib("2", "Old")])
+    library_service.sync_libraries(session, _server(session), [_lib("1", "Movies"), _lib("2", "Old")])
 
-    library_service.sync_libraries(session, [_lib("1", "Movies")])
+    library_service.sync_libraries(session, _server(session), [_lib("1", "Movies")])
 
     assert [lib.library_key for lib in library_service.list_libraries(session)] == ["1"]
 
 
 def test_setting_the_selection_replaces_it_wholesale(session: Session) -> None:
     """The form posts every ticked box, so anything absent was deliberately unticked."""
-    library_service.sync_libraries(session, [_lib("1", "Movies"), _lib("2", "TV", "show")])
-    library_service.set_enabled_libraries(session, ["1", "2"])
+    library_service.sync_libraries(session, _server(session), [_lib("1", "Movies"), _lib("2", "TV", "show")])
+    library_service.set_enabled_libraries(session, _ids(session, ["1", "2"]))
 
-    library_service.set_enabled_libraries(session, ["2"])
+    library_service.set_enabled_libraries(session, _ids(session, ["2"]))
 
     assert [lib.library_key for lib in library_service.enabled_libraries(session)] == ["2"]
 
 
 def test_has_selection_reflects_reality(session: Session) -> None:
-    library_service.sync_libraries(session, [_lib("1", "Movies")])
+    library_service.sync_libraries(session, _server(session), [_lib("1", "Movies")])
     assert library_service.has_selection(session) is False
 
-    library_service.set_enabled_libraries(session, ["1"])
+    library_service.set_enabled_libraries(session, _ids(session, ["1"]))
     assert library_service.has_selection(session) is True
 
 
@@ -139,7 +149,7 @@ def test_the_client_id_is_generated_once_and_kept(session: Session) -> None:
 
 @responses.activate
 def test_sign_in_is_refused_when_the_account_cannot_reach_this_server(session: Session) -> None:
-    auth_service.remember_machine_identifier(session, OUR_SERVER)
+    seed_server(session, "plex", machine_identifier=OUR_SERVER)
     responses.add(responses.GET, plex_oauth.PLEX_RESOURCES_URL,
                   json=[{"clientIdentifier": "someone-elses", "provides": "server", "owned": True}])
 
@@ -155,10 +165,12 @@ def test_discovering_the_machine_identifier(session: Session, fixtures_dir) -> N
     responses.add(responses.GET, f"{PLEX}/", body=(plex_dir / "root.xml").read_text(),
                   content_type="application/xml")
 
-    found = auth_service.discover_machine_identifier(session, PlexClient(PLEX, "token"))
+    server = seed_server(session, "plex", url=PLEX)
+    found = auth_service.discover_machine_identifier(session, server, PlexClient(PLEX, "token"))
 
     assert found
-    assert auth_service.get_machine_identifier(session) == found
+    assert server.machine_identifier == found
+    assert auth_service.known_plex_servers(session) == [server]
 
 
 @responses.activate
@@ -167,8 +179,9 @@ def test_an_unreachable_plex_leaves_sign_in_unavailable(session: Session) -> Non
     stays off until the server can be reached, which is the conservative outcome."""
     responses.add(responses.GET, f"{PLEX}/", status=500)
 
-    assert auth_service.discover_machine_identifier(session, PlexClient(PLEX, "token")) is None
-    assert auth_service.get_machine_identifier(session) is None
+    server = seed_server(session, "plex", url=PLEX)
+    assert auth_service.discover_machine_identifier(session, server, PlexClient(PLEX, "token")) is None
+    assert server.machine_identifier is None and not auth_service.plex_sign_in_available(session)
 
 
 # ------------------------------------------------------------------ the TV scan
@@ -192,12 +205,12 @@ def test_a_tv_scan_populates_the_snapshot_and_show_cache(session: Session, fixtu
                   json={"id": 44006, "name": "Chicago Fire", "first_air_date": "2012-10-10",
                         "networks": [{"name": "NBC"}]})
 
-    session.add(IncludedLibrary(library_key="2", library_name="TV Shows",
+    session.add(IncludedLibrary(server_id=ensure_server(session), library_key="2", library_name="TV Shows",
                                 library_type="show", enabled=True))
     session.commit()
 
     summary = scan_service.scan_show_libraries(
-        session, PlexClient(PLEX, "token"), TmdbClient("k" * 32, max_requests_per_second=10_000)
+        session, plex_source(session, PLEX, "token"), TmdbClient("k" * 32, max_requests_per_second=10_000)
     )
 
     assert summary.items_seen == 2
@@ -209,7 +222,7 @@ def test_a_tv_scan_populates_the_snapshot_and_show_cache(session: Session, fixtu
 
 def test_a_tv_scan_with_no_enabled_libraries_says_so(session: Session) -> None:
     summary = scan_service.scan_show_libraries(
-        session, PlexClient(PLEX, "t"), TmdbClient("k" * 32)
+        session, plex_source(session, PLEX, "t"), TmdbClient("k" * 32)
     )
 
     assert "No TV libraries are enabled" in summary.errors[0]
@@ -217,12 +230,12 @@ def test_a_tv_scan_with_no_enabled_libraries_says_so(session: Session) -> None:
 
 def test_the_movie_scan_ignores_show_libraries_and_vice_versa(session: Session) -> None:
     """They share the snapshot table, so each has to filter by type."""
-    session.add(IncludedLibrary(library_key="2", library_name="TV",
+    session.add(IncludedLibrary(server_id=ensure_server(session), library_key="2", library_name="TV",
                                 library_type="show", enabled=True))
     session.commit()
 
     summary = scan_service.scan_movie_libraries(
-        session, PlexClient(PLEX, "t"), TmdbClient("k" * 32)
+        session, plex_source(session, PLEX, "t"), TmdbClient("k" * 32)
     )
 
     assert "No movie libraries are enabled" in summary.errors[0]
@@ -243,7 +256,7 @@ def client(app_factory):
 
 def _own_show(tmdb_id: int, title: str) -> None:
     with Session(get_engine()) as session:
-        session.add(LibraryItem(library_key="2", item_key=str(tmdb_id),
+        session.add(LibraryItem(server_id=ensure_server(session), library_key="2", item_key=str(tmdb_id),
                                 item_type=ItemType.SHOW.value, title=title, year=2003,
                                 tmdb_id=tmdb_id, match_source=MatchSource.GUID.value))
         session.commit()
@@ -356,13 +369,13 @@ def test_a_tv_scan_discovers_spinoffs_end_to_end(session: Session, fixtures_dir)
                   json={"id": 17610, "name": "NCIS: Los Angeles",
                         "first_air_date": "2009-09-22", "networks": [{"name": "CBS"}]})
 
-    session.add(IncludedLibrary(library_key="2", library_name="TV Shows",
+    session.add(IncludedLibrary(server_id=ensure_server(session), library_key="2", library_name="TV Shows",
                                 library_type="show", enabled=True))
     session.commit()
 
     summary = scan_service.scan_show_libraries(
         session,
-        PlexClient(PLEX, "token"),
+        plex_source(session, PLEX, "token"),
         TmdbClient("k" * 32, max_requests_per_second=10_000),
         wikidata=WikidataClient(max_requests_per_second=10_000),
     )
@@ -395,13 +408,13 @@ def test_a_wikidata_outage_does_not_stop_a_tv_scan(session: Session, fixtures_di
                             "networks": [{"name": "CBS"}]})
     responses.add(responses.GET, SPARQL_ENDPOINT, status=503)
 
-    session.add(IncludedLibrary(library_key="2", library_name="TV Shows",
+    session.add(IncludedLibrary(server_id=ensure_server(session), library_key="2", library_name="TV Shows",
                                 library_type="show", enabled=True))
     session.commit()
 
     summary = scan_service.scan_show_libraries(
         session,
-        PlexClient(PLEX, "token"),
+        plex_source(session, PLEX, "token"),
         TmdbClient("k" * 32, max_requests_per_second=10_000),
         wikidata=WikidataClient(max_requests_per_second=10_000),
     )

@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Media servers — Franchisarr{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>Media servers</h1>
+  <p>Where Franchisarr reads what you own. Add every Plex, Jellyfin or Emby you use; their libraries are scanned together.</p>
+</hgroup>
+
+{% if error %}<p role="alert" class="notice-bad">{{ error }}</p>{% endif %}
+{% if saved %}<p role="status" class="notice-good">Saved.</p>{% endif %}
+
+{% if servers %}
+  <ul class="film-list">
+    {% for server in servers %}
+      <li class="film-row" x-data="{ editing: false }">
+        <span class="film-title">
+          {{ server.name }}
+          <small class="muted">{{ server.label }}{% if not server.enabled %} · disabled{% endif %}</small>
+        </span>
+        <span class="film-meta muted server-meta">
+          {{ server.url }} · {{ 'token' if server.kind == 'plex' else 'key' }} {{ server.masked_credential }}
+          {% if server.kind == 'plex' and not server.identity_known %}
+            · <span title="Plex sign-in through this server works once it has been reached">identity not yet learned</span>
+          {% endif %}
+          {% if server.kind != 'plex' %}
+            · watched as {{ server.watched_user or 'the first administrator' }}
+          {% endif %}
+        </span>
+        <span class="film-actions">
+          <button class="outline"
+                  hx-get="{{ url('/media-servers/' ~ server.id ~ '/test') }}"
+                  hx-target="#test-result-{{ server.id }}"
+                  hx-swap="innerHTML">Test</button>
+          {% if user.is_admin %}
+            <button type="button" class="secondary outline" @click="editing = !editing">Edit</button>
+            <form method="post" action="{{ url('/media-servers/' ~ server.id ~ '/delete') }}" class="nav-form"
+                  onsubmit="return confirm('Remove {{ server.name | e }} and everything scanned from it?')">
+              <button type="submit" class="secondary outline">Remove</button>
+            </form>
+          {% endif %}
+        </span>
+        <span id="test-result-{{ server.id }}" class="test-result"></span>
+        {% if user.is_admin %}
+          <form method="post" action="{{ url('/media-servers/' ~ server.id) }}" x-show="editing" x-cloak class="server-edit">
+            <label>Name <input type="text" name="name" value="{{ server.name }}" required></label>
+            <label>URL <input type="url" name="url" value="{{ server.url }}" required></label>
+            <label>{{ 'Token' if server.kind == 'plex' else 'API key' }}
+              <input type="password" name="credential" autocomplete="off" placeholder="leave blank to keep the current one">
+            </label>
+            {% if server.kind != 'plex' %}
+              <label>Watched as
+                <input type="text" name="watched_user" value="{{ server.watched_user or '' }}" placeholder="first administrator">
+              </label>
+              <small>Whose watched state to read: a {{ server.label }} username. An API key belongs to nobody, so it has to be told.</small>
+            {% endif %}
+            <label><input type="checkbox" name="enabled" value="1" {% if server.enabled %}checked{% endif %}> Enabled</label>
+            <button type="submit">Save</button>
+          </form>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="muted">No media server configured yet.</p>
+{% endif %}
+
+{% if user.is_admin %}
+<details {% if not servers %}open{% endif %}>
+  <summary>Add a media server</summary>
+  <form method="post" action="{{ url('/media-servers') }}" x-data="{ kind: 'plex' }">
+    <label>Type
+      <select name="kind" x-model="kind">
+        {% for value, label in kinds %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Name <input type="text" name="name" required placeholder="Living room Plex"></label>
+    <label>URL <input type="url" name="url" required :placeholder="kind == 'plex' ? 'http://plex:32400' : 'http://' + kind + ':8096'"></label>
+    <label><span x-text="kind == 'plex' ? 'Token' : 'API key'">Token</span>
+      <input type="password" name="credential" required autocomplete="off">
+    </label>
+    <small x-show="kind == 'plex'">Your Plex token; the local address (not plex.tv) works best.</small>
+    <small x-show="kind != 'plex'" x-cloak>Dashboard → API Keys on the server. Sign-in uses people's own accounts, never this key.</small>
+    <label x-show="kind != 'plex'" x-cloak>Watched as
+      <input type="text" name="watched_user" placeholder="first administrator">
+    </label>
+    <button type="submit">Add</button>
+  </form>
+</details>
+{% endif %}
+
+<p><small>Then choose which of their libraries to scan under <a href="{{ url('/libraries') }}">Libraries</a>.</small></p>
+{% endblock %}

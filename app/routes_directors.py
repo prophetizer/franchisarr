@@ -15,6 +15,13 @@ from app.templating import get_templates
 router = APIRouter()
 
 
+def _multi_server(session) -> bool:  # noqa: ANN001 - a Session
+    """Naming the server a title sits on only tells the reader something when there are two."""
+    from app.services import media_server_service
+
+    return len(media_server_service.list_servers(session)) > 1
+
+
 def _url(path: str) -> str:
     return f"{get_settings().base_url}{path}"
 
@@ -57,5 +64,5 @@ def director_detail(request: Request, session: DbSession, user: RequiredUser, pe
     if view is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such director.")
     return get_templates().TemplateResponse(
-        request, "director_detail.html", {"user": user, "d": view}
+        request, "director_detail.html", {"user": user, "d": view, "multi_server": _multi_server(session)}
     )

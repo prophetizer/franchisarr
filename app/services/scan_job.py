@@ -18,7 +18,6 @@ from dataclasses import dataclass, field
 
 from sqlmodel import Session, col, select
 
-from app.clients.media_server import MediaServerClient
 from app.clients.fanart_client import FanartClient
 from app.clients.wikidata_client import WikidataClient
 from app.clients.tmdb_client import TmdbClient
@@ -57,23 +56,26 @@ class ScanJobResult:
 
 def _clients(
     session: Session,
-) -> tuple[MediaServerClient | None, TmdbClient | None, FanartClient | None, list[str]]:
+) -> tuple[list[scan_service.ScanSource], TmdbClient | None, FanartClient | None, list[str]]:
     errors: list[str] = []
     tmdb_key = get_setting(session, SettingKey.TMDB_API_KEY)
     fanart_key = get_setting(session, SettingKey.FANART_API_KEY)
-    media = media_server_service.client_for(session)
+    sources = [
+        scan_service.ScanSource(server, media_server_service.client_for(server))
+        for server in media_server_service.enabled_servers(session)
+    ]
 
-    if media is None:
+    if not sources:
         errors.append(media_server_service.missing_message(session))
     if not tmdb_key:
         errors.append("No TMDb API key is configured.")
     if errors:
-        return None, None, None, errors
+        return [], None, None, errors
 
     # Optional, and silently so: a missing fanart key is not a misconfiguration, it is the
     # default. It costs the franchise logos and nothing else.
     fanart = FanartClient(fanart_key) if fanart_key else None
-    return media, TmdbClient(tmdb_key), fanart, []
+    return sources, TmdbClient(tmdb_key), fanart, []
 
 
 def _record_new(session: Session, item_type: str, found: dict[int, tuple[str, str]]) -> list[notifier.NewItem]:
@@ -121,18 +123,18 @@ def run(
     # library and follow in a second job, which run_in_background starts when this one ends.
     result.enrichment_deferred = first_run
 
-    plex, tmdb, fanart, errors = _clients(session)
+    sources, tmdb, fanart, errors = _clients(session)
     if errors:
         result.errors.extend(errors)
         return result
 
     result.movies = scan_service.scan_movie_libraries(
-        session, plex, tmdb, fanart=fanart, force_refresh=force_refresh,
+        session, sources, tmdb, fanart=fanart, force_refresh=force_refresh,
         enrich=not first_run, progress=progress,
     )
     # Wikidata needs no key and no account, so spin-off discovery is simply always on.
     result.shows = scan_service.scan_show_libraries(
-        session, plex, tmdb, wikidata=WikidataClient(),
+        session, sources, tmdb, wikidata=WikidataClient(),
         force_refresh=force_refresh, enrich=not first_run, progress=progress,
     )
     for summary in (result.movies, result.shows):

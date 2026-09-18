@@ -276,7 +276,22 @@ def _to_item(raw, seen_unknown: set[str]) -> PlexItem:  # noqa: ANN001 - a plexa
         year=_attr(raw, "year"),
         external_ids=external_ids,
         guids=all_guids,
+        watched=_watched(raw),
     )
+
+
+def _watched(raw) -> bool | None:  # noqa: ANN001 - a plexapi Video
+    """The token owner's play state: a film's viewCount, a show's viewedLeafCount (any episode).
+    Both come with the listing, so this costs no extra request."""
+    # plexapi gives every Video a viewCount (0 when absent) but only shows a viewedLeafCount,
+    # which is the meaningful one there -- a show's own viewCount stays 0 however much was played.
+    leaf = _attr(raw, "viewedLeafCount")
+    if isinstance(leaf, int):
+        return leaf > 0
+    if _attr(raw, "type") == "show":
+        return None  # a listing without the count is silent, not "unwatched"
+    count = _attr(raw, "viewCount")
+    return count > 0 if isinstance(count, int) else None
 
 
 __all__ = [

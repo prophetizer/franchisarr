@@ -14,6 +14,7 @@ import responses
 from sqlmodel import Session, select
 
 from app.models import (
+    MediaServer,
     ItemType,
     LibraryItem,
     MatchSource,
@@ -26,6 +27,7 @@ from app.models import (
 from app.services import notifier, scan_job
 from app.services import scheduler as scheduler_service
 from app.services.settings_service import SettingKey, set_setting
+from tests.conftest import ensure_server
 
 HOOK = "https://hooks.example.com/abc"
 COLLECTION = 85861
@@ -44,7 +46,7 @@ def _library_with_gap(session: Session) -> None:
         session.add(TmdbCollectionMovie(collection_id=COLLECTION, tmdb_movie_id=tmdb_id,
                                         title=title, release_year=1984 + position,
                                         release_date=f"{1984 + position}-06-01", position=position))
-    session.add(LibraryItem(library_key="1", item_key="1", item_type=ItemType.MOVIE.value,
+    session.add(LibraryItem(server_id=ensure_server(session), library_key="1", item_key="1", item_type=ItemType.MOVIE.value,
                             title="Beverly Hills Cop", year=1984, tmdb_id=90,
                             match_source=MatchSource.GUID.value))
     session.add(TmdbMovie(tmdb_id=90, title="Beverly Hills Cop", collection_id=COLLECTION))
@@ -227,8 +229,7 @@ def test_the_first_ever_scan_does_not_notify(session: Session, monkeypatch) -> N
     message listing 227 films is how someone learns to mute the channel -- and a schedule set
     through SCAN_SCHEDULE_CRON never passes through the settings page that primes explicitly."""
     _library_with_gap(session)
-    set_setting(session, SettingKey.PLEX_URL, "http://plex.test:32400")
-    set_setting(session, SettingKey.PLEX_TOKEN, "t")
+    _plex_row(session)
     set_setting(session, SettingKey.TMDB_API_KEY, "k" * 32)
     set_setting(session, SettingKey.WEBHOOK_URL, HOOK)
     session.commit()
@@ -252,8 +253,7 @@ def test_the_first_ever_scan_does_not_notify(session: Session, monkeypatch) -> N
 
 def test_the_second_scan_does_notify_about_something_new(session: Session, monkeypatch) -> None:
     _library_with_gap(session)
-    set_setting(session, SettingKey.PLEX_URL, "http://plex.test:32400")
-    set_setting(session, SettingKey.PLEX_TOKEN, "t")
+    _plex_row(session)
     set_setting(session, SettingKey.TMDB_API_KEY, "k" * 32)
     set_setting(session, SettingKey.WEBHOOK_URL, HOOK)
     session.commit()
@@ -284,12 +284,11 @@ def test_a_scan_without_plex_configured_reports_why(session: Session) -> None:
     result = scan_job.run(session, notify=False)
 
     assert result.ok is False
-    assert any("Plex" in error for error in result.errors)
+    assert any("media server" in error for error in result.errors)
 
 
 def test_a_scan_without_tmdb_configured_reports_why(session: Session) -> None:
-    set_setting(session, SettingKey.PLEX_URL, "http://plex.test:32400")
-    set_setting(session, SettingKey.PLEX_TOKEN, "token")
+    _plex_row(session)
     session.commit()
 
     result = scan_job.run(session, notify=False)
@@ -297,9 +296,16 @@ def test_a_scan_without_tmdb_configured_reports_why(session: Session) -> None:
     assert any("TMDb" in error for error in result.errors)
 
 
+def _plex_row(session: Session) -> None:
+    """The scan reads whichever servers exist; the test's library rows already made one, so
+    give it the address the mocks answer on."""
+    server = session.get(MediaServer, ensure_server(session))
+    server.url = "http://plex.test:32400"
+    session.add(server); session.commit()
+
+
 def _configured(session: Session) -> None:
-    set_setting(session, SettingKey.PLEX_URL, "http://plex.test:32400")
-    set_setting(session, SettingKey.PLEX_TOKEN, "t")
+    _plex_row(session)
     set_setting(session, SettingKey.TMDB_API_KEY, "k" * 32)
     session.commit()
 

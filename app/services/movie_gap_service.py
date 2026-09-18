@@ -23,7 +23,7 @@ collection has gaps" signal.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 
 from sqlmodel import Session, col, select
@@ -58,6 +58,13 @@ class MissingMovie:
     vote_average: float | None = None
     vote_count: int | None = None
     popularity: float | None = None
+    #: For owned films: which servers hold it, and whether it has been watched on any of them.
+    servers: tuple[str, ...] = ()
+    watched: bool | None = None
+
+    @property
+    def where(self) -> str:
+        return ", ".join(self.servers)
 
     @property
     def rating(self) -> float | None:
@@ -134,6 +141,16 @@ class CollectionGap:
         film nobody can watch yet, or one the user has said isn't worth having, is complete as
         far as they are concerned."""
         return bool(self.missing)
+
+    @property
+    def started(self) -> bool:
+        """Whether any owned film has been watched -- the difference between a franchise the
+        person is following and one that merely landed in the library."""
+        return any(movie.watched for movie in self.owned)
+
+    @property
+    def watched_count(self) -> int:
+        return sum(1 for movie in self.owned if movie.watched)
 
     @property
     def best_rating(self) -> float:
@@ -238,6 +255,9 @@ def collection_gaps(
     # there is nothing for the user to do about it.
     owned = owned_tmdb_ids(session) | radarr_known_ids(session, radarr_instance_id)
     dismissed = dismissed_ids(session, user_id)
+    from app.services.ownership_service import owned_details
+
+    details = owned_details(session, ItemType.MOVIE.value)
 
     # Only collections the *Plex library* touches are considered. Keying this off `owned` would
     # let a single Radarr add pull an entire unrelated franchise into the gap list.
@@ -284,6 +304,9 @@ def collection_gaps(
                 popularity=member.popularity,
             )
             if member.tmdb_movie_id in owned:
+                info = details.get(member.tmdb_movie_id)
+                if info is not None:
+                    entry = replace(entry, servers=info.servers, watched=info.watched)
                 owned_here.append(entry)
             elif member.tmdb_movie_id in excluded or member.tmdb_movie_id in dismissed:
                 continue

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <MediaContainer size="3" totalSize="3" offset="0" allowSync="1" librarySectionID="1" librarySectionTitle="Movies" librarySectionUUID="11111111-1111-1111-1111-111111111111" mediaTagPrefix="/system/bundle/media/flags/" mediaTagVersion="1756000000" title1="Movies" viewGroup="movie">
-  <Video ratingKey="1001" key="/library/metadata/1001" guid="plex://movie/5d7768ba96b655001fdc0408" studio="Paramount Pictures" type="movie" title="Beverly Hills Cop" contentRating="R" summary="A freewheeling Detroit cop." year="1984" duration="6300000" originallyAvailableAt="1984-12-05" addedAt="1700000000" updatedAt="1700000001">
+  <Video ratingKey="1001" key="/library/metadata/1001" guid="plex://movie/5d7768ba96b655001fdc0408" viewCount="2" lastViewedAt="1700000002" studio="Paramount Pictures" type="movie" title="Beverly Hills Cop" contentRating="R" summary="A freewheeling Detroit cop." year="1984" duration="6300000" originallyAvailableAt="1984-12-05" addedAt="1700000000" updatedAt="1700000001">
     <Guid id="imdb://tt0086960"/>
     <Guid id="tmdb://90"/>
     <Guid id="tvdb://12345"/>

@@ -150,7 +150,7 @@ def test_starting_a_scan_without_plex_configured_is_a_clear_conflict(
     response = client.post(f"{BASE}/api/scan", headers={API_KEY_HEADER: api_key})
 
     assert response.status_code == 409
-    assert "Plex" in response.json()["detail"]
+    assert "media server" in response.json()["detail"]
 
 
 def test_gaps_is_empty_before_anything_is_scanned(client: TestClient, api_key: str) -> None:

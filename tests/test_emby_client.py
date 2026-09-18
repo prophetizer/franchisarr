@@ -25,6 +25,17 @@ def _items(*items: dict, total: int | None = None) -> dict:
     return {"Items": list(items), "TotalRecordCount": total if total is not None else len(items)}
 
 
+USERS = [
+    {"Id": "u-guest", "Name": "guest", "Policy": {"IsAdministrator": False}},
+    {"Id": "u-admin", "Name": "michael", "Policy": {"IsAdministrator": True}},
+]
+
+
+def _users(users: list[dict] | None = None) -> None:
+    """Listings are asked on behalf of a user, so /Users comes first in every item test."""
+    responses.add(responses.GET, f"{URL}/Users", json=USERS if users is None else users)
+
+
 @responses.activate
 def test_connection_names_the_server_and_flavour() -> None:
     responses.add(responses.GET, f"{URL}/System/Info",
@@ -68,6 +79,7 @@ def test_only_movie_and_show_libraries_are_listed() -> None:
 
 @responses.activate
 def test_movies_come_with_their_provider_ids() -> None:
+    _users()
     responses.add(responses.GET, f"{URL}/Items", json=_items(
         {"Id": "a1", "Name": "28 Years Later", "ProductionYear": 2025,
          "ProviderIds": {"Tmdb": "1272837", "Imdb": "tt10548174", "Tvdb": "12345"}},
@@ -80,32 +92,99 @@ def test_movies_come_with_their_provider_ids() -> None:
     assert (movies[0].external_ids.tmdb_id, movies[0].external_ids.imdb_id, movies[0].external_ids.tvdb_id) == (1272837, "tt10548174", 12345)
     assert movies[1].has_external_ids is False
     assert movies[0].guids == (), "GUIDs are a Plex thing"
-    query = responses.calls[0].request.url
+    query = responses.calls[1].request.url
     assert "ParentId=f137a2dd" in query and "IncludeItemTypes=Movie" in query and "Recursive=true" in query
+    assert "UserId=u-admin" in query, "no watched_user named: the first administrator"
 
 
 @responses.activate
 def test_reads_are_paged_until_the_total_is_reached() -> None:
     page1 = _items(*[{"Id": f"m{i}", "Name": f"Film {i}", "ProviderIds": {"Tmdb": str(i)}} for i in range(500)], total=750)
     page2 = _items(*[{"Id": f"m{i}", "Name": f"Film {i}", "ProviderIds": {"Tmdb": str(i)}} for i in range(500, 750)], total=750)
+    _users()
     responses.add(responses.GET, f"{URL}/Items", json=page1)
     responses.add(responses.GET, f"{URL}/Items", json=page2)
 
     movies = list(_client().iter_movies("x"))
 
     assert len(movies) == 750
-    assert "StartIndex=500" in responses.calls[1].request.url
+    assert "StartIndex=500" in responses.calls[2].request.url
 
 
 @responses.activate
 def test_shows_are_series_items() -> None:
+    _users()
     responses.add(responses.GET, f"{URL}/Items", json=_items(
         {"Id": "s1", "Name": "86 EIGHTY-SIX", "ProductionYear": 2021, "ProviderIds": {"Tmdb": "100565", "Tvdb": "386517"}}))
 
     shows = list(_client().iter_shows("a656b907"))
 
     assert shows[0].external_ids.tmdb_id == 100565
-    assert "IncludeItemTypes=Series" in responses.calls[0].request.url
+    assert "IncludeItemTypes=Series" in responses.calls[1].request.url
+
+
+# ------------------------------------------------------------------ watched state
+
+
+@responses.activate
+def test_watched_state_comes_from_the_listing_user_data() -> None:
+    """Shapes from a real Jellyfin: a played film, an unplayed one, a series half-way through
+    (Played is only true once every episode is), and an item with no UserData at all."""
+    _users()
+    responses.add(responses.GET, f"{URL}/Items", json=_items(
+        {"Id": "a", "Name": "Seen", "ProviderIds": {}, "UserData": {"Played": True, "PlayCount": 1}},
+        {"Id": "b", "Name": "Unseen", "ProviderIds": {}, "UserData": {"Played": False, "PlayCount": 0}},
+        {"Id": "c", "Name": "Started", "ProviderIds": {}, "RecursiveItemCount": 24,
+         "UserData": {"Played": False, "UnplayedItemCount": 20, "PlayedPercentage": 16.6}},
+        {"Id": "d", "Name": "Silent", "ProviderIds": {}},
+    ))
+
+    watched = [m.watched for m in _client().iter_movies("lib")]
+
+    assert watched == [True, False, True, None]
+
+
+@responses.activate
+def test_a_named_watched_user_is_looked_up_by_name() -> None:
+    _users()
+    responses.add(responses.GET, f"{URL}/Items", json=_items())
+
+    list(EmbyLikeClient(URL, KEY, watched_user="Guest").iter_movies("lib"))
+
+    assert "UserId=u-guest" in responses.calls[1].request.url
+
+
+@responses.activate
+def test_an_unknown_watched_user_leaves_the_state_unknown_rather_than_guessing() -> None:
+    _users()
+    responses.add(responses.GET, f"{URL}/Items", json=_items(
+        {"Id": "a", "Name": "Seen", "ProviderIds": {}, "UserData": {"Played": True}}))
+
+    movies = list(EmbyLikeClient(URL, KEY, watched_user="nobody").iter_movies("lib"))
+
+    assert "UserId" not in responses.calls[1].request.url
+    assert movies[0].watched is True, "if the server volunteers UserData anyway, it is used"
+
+
+@responses.activate
+def test_users_are_listed_once_per_client_not_per_page() -> None:
+    _users()
+    responses.add(responses.GET, f"{URL}/Items", json=_items())
+    responses.add(responses.GET, f"{URL}/Items", json=_items())
+    client = _client()
+
+    list(client.iter_movies("a")); list(client.iter_shows("b"))
+
+    assert [c.request.url.split("?")[0] for c in responses.calls].count(f"{URL}/Users") == 1
+
+
+@responses.activate
+def test_list_users_reports_who_administers() -> None:
+    _users()
+
+    users = _client().list_users()
+
+    assert [(u["name"], u["is_admin"]) for u in users] == [("guest", False), ("michael", True)]
 
 
 def test_provider_id_keys_are_matched_case_insensitively() -> None:

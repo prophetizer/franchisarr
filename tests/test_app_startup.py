@@ -104,7 +104,7 @@ def test_plex_sign_in_becomes_available_at_startup(tmp_path, monkeypatch) -> Non
     from sqlmodel import Session
 
     from app.db import get_engine
-    from app.services.auth_service import get_machine_identifier
+    from app.services.auth_service import known_plex_servers
 
     monkeypatch.setenv("BASE_URL", "/")
     monkeypatch.setenv("DB_PATH", str(tmp_path / "startup.db"))
@@ -128,7 +128,7 @@ def test_plex_sign_in_becomes_available_at_startup(tmp_path, monkeypatch) -> Non
 
         assert "Sign in with Plex" in body, "the button must be offered before anyone signs in"
         with Session(get_engine()) as session:
-            assert get_machine_identifier(session)
+            assert known_plex_servers(session), "the seeded Plex row learned its identity"
     finally:
         monkeypatch.undo()
         importlib.reload(app.main)

@@ -31,6 +31,7 @@ from app.models import (
     CollectionExclude,
     DismissedItem,
     IncludedLibrary,
+    MediaServer,
     RadarrInstance,
     Setting,
     SonarrInstance,
@@ -46,7 +47,12 @@ EXPORT_VERSION = 1
 REDACTED = "***REDACTED***"
 
 #: Fields on an instance that hold a credential.
-SECRET_FIELDS = frozenset({"api_key"})
+SECRET_FIELDS = frozenset({"api_key", "credential"})
+
+#: Setting keys exports before 0.13 used for the single media server. They are translated into a
+#: media_servers entry on import rather than written back as settings nothing reads.
+LEGACY_SERVER_KEYS = ("media_server", "plex_url", "plex_token", "jellyfin_url", "jellyfin_api_key",
+                      "emby_url", "emby_api_key", "plex_machine_identifier")
 
 
 class InvalidBackup(ValueError):
@@ -87,6 +93,17 @@ def export_config(session: Session, *, redact: bool = False) -> dict:
         "exported_at": datetime.now(timezone.utc).isoformat(),
         "redacted": redact,
         "settings": settings,
+        "media_servers": [
+            {
+                "name": s.name,
+                "kind": s.kind,
+                "url": s.url,
+                "credential": REDACTED if redact else s.credential,
+                "enabled": s.enabled,
+                "watched_user": s.watched_user,
+            }
+            for s in session.exec(select(MediaServer)).all()
+        ],
         "radarr_instances": [
             _instance_dict(i, redact=redact) for i in session.exec(select(RadarrInstance)).all()
         ],
@@ -109,6 +126,7 @@ def export_config(session: Session, *, redact: bool = False) -> dict:
         ],
         "included_libraries": [
             {
+                "server": _server_name(session, lib.server_id),
                 "library_key": lib.library_key,
                 "library_name": lib.library_name,
                 "library_type": lib.library_type,
@@ -159,6 +177,7 @@ def validate(document: Any) -> dict:
 
     for key, expected in (
         ("settings", dict),
+        ("media_servers", list),
         ("radarr_instances", list),
         ("sonarr_instances", list),
         ("spinoff_mappings", list),
@@ -169,12 +188,32 @@ def validate(document: Any) -> dict:
         if key in document and not isinstance(document[key], expected):
             raise InvalidBackup(f"The '{key}' section is the wrong shape.")
 
-    for section in ("radarr_instances", "sonarr_instances"):
+    for section in ("media_servers", "radarr_instances", "sonarr_instances"):
         for entry in document.get(section, []):
             if not isinstance(entry, dict) or not entry.get("name") or not entry.get("url"):
                 raise InvalidBackup(f"An entry in '{section}' is missing its name or URL.")
 
     return document
+
+
+def _server_name(session: Session, server_id: int) -> str | None:
+    server = session.get(MediaServer, server_id)
+    return server.name if server else None
+
+
+def _legacy_server(settings: dict) -> dict | None:
+    """The media server a pre-0.13 export described in its settings, as a media_servers entry."""
+    kind = (settings.get("media_server") or "").strip().lower()
+    if kind not in ("plex", "jellyfin", "emby"):
+        kind = next((k for k in ("plex", "jellyfin", "emby") if settings.get(f"{k}_url")), None)
+    if kind is None:
+        return None
+    credential = settings.get("plex_token" if kind == "plex" else f"{kind}_api_key")
+    url = settings.get(f"{kind}_url")
+    if not (url and credential):
+        return None
+    return {"name": kind.capitalize(), "kind": kind, "url": url, "credential": credential,
+            "enabled": True, "machine_identifier": settings.get("plex_machine_identifier")}
 
 
 
@@ -193,11 +232,20 @@ def import_config(session: Session, document: Any, *, replace: bool = False) -> 
     document = validate(document)
     counts = {"settings": 0, "radarr": 0, "sonarr": 0, "mappings": 0, "excludes": 0,
               "dismissals": 0, "dismissals_unmatched": 0,
-              "libraries": 0, "skipped_redacted": 0, "already_present": 0}
+              "libraries": 0, "skipped_redacted": 0, "already_present": 0, "media_servers": 0}
 
     from app.services.settings_service import set_setting
 
-    for key, value in (document.get("settings") or {}).items():
+    settings = dict(document.get("settings") or {})
+    servers = list(document.get("media_servers") or [])
+    legacy = _legacy_server(settings)
+    if legacy and not servers:
+        servers.append(legacy)
+    for key in LEGACY_SERVER_KEYS:
+        if settings.pop(key, None) == REDACTED:
+            counts["skipped_redacted"] += 1
+
+    for key, value in settings.items():
         if value == REDACTED:
             counts["skipped_redacted"] += 1
             continue
@@ -211,6 +259,22 @@ def import_config(session: Session, document: Any, *, replace: bool = False) -> 
         # Flush before inserting, so the deletes reach the database first and can't collide with
         # rows about to be re-added -- the same ordering trap the instance caches hit.
         session.flush()
+
+    for entry in servers:
+        if entry.get("credential") in (None, "", REDACTED):
+            counts["skipped_redacted"] += 1
+            continue
+        if session.exec(
+            select(MediaServer).where(MediaServer.name == entry["name"])
+        ).first() or session.exec(
+            select(MediaServer).where(MediaServer.url == entry["url"], MediaServer.kind == entry.get("kind"))
+        ).first():
+            counts["already_present"] += 1
+            continue
+        fields = {k: v for k, v in entry.items() if hasattr(MediaServer, k)}
+        session.add(MediaServer(**fields))
+        session.flush()
+        counts["media_servers"] += 1
 
     for section, model, key in (
         ("radarr_instances", RadarrInstance, "radarr"),
@@ -285,24 +349,33 @@ def import_config(session: Session, document: Any, *, replace: bool = False) -> 
         session.flush()
         counts["dismissals"] += 1
 
+    all_servers = session.exec(select(MediaServer)).all()
     for entry in document.get("included_libraries", []):
-        # Exports from before 0.12 used Plex's names for these fields.
+        # Exports from before 0.12 used Plex's names for these fields; before 0.13 they named no
+        # server, which is fine when there is only one to choose from.
         entry = {
             **entry,
             "library_key": entry.get("library_key") or entry.get("plex_library_key"),
             "library_name": entry.get("library_name") or entry.get("plex_library_name"),
         }
+        server = next((s for s in all_servers if s.name == entry.get("server")), None)
+        if server is None and len(all_servers) == 1:
+            server = all_servers[0]
+        if server is None:
+            counts["skipped_unmatched"] = counts.get("skipped_unmatched", 0) + 1
+            continue
         existing = session.exec(
             select(IncludedLibrary).where(
-                IncludedLibrary.library_key == entry.get("library_key")
+                IncludedLibrary.server_id == server.id,
+                IncludedLibrary.library_key == entry.get("library_key"),
             )
         ).first()
         if existing:
             existing.enabled = bool(entry.get("enabled", existing.enabled))
             session.add(existing)
         else:
-            session.add(IncludedLibrary(**{k: v for k, v in entry.items()
-                                           if hasattr(IncludedLibrary, k)}))
+            fields = {k: v for k, v in entry.items() if hasattr(IncludedLibrary, k) and k != "server"}
+            session.add(IncludedLibrary(server_id=server.id, **fields))
         counts["libraries"] += 1
 
     session.commit()

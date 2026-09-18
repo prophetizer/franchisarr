@@ -21,7 +21,6 @@ from app.services.settings_service import (
 
 def test_env_seeds_an_empty_database(session: Session, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("BASE_URL", "/franchisarr")
-    monkeypatch.setenv("PLEX_URL", "http://plex.local:32400")
     monkeypatch.setenv("TMDB_API_KEY", "tmdb-key-from-env")
     monkeypatch.setenv("SCAN_SCHEDULE_CRON", "0 3 * * *")
     monkeypatch.setenv("WEBHOOK_URL", "https://discord.example/hook")
@@ -33,7 +32,6 @@ def test_env_seeds_an_empty_database(session: Session, monkeypatch: pytest.Monke
 
     stored = get_all_settings(session)
     assert stored[SettingKey.BASE_URL] == "/franchisarr"
-    assert stored[SettingKey.PLEX_URL] == "http://plex.local:32400"
     assert stored[SettingKey.TMDB_API_KEY] == "tmdb-key-from-env"
     assert stored[SettingKey.SCAN_SCHEDULE_CRON] == "0 3 * * *"
     assert stored[SettingKey.WEBHOOK_FORMAT] == "discord"

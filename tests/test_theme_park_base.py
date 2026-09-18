@@ -25,6 +25,7 @@ from app.models import (
     TmdbMovie,
 )
 from app.templating import STATIC_DIR
+from tests.conftest import ensure_server
 
 BASE = "/franchisarr"
 PASSWORD = "s3cret-passphrase"
@@ -45,7 +46,7 @@ def client(app_factory):
                     collection_id=COLLECTION, tmdb_movie_id=tmdb_id, title=title,
                     release_year=1984 + position, release_date=f"{1984 + position}-06-01",
                     position=position))
-            session.add(LibraryItem(library_key="1", item_key="1",
+            session.add(LibraryItem(server_id=ensure_server(session), library_key="1", item_key="1",
                                     item_type=ItemType.MOVIE.value, title="Owned", year=1984,
                                     tmdb_id=90, match_source=MatchSource.GUID.value))
             session.add(TmdbMovie(tmdb_id=90, title="Owned", collection_id=COLLECTION))

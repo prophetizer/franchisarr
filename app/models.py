@@ -297,13 +297,38 @@ class CollectionExclude(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utcnow)
 
 
-class IncludedLibrary(SQLModel, table=True):
-    """Plex libraries discovered on connect. Only `enabled` ones are scanned."""
+class MediaServer(SQLModel, table=True):
+    """One configured Plex, Jellyfin or Emby. An install can have several; their libraries are
+    scanned together and a film on any of them counts as owned (docs/DESIGN.md convention 4
+    applied to the source side)."""
 
-    __tablename__ = "included_libraries"
+    __tablename__ = "media_servers"
 
     id: int | None = Field(default=None, primary_key=True)
-    library_key: str = Field(index=True, unique=True)
+    name: str = Field(index=True, unique=True)
+    kind: str  # MediaServerKind value
+    url: str
+    #: Plex token or Jellyfin/Emby API key. Never rendered or logged in full.
+    credential: str
+    enabled: bool = Field(default=True)
+    #: Plex only: which server this is, for the sign-in access check. Learned on connect.
+    machine_identifier: str | None = Field(default=None)
+    #: Jellyfin/Emby only: whose watched state to read. None means the first administrator.
+    watched_user: str | None = Field(default=None)
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class IncludedLibrary(SQLModel, table=True):
+    """Libraries discovered on a media server. Only `enabled` ones are scanned."""
+
+    __tablename__ = "included_libraries"
+    __table_args__ = (
+        UniqueConstraint("server_id", "library_key", name="uq_included_library"),
+    )
+
+    id: int | None = Field(default=None, primary_key=True)
+    server_id: int = Field(foreign_key="media_servers.id", index=True)
+    library_key: str = Field(index=True)
     library_name: str
     library_type: str
     enabled: bool = Field(default=True)
@@ -329,10 +354,11 @@ class LibraryItem(SQLModel, table=True):
 
     __tablename__ = "library_items"
     __table_args__ = (
-        UniqueConstraint("library_key", "item_key", name="uq_library_item"),
+        UniqueConstraint("server_id", "library_key", "item_key", name="uq_library_item"),
     )
 
     id: int | None = Field(default=None, primary_key=True)
+    server_id: int = Field(foreign_key="media_servers.id", index=True)
     library_key: str = Field(index=True)
     item_key: str = Field(index=True)
     item_type: str = Field(default=ItemType.MOVIE.value)
@@ -349,6 +375,9 @@ class LibraryItem(SQLModel, table=True):
     #: A plausible but unconfirmed title match. Surfaced for review rather than acted on
     #: (technical challenge #14) -- never silently skipped, never silently trusted.
     needs_review: bool = Field(default=False)
+    #: Watched on that server, as of the last scan. Plex: the token owner's play count; Jellyfin
+    #: and Emby: the server's `watched_user`. None when the server didn't say.
+    watched: bool | None = Field(default=None)
 
     last_seen_at: datetime = Field(default_factory=utcnow, index=True)
     updated_at: datetime = Field(default_factory=utcnow)

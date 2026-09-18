@@ -17,6 +17,7 @@ from app.models import (
 )
 from app.services import director_service
 from app.services.settings_service import SettingKey, set_setting
+from tests.conftest import ensure_server
 
 BASE = "/franchisarr"
 PASSWORD = "s3cret-passphrase"
@@ -26,7 +27,7 @@ TODAY = date(2026, 9, 17)
 
 def _own(session: Session, tmdb_id: int, title: str, director: int | None = NOLAN, name: str = "Christopher Nolan") -> None:
     session.add(TmdbMovie(tmdb_id=tmdb_id, title=title, release_year=2005))
-    session.add(LibraryItem(library_key="1", item_key=f"f{tmdb_id}", item_type="movie",
+    session.add(LibraryItem(server_id=ensure_server(session), library_key="1", item_key=f"f{tmdb_id}", item_type="movie",
                             title=title, year=2005, tmdb_id=tmdb_id, match_source="guid"))
     if director is not None:
         session.add(MovieDirector(tmdb_movie_id=tmdb_id, person_id=director, name=name))
@@ -178,7 +179,7 @@ def client(app_factory):
     with TestClient(module.app, follow_redirects=False) as test_client:
         with Session(get_engine()) as session:
             create_local_admin(session, "admin", PASSWORD)
-            session.add(IncludedLibrary(library_key="1", library_name="Movies",
+            session.add(IncludedLibrary(server_id=ensure_server(session), library_key="1", library_name="Movies",
                                         library_type="movie", enabled=True))
             session.commit()
         test_client.post(f"{BASE}/login", data={"username": "admin", "password": PASSWORD})

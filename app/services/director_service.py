@@ -13,7 +13,7 @@ credits and is refreshed on the cache TTL, because it grows.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
 
 from sqlmodel import Session, col, delete, select
@@ -42,6 +42,13 @@ class DirectorTitle:
     vote_count: int | None
     is_documentary: bool = False
     runtime: int | None = None
+    #: For owned films: which servers hold it, and whether it has been watched on any.
+    servers: tuple[str, ...] = ()
+    watched: bool | None = None
+
+    @property
+    def where(self) -> str:
+        return ", ".join(self.servers)
 
     @property
     def is_short(self) -> bool:
@@ -246,6 +253,9 @@ def director_views(
 ) -> list[DirectorView]:
     today = today or date.today()
     owned = movie_gap_service.owned_tmdb_ids(session)
+    from app.services.ownership_service import owned_details
+
+    details = owned_details(session, ItemType.MOVIE.value)
     in_radarr = movie_gap_service.radarr_known_ids(session)
     threshold = movie_gap_service.min_gap_rating(session)
     floor = min_director_films(session)
@@ -286,7 +296,8 @@ def director_views(
                               row.vote_average, row.vote_count, row.is_documentary,
                               row.runtime or None)
             if t.tmdb_id in owned_ids or t.tmdb_id in owned:
-                view.owned.append(t)
+                info = details.get(t.tmdb_id)
+                view.owned.append(replace(t, servers=info.servers, watched=info.watched) if info else t)
             elif t.tmdb_id in in_radarr or t.tmdb_id in dismissed:
                 continue
             elif not t.is_released(today):

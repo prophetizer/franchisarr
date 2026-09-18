@@ -35,7 +35,50 @@ FRANCHISARR_ENV_VARS = (
     "SONARR_API_KEY",
     "ADMIN_USERNAME",
     "ADMIN_PASSWORD",
+    "MEDIA_SERVER",
+    "JELLYFIN_URL",
+    "JELLYFIN_API_KEY",
+    "EMBY_URL",
+    "EMBY_API_KEY",
 )
+
+
+def seed_server(session: Session, kind: str = "plex", *, name: str | None = None,
+                url: str | None = None, credential: str = "k" * 32, **fields) -> "models.MediaServer":
+    """A media server row for tests that need library rows to hang off. Committed, id set."""
+    default_url = "http://plex.test:32400" if kind == "plex" else f"http://{kind}.test:8096"
+    server = models.MediaServer(name=name or kind.capitalize(), kind=kind, url=url or default_url,
+                                credential=credential, **fields)
+    session.add(server)
+    session.commit()
+    session.refresh(server)
+    return server
+
+
+def plex_source(session: Session, url: str, token: str) -> list:
+    """[ScanSource] for a Plex at `url`, reusing the test's server row when its URL matches so
+    library rows made with ensure_server() belong to the server being scanned."""
+    from sqlmodel import select
+
+    from app.clients.plex_client import PlexClient
+    from app.services.scan_service import ScanSource
+
+    server = session.exec(select(models.MediaServer).order_by(models.MediaServer.id)).first()
+    if server is None:
+        server = seed_server(session, "plex", url=url, credential=token)
+    elif server.url != url:
+        server.url = url
+        session.add(server); session.commit(); session.refresh(server)
+    return [ScanSource(server, PlexClient(url, token))]
+
+
+def ensure_server(session: Session) -> int:
+    """The id of a Plex server row, made on first call. For tests whose subject is something
+    else entirely and just need library rows to have a server to belong to."""
+    from sqlmodel import select
+
+    existing = session.exec(select(models.MediaServer).order_by(models.MediaServer.id)).first()
+    return existing.id if existing else seed_server(session, "plex").id
 
 
 @pytest.fixture(autouse=True)

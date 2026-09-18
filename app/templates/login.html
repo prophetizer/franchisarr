@@ -14,6 +14,17 @@
     <form method="post" action="{{ url('/auth/server/login') }}">
       <input type="hidden" name="next" value="{{ next }}">
       <h2>Sign in with {{ server_label }}</h2>
+      {% if password_servers | length > 1 %}
+        <label>Server
+          <select name="server_id" required>
+            {% for server in password_servers %}
+              <option value="{{ server.id }}">{{ server.name }} ({{ server.kind | capitalize }})</option>
+            {% endfor %}
+          </select>
+        </label>
+      {% else %}
+        <input type="hidden" name="server_id" value="{{ password_servers[0].id }}">
+      {% endif %}
       <label>{{ server_label }} username
         <input type="text" name="username" autocomplete="username" required autofocus>
       </label>
@@ -27,7 +38,7 @@
   {% endif %}
 
   {% if plex_login_available %}
-    <div x-data="plexSignIn()">
+    <div x-data="plexSignIn()" class="plex-signin">
       <button type="button" @click="start()" :aria-busy="busy" :disabled="busy"
               x-text="busy ? statusText : 'Sign in with Plex'">Sign in with Plex</button>
       <template x-if="error">
@@ -36,13 +47,14 @@
       <small>Opens Plex in a new window. Franchisarr never sees your Plex password.</small>
     </div>
     {% if local_login_available %}<hr>{% endif %}
-  {% else %}
-    {% if not server_login_available %}
-      <p><small>
-        {{ server_label }} sign-in becomes available once this install's {{ server_label }} connection
-        is configured.
-      </small></p>
-    {% endif %}
+  {% elif plex_configured %}
+    <p><small>
+      Plex sign-in becomes available once this install can reach its Plex server.
+    </small></p>
+  {% elif not server_login_available %}
+    <p><small>
+      Media-server sign-in becomes available once a Plex, Jellyfin or Emby server is configured.
+    </small></p>
   {% endif %}
 
   {% if local_login_available %}

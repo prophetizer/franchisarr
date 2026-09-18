@@ -32,16 +32,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api")
 
 
-def _plex(session):  # noqa: ANN202 - kept under its old name; returns whichever server is configured
+def _require_media_server(session) -> None:
     from app.services import media_server_service
 
-    client = media_server_service.client_for(session)
-    if client is None:
+    if not media_server_service.is_configured(session):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=media_server_service.missing_message(session),
         )
-    return client
 
 
 def _tmdb(session) -> TmdbClient:
@@ -95,7 +93,7 @@ def start_scan(session: DbSession, user: RequiredUser) -> dict:
 
     # Fail before starting rather than letting the background task discover it and report through
     # a status endpoint nobody is watching yet.
-    _plex(session)
+    _require_media_server(session)
     _tmdb(session)
 
     started = scan_job.run_in_background("api")

@@ -1,4 +1,4 @@
-"""Walk the enabled Plex libraries, resolve items to TMDb, and cache the result.
+"""Walk the enabled libraries on every media server, resolve items to TMDb, and cache the result.
 
 Scanning is deliberately separate from viewing gaps (technical challenge #7). A page load reads
 the cached snapshot; only an explicit scan or the scheduler talks to Plex and TMDb. On a library
@@ -23,6 +23,7 @@ from app.models import (
     ItemType,
     LibraryItem,
     MatchSource,
+    MediaServer,
     TmdbCollection,
     TmdbCollectionMovie,
     TmdbMovie,
@@ -88,9 +89,18 @@ def _is_fresh(fetched_at: datetime, ttl: timedelta) -> bool:
     return utcnow() - _as_utc(fetched_at) < ttl
 
 
+@dataclass(frozen=True)
+class ScanSource:
+    """A media server and a client for it. The scan takes a list: every enabled server's
+    libraries are read in one pass, so a film on any of them counts as owned."""
+
+    server: MediaServer
+    client: MediaServerClient
+
+
 def scan_movie_libraries(
     session: Session,
-    plex: MediaServerClient,
+    sources: list[ScanSource],
     tmdb: TmdbClient,
     *,
     fanart: FanartClient | None = None,
@@ -108,18 +118,18 @@ def scan_movie_libraries(
     ttl = timedelta(0) if force_refresh else cache_ttl(session)
     started = utcnow()
 
-    libraries = [lib for lib in library_service.enabled_libraries(session)
-                 if lib.library_type == ItemType.MOVIE.value]
-    if not libraries:
+    targets = _targets(session, sources, ItemType.MOVIE.value)
+    if not targets:
         summary.errors.append("No movie libraries are enabled.")
         return summary
 
-    for library in libraries:
+    for source, library in targets:
         try:
-            items = list(plex.iter_movies(library.library_key))
+            items = list(source.client.iter_movies(library.library_key))
         except MediaServerError as exc:
-            logger.warning("Skipping library %r: %s", library.library_name, exc)
-            summary.errors.append(f"{library.library_name}: {exc}")
+            logger.warning("Skipping library %r on %s: %s", library.library_name,
+                           source.server.name, exc)
+            summary.errors.append(f"{source.server.name} / {library.library_name}: {exc}")
             continue
 
         summary.libraries_scanned += 1
@@ -129,25 +139,18 @@ def scan_movie_libraries(
         # by the three-thousandth film every lookup flushes thousands of rows. Worth perhaps 15%
         # of a 3,400-film scan today, but the cost grows faster than linearly, so it matters more
         # on the larger libraries a public tool will meet than it does here.
-        existing = {
-            row.item_key: row
-            for row in session.exec(
-                select(LibraryItem).where(
-                    col(LibraryItem.library_key) == library.library_key
-                )
-            ).all()
-        }
+        existing = _existing_rows(session, library)
 
         for index, item in enumerate(items, start=1):
             summary.items_seen += 1
-            _upsert_item(session, library.library_key, item, tmdb, summary, existing)
+            _upsert_item(session, library, item, tmdb, summary, existing)
             if index % COMMIT_BATCH == 0:
                 session.commit()
             if progress and index % PROGRESS_EVERY == 0:
                 progress(f"Reading {library.library_name}", index, len(items))
 
         session.commit()
-        summary.removed += _prune_missing(session, library.library_key, started)
+        summary.removed += _prune_missing(session, library, started)
 
     summary.collections_found = _cache_collections(
         session, tmdb, ttl, summary, progress, fanart=fanart
@@ -176,7 +179,7 @@ def enrich_movies(
 
 def scan_show_libraries(
     session: Session,
-    plex: MediaServerClient,
+    sources: list[ScanSource],
     tmdb: TmdbClient,
     *,
     wikidata: WikidataClient | None = None,
@@ -197,36 +200,27 @@ def scan_show_libraries(
     ttl = timedelta(0) if force_refresh else cache_ttl(session)
     started = utcnow()
 
-    libraries = [
-        lib for lib in library_service.enabled_libraries(session)
-        if lib.library_type == ItemType.SHOW.value
-    ]
-    if not libraries:
+    targets = _targets(session, sources, ItemType.SHOW.value)
+    if not targets:
         summary.errors.append("No TV libraries are enabled.")
         return summary
 
-    for library in libraries:
+    for source, library in targets:
         try:
-            items = list(plex.iter_shows(library.library_key))
+            items = list(source.client.iter_shows(library.library_key))
         except MediaServerError as exc:
-            logger.warning("Skipping library %r: %s", library.library_name, exc)
-            summary.errors.append(f"{library.library_name}: {exc}")
+            logger.warning("Skipping library %r on %s: %s", library.library_name,
+                           source.server.name, exc)
+            summary.errors.append(f"{source.server.name} / {library.library_name}: {exc}")
             continue
 
         summary.libraries_scanned += 1
-        existing = {
-            row.item_key: row
-            for row in session.exec(
-                select(LibraryItem).where(
-                    col(LibraryItem.library_key) == library.library_key
-                )
-            ).all()
-        }
+        existing = _existing_rows(session, library)
 
         for index, item in enumerate(items, start=1):
             summary.items_seen += 1
             _upsert_item(
-                session, library.library_key, item, tmdb, summary, existing,
+                session, library, item, tmdb, summary, existing,
                 item_type=ItemType.SHOW.value,
             )
             if index % COMMIT_BATCH == 0:
@@ -235,7 +229,7 @@ def scan_show_libraries(
                 progress(f"Reading {library.library_name}", index, len(items))
 
         session.commit()
-        summary.removed += _prune_missing(session, library.library_key, started)
+        summary.removed += _prune_missing(session, library, started)
 
     _cache_shows(session, tmdb, ttl, summary, progress)
     if enrich and wikidata is not None:
@@ -379,9 +373,31 @@ def _cache_shows(
         summary.tmdb_lookups += 1
 
 
+def _targets(session: Session, sources: list[ScanSource], item_type: str):
+    """(source, library) pairs to read: each source's enabled libraries of that type."""
+    targets = []
+    for source in sources:
+        for library in library_service.enabled_libraries(session, source.server.id):
+            if library.library_type == item_type:
+                targets.append((source, library))
+    return targets
+
+
+def _existing_rows(session: Session, library) -> dict[str, LibraryItem]:
+    return {
+        row.item_key: row
+        for row in session.exec(
+            select(LibraryItem).where(
+                col(LibraryItem.server_id) == library.server_id,
+                col(LibraryItem.library_key) == library.library_key,
+            )
+        ).all()
+    }
+
+
 def _upsert_item(
     session: Session,
-    library_key: str,
+    library,
     item,
     tmdb: TmdbClient,
     summary: ScanSummary,
@@ -402,7 +418,8 @@ def _upsert_item(
             summary.tmdb_lookups += 1
 
     if row is None:
-        row = LibraryItem(library_key=library_key, item_key=item.item_key)
+        row = LibraryItem(server_id=library.server_id, library_key=library.library_key,
+                          item_key=item.item_key)
         existing[item.item_key] = row
 
     row.title = item.title
@@ -410,6 +427,7 @@ def _upsert_item(
     row.item_type = item_type
     row.imdb_id = item.external_ids.imdb_id
     row.tvdb_id = item.external_ids.tvdb_id
+    row.watched = item.watched
     row.last_seen_at = utcnow()
 
     if result is not None:
@@ -432,11 +450,12 @@ def _upsert_item(
     return row
 
 
-def _prune_missing(session: Session, library_key: str, started: datetime) -> int:
-    """Drop rows for items that were not seen in this pass -- they left the Plex library."""
+def _prune_missing(session: Session, library, started: datetime) -> int:
+    """Drop rows for items that were not seen in this pass -- they left the library."""
     stale = session.exec(
         select(LibraryItem).where(
-            col(LibraryItem.library_key) == library_key,
+            col(LibraryItem.server_id) == library.server_id,
+            col(LibraryItem.library_key) == library.library_key,
             col(LibraryItem.last_seen_at) < started,
         )
     ).all()
@@ -444,7 +463,7 @@ def _prune_missing(session: Session, library_key: str, started: datetime) -> int
         session.delete(row)
     if stale:
         session.commit()
-        logger.info("Removed %d item(s) no longer in library %s", len(stale), library_key)
+        logger.info("Removed %d item(s) no longer in library %s", len(stale), library.library_name)
     return len(stale)
 
 

@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Several media servers at once.** Plex, Jellyfin and Emby are now rows under a new
+  *Servers* page rather than one setting: add every server you use, tick libraries on each, and
+  one scan reads them all. A film on any of them counts as owned — once, however many hold it —
+  and the collection page says which servers hold each. Every filled-in pair in `.env` becomes a
+  server on first boot; `MEDIA_SERVER` now only limits that seeding to one kind. Plex sign-in
+  accepts an account that can reach any configured Plex; Jellyfin/Emby sign-in offers a server
+  choice when there is more than one.
+- **Watched state.** Each scan records whether you've watched each owned film or started each
+  show — Plex from the token owner's play state, Jellyfin/Emby from the *watched as* user on the
+  server (default: its first administrator). Owned titles get a tick on collection, franchise
+  and director pages, and the Collections page can be filtered to franchises you've started.
+  Measured on the developer's three servers in one pass: 9,373 film rows → 3,445 distinct films,
+  670 shows, 0 errors.
+
+### Changed
+
+- Migration 0020 creates `media_servers`, seeds it from the old settings, attaches every scanned
+  library and item to that server, and removes the old `plex_url`/`jellyfin_*`/`emby_*`/
+  `media_server` settings. Config exports carry the servers (credentials redacted in the shared
+  form) and name the server each library belongs to; exports from 0.12 and earlier still import,
+  with their single server translated into a row.
+
 ## [0.12.1] — 2026-09-18
 
 ### Fixed

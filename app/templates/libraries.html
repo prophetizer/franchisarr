@@ -4,33 +4,51 @@
 {% block content %}
 <hgroup>
   <h1>Choose libraries</h1>
-  <p>Franchisarr only scans the libraries you tick here.</p>
+  <p>Franchisarr only scans the libraries you tick here. Tick them on every server you use; a film on any of them counts as owned.</p>
 </hgroup>
 
-{% if error %}<p role="alert" class="login-error">{{ error }}</p>{% endif %}
+{% for group in groups if group.error %}
+  <p role="alert" class="login-error">{{ group.server.name }}: {{ group.error }}</p>
+{% endfor %}
 
-{% if not libraries %}
+{% if no_servers %}
   <article>
-    <p>No {{ server_label }} movie or TV libraries were found.</p>
+    <p>No media server is configured yet.</p>
     <p><small>
-      Check the {{ server_label }} connection, then <a href="{{ url('/libraries') }}">try again</a>.
+      Add a Plex, Jellyfin or Emby server under
+      <a href="{{ url('/media-servers') }}">Media servers</a>, then
+      <a href="{{ url('/libraries') }}">come back here</a>.
+    </small></p>
+  </article>
+{% elif not libraries %}
+  <article>
+    <p>No movie or TV libraries were found on any server.</p>
+    <p><small>
+      Check the connections under <a href="{{ url('/media-servers') }}">Media servers</a>,
+      then <a href="{{ url('/libraries') }}">try again</a>.
     </small></p>
   </article>
 {% else %}
   <form method="post" action="{{ url('/libraries') }}">
-    {% for library_type, heading in [('movie', 'Movie libraries'), ('show', 'TV libraries')] %}
-      {% set group = libraries | selectattr('library_type', 'equalto', library_type) | list %}
-      {% if group %}
-        <fieldset>
-          <legend><strong>{{ heading }}</strong></legend>
-          {% for library in group %}
-            <label>
-              <input type="checkbox" name="keys" value="{{ library.library_key }}"
-                     {% if library.enabled %}checked{% endif %}>
-              {{ library.library_name }}
-            </label>
-          {% endfor %}
-        </fieldset>
+    {% for group in groups %}
+      {% if groups | length > 1 %}<h2>{{ group.server.name }}</h2>{% endif %}
+      {% for library_type, heading in [('movie', 'Movie libraries'), ('show', 'TV libraries')] %}
+        {% set typed = group.libraries | selectattr('library_type', 'equalto', library_type) | list %}
+        {% if typed %}
+          <fieldset>
+            <legend><strong>{{ heading }}</strong></legend>
+            {% for library in typed %}
+              <label>
+                <input type="checkbox" name="keys" value="{{ library.id }}"
+                       {% if library.enabled %}checked{% endif %}>
+                {{ library.library_name }}
+              </label>
+            {% endfor %}
+          </fieldset>
+        {% endif %}
+      {% endfor %}
+      {% if not group.libraries %}
+        <p><small>No movie or TV libraries found on {{ group.server.name }}.</small></p>
       {% endif %}
     {% endfor %}
 

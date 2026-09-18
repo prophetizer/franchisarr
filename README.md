@@ -13,8 +13,9 @@ you have 6 of 27*), **director pages** (*you own 11 Nolan films; missing* Follow
 Insomnia), an **Upcoming** page of announced films in franchises you own with release-date
 notifications, and **import lists** Radarr and Sonarr can poll so you never have to click Add.
 
-It reads **Plex, Jellyfin or Emby**, supports multiple Radarr and Sonarr instances, signs you
-in with your media server account, scans on a schedule,
+It reads **Plex, Jellyfin and Emby** — one of them or several at once, with a film on any of
+them counting as owned and a tick on what you've watched — supports multiple Radarr and Sonarr
+instances, signs you in with your media server account, scans on a schedule,
 shouts into Discord or Slack when it finds something new, and has a web UI and a CLI. Everything
 it hides — low-rated films, TV specials, shorts — is a preference, folded away rather than
 deleted.
@@ -51,10 +52,10 @@ changing a variable later has no effect. See [`.env.example`](.env.example) for 
 
 | Variable | Purpose |
 |---|---|
-| `MEDIA_SERVER` | `plex` (default), `jellyfin` or `emby`; inferred from whichever URL is set |
 | `PLEX_URL`, `PLEX_TOKEN` | Your Plex server |
-| `JELLYFIN_URL`, `JELLYFIN_API_KEY` | …or your Jellyfin server (Dashboard → API Keys) |
-| `EMBY_URL`, `EMBY_API_KEY` | …or your Emby server |
+| `JELLYFIN_URL`, `JELLYFIN_API_KEY` | Your Jellyfin server (Dashboard → API Keys) |
+| `EMBY_URL`, `EMBY_API_KEY` | Your Emby server |
+| `MEDIA_SERVER` | Optional: seed only `plex`, `jellyfin` or `emby` when several pairs are set |
 | `TMDB_API_KEY` | Your own free v3 key |
 | `FANART_API_KEY` | Optional; adds franchise logos to collection headings |
 | `SHOW_ARTWORK` | `false` turns off all poster and logo images |
@@ -136,8 +137,16 @@ docker exec -it franchisarr python scripts/reset_admin_password.py michael    # 
 ```
 
 If the Plex button isn't offered, Franchisarr couldn't reach your Plex server at startup — it has
-to know which server it belongs to before it can check that a Plex account is allowed in. Check
-`PLEX_URL`/`PLEX_TOKEN` and restart.
+to know which server it belongs to before it can check that a Plex account is allowed in. Press
+**Test** on the server under *Servers*, or check `PLEX_URL`/`PLEX_TOKEN` and restart.
+
+### Several servers
+
+Every filled-in pair in `.env` becomes a server, and more can be added under **Servers** in the
+app (name, address, key; a *watched as* username for Jellyfin/Emby, since an API key belongs to
+nobody). Their libraries are chosen together on the Libraries page and scanned in one pass. A
+film on two servers is owned once; its detail row says which servers hold it. Watched films get a
+tick, and the Collections page can be filtered to franchises you've actually started.
 
 ## Command line
 

@@ -1,0 +1,4 @@
+{# A watched tick and, on a multi-server install, where the title lives. `entry` has
+   .watched and .where; `multi_server` says whether naming the server tells the reader anything. #}
+{% if entry.watched %}<span class="watched-mark" title="Watched{% if multi_server and entry.where %} · on {{ entry.where }}{% endif %}">✓</span>{% endif %}
+{%- if multi_server and entry.where %} <small class="muted owned-where">on {{ entry.where }}</small>{% endif %}

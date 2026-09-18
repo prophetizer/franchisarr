@@ -10,6 +10,7 @@
     <span class="film-title">
       {{ t.title }}{% if t.year %} <small class="muted">({{ t.year }})</small>{% endif %}
       <small class="muted">{{ 'film' if t.item_type == 'movie' else 'TV' }}</small>
+      {% if css == 'owned' %}{% with entry=t %}{% include "partials/owned_mark.html" %}{% endwith %}{% endif %}
     </span>
     <span class="film-meta muted">
       {% if t.release_date and css == 'upcoming' %}expected {{ t.release_date }} · {% endif %}
