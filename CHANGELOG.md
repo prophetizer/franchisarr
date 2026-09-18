@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-09-18
+
 ### Changed
 
 - **Franchisarr lives on GitHub now** — https://github.com/prophetizer/franchisarr — and the image
@@ -437,7 +439,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.11.0
 [0.10.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.10.0
 [0.9.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.9.0
 [0.8.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.8.1
