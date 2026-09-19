@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] — 2026-09-19
+
+### Changed
+
+- **Nord is the default theme**, dark and light (the toggle switches between Nord's two halves).
+  theme.park themes override it exactly as before; nothing changes for an install that sets one.
+
 ## [0.14.1] — 2026-09-19
 
 ### Fixed
@@ -545,7 +552,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.14.1...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.0
 [0.14.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.14.1
 [0.14.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.14.0
 [0.13.2]: https://github.com/prophetizer/franchisarr/releases/tag/v0.13.2
