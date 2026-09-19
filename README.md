@@ -25,6 +25,28 @@ deleted.
 **Status:** pre-1.0 and in daily use against a real library of ~3,400 films and ~660 shows.
 Images are published to GHCR for amd64 and arm64.
 
+## What it looks like
+
+<p align="center"><img src="docs/screenshots/collections.jpg" alt="Collections with gaps: each collection you own part of, with its missing films" width="900"></p>
+
+| Collection detail | Franchise |
+|---|---|
+| ![A collection's missing, coming-soon and owned films, with Add / Not interested](docs/screenshots/collection-detail.jpg) | ![A franchise page: films and shows across Star Wars, missing ones with Add buttons](docs/screenshots/franchise-star-wars.jpg) |
+
+| TV spin-offs | Directors |
+|---|---|
+| ![Spin-offs of shows you own, with how each relates](docs/screenshots/spinoffs.jpg) | ![Directors you own five or more films by, and what you're missing](docs/screenshots/directors.jpg) |
+
+<details>
+<summary>More: franchises, upcoming, media servers, sign-in</summary>
+
+![Franchises](docs/screenshots/franchises.jpg)
+![Upcoming](docs/screenshots/upcoming.jpg)
+![Media servers](docs/screenshots/servers.jpg)
+![Sign in](docs/screenshots/login.jpg)
+
+</details>
+
 ## Quick start
 
 ```bash
