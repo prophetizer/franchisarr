@@ -1,8 +1,34 @@
 {# The icon, painted with the page's own variables so a theme.park theme or the light toggle
-   recolours it. The favicon and the GitHub images are static copies in the default palette. #}
+   recolours it. Gradient stops take var() too. White and black here are only shading, applied
+   through opacity, never a colour of their own. The favicon and the GitHub images are static
+   copies in the default palette. #}
 <svg class="app-brand-icon" viewBox="0 0 512 512" width="36" height="36" aria-hidden="true" focusable="false">
-  <rect width="512" height="512" rx="112" fill="var(--pico-card-sectioning-background-color)"/>
-  <rect x="150" y="118" width="190" height="270" rx="16" fill="var(--pico-primary-background)" transform="rotate(-14 245 253)"/>
-  <rect x="176" y="112" width="190" height="270" rx="16" fill="var(--pico-primary)" transform="rotate(-4 271 247)"/>
-  <rect x="204" y="118" width="190" height="270" rx="16" fill="none" stroke="var(--franchisarr-accent)" stroke-width="16" stroke-dasharray="34 24" stroke-linecap="round" transform="rotate(7 299 253)"/>
+  <defs>
+    <linearGradient id="fr-tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="var(--pico-card-sectioning-background-color)"/>
+      <stop offset="1" stop-color="var(--pico-background-color)"/>
+    </linearGradient>
+    <linearGradient id="fr-board" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--pico-card-sectioning-background-color)"/>
+      <stop offset="1" stop-color="var(--pico-background-color)"/>
+    </linearGradient>
+    <linearGradient id="fr-bar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--pico-h1-color)"/>
+      <stop offset="1" stop-color="var(--pico-color)"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#fr-tile)"/>
+  <rect width="512" height="256" rx="112" fill="#fff" opacity=".08"/>
+  <rect x="96" y="212" width="322" height="212" rx="20" fill="#000" opacity=".25" transform="translate(6 10)"/>
+  <rect x="92" y="206" width="330" height="216" rx="20" fill="url(#fr-board)"/>
+  <g fill="var(--pico-h1-color)" opacity=".85"><rect x="124" y="262" width="200" height="18" rx="7"/><rect x="124" y="304" width="150" height="18" rx="7"/><rect x="124" y="346" width="110" height="18" rx="7"/></g>
+  <g transform="rotate(-9 92 206)">
+    <rect x="92" y="138" width="330" height="70" rx="16" fill="url(#fr-bar)"/>
+    <g fill="var(--pico-background-color)"><rect x="112" y="154" width="46" height="38" rx="6"/><rect x="176" y="154" width="46" height="38" rx="6"/><rect x="304" y="154" width="46" height="38" rx="6"/><rect x="368" y="154" width="46" height="38" rx="6"/></g>
+    <rect x="240" y="154" width="46" height="38" rx="6" fill="none" stroke="var(--franchisarr-accent)" stroke-width="7" stroke-dasharray="12 9" stroke-linecap="round"/>
+  </g>
+  <circle cx="352" cy="330" r="86" fill="#fff" opacity=".12"/>
+  <circle cx="352" cy="330" r="86" fill="none" stroke="var(--pico-primary)" stroke-width="18"/>
+  <path d="M414 392 L462 440" stroke="var(--pico-primary)" stroke-width="30" stroke-linecap="round"/>
+  <path d="M300 300 a60 60 0 0 1 40 -40" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity=".6"/>
 </svg>
