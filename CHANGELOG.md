@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] — 2026-09-19
+
+### Added
+
+- **Director photos**, from TMDb, on the Directors cards and page headings. New credits carry
+  the photo for free; directors credited before this release are looked up once each on the
+  next scan (only those shown, so ~150 requests on a large library, never repeated).
+
+### Changed
+
+- **Collections and Directors use the compact card** the Franchises page got in 0.13.2: poster
+  or photo as a thumbnail beside the text, three or four across.
+- The header icon is bigger.
+
 ## [0.13.2] — 2026-09-18
 
 ### Changed
@@ -525,7 +539,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.13.2...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.14.0
 [0.13.2]: https://github.com/prophetizer/franchisarr/releases/tag/v0.13.2
 [0.13.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.13.1
 [0.13.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.13.0
