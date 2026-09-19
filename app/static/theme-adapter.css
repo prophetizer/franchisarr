@@ -65,6 +65,9 @@
   /* Code */
   --pico-code-background-color: var(--modal-header-color, var(--modal-bg-color, #3b4252));
   --pico-code-color: var(--text-muted, #a3be8c);
+
+  /* The "missing" colour: the dashed poster in the icon. theme.park's accent when it has one. */
+  --franchisarr-accent: var(--accent-color, #ebcb8b);
 }
 
 /* The light half of Nord: snow storm surfaces, polar night text, the same frost accents. */
@@ -106,4 +109,6 @@
 
   --pico-code-background-color: var(--modal-header-color, var(--modal-bg-color, #e5e9f0));
   --pico-code-color: var(--text-muted, #4c566a);
+
+  --franchisarr-accent: var(--accent-color, #d08770);
 }
