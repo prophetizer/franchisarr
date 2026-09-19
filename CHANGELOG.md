@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **An icon.** A shelf of numbered spines with one dashed gap — I, II, _, IV, V — as the
+  favicon, a 512px app icon (`app/static/icon.svg`) and the README header (`docs/brand/`).
+
 ## [0.13.0] — 2026-09-18
 
 ### Added
