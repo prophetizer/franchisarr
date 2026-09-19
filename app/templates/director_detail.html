@@ -22,10 +22,18 @@
 
 {% block content %}
 <p><a href="{{ url('/directors') }}">← Directors</a></p>
-<hgroup>
-  <h1>{{ d.name }}</h1>
-  <p>You have {{ d.owned | length }} of {{ d.total }} film{{ '' if d.total == 1 else 's' }} they directed.</p>
-</hgroup>
+<div class="collection-heading">
+  <div class="collection-heading-inner">
+    {% if d.photo_large %}
+      <img class="collection-heading-poster" src="{{ d.photo_large }}" alt="" decoding="async"
+           width="421" height="632">
+    {% endif %}
+    <hgroup>
+      <h1>{{ d.name }}</h1>
+      <p>You have {{ d.owned | length }} of {{ d.total }} film{{ '' if d.total == 1 else 's' }} they directed.</p>
+    </hgroup>
+  </div>
+</div>
 
 {% if d.pending %}
   <p class="muted">Filmography not fetched yet — the next scan will.</p>

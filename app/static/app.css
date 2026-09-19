@@ -24,9 +24,9 @@ body > header.container {
 }
 
 .app-brand-icon {
-  border-radius: 5px;
-  height: 22px;
-  width: 22px;
+  border-radius: 8px;
+  height: 36px;
+  width: 36px;
 }
 
 /* The nav wraps; it never widens the page. Pico lays nav lists out as a single flex row, and
@@ -159,7 +159,7 @@ footer.container {
 }
 
 .collection-card--compact .collection-poster {
-  grid-row: 1 / span 3;
+  grid-row: 1 / span 4;
   margin-bottom: 0;
 }
 
@@ -169,7 +169,8 @@ footer.container {
 
 .collection-card--compact header { margin-bottom: 0.25rem; }
 .collection-card--compact .collection-counts { margin-bottom: 0.25rem; }
-.collection-card--compact > p:last-child { margin-bottom: 0; }
+.collection-card--compact > p:last-child,
+.collection-card--compact > .missing-preview { margin-bottom: 0; }
 
 .collection-counts {
   display: flex;
@@ -327,6 +328,10 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 
 .collection-heading:not(.has-backdrop) .collection-heading-inner {
   align-items: start;
+}
+
+.collection-heading:not(.has-backdrop) {
+  margin-bottom: var(--pico-block-spacing-vertical);
 }
 
 /* The wordmark is the title, so it takes the h1's spacing and none of its type styling. */

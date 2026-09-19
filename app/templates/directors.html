@@ -33,9 +33,14 @@
     </form>
   </div>
 
-  <div class="collection-grid">
+  <div class="collection-grid collection-grid--compact">
     {% for d in directors %}
-      <article class="collection-card">
+      <article class="collection-card collection-card--compact">
+        {% if d.photo %}
+          <a href="{{ url('/directors/' ~ d.person_id) }}" class="collection-poster">
+            <img src="{{ d.photo }}" alt="" loading="lazy" decoding="async" width="92" height="138">
+          </a>
+        {% endif %}
         <header><a href="{{ url('/directors/' ~ d.person_id) }}"><strong>{{ d.name }}</strong></a></header>
         <p class="collection-counts">
           <span class="count-owned">{{ d.owned | length }} owned</span>

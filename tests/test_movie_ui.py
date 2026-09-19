@@ -461,7 +461,7 @@ def test_a_collection_card_shows_its_poster(client: TestClient) -> None:
 
     body = client.get(f"{BASE}/collections").text
 
-    assert "https://image.tmdb.org/t/p/w342/collection-poster.jpg" in body
+    assert "https://image.tmdb.org/t/p/w185/collection-poster.jpg" in body, "the compact card uses the small size"
 
 
 def test_missing_films_show_a_thumbnail(client: TestClient) -> None:
@@ -505,7 +505,7 @@ def test_posters_carry_dimensions_so_the_layout_does_not_jump(client: TestClient
 
     body = client.get(f"{BASE}/collections").text
 
-    assert 'width="342"' in body and 'height="513"' in body
+    assert 'width="92"' in body and 'height="138"' in body
     assert 'loading="lazy"' in body
 
 

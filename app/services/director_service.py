@@ -86,6 +86,7 @@ class DirectorTitle:
 class DirectorView:
     person_id: int
     name: str
+    profile_path: str | None = None
     owned: list[DirectorTitle] = field(default_factory=list)
     missing: list[DirectorTitle] = field(default_factory=list)
     upcoming: list[DirectorTitle] = field(default_factory=list)
@@ -93,6 +94,18 @@ class DirectorView:
     documentaries: list[DirectorTitle] = field(default_factory=list)
     #: Under forty minutes. Folded away unless the preference says otherwise.
     shorts: list[DirectorTitle] = field(default_factory=list)
+    @property
+    def photo(self) -> str | None:
+        from app.services.artwork import profile_url
+
+        return profile_url(self.profile_path)
+
+    @property
+    def photo_large(self) -> str | None:
+        from app.services.artwork import PROFILE_LARGE_SIZE, profile_url
+
+        return profile_url(self.profile_path, PROFILE_LARGE_SIZE)
+
     #: True until the filmography has been fetched at least once.
     pending: bool = False
 
@@ -127,6 +140,35 @@ def include_shorts(session: Session) -> bool:
     from app.services.settings_service import SettingKey, get_setting
 
     return (get_setting(session, SettingKey.DIRECTOR_INCLUDE_SHORTS) or "false").lower() == "true"
+
+
+def _backfill_photos(session: Session, tmdb: TmdbClient, qualifying: list[int], progress=None) -> int:
+    """Photos for directors credited before 0.14 kept them. One /person request each, once:
+    a person with no photo is recorded as "" so they are not asked about again."""
+    rows = session.exec(
+        select(MovieDirector).where(col(MovieDirector.person_id).in_(qualifying),
+                                    col(MovieDirector.profile_path).is_(None))
+    ).all()
+    todo = sorted({row.person_id for row in rows})
+    for index, pid in enumerate(todo, start=1):
+        if progress and index % PROGRESS_EVERY == 0:
+            progress("Reading director photos", index, len(todo))
+        try:
+            person = tmdb.get_person(pid)
+        except TmdbNotFound:
+            person = None
+        except TmdbAuthError:
+            raise
+        except TmdbError as exc:
+            logger.debug("Person %s unavailable: %s", pid, exc)
+            continue
+        path = (person.profile_path if person else None) or ""
+        for row in rows:
+            if row.person_id == pid:
+                row.profile_path = path
+                session.add(row)
+    session.commit()
+    return len(todo)
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -168,7 +210,7 @@ def discover(
             session.add(MovieDirector(tmdb_movie_id=tmdb_id, person_id=0, name=""))
         for person in people:
             session.add(MovieDirector(tmdb_movie_id=tmdb_id, person_id=person.person_id,
-                                      name=person.name))
+                                      name=person.name, profile_path=person.profile_path or ""))
         fetched += 1
         if index % 100 == 0:
             session.commit()
@@ -180,6 +222,8 @@ def discover(
         if row.tmdb_movie_id in owned:
             counts[row.person_id] = counts.get(row.person_id, 0) + 1
     qualifying = sorted(pid for pid, n in counts.items() if n >= floor)
+
+    _backfill_photos(session, tmdb, qualifying, progress)
 
     fresh_until = utcnow() - ttl
     stale: list[int] = []
@@ -273,11 +317,14 @@ def director_views(
     } if user_id is not None else set()
 
     names: dict[int, str] = {}
+    photos: dict[int, str] = {}
     owned_by: dict[int, set[int]] = {}
     for row in session.exec(select(MovieDirector).where(col(MovieDirector.person_id) != 0)):
         if row.tmdb_movie_id in owned:
             owned_by.setdefault(row.person_id, set()).add(row.tmdb_movie_id)
             names[row.person_id] = row.name
+            if row.profile_path:
+                photos[row.person_id] = row.profile_path
 
     films_by: dict[int, list[DirectorFilm]] = {}
     for row in session.exec(select(DirectorFilm)):
@@ -287,7 +334,7 @@ def director_views(
     for pid, owned_ids in owned_by.items():
         if len(owned_ids) < floor:
             continue
-        view = DirectorView(person_id=pid, name=names[pid])
+        view = DirectorView(person_id=pid, name=names[pid], profile_path=photos.get(pid))
         rows = films_by.get(pid)
         if rows is None:
             view.pending = True
