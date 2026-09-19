@@ -7,58 +7,103 @@
  * externally-injected theming would silently do nothing, which is the normal way theming is
  * applied in a homelab.
  *
- * Every mapping falls back to Pico's own dark value, so with no theme present the page is
- * byte-identical to unthemed Pico. Those literals are the one place in this codebase where a
- * colour is written out: they are Pico's values restated, not design decisions, and they exist
- * so the mapping can be unconditional. app.css stays free of them, and a test enforces that.
+ * Every mapping falls back to Franchisarr's own default palette -- Nord (nordtheme.com), dark
+ * and light -- so with no theme.park theme present that is what the page wears. Those literals
+ * are the one place in this codebase where a colour is written out; they exist so the mapping
+ * can be unconditional. app.css stays free of them, and a test enforces that.
+ *
+ * Nord, for reference: nord0-3 #2e3440 #3b4252 #434c5e #4c566a (polar night), nord4-6 #d8dee9
+ * #e5e9f0 #eceff4 (snow storm), nord7-10 #8fbcbb #88c0d0 #81a1c1 #5e81ac (frost), nord11-15
+ * #bf616a #d08770 #ebcb8b #a3be8c #b48ead (aurora). Muted text is nord3 lifted to #8b96ab so it
+ * clears contrast on nord0; nothing else is invented.
  */
 
 :root,
 :root:not([data-theme="light"]),
 :root[data-theme="dark"] {
   /* Page and surfaces */
-  --pico-background-color: var(--main-bg-color, rgb(19, 22.5, 30.5));
-  --pico-card-background-color: var(--modal-bg-color, var(--main-bg-color, #181c25));
+  --pico-background-color: var(--main-bg-color, #2e3440);
+  --pico-card-background-color: var(--modal-bg-color, var(--main-bg-color, #3b4252));
   --pico-card-sectioning-background-color:
-    var(--modal-header-color, var(--modal-bg-color, rgb(26, 30.5, 40.25)));
-  --pico-dropdown-background-color: var(--drop-down-menu-bg, var(--modal-bg-color, #181c25));
+    var(--modal-header-color, var(--modal-bg-color, #434c5e));
+  --pico-dropdown-background-color: var(--drop-down-menu-bg, var(--modal-bg-color, #3b4252));
 
   /* Text */
-  --pico-color: var(--text, #c2c7d0);
-  --pico-h1-color: var(--text-hover, var(--text, #f0f1f3));
-  --pico-h2-color: var(--text-hover, var(--text, #f0f1f3));
-  --pico-h3-color: var(--text-hover, var(--text, #f0f1f3));
-  --pico-h4-color: var(--text-hover, var(--text, #f0f1f3));
-  --pico-h5-color: var(--text-hover, var(--text, #f0f1f3));
-  --pico-h6-color: var(--text-hover, var(--text, #f0f1f3));
-  --pico-muted-color: var(--text-muted, #7b8495);
-  --pico-blockquote-color: var(--text-muted, #7b8495);
+  --pico-color: var(--text, #d8dee9);
+  --pico-h1-color: var(--text-hover, var(--text, #eceff4));
+  --pico-h2-color: var(--text-hover, var(--text, #eceff4));
+  --pico-h3-color: var(--text-hover, var(--text, #eceff4));
+  --pico-h4-color: var(--text-hover, var(--text, #eceff4));
+  --pico-h5-color: var(--text-hover, var(--text, #eceff4));
+  --pico-h6-color: var(--text-hover, var(--text, #eceff4));
+  --pico-muted-color: var(--text-muted, #8b96ab);
+  --pico-blockquote-color: var(--text-muted, #8b96ab);
 
   /* Links */
-  --pico-primary: var(--link-color, var(--button-color, #01aaff));
-  --pico-primary-hover: var(--link-color-hover, var(--button-color-hover, #79c0ff));
+  --pico-primary: var(--link-color, var(--button-color, #88c0d0));
+  --pico-primary-hover: var(--link-color-hover, var(--button-color-hover, #8fbcbb));
 
   /* Buttons and other primary-coloured surfaces */
-  --pico-primary-background: var(--button-color, #0172ad);
-  --pico-primary-hover-background: var(--button-color-hover, var(--button-color, #0172ad));
-  --pico-primary-inverse: var(--button-text, #fff);
-  --pico-primary-border: var(--button-color, #0172ad);
-  --pico-primary-hover-border: var(--button-color-hover, var(--button-color, #0172ad));
+  --pico-primary-background: var(--button-color, #5e81ac);
+  --pico-primary-hover-background: var(--button-color-hover, var(--button-color, #81a1c1));
+  --pico-primary-inverse: var(--button-text, #eceff4);
+  --pico-primary-border: var(--button-color, #5e81ac);
+  --pico-primary-hover-border: var(--button-color-hover, var(--button-color, #81a1c1));
 
   /* Form controls */
-  --pico-form-element-background-color:
-    var(--modal-bg-color, var(--main-bg-color, rgb(28, 33, 43.5)));
-  --pico-form-element-color: var(--text, #c2c7d0);
-  --pico-form-element-placeholder-color: var(--text-muted, #7b8495);
+  --pico-form-element-background-color: var(--modal-bg-color, var(--main-bg-color, #3b4252));
+  --pico-form-element-color: var(--text, #eceff4);
+  --pico-form-element-placeholder-color: var(--text-muted, #8b96ab);
   --pico-form-element-active-background-color:
-    var(--modal-bg-color, var(--main-bg-color, rgb(28, 33, 43.5)));
+    var(--modal-bg-color, var(--main-bg-color, #434c5e));
+  --pico-form-element-border-color: var(--drop-down-menu-bg, #4c566a);
 
   /* Borders and rules */
-  --pico-muted-border-color: var(--drop-down-menu-bg, #202632);
-  --pico-table-border-color: var(--drop-down-menu-bg, #202632);
+  --pico-muted-border-color: var(--drop-down-menu-bg, #434c5e);
+  --pico-table-border-color: var(--drop-down-menu-bg, #434c5e);
 
   /* Code */
-  --pico-code-background-color:
-    var(--modal-header-color, var(--modal-bg-color, rgb(26, 30.5, 40.25)));
-  --pico-code-color: var(--text-muted, #8891a4);
+  --pico-code-background-color: var(--modal-header-color, var(--modal-bg-color, #3b4252));
+  --pico-code-color: var(--text-muted, #a3be8c);
+}
+
+/* The light half of Nord: snow storm surfaces, polar night text, the same frost accents. */
+:root[data-theme="light"] {
+  --pico-background-color: var(--main-bg-color, #eceff4);
+  --pico-card-background-color: var(--modal-bg-color, var(--main-bg-color, #e5e9f0));
+  --pico-card-sectioning-background-color:
+    var(--modal-header-color, var(--modal-bg-color, #d8dee9));
+  --pico-dropdown-background-color: var(--drop-down-menu-bg, var(--modal-bg-color, #e5e9f0));
+
+  --pico-color: var(--text, #2e3440);
+  --pico-h1-color: var(--text-hover, var(--text, #2e3440));
+  --pico-h2-color: var(--text-hover, var(--text, #2e3440));
+  --pico-h3-color: var(--text-hover, var(--text, #2e3440));
+  --pico-h4-color: var(--text-hover, var(--text, #2e3440));
+  --pico-h5-color: var(--text-hover, var(--text, #2e3440));
+  --pico-h6-color: var(--text-hover, var(--text, #2e3440));
+  --pico-muted-color: var(--text-muted, #4c566a);
+  --pico-blockquote-color: var(--text-muted, #4c566a);
+
+  --pico-primary: var(--link-color, var(--button-color, #5e81ac));
+  --pico-primary-hover: var(--link-color-hover, var(--button-color-hover, #81a1c1));
+
+  --pico-primary-background: var(--button-color, #5e81ac);
+  --pico-primary-hover-background: var(--button-color-hover, var(--button-color, #81a1c1));
+  --pico-primary-inverse: var(--button-text, #eceff4);
+  --pico-primary-border: var(--button-color, #5e81ac);
+  --pico-primary-hover-border: var(--button-color-hover, var(--button-color, #81a1c1));
+
+  --pico-form-element-background-color: var(--modal-bg-color, var(--main-bg-color, #ffffff));
+  --pico-form-element-color: var(--text, #2e3440);
+  --pico-form-element-placeholder-color: var(--text-muted, #4c566a);
+  --pico-form-element-active-background-color:
+    var(--modal-bg-color, var(--main-bg-color, #ffffff));
+  --pico-form-element-border-color: var(--drop-down-menu-bg, #d8dee9);
+
+  --pico-muted-border-color: var(--drop-down-menu-bg, #d8dee9);
+  --pico-table-border-color: var(--drop-down-menu-bg, #d8dee9);
+
+  --pico-code-background-color: var(--modal-header-color, var(--modal-bg-color, #e5e9f0));
+  --pico-code-color: var(--text-muted, #4c566a);
 }

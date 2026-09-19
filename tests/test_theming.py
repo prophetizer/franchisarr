@@ -148,7 +148,7 @@ def test_every_adapter_mapping_has_a_fallback() -> None:
 
 
 def test_app_css_never_hardcodes_a_colour() -> None:
-    """The adapter is the one place a literal colour is allowed, because those are Pico's own
+    """The adapter is the one place a literal colour is allowed, because those are the default palette's
     values restated so the mapping can be unconditional. Everywhere else a literal is a hole in
     every theme."""
     import re

@@ -191,7 +191,7 @@ Radarr/Sonarr; `instances` and `activity` inspect the rest.
 
 ## Theming
 
-Dark by default, with a light toggle. [theme.park](https://theme-park.dev) themes are set by
+Nord (dark) by default, with a light toggle to Nord's light half. [theme.park](https://theme-park.dev) themes are set by
 environment variable, using theme.park's own names — so if your stack already sets these,
 Franchisarr picks the theme up with no per-app configuration:
 
