@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <rect width="1280" height="640" fill="#1b2433"/>
+  <g font-family="Inter, Helvetica, Arial, sans-serif" font-weight="700" fill="#1b2433" text-anchor="middle" font-size="40">
+    <rect x="110" y="200" width="64" height="240" rx="10" fill="#5ac8fa"/><text x="142" y="334">I</text>
+    <rect x="188" y="200" width="64" height="240" rx="10" fill="#5ac8fa"/><text x="220" y="334">II</text>
+    <rect x="268" y="204" width="56" height="232" rx="8" fill="none" stroke="#f2c94c" stroke-width="10" stroke-dasharray="22 16" stroke-linecap="round"/>
+    <rect x="344" y="200" width="64" height="240" rx="10" fill="#5ac8fa"/><text x="376" y="334">IV</text>
+    <rect x="422" y="200" width="64" height="240" rx="10" fill="#5ac8fa"/><text x="454" y="334">V</text>
+  </g>
+  <text x="560" y="300" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="700" font-size="104" fill="#f4f6fa">Franchisarr</text>
+  <text x="564" y="366" font-family="Inter, Helvetica, Arial, sans-serif" font-size="34" fill="#9fb0c8">The films and shows missing from</text>
+  <text x="564" y="412" font-family="Inter, Helvetica, Arial, sans-serif" font-size="34" fill="#9fb0c8">the sets you already own.</text>
+  <text x="564" y="480" font-family="Inter, Helvetica, Arial, sans-serif" font-size="26" fill="#5ac8fa">Plex · Jellyfin · Emby  →  Radarr · Sonarr</text>
+</svg>
