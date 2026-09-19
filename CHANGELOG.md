@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.1] — 2026-09-19
+
+### Changed
+
+- **New icon: the fanned stack** — three posters fanned like cards, the front one only an
+  outline. In the header it is inline SVG painted with the page's own colour variables, so a
+  theme.park theme (or the light toggle) recolours it; the favicon and the GitHub images are
+  static copies in the default palette.
+
 ## [0.15.0] — 2026-09-19
 
 ### Changed
@@ -552,7 +561,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.1...HEAD
+[0.15.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.1
 [0.15.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.0
 [0.14.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.14.1
 [0.14.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.14.0
