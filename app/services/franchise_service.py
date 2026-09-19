@@ -102,6 +102,13 @@ class FranchiseView:
         return poster_url(self.poster_path, CARD_SIZE)
 
     @property
+    def small_poster(self) -> str | None:
+        """For the list card, where the poster is a thumbnail beside the text."""
+        from app.services.artwork import SMALL_CARD_SIZE, poster_url
+
+        return poster_url(self.poster_path, SMALL_CARD_SIZE)
+
+    @property
     def backdrop(self) -> str | None:
         from app.services.artwork import backdrop_url
 

@@ -26,6 +26,8 @@ CARD_SIZE = "w342"
 BACKDROP_SIZES = ("w300", "w780", "w1280", "original")
 HERO_SIZE = "w1280"
 THUMB_SIZE = "w92"
+#: A small card poster: 88 CSS px wide, so w185 stays sharp on a 2x screen.
+SMALL_CARD_SIZE = "w185"
 
 
 def images_enabled() -> bool:
