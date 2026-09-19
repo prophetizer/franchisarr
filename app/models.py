@@ -251,6 +251,8 @@ class MovieDirector(SQLModel, table=True):
     tmdb_movie_id: int = Field(index=True)
     person_id: int = Field(index=True)
     name: str
+    #: TMDb profile image path. None: not asked yet; "": asked, and they have none.
+    profile_path: str | None = Field(default=None)
     fetched_at: datetime = Field(default_factory=utcnow)
 
 

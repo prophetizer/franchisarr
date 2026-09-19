@@ -114,6 +114,7 @@ class TmdbCollectionDetails:
 class TmdbPerson:
     person_id: int
     name: str
+    profile_path: str | None = None
 
 
 @dataclass(frozen=True)
@@ -278,8 +279,16 @@ class TmdbClient:
                 pid = int(member["id"])
             except (KeyError, TypeError, ValueError):
                 continue
-            seen.setdefault(pid, TmdbPerson(person_id=pid, name=str(member.get("name") or "")))
+            seen.setdefault(pid, TmdbPerson(person_id=pid, name=str(member.get("name") or ""),
+                                            profile_path=member.get("profile_path") or None))
         return list(seen.values())
+
+    def get_person(self, person_id: int) -> TmdbPerson:
+        """A person's details -- used for the photo of directors credited before photos were
+        kept. Raises TmdbNotFound like the other lookups."""
+        payload = self._get(f"/person/{person_id}")
+        return TmdbPerson(person_id=person_id, name=str(payload.get("name") or ""),
+                          profile_path=payload.get("profile_path") or None)
 
     def get_directed_films(self, person_id: int) -> list[TmdbDirectedFilm]:
         """Everything a person is credited as Director on. One film per id even when TMDb lists

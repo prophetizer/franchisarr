@@ -133,7 +133,7 @@ def test_discovery_credits_films_once_and_fetches_qualifying_filmographies(sessi
     _own(session, 155, "The Dark Knight", director=None); _own(session, 27205, "Inception", director=None)
     for tid in (155, 27205):
         responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/{tid}/credits", json={"crew": [
-            {"id": NOLAN, "name": "Christopher Nolan", "job": "Director"},
+            {"id": NOLAN, "name": "Christopher Nolan", "job": "Director", "profile_path": "/nolan.jpg"},
             {"id": 1, "name": "Someone", "job": "Producer"}]})
     responses.add(responses.GET, f"{TMDB_BASE_URL}/person/{NOLAN}/movie_credits", json={"crew": [
         {"id": 155, "title": "The Dark Knight", "job": "Director", "release_date": "2008-07-16"},
@@ -155,6 +155,37 @@ def test_discovery_credits_films_once_and_fetches_qualifying_filmographies(sessi
     films = session.exec(select(DirectorFilm)).all()
     assert {(f.tmdb_movie_id, f.is_documentary) for f in films} == {(155, False), (320, False), (901, True)}
     assert len(films) == 3, "a film credited twice is one row"
+    assert not [c for c in responses.calls if c.request.url.endswith(f"/person/{NOLAN}")], \
+        "the photo came with the credits, so /person was never needed"
+    view = director_service.director_views(session)[0]
+    assert view.profile_path == "/nolan.jpg" and view.photo.endswith("/w185/nolan.jpg")
+
+
+@responses.activate
+def test_directors_credited_before_photos_were_kept_get_one_person_lookup(session: Session) -> None:
+    """Rows from 0.13 and earlier have profile_path NULL. Qualifying directors are asked about
+    once; someone with no photo is recorded as "" so the question is not repeated."""
+    from app.models import MovieDirector
+
+    _floor(session, 2)
+    _own(session, 155, "The Dark Knight"); _own(session, 27205, "Inception")
+    _own(session, 1, "A", director=7, name="No Photo"); _own(session, 2, "B", director=7, name="No Photo")
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/person/{NOLAN}", json={"id": NOLAN, "name": "Christopher Nolan", "profile_path": "/nolan.jpg"})
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/person/7", json={"id": 7, "name": "No Photo", "profile_path": None})
+    for pid in (NOLAN, 7):
+        responses.add(responses.GET, f"{TMDB_BASE_URL}/person/{pid}/movie_credits", json={"crew": []})
+    tmdb = TmdbClient("k" * 32, max_requests_per_second=10_000)
+
+    director_service.discover(session, tmdb, ttl=timedelta(days=7))
+    director_service.discover(session, tmdb, ttl=timedelta(days=7))
+
+    person_calls = [c.request.url for c in responses.calls
+                    if "/person/525?" in c.request.url or "/person/7?" in c.request.url]
+    assert len(person_calls) == 2, "each director asked about exactly once across two scans"
+    paths = {r.person_id: r.profile_path for r in session.exec(select(MovieDirector))}
+    assert paths == {NOLAN: "/nolan.jpg", 7: ""}
+    views = {v.person_id: v for v in director_service.director_views(session)}
+    assert views[NOLAN].photo and views[7].photo is None
 
 
 @responses.activate
@@ -193,12 +224,19 @@ def test_the_pages_render_and_route_adds_to_radarr(client: TestClient) -> None:
         _film(session, 155, "The Dark Knight", "2008-07-16")
         _film(session, 320, "Insomnia", "2002-05-24", average=6.9, votes=5528)
 
+    with Session(get_engine()) as session:
+        from app.models import MovieDirector
+        for row in session.exec(select(MovieDirector)):
+            row.profile_path = "/nolan.jpg"; session.add(row)
+        session.commit()
+
     index = client.get(f"{BASE}/directors").text
     assert "Christopher Nolan" in index and "2 owned" in index and "1 missing" in index
     assert "★ 6.9" in index
+    assert 'src="https://image.tmdb.org/t/p/w185/nolan.jpg"' in index, "the card carries the photo"
 
     detail = client.get(f"{BASE}/directors/{NOLAN}").text
-    assert "You have 2 of 3" in detail
+    assert "You have 2 of 3" in detail and "/h632/nolan.jpg" in detail
     assert f'hx-get="{BASE}/add/320"' in detail
     assert client.get(f"{BASE}/directors/1").status_code == 404
 

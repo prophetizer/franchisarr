@@ -45,6 +45,21 @@ def poster_url(path: str | None, size: str = CARD_SIZE) -> str | None:
     return f"{TMDB_IMAGE_BASE}{size}{path if path.startswith('/') else '/' + path}"
 
 
+#: Sizes TMDb publishes for people. h632 is the tall one for a heading.
+PROFILE_SIZES = ("w45", "w185", "h632", "original")
+PROFILE_SIZE = "w185"
+PROFILE_LARGE_SIZE = "h632"
+
+
+def profile_url(path: str | None, size: str = PROFILE_SIZE) -> str | None:
+    """A TMDb person photo, same off switch as the posters."""
+    if not path or not images_enabled():
+        return None
+    if size not in PROFILE_SIZES:
+        size = PROFILE_SIZE
+    return f"{TMDB_IMAGE_BASE}{size}{path if path.startswith('/') else '/' + path}"
+
+
 def backdrop_url(path: str | None, size: str = HERO_SIZE) -> str | None:
     """A TMDb backdrop, for the band behind a collection heading."""
     if not path or not images_enabled():
