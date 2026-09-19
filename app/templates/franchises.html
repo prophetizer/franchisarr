@@ -17,12 +17,12 @@
 </hgroup>
 
 {% if franchises %}
-  <div class="collection-grid">
+  <div class="collection-grid collection-grid--compact">
     {% for f in franchises %}
-      <article class="collection-card">
-        {% if f.poster %}
+      <article class="collection-card collection-card--compact">
+        {% if f.small_poster %}
           <a href="{{ url('/franchises/' ~ f.wikidata_id) }}" class="collection-poster">
-            <img src="{{ f.poster }}" alt="" loading="lazy" decoding="async" width="342" height="513">
+            <img src="{{ f.small_poster }}" alt="" loading="lazy" decoding="async" width="92" height="138">
           </a>
         {% endif %}
         <header>
