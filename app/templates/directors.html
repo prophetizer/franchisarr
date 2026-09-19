@@ -47,10 +47,10 @@
         </p>
         {% if d.missing %}
           <ul class="missing-preview">
-            {% for movie in d.missing | sort(attribute='rating', reverse=true) %}{% if loop.index <= 3 %}
+            {% for movie in d.top_missing[:3] %}
               <li>{{ movie.title }}{% if movie.year %} <small class="muted">({{ movie.year }})</small>{% endif %}
                 {% include "partials/rating.html" %}</li>
-            {% endif %}{% endfor %}
+            {% endfor %}
             {% if d.missing | length > 3 %}<li class="muted">…and {{ d.missing | length - 3 }} more</li>{% endif %}
           </ul>
         {% elif not d.pending %}
