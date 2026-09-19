@@ -249,3 +249,21 @@ def test_discovery_learns_runtimes_for_unowned_films_once(session: Session) -> N
     assert len([c for c in responses.calls if c.request.url.endswith("/movie/3?api_key=" + "k" * 32)]) == 1, "once"
     owned_row = session.exec(select(DirectorFilm).where(DirectorFilm.tmdb_movie_id == 1)).one()
     assert owned_row.runtime is None, "owned films are never candidates to hide, so no lookup"
+
+
+def test_the_list_survives_a_director_with_rated_and_unrated_missing_films(client: TestClient) -> None:
+    """The preview sorted on `rating` in the template, and a film with under ten votes has none:
+    None against a float crashed the whole page. Found on the real library after 0.8.0."""
+    with Session(get_engine()) as session:
+        _floor(session, 2)
+        _own(session, 155, "The Dark Knight"); _own(session, 27205, "Inception")
+        _film(session, 155, "The Dark Knight", "2008-07-16")
+        _film(session, 320, "Insomnia", "2002-05-24", average=6.9, votes=5528)
+        _film(session, 321, "Larceny", "1996-01-01", average=8.0, votes=3)
+        _film(session, 322, "Following", "1998-11-05", average=7.4, votes=900)
+
+    index = client.get(f"{BASE}/directors").text
+
+    assert "Christopher Nolan" in index and "3 missing" in index
+    assert index.index("Following") < index.index("Insomnia") < index.index("Larceny"), \
+        "best-rated first, the unrated one last"

@@ -106,6 +106,12 @@ class DirectorView:
         rated = [t.rating for t in self.missing if t.rating is not None]
         return max(rated) if rated else -1.0
 
+    @property
+    def top_missing(self) -> list[DirectorTitle]:
+        """Missing films, best-rated first, unrated last. Sorting on `rating` directly compares
+        None with a float and crashes the page for any director with both."""
+        return sorted(self.missing, key=lambda t: (t.rating is None, -(t.rating or 0), t.title.casefold()))
+
 
 def min_director_films(session: Session) -> int:
     from app.services.settings_service import SettingKey, get_setting
