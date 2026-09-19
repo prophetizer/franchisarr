@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-09-18
+
 ### Added
 
 - **Several media servers at once.** Plex, Jellyfin and Emby are now rows under a new
@@ -500,7 +502,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.12.1...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.13.0
 [0.12.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.12.1
 [0.12.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.12.0
 [0.11.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.11.1
