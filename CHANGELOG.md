@@ -7,10 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] — 2026-09-18
+
+### Fixed
+
+- **The Directors page crashed** for any director with both rated and unrated missing films —
+  the preview sorted on a rating that is `None` under ten votes. Present since 0.8.0.
+- A watched film showed two ticks on collection, franchise and director pages; it is a small
+  *watched* label now.
+
 ### Added
 
 - **An icon.** A shelf of numbered spines with one dashed gap — I, II, _, IV, V — as the
   favicon, a 512px app icon (`app/static/icon.svg`) and the README header (`docs/brand/`).
+- README screenshots of the main pages.
 
 ## [0.13.0] — 2026-09-18
 
@@ -507,7 +517,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.13.1...HEAD
+[0.13.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.13.1
 [0.13.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.13.0
 [0.12.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.12.1
 [0.12.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.12.0
