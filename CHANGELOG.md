@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.2] — 2026-09-18
+
+### Changed
+
+- The icon sits beside the name in the header.
+- **Franchises page cards are compact**: the poster is a thumbnail beside the text instead of
+  the whole card, so three or four franchises fit across a screen instead of one giant poster.
+
 ## [0.13.1] — 2026-09-18
 
 ### Fixed
@@ -517,7 +525,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.13.1...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.13.2...HEAD
+[0.13.2]: https://github.com/prophetizer/franchisarr/releases/tag/v0.13.2
 [0.13.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.13.1
 [0.13.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.13.0
 [0.12.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.12.1
