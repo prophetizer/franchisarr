@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 160">
+  <rect width="760" height="160" rx="24" fill="#1b2433"/>
+  <g font-family="Inter, Helvetica, Arial, sans-serif" font-weight="700" fill="#1b2433" text-anchor="middle" font-size="15">
+    <rect x="40" y="40" width="24" height="80" rx="4" fill="#5ac8fa"/><text x="52" y="86">I</text>
+    <rect x="70" y="40" width="24" height="80" rx="4" fill="#5ac8fa"/><text x="82" y="86">II</text>
+    <rect x="101" y="42" width="20" height="76" rx="3" fill="none" stroke="#f2c94c" stroke-width="4" stroke-dasharray="8 6" stroke-linecap="round"/>
+    <rect x="128" y="40" width="24" height="80" rx="4" fill="#5ac8fa"/><text x="140" y="86">IV</text>
+    <rect x="158" y="40" width="24" height="80" rx="4" fill="#5ac8fa"/><text x="170" y="86">V</text>
+  </g>
+  <text x="220" y="82" font-family="Inter, Helvetica, Arial, sans-serif" font-weight="700" font-size="52" fill="#f4f6fa">Franchisarr</text>
+  <text x="222" y="116" font-family="Inter, Helvetica, Arial, sans-serif" font-size="18" fill="#9fb0c8">The films and shows missing from the sets you already own.</text>
+</svg>

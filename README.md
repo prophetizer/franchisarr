@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/brand/header.svg" alt="Franchisarr" width="760"></p>
+
 # Franchisarr
 
 Franchisarr looks at your Plex library and finds two things you probably want and don't have:
