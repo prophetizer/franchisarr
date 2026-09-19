@@ -372,8 +372,16 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 .server-edit { flex-basis: 100%; margin-top: var(--pico-spacing); }
 [x-cloak] { display: none !important; }
 
-/* Watched state on owned titles: a quiet tick, coloured like the "owned" count. */
-.watched-mark { color: var(--pico-primary); margin-left: 0.3em; font-weight: 700; }
+/* Watched state on owned titles: a quiet label, since the row already carries a tick. */
+.watched-mark {
+  color: var(--pico-primary);
+  border: 1px solid var(--pico-primary);
+  border-radius: var(--pico-border-radius);
+  padding: 0 0.4em;
+  margin-left: 0.4em;
+  font-size: 0.7rem;
+  vertical-align: middle;
+}
 .owned-where { white-space: nowrap; }
 .server-meta { flex: 1 1 100%; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 .plex-signin small { display: block; margin-top: calc(var(--pico-spacing) / 2); }
