@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.2] — 2026-09-19
+
+### Changed
+
+- **New icon: clapper and lens** — a clapperboard with one stripe missing from its bar, under a
+  magnifying glass. Theme-aware in the header as before.
+
 ## [0.15.1] — 2026-09-19
 
 ### Changed
@@ -561,7 +568,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.1...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.2...HEAD
+[0.15.2]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.2
 [0.15.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.1
 [0.15.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.0
 [0.14.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.14.1
