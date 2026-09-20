@@ -257,12 +257,20 @@ article > footer [role="button"] { margin-bottom: 0.25rem; }
 }
 
 .collection-card--compact .collection-poster {
-  grid-row: 1 / span 4;
+  grid-row: 1 / span 5;
   margin-bottom: 0;
 }
 
 .collection-card--compact > :not(.collection-poster) {
   grid-column: 2;
+}
+
+/* No artwork: an empty poster-shaped block, so the text column lines up with its neighbours. */
+.collection-poster--empty {
+  aspect-ratio: 2 / 3;
+  background: var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+  width: 100%;
 }
 
 /* Pico gives an article's header a band and a rule; on a compact card that is just a bar

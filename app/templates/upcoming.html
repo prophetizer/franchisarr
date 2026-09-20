@@ -25,45 +25,48 @@
   {% set ns = namespace(current=None) %}
   {% for film in films %}
     {% if film.month_label != ns.current %}
-      {% if ns.current is not none %}</ul></section>{% endif %}
+      {% if ns.current is not none %}</div></section>{% endif %}
       {% set ns.current = film.month_label %}
       <section class="upcoming-month">
         <h2>{{ film.month_label }}</h2>
-        <ul class="film-list">
+        <div class="collection-grid collection-grid--compact">
     {% endif %}
-        <li class="film-row upcoming">
+        <article class="collection-card collection-card--compact">
           {% if film.poster %}
-            <img class="film-poster" src="{{ film.poster }}" alt="" loading="lazy"
-                 decoding="async" width="92" height="138">
+            <div class="collection-poster">
+              <img src="{{ film.poster }}" alt="" loading="lazy" decoding="async" width="92" height="138">
+            </div>
+          {% else %}
+            <div class="collection-poster collection-poster--empty" aria-hidden="true"></div>
           {% endif %}
-          <span class="film-title">
-            {{ film.title }}
-            <small class="muted">
-              <a href="{{ url('/collections/' ~ film.collection_id) }}">{{ film.collection_name }}</a>
-              · you have {{ film.owned_count }} of {{ film.total_count }}
-            </small>
-          </span>
-          <span class="film-meta muted">
-            {% if film.release_date %}
-              {% set days = film.days_until(today) %}
-              {{ film.release_date }}
-              {% if days is not none %}
-                {% if days == 0 %}<strong>today</strong>
-                {% elif days == 1 %}tomorrow
-                {% elif days > 0 %}in {{ days }} days
+          <header><strong>{{ film.title }}</strong></header>
+          <p class="collection-counts muted">
+            <span>
+              {% if film.release_date %}
+                {% set days = film.days_until(today) %}
+                {{ film.release_date }}
+                {% if days is not none %}
+                  {% if days == 0 %}· <strong>today</strong>
+                  {% elif days == 1 %}· tomorrow
+                  {% elif days > 0 %}· in {{ days }} days
+                  {% endif %}
                 {% endif %}
+              {% else %}
+                no release date announced
               {% endif %}
-            {% else %}
-              no release date announced
-            {% endif %}
-          </span>
-          <span class="film-actions">
+            </span>
+          </p>
+          <p><small class="muted">
+            <a href="{{ url('/collections/' ~ film.collection_id) }}">{{ film.collection_name }}</a>
+            · you have {{ film.owned_count }} of {{ film.total_count }}
+          </small></p>
+          <p class="card-actions">
             <button class="outline" hx-get="{{ url('/add/' ~ film.tmdb_id) }}"
                     hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
-          </span>
-        </li>
+          </p>
+        </article>
   {% endfor %}
-  {% if ns.current is not none %}</ul></section>{% endif %}
+  {% if ns.current is not none %}</div></section>{% endif %}
 
   <div id="add-dialog"></div>
 {% else %}

@@ -5,6 +5,8 @@
       <div class="collection-poster">
         <img src="{{ poster }}" alt="" loading="lazy" decoding="async" width="92" height="138">
       </div>
+    {% else %}
+      <div class="collection-poster collection-poster--empty" aria-hidden="true"></div>
     {% endif %}
     <header>
       <strong>{{ title }}</strong>

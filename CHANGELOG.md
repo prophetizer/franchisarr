@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.10] — 2026-09-19
+
+### Changed
+
+- **Upcoming uses the compact cards** too, grouped by month as before. A card without artwork
+  now shows a muted poster-shaped placeholder on every card page, so its text lines up with its
+  neighbours.
+
 ## [0.15.9] — 2026-09-19
 
 ### Changed
@@ -634,7 +642,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.9...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.10...HEAD
+[0.15.10]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.10
 [0.15.9]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.9
 [0.15.8]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.8
 [0.15.7]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.7
