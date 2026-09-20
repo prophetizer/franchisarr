@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.4] — 2026-09-19
+
+### Changed
+
+- **New icon: Found.** A film reel and a TV, and a magnifying glass below them showing the
+  dashed outline of what's missing — movies, shows, and the finding. Theme-aware in the
+  header as before; favicon and GitHub images updated.
+
 ## [0.15.3] — 2026-09-19
 
 ### Fixed
@@ -580,7 +588,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.3...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.4...HEAD
+[0.15.4]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.4
 [0.15.3]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.3
 [0.15.2]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.2
 [0.15.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.1
