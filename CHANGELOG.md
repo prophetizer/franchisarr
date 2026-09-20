@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.7] — 2026-09-19
+
+### Fixed
+
+- **Compact cards no longer drift apart.** Cards in a row share a height, and the grid inside
+  each card was stretching its rows to fill it, so title, counts and list floated apart by
+  however tall the neighbour was. Rows hug their content now, the header band is gone, and the
+  columns are a little wider.
+
 ## [0.15.6] — 2026-09-19
 
 ### Changed
@@ -610,7 +619,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.6...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.7...HEAD
+[0.15.7]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.7
 [0.15.6]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.6
 [0.15.5]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.5
 [0.15.4]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.4
