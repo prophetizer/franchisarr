@@ -69,6 +69,23 @@
   --pico-code-color: var(--text-muted, var(--text));
   --pico-mark-background-color: rgba(var(--accent-color), 0.3);
   --pico-mark-color: var(--text);
+
+  /* The "missing" colour: the dashed part of the app's icon and the count of missing films. */
+  --franchisarr-accent: rgb(var(--accent-color));
+}
+
+/* --main-bg-color and --modal-bg-color may be a gradient or image shorthand (hotline,
+ * space-gray), so the surfaces are painted with `background`, not `background-color`. */
+body {
+  background: var(--main-bg-color);
+  background-attachment: fixed;
+  color: var(--text);
+}
+
+article,
+.collection-card,
+dialog > article {
+  background: var(--modal-bg-color, var(--main-bg-color));
 }
 
 /* theme.park themes are dark designs; pin the scheme so a viewer whose OS prefers light doesn't

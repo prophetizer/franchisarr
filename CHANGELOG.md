@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.3] — 2026-09-19
+
+### Fixed
+
+- **theme.park gradient themes** (hotline, space-gray, and any theme whose `--main-bg-color` is
+  a gradient or image) now paint the page and cards; they used to fall back to the default
+  palette because a gradient is not a colour.
+- **The icon under theme.park themes**: `--accent-color` is an RGB triplet there, not a colour,
+  so the icon's dashed accent was invalid on every theme.park theme. Verified against all
+  eleven official theme options.
+- `contrib/theme-park/franchisarr-base.css` updated to match, ready to submit upstream.
+
 ## [0.15.2] — 2026-09-19
 
 ### Changed
@@ -568,7 +580,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.2...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.3...HEAD
+[0.15.3]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.3
 [0.15.2]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.2
 [0.15.1]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.1
 [0.15.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.0

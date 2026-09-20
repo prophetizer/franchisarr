@@ -34,3 +34,17 @@ shipping its own copy.
 `tests/test_theme_park_base.py` in the Franchisarr repo checks that every class this file targets
 still exists in the rendered pages, so a rename in the app shows up as a failing test rather than
 as a quietly unthemed component.
+
+## Submitting upstream
+
+theme.park adds apps by pull request against `develop` of
+[GilbN/theme.park](https://github.com/GilbN/theme.park); the docs are a second repository,
+[themepark-dev/tp-docs](https://github.com/themepark-dev/tp-docs). Everything needed is here:
+
+1. Copy `franchisarr-base.css` to `css/base/franchisarr/franchisarr-base.css`. Nothing else in
+   the repo needs touching — `themes.py` generates the per-theme wrappers in CI.
+2. The PR must show the app in every official theme option. `screenshots/` has the collection
+   page under all eleven (aquamarine, dark, dracula, hotline, hotpink, maroon, nord, organizr,
+   overseerr, plex, space-gray), captured through the app's own `TP_THEME` at 1440px.
+3. For tp-docs, add a page under `docs/themes/` following any existing app page, and an entry in
+   `mkdocs.yml`. `docs-page.md` here is a ready draft.

@@ -66,8 +66,10 @@
   --pico-code-background-color: var(--modal-header-color, var(--modal-bg-color, #3b4252));
   --pico-code-color: var(--text-muted, #a3be8c);
 
-  /* The "missing" colour: the dashed poster in the icon. theme.park's accent when it has one. */
-  --franchisarr-accent: var(--accent-color, #ebcb8b);
+  /* The "missing" colour: the dashed part of the icon. theme.park's --accent-color is an RGB
+     triplet ("249, 141, 201"), never a colour, so it is wrapped here; the fallback is Nord's
+     yellow written the same way. */
+  --franchisarr-accent: rgb(var(--accent-color, 235, 203, 139));
 }
 
 /* The light half of Nord: snow storm surfaces, polar night text, the same frost accents. */
@@ -110,5 +112,20 @@
   --pico-code-background-color: var(--modal-header-color, var(--modal-bg-color, #e5e9f0));
   --pico-code-color: var(--text-muted, #4c566a);
 
-  --franchisarr-accent: var(--accent-color, #d08770);
+  --franchisarr-accent: rgb(var(--accent-color, 208, 135, 112));
+}
+
+/* theme.park themes may set --main-bg-color and --modal-bg-color to a whole gradient or image
+   shorthand (hotline, space-gray), which is invalid where Pico expects a colour and would leave
+   the page on the default palette. Painting the surfaces with `background`, the way theme.park's
+   own base sheets do, lets a gradient through; with no theme present the fallback is the very
+   colour Pico would have used. */
+body {
+  background: var(--main-bg-color, var(--pico-background-color));
+}
+
+article,
+.collection-card,
+dialog > article {
+  background: var(--modal-bg-color, var(--pico-card-background-color));
 }
