@@ -44,7 +44,7 @@
     <header class="container">
       <nav class="app-nav">
         <ul>
-          <li><a class="app-brand" href="{{ url('/') }}">{% include "partials/logo.html" %}Franchisarr</a></li>
+          <li><a class="app-brand" href="{{ url('/') }}">{% include "partials/logo.html" %}<span class="app-brand-text"><span class="app-brand-name">Franchisarr</span><span class="app-brand-tagline">The films and shows missing from the sets you already own.</span></span></a></li>
         </ul>
         <ul>
           {% block nav %}{% endblock %}

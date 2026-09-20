@@ -53,14 +53,39 @@ input[type="submit"] {
   align-items: center;
   display: inline-flex;
   font-weight: 700;
-  gap: 0.45rem;
+  gap: 0.65rem;
   text-decoration: none;
 }
 
 .app-brand-icon {
-  border-radius: 8px;
-  height: 36px;
-  width: 36px;
+  border-radius: 10px;
+  flex: 0 0 auto;
+  height: 48px;
+  width: 48px;
+}
+
+/* The lockup: name over tagline, the same arrangement as the README banner, but built from
+   live text so a theme recolours it. The tagline is a line of muted text, not a heading. */
+.app-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.app-brand-name {
+  font-size: 1.25rem;
+}
+
+.app-brand-tagline {
+  color: var(--pico-muted-color);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+@media (max-width: 767px) {
+  .app-brand-icon { height: 36px; width: 36px; }
+  .app-brand-name { font-size: 1.1rem; }
+  .app-brand-tagline { display: none; }
 }
 
 /* The nav wraps; it never widens the page. Pico lays nav lists out as a single flex row, and

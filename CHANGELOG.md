@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.6] — 2026-09-19
+
+### Changed
+
+- **The header is the banner lockup**: icon, name and tagline, built from live text so a theme
+  recolours it; the tagline hides on phones.
+
+### Fixed
+
+- The header icon lost parts under theme.park themes (the page background there is a gradient,
+  which is not a colour; the icon's tile and dark parts are fixed colours now) and could drop
+  shapes in Safari (variables referenced from attributes rather than styles).
+
 ## [0.15.5] — 2026-09-19
 
 ### Fixed
@@ -597,7 +610,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.5...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.6...HEAD
+[0.15.6]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.6
 [0.15.5]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.5
 [0.15.4]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.4
 [0.15.3]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.3

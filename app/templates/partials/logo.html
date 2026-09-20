@@ -1,38 +1,43 @@
-{# The icon, painted with the page's own variables so a theme.park theme or the light toggle
-   recolours it: reel and lens from the primary colours, the TV from the hover colour, the
+{# The icon. The reel, lens, TV and the missing-poster outline take the page's own variables,
+   so a theme.park theme or the light toggle recolours them. The tile and the dark parts are
+   fixed: under theme.park the page background can be a gradient, which is not a colour and
+   would black out anything painted with it. Variables are referenced from style="", never
+   from fill="" or stop-color="", because Safari ignores var() in SVG presentation attributes.
+   Reel and lens from the primary colours, TV from the hover colour, the outline from
+   --franchisarr-accent. White and black here are shading only, applied reel and lens from the primary colours, the TV from the hover colour, the
    missing poster from --franchisarr-accent. White and black here are shading only, applied
    through opacity. The favicon and the GitHub images are static copies in the default palette. #}
-<svg class="app-brand-icon" viewBox="0 0 512 512" width="36" height="36" aria-hidden="true" focusable="false">
+<svg class="app-brand-icon" viewBox="0 0 512 512" width="48" height="48" aria-hidden="true" focusable="false">
   <defs>
     <linearGradient id="fr-tile" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="var(--pico-card-sectioning-background-color)"/>
-      <stop offset="1" stop-color="var(--pico-background-color)"/>
+      <stop offset="0" stop-color="#3b4252"/>
+      <stop offset="1" stop-color="#1c2028"/>
     </linearGradient>
     <radialGradient id="fr-reel" cx=".35" cy=".3" r=".8">
-      <stop offset="0" stop-color="var(--pico-primary)"/>
-      <stop offset="1" stop-color="var(--pico-primary-background)"/>
+      <stop offset="0" style="stop-color: var(--pico-primary)"/>
+      <stop offset="1" style="stop-color: var(--pico-primary-background)"/>
     </radialGradient>
     <radialGradient id="fr-glow" cx=".5" cy=".5" r=".5">
-      <stop offset="0" stop-color="var(--franchisarr-accent)" stop-opacity=".6"/>
-      <stop offset="1" stop-color="var(--franchisarr-accent)" stop-opacity="0"/>
+      <stop offset="0" style="stop-color: var(--franchisarr-accent)" stop-opacity=".6"/>
+      <stop offset="1" style="stop-color: var(--franchisarr-accent)" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#fr-tile)"/>
   <rect width="512" height="256" rx="112" fill="#fff" opacity=".06"/>
   <circle cx="143" cy="155" r="104" fill="#000" opacity=".3"/>
   <circle cx="140" cy="150" r="104" fill="url(#fr-reel)"/>
-  <g fill="var(--pico-background-color)"><circle cx="140" cy="92" r="15"/><circle cx="190" cy="121" r="15"/><circle cx="190" cy="179" r="15"/><circle cx="140" cy="208" r="15"/><circle cx="90" cy="179" r="15"/><circle cx="90" cy="121" r="15"/></g>
-  <circle cx="140" cy="150" r="21" fill="var(--pico-h1-color)"/><circle cx="140" cy="150" r="8" fill="var(--pico-background-color)"/>
-  <path d="M369 104 L322 64 M369 104 L416 64" stroke="var(--pico-muted-color)" stroke-width="7" stroke-linecap="round"/>
+  <g fill="#1c2028"><circle cx="140" cy="92" r="15"/><circle cx="190" cy="121" r="15"/><circle cx="190" cy="179" r="15"/><circle cx="140" cy="208" r="15"/><circle cx="90" cy="179" r="15"/><circle cx="90" cy="121" r="15"/></g>
+  <circle cx="140" cy="150" r="21" style="fill: var(--pico-h1-color)"/><circle cx="140" cy="150" r="8" fill="#1c2028"/>
+  <path d="M369 104 L322 64 M369 104 L416 64" style="stroke: var(--pico-muted-color)" stroke-width="7" stroke-linecap="round"/>
   <rect x="279" y="109" width="186" height="124" rx="16" fill="#000" opacity=".3"/>
-  <rect x="276" y="104" width="186" height="124" rx="16" fill="var(--pico-muted-border-color)"/>
-  <rect x="289" y="116" width="160" height="92" rx="10" fill="var(--pico-primary-hover)"/>
-  <circle cx="369" cy="166" r="24" fill="var(--pico-h1-color)" opacity=".92"/><path d="M361 154 L382 166 L361 178 Z" fill="var(--pico-background-color)"/>
-  <rect x="332" y="228" width="15" height="15" fill="var(--pico-muted-border-color)"/><rect x="391" y="228" width="15" height="15" fill="var(--pico-muted-border-color)"/>
+  <rect x="276" y="104" width="186" height="124" rx="16" style="fill: var(--pico-muted-border-color)"/>
+  <rect x="289" y="116" width="160" height="92" rx="10" style="fill: var(--pico-primary-hover)"/>
+  <circle cx="369" cy="166" r="24" style="fill: var(--pico-h1-color)" opacity=".92"/><path d="M361 154 L382 166 L361 178 Z" fill="#1c2028"/>
+  <rect x="332" y="228" width="15" height="15" style="fill: var(--pico-muted-border-color)"/><rect x="391" y="228" width="15" height="15" style="fill: var(--pico-muted-border-color)"/>
   <circle cx="256" cy="320" r="112" fill="url(#fr-glow)"/>
-  <circle cx="256" cy="320" r="112" fill="var(--pico-background-color)" opacity=".6"/>
-  <rect x="206" y="258" width="100" height="128" rx="8" fill="none" stroke="var(--franchisarr-accent)" stroke-width="8" stroke-dasharray="16 12" stroke-linecap="round"/>
-  <path d="M336 400 L396 460" stroke="var(--pico-primary)" stroke-width="32" stroke-linecap="round"/>
-  <circle cx="256" cy="320" r="112" fill="none" stroke="var(--pico-primary)" stroke-width="20"/>
+  <circle cx="256" cy="320" r="112" fill="#1c2028" opacity=".6"/>
+  <rect x="206" y="258" width="100" height="128" rx="8" fill="none" style="stroke: var(--franchisarr-accent)" stroke-width="8" stroke-dasharray="16 12" stroke-linecap="round"/>
+  <path d="M336 400 L396 460" style="stroke: var(--pico-primary)" stroke-width="32" stroke-linecap="round"/>
+  <circle cx="256" cy="320" r="112" fill="none" style="stroke: var(--pico-primary)" stroke-width="20"/>
   <path d="M187 280 a67 67 0 0 1 43 -47" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" opacity=".6"/>
 </svg>
