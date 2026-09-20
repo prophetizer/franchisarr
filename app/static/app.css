@@ -288,6 +288,15 @@ article > footer [role="button"] { margin-bottom: 0.25rem; }
 
 .collection-card--compact > .missing-preview li { margin-bottom: 0.15rem; }
 
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.25rem 0 0;
+}
+
+.card-actions button { margin-bottom: 0; }
+
 .collection-counts { margin-bottom: 0.25rem; }
 .collection-card--compact > p:last-child,
 .collection-card--compact > .missing-preview { margin-bottom: 0; }

@@ -1,4 +1,29 @@
 {% extends "base.html" %}
+{% macro suggestion_card(poster, title, year, links, relationships, heuristic, add_url, add_target, dismiss_url) -%}
+  <article class="collection-card collection-card--compact">
+    {% if poster %}
+      <div class="collection-poster">
+        <img src="{{ poster }}" alt="" loading="lazy" decoding="async" width="92" height="138">
+      </div>
+    {% endif %}
+    <header>
+      <strong>{{ title }}</strong>
+      {% if year %}<small class="muted">({{ year }})</small>{% endif %}
+      {{ links }}
+    </header>
+    <p class="collection-counts muted">
+      <span>{{ relationships }}{% if heuristic %} <small>· possible</small>{% endif %}</span>
+    </p>
+    <p class="card-actions">
+      <button hx-get="{{ add_url }}" hx-target="{{ add_target }}" hx-swap="innerHTML">Add</button>
+      {% if dismiss_url %}
+        <button class="secondary outline" hx-post="{{ dismiss_url }}"
+                hx-target="#spinoff-lists" hx-swap="innerHTML">Not interested</button>
+      {% endif %}
+    </p>
+  </article>
+{%- endmacro %}
+
 {% block title %}TV spin-offs — Franchisarr{% endblock %}
 
 {% block content %}
@@ -19,32 +44,15 @@
   <section>
     <h2>Suggested</h2>
     {% if suggestions %}
-      <ul class="film-list">
+      <div class="collection-grid collection-grid--compact">
         {% for suggestion in suggestions %}
-          <li class="film-row missing">
-            {% if suggestion.poster %}
-              <img class="film-poster" src="{{ suggestion.poster }}" alt="" loading="lazy"
-                   decoding="async" width="92" height="138">
-            {% endif %}
-            <span class="film-title">
-              {{ suggestion.spinoff_name }}
-              {% if suggestion.first_air_year %}<small class="muted">({{ suggestion.first_air_year }})</small>{% endif %}
-              {% with item = suggestion %}{% include "partials/show_links.html" %}{% endwith %}
-            </span>
-            <span class="film-meta muted">
-              {{ suggestion.relationships }}
-              {% if suggestion.confidence == 'heuristic' %}<small>· possible</small>{% endif %}
-            </span>
-            <span class="film-actions">
-              <button hx-get="{{ url('/shows/add/' ~ suggestion.spinoff_tmdb_id) }}"
-                      hx-target="#add-show-dialog" hx-swap="innerHTML">Add</button>
-              <button class="secondary outline"
-                      hx-post="{{ url('/shows/dismiss/' ~ suggestion.spinoff_tmdb_id) }}"
-                      hx-target="#spinoff-lists" hx-swap="innerHTML">Not interested</button>
-            </span>
-          </li>
+          {% set links %}{% with item = suggestion %}{% include "partials/show_links.html" %}{% endwith %}{% endset %}
+          {{ suggestion_card(suggestion.poster, suggestion.spinoff_name, suggestion.first_air_year, links,
+                             suggestion.relationships, suggestion.confidence == 'heuristic',
+                             url('/shows/add/' ~ suggestion.spinoff_tmdb_id), '#add-show-dialog',
+                             url('/shows/dismiss/' ~ suggestion.spinoff_tmdb_id)) }}
         {% endfor %}
-      </ul>
+      </div>
 
     {% else %}
       <p class="muted">
@@ -67,32 +75,14 @@
         The series a film was drawn from or continued — <em>Firefly</em> for <em>Serenity</em> —
         and the original series behind a remake you have. Add sends it to Sonarr.
       </small></p>
-      <ul class="film-list">
+      <div class="collection-grid collection-grid--compact">
         {% for item in shows_from_films %}
-          <li class="film-row missing">
-            {% if item.poster %}
-              <img class="film-poster" src="{{ item.poster }}" alt="" loading="lazy"
-                   decoding="async" width="92" height="138">
-            {% endif %}
-            <span class="film-title">
-              {{ item.target_title }}
-              {% if item.target_year %}<small class="muted">({{ item.target_year }})</small>{% endif %}
-              <span class="show-links"><a href="{{ item.tmdb_url }}" target="_blank" rel="noopener noreferrer">TMDb</a></span>
-            </span>
-            <span class="film-meta muted">
-              {{ item.relationships }}
-              {% if item.confidence == 'heuristic' %}<small>· possible</small>{% endif %}
-            </span>
-            <span class="film-actions">
-              <button hx-get="{{ url('/shows/add/' ~ item.target_tmdb_id) }}"
-                      hx-target="#add-show-dialog" hx-swap="innerHTML">Add</button>
-              <button class="secondary outline"
-                      hx-post="{{ url('/shows/dismiss/' ~ item.target_tmdb_id) }}"
-                      hx-target="#spinoff-lists" hx-swap="innerHTML">Not interested</button>
-            </span>
-          </li>
+          {% set links %}<span class="show-links"><a href="{{ item.tmdb_url }}" target="_blank" rel="noopener noreferrer">TMDb</a></span>{% endset %}
+          {{ suggestion_card(item.poster, item.target_title, item.target_year, links, item.relationships,
+                             item.confidence == 'heuristic', url('/shows/add/' ~ item.target_tmdb_id),
+                             '#add-show-dialog', url('/shows/dismiss/' ~ item.target_tmdb_id)) }}
         {% endfor %}
-      </ul>
+      </div>
     </section>
   {% endif %}
 
@@ -102,29 +92,13 @@
       <p><small class="muted">
         The film a series was based on, or the one that finished it. Add sends it to Radarr.
       </small></p>
-      <ul class="film-list">
+      <div class="collection-grid collection-grid--compact">
         {% for item in films_from_shows %}
-          <li class="film-row missing">
-            {% if item.poster %}
-              <img class="film-poster" src="{{ item.poster }}" alt="" loading="lazy"
-                   decoding="async" width="92" height="138">
-            {% endif %}
-            <span class="film-title">
-              {{ item.target_title }}
-              {% if item.target_year %}<small class="muted">({{ item.target_year }})</small>{% endif %}
-              <span class="show-links"><a href="{{ item.tmdb_url }}" target="_blank" rel="noopener noreferrer">TMDb</a></span>
-            </span>
-            <span class="film-meta muted">
-              {{ item.relationships }}
-              {% if item.confidence == 'heuristic' %}<small>· possible</small>{% endif %}
-            </span>
-            <span class="film-actions">
-              <button hx-get="{{ url('/add/' ~ item.target_tmdb_id) }}"
-                      hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
-            </span>
-          </li>
+          {% set links %}<span class="show-links"><a href="{{ item.tmdb_url }}" target="_blank" rel="noopener noreferrer">TMDb</a></span>{% endset %}
+          {{ suggestion_card(item.poster, item.target_title, item.target_year, links, item.relationships,
+                             item.confidence == 'heuristic', url('/add/' ~ item.target_tmdb_id), '#add-dialog', none) }}
         {% endfor %}
-      </ul>
+      </div>
       <div id="add-dialog"></div>
     </section>
   {% endif %}
