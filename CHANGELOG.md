@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.5] — 2026-09-19
+
+### Fixed
+
+- **Everything was too big on a wide screen.** Pico scales its root font size with the
+  viewport, up to 131% at 1536px and beyond, so on a desktop monitor the nav and buttons were a
+  third larger than on a laptop. The root is pinned at 16px now, and nav links and buttons sit
+  a step under that.
+
 ## [0.15.4] — 2026-09-19
 
 ### Changed
@@ -588,7 +597,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.4...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.5...HEAD
+[0.15.5]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.5
 [0.15.4]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.4
 [0.15.3]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.3
 [0.15.2]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.2

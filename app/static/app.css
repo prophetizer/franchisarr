@@ -15,6 +15,40 @@ body > header.container {
   margin-bottom: var(--pico-block-spacing-vertical);
 }
 
+/* Pico scales the root font size with the viewport, up to 131.25% at 1536px and wider -- so
+   on a desktop monitor every nav link and button was a fifth larger than on a laptop. A tool
+   that lives in a browser tab next to Radarr and Sonarr should sit at their scale: 16px, flat.
+   Buttons and the nav are trimmed a step below that as well. */
+:root,
+:host {
+  --pico-font-size: 100%;
+}
+
+@media (min-width: 576px), (min-width: 768px), (min-width: 1024px), (min-width: 1280px), (min-width: 1536px) {
+  :root,
+  :host {
+    --pico-font-size: 100%;
+  }
+}
+
+.app-nav a,
+.app-nav button,
+.app-nav small {
+  font-size: 0.9375rem;
+}
+
+.app-nav button {
+  padding: 0.4rem 0.8rem;
+}
+
+button,
+[role="button"],
+input[type="submit"] {
+  --pico-form-element-spacing-vertical: 0.55rem;
+  --pico-form-element-spacing-horizontal: 0.9rem;
+  font-size: 0.9375rem;
+}
+
 .app-brand {
   align-items: center;
   display: inline-flex;
