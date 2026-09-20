@@ -18,7 +18,9 @@ notifications, and **import lists** Radarr and Sonarr can poll so you never have
 It reads **Plex, Jellyfin and Emby** — one of them or several at once, with a film on any of
 them counting as owned and a tick on what you've watched — supports multiple Radarr and Sonarr
 instances, signs you in with your media server account, scans on a schedule,
-shouts into Discord or Slack when it finds something new, and has a web UI and a CLI. Everything
+shouts into Discord or Slack when it finds something new, wears your
+[theme.park](https://theme-park.dev) theme like the rest of your stack, and has a web UI and a
+CLI. Everything
 it hides — low-rated films, TV specials, shorts — is a preference, folded away rather than
 deleted.
 
@@ -208,7 +210,9 @@ environment:
 If you theme centrally by injecting a stylesheet at the proxy — nginx `sub_filter`, a Traefik
 plugin, theme.park's Docker mod — that works with **nothing set here at all**. Franchisarr always
 loads a small adapter mapping theme.park's custom properties onto the ones it paints with, so an
-injected theme-options stylesheet takes effect on its own.
+injected theme-options stylesheet takes effect on its own. The whole page follows the theme,
+header icon included — verified against all eleven official theme options
+([screenshots](contrib/theme-park/screenshots)).
 
 If you host your own theme.park, `contrib/theme-park/franchisarr-base.css` is a base stylesheet
 ready to drop in as `css/base/franchisarr/franchisarr-base.css`. See
