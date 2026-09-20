@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.11] — 2026-09-20
+
+### Security
+
+- Media-server credentials already in the database are registered with the log redactor at
+  startup. Before, a Jellyfin or Emby key that pre-dated the current boot was only registered
+  when something first built a client for it, so it could reach a log line before the first
+  scan. Found by the post-release security review; no evidence any install logged one.
+
 ## [0.15.10] — 2026-09-19
 
 ### Changed
@@ -642,7 +651,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.10...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.11...HEAD
+[0.15.11]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.11
 [0.15.10]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.10
 [0.15.9]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.9
 [0.15.8]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.8
