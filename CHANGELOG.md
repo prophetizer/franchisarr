@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.8] — 2026-09-19
+
+### Changed
+
+- **Uniform cards everywhere.** The header and footer bands are gone from every card, not just
+  the compact ones; the home page's section cards sit in a grid instead of stacking full-width;
+  and buttons are the size of their label rather than stretched across the form.
+
 ## [0.15.7] — 2026-09-19
 
 ### Fixed
@@ -619,7 +627,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.7...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.8...HEAD
+[0.15.8]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.8
 [0.15.7]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.7
 [0.15.6]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.6
 [0.15.5]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.5

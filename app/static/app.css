@@ -47,6 +47,7 @@ input[type="submit"] {
   --pico-form-element-spacing-vertical: 0.55rem;
   --pico-form-element-spacing-horizontal: 0.9rem;
   font-size: 0.9375rem;
+  width: auto;   /* Pico stretches form buttons edge to edge; a button is the size of its label */
 }
 
 .app-brand {
@@ -204,6 +205,41 @@ footer.container {
 .collection-card {
   margin-bottom: 0;
 }
+
+/* Every card is flat: Pico's article header and footer bands (their own background and a rule)
+   made each card a little three-storey building. A card is a title, a body and its actions,
+   with nothing drawn between them, the same everywhere in the app. */
+article > header,
+article > footer {
+  background: transparent;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+article > header { margin-bottom: 0.5rem; }
+article > footer { margin-top: 0.75rem; }
+article > header > strong { font-size: 1rem; }
+article > p:last-of-type { margin-bottom: 0; }
+article > footer button,
+article > footer [role="button"] { margin-bottom: 0.25rem; }
+
+/* The home page: one card per section, packed into a grid, buttons on a common baseline. */
+.home-grid {
+  display: grid;
+  gap: var(--pico-spacing);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  margin-bottom: var(--pico-spacing);
+}
+
+.home-grid > article {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+
+.home-grid > article > p { flex: 1 1 auto; }
+.home-grid > article > footer { margin-top: auto; padding-top: 0.75rem; }
 
 /* Franchises: a lot of them, so the poster is a thumbnail beside the text rather than the
    whole card, and the grid packs more across. */

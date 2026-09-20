@@ -43,6 +43,7 @@
     </article>
   {% endif %}
 
+  <div class="home-grid">
   <article>
     <header><strong>Franchises</strong></header>
     <p>Everything you own, grouped the way you think of it — films and TV together — with what's
@@ -98,6 +99,7 @@
     </p>
     <footer><a href="{{ url('/shows') }}" role="button">Browse spin-offs</a></footer>
   </article>
+  </div>
 
   <p><small class="muted">
     Scanning {{ libraries | length }} Plex librar{{ 'y' if libraries | length == 1 else 'ies' }}.
