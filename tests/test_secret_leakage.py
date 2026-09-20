@@ -194,3 +194,22 @@ def test_a_non_admin_cannot_reach_the_export(client: TestClient) -> None:
     response = client.get(f"{BASE}/settings/export", headers={API_KEY_HEADER: key})
 
     assert response.status_code == 403
+
+
+def test_stored_media_server_credentials_are_redacted_from_startup(app_factory, caplog) -> None:
+    """A Jellyfin key that was in the database before this boot must never appear in a log
+    line -- create/update register with the redactor, but a pre-existing row only got
+    registered when something first built a client for it."""
+    import logging
+
+    from app.logging_config import redact
+    from tests.conftest import seed_server
+
+    module = app_factory(BASE)
+    with TestClient(module.app, follow_redirects=False):
+        with Session(get_engine()) as session:
+            seed_server(session, "jellyfin", credential="JELLYKEY-zzz111aaa222bbb333ccc")
+    # Second boot: the row already exists.
+    module = app_factory(BASE)
+    with TestClient(module.app, follow_redirects=False):
+        assert "JELLYKEY-zzz111aaa222bbb333ccc" not in redact("key is JELLYKEY-zzz111aaa222bbb333ccc")

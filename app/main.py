@@ -95,6 +95,11 @@ async def lifespan(app: FastAPI):
         seed_radarr_from_env(session, settings)
         seed_sonarr_from_env(session, settings)
         media_server_service.seed_from_env(session, settings)
+        # Every stored credential is registered with the log redactor before anything else can
+        # log it -- create/update register as they go, but rows that already exist would
+        # otherwise stay unregistered until first used.
+        for server in media_server_service.list_servers(session):
+            register_secret(server.credential)
         _discover_plex_server(session)
         scheduler_service.start(session)
 
