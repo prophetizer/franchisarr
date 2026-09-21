@@ -24,6 +24,10 @@ CLI. Everything
 it hides — low-rated films, TV specials, shorts — is a preference, folded away rather than
 deleted.
 
+Franchisarr owes its starting idea to [Gaps](https://github.com/JasonHHouse/gaps), which has
+found missing collection films in Plex since 2019. This is that idea extended to Jellyfin and
+Emby, to TV spin-offs and cross-media franchises, and to import lists the *arrs poll themselves.
+
 **Status:** pre-1.0 and in daily use against a real library of ~3,400 films and ~660 shows.
 Images are published to GHCR for amd64 and arm64.
 
