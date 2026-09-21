@@ -147,6 +147,19 @@ those answer API requests with a login page, and an API key can't get past one. 
 so rather than blaming your API key. If you'd rather keep the public URL, add a bypass rule in
 the proxy for `/api` so API-key requests are let through.
 
+## Calendar
+
+The Upcoming page is also an iCalendar feed, so announced films in franchises you own appear in
+your calendar app — one all-day event per film, with the collection and how much of it you have:
+
+```
+https://franchisarr.example/api/lists/upcoming.ics?api_key=YOUR_KEY
+```
+
+Apple Calendar: File → New Calendar Subscription. Google Calendar: Other calendars → From URL.
+Same key as the import lists (Settings → Import lists), and the URL is shown there. It refreshes
+daily; films with no date yet appear once TMDb gives them one.
+
 ## Signing in
 
 **Sign in with Plex** is the main route — Franchisarr never sees your Plex password. Only accounts

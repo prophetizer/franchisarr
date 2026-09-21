@@ -23,6 +23,7 @@ from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
 from app.auth.api_keys import find_user_by_api_key
+from app.config import get_settings
 from app.auth.dependencies import API_KEY_HEADER, DbSession
 from app.models import ItemType, TmdbShow, User
 from app.services import (
@@ -150,6 +151,28 @@ def _shows(session: Session, user: User) -> tuple[list[dict], int]:
         out.append({"tvdbId": cached.tvdb_id, "tmdbId": tmdb_id, "title": title, "year": year,
                     "source": source, "detail": detail})
     return out, without_tvdb
+
+
+@router.get("/upcoming.ics")
+def upcoming_calendar(request: Request, session: DbSession, user: User = Depends(list_user)):
+    """The Upcoming page as a calendar subscription: one all-day event per dated film.
+
+    Same key as the import lists, same reasoning for it being in the URL -- a calendar app can't
+    send a header either. Undated films are omitted; they appear once TMDb gives them a date.
+    """
+    from fastapi.responses import Response
+
+    from app.services import ical
+
+    films = upcoming_service.upcoming_films(session, user.id)
+    # Links back to the collection page use the address the request arrived on, which behind a
+    # reverse proxy is the public one only if the proxy forwards it; a wrong link is a nuisance,
+    # not a fault, so this is best effort.
+    link_base = str(request.base_url).rstrip("/") + get_settings().base_url + "/collections"
+    body = ical.calendar(films, domain=request.url.hostname or "franchisarr", link_base=link_base)
+    return Response(body, media_type="text/calendar; charset=utf-8",
+                    headers={"Cache-Control": "no-cache",
+                             "Content-Disposition": 'inline; filename="franchisarr-upcoming.ics"'})
 
 
 @router.get("/{name}.json")

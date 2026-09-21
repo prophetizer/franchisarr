@@ -178,3 +178,48 @@ def test_the_shows_list_learns_a_missing_show_on_demand_and_caches_it(client: Te
         second = client.get(f"{BASE}/api/lists/shows.json?api_key={key}")
         assert [s["tvdbId"] for s in second.json()] == [72073]
         assert len(mock.calls) == 1, "cached; not fetched again"
+
+
+def test_the_upcoming_calendar_is_a_valid_feed_of_dated_films(client: TestClient) -> None:
+    """One all-day VEVENT per dated announced film, escaped and folded per RFC 5545, behind the
+    same key as the lists. An undated film has no event, since a calendar can't show 'some day'."""
+    from app.models import TmdbCollectionMovie
+
+    _seed_films(); key = _key()
+    with Session(get_engine()) as session:
+        session.add(TmdbCollectionMovie(collection_id=COLLECTION, tmdb_movie_id=100,
+                                        title="Axel F 3: Detroit, Again; Really", position=9))
+        session.commit()
+
+    assert client.get(f"{BASE}/api/lists/upcoming.ics").status_code == 401
+    response = client.get(f"{BASE}/api/lists/upcoming.ics?api_key={key}")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/calendar")
+    body = response.text
+    assert body.startswith("BEGIN:VCALENDAR\r\n") and body.endswith("END:VCALENDAR\r\n")
+    unfolded = body.replace("\r\n ", "")
+    assert unfolded.count("BEGIN:VEVENT") == 1, "the dated film only"
+    assert "DTSTART;VALUE=DATE:20300601" in unfolded
+    assert "SUMMARY:Axel F 2" in unfolded
+    assert "UID:franchisarr-99@" in unfolded
+    assert "DESCRIPTION:Beverly Hills Cop Collection — you have 1 of 5." in unfolded, "the undated film counts toward the total"
+    assert f"/collections/{COLLECTION}" in unfolded
+
+
+def test_calendar_text_is_escaped_and_long_lines_fold() -> None:
+    from datetime import datetime, timezone
+
+    from app.services import ical
+    from app.services.upcoming_service import UpcomingFilm
+
+    film = UpcomingFilm(tmdb_id=1, title="A; B, C\\D", collection_id=5, collection_name="X" * 90,
+                        release_date="2030-01-02", owned_count=1, total_count=2)
+    body = ical.calendar([film], now=datetime(2026, 9, 20, tzinfo=timezone.utc))
+
+    assert "SUMMARY:A\; B\\, C\\\\D" in body
+    assert "DTSTAMP:20260920T000000Z" in body
+    for line in body.split("\r\n"):
+        assert len(line.encode()) <= 75, line
+    assert "\r\n " in body, "the long CATEGORIES line was folded"
+    assert "".join(body.split("\r\n ")).count("X" * 90) == 2, "unfolding restores the text"

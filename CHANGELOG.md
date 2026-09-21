@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] — 2026-09-20
+
+### Added
+
+- **Calendar feed.** `/api/lists/upcoming.ics` is the Upcoming page as an iCalendar
+  subscription: one all-day event per announced film, with the collection and how much of it
+  you own, linking back to the collection page. Same key as the import lists; the URL is on
+  the Settings page. Written without a dependency; validated against a strict parser.
+
 ## [0.15.11] — 2026-09-20
 
 ### Security
@@ -651,7 +660,8 @@ Sonarr with one click. Nothing is ever added on your behalf.
 - The spin-off search only finds shows named after the original; others need a mapping added by
   hand.
 
-[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.15.11...HEAD
+[Unreleased]: https://github.com/prophetizer/franchisarr/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/prophetizer/franchisarr/releases/tag/v0.16.0
 [0.15.11]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.11
 [0.15.10]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.10
 [0.15.9]: https://github.com/prophetizer/franchisarr/releases/tag/v0.15.9

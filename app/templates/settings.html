@@ -46,6 +46,13 @@
           </small></li>
       {% endfor %}
     </ul>
+    <p>
+      <strong>Calendar.</strong> The Upcoming page as a feed any calendar app can subscribe to —
+      one all-day event per announced film, with the collection and how much of it you have:
+      <code class="list-url" data-path="{{ list_base }}/upcoming.ics?api_key=">{{ list_base }}/upcoming.ics?api_key=<em>your key</em></code>
+      <small class="muted">In Apple Calendar: File → New Calendar Subscription. Google: Other
+      calendars → From URL. It refreshes itself daily.</small>
+    </p>
     <p><small class="muted">
       Add <code>&amp;min_rating=7</code> to a films URL to raise the floor for that list only, or
       <code>&amp;min_rating=0</code> to ignore the household one. <code>&amp;include_upcoming=1</code>
