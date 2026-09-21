@@ -23,6 +23,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Request bodies are capped at 2 MB.**
 - `SECURITY.md` now lists what the app does on its own behalf.
 
+## [0.16.1] — 2026-09-21
+
+### Fixed
+
+- The "Confirmed spin-off mappings" section listed every mapping a scan had found from
+  Wikidata under a heading that said "your own list". It lists only what you added or confirmed.
+
+### Changed
+
+- README screenshots are regenerated automatically on every UI change, from a fixed sample
+  library fetched from TMDb (`scripts/screenshots.py`), so they can't drift.
+
 ## [0.16.0] — 2026-09-20
 
 ### Added
