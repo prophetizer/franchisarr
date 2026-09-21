@@ -35,6 +35,9 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt playwright==1.49.1
       - run: python -m playwright install --with-deps chromium
+      # Noto Sans is what system-ui resolves to on a typical Linux desktop; without it the
+      # runner falls back to DejaVu, which is wider and wraps the nav -- a layout no one sees.
+      - run: sudo apt-get install -y -qq fonts-noto-core && fc-cache -f >/dev/null
       - name: Capture
         env:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
