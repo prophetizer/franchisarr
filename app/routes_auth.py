@@ -116,8 +116,13 @@ def login_submit(
     password: Annotated[str, Form()] = "",
     next: Annotated[str, Form()] = "",
 ):
+    from app.hardening import client_key, login_limiter
+
+    key = client_key(request)
+    login_limiter.check(key)
     user = authenticate_local(session, username, password)
     if user is None:
+        login_limiter.failed(key)
         # One message for both causes: saying which was wrong tells an attacker which usernames
         # exist.
         return get_templates().TemplateResponse(
@@ -126,6 +131,7 @@ def login_submit(
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
+    login_limiter.succeeded(key)
     token = create_session(session, user)
     response = RedirectResponse(_safe_next(next), status_code=status.HTTP_303_SEE_OTHER)
     _set_session_cookie(response, token)
@@ -146,9 +152,14 @@ def server_login_submit(
     from app.clients.emby_client import EmbyAuthError, EmbyClientError
     from app.services.auth_service import MediaServerSignInUnavailable, sign_in_with_media_server
 
+    from app.hardening import client_key, login_limiter
+
+    key = client_key(request)
+    login_limiter.check(key)
     try:
         user = sign_in_with_media_server(session, server_id, username, password)
     except EmbyAuthError:
+        login_limiter.failed(key)
         # The server's own message would say which was wrong; ours does not.
         return get_templates().TemplateResponse(
             request, "login.html",
@@ -161,6 +172,7 @@ def server_login_submit(
             status_code=status.HTTP_502_BAD_GATEWAY,
         )
 
+    login_limiter.succeeded(key)
     token = create_session(session, user)
     response = RedirectResponse(_safe_next(next), status_code=status.HTTP_303_SEE_OTHER)
     _set_session_cookie(response, token)

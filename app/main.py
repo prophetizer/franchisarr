@@ -215,6 +215,14 @@ app.include_router(api_router, prefix=settings.base_url)
 app.mount(f"{settings.base_url}/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
+# Outermost first: a too-large body or a cross-site post is refused before anything reads it.
+from app.hardening import BodySizeLimit, CrossSiteGuard, SecurityHeaders  # noqa: E402
+
+app.add_middleware(SecurityHeaders)
+app.add_middleware(CrossSiteGuard)
+app.add_middleware(BodySizeLimit)
+
+
 @app.middleware("http")
 async def html_is_never_stale(request, call_next):  # noqa: ANN001 - Starlette signature
     """Pages must be revalidated on every load.

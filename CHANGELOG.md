@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] — 2026-09-21
+
+### Security
+
+- **Sign-in is rate-limited**: ten failed attempts per address in fifteen minutes, then 429
+  with `Retry-After`. Only failures count; a success clears the count. Applies to the local
+  form and the Jellyfin/Emby form, which relays attempts to that server.
+- **Cross-site POSTs are refused** using `Sec-Fetch-Site` / `Origin`, alongside the existing
+  `SameSite=Lax` cookie. Clients that send neither (curl, the CLI, an *arr) are unaffected.
+- **Security headers on every response**: a Content-Security-Policy scoped to this app, TMDb,
+  fanart.tv and the theme host; `frame-ancestors 'none'`; `nosniff`; same-origin referrer.
+  Verified against every page, the htmx dialogs, Alpine and a theme.park theme with zero
+  violations.
+- **Request bodies are capped at 2 MB.**
+- `SECURITY.md` now lists what the app does on its own behalf.
+
 ## [0.16.0] — 2026-09-20
 
 ### Added

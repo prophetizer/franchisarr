@@ -44,3 +44,31 @@ Areas of particular sensitivity in this project:
 
 Issues in third-party dependencies should generally be reported upstream, but let us know if a
 dependency vulnerability affects Franchisarr directly (e.g. we're pinned to a vulnerable version).
+
+## What the app does on its own behalf
+
+Most protection for a self-hosted app comes from the reverse proxy in front of it. These are
+the parts that belong to the app, because only it knows what a sign-in or a form post is:
+
+- **Secrets are never rendered or logged.** Keys show as their last four characters; a log
+  redactor is loaded with every stored credential at startup, so a value cannot reach a log
+  line through a third-party library either. The config export redacts on request.
+- **Sign-in is rate-limited** per client address: ten failures in fifteen minutes, then 429.
+  Only failures count. The Jellyfin/Emby form relays attempts to that server, so this also
+  stops Franchisarr being used to guess a media-server password.
+- **A Plex token is not an authorisation.** Sign-in is refused unless the account can reach
+  this install's own Plex server.
+- **Cross-site posts are refused** on `Sec-Fetch-Site` / `Origin`, on top of a `SameSite=Lax`,
+  `HttpOnly` session cookie (`SESSION_COOKIE_SECURE=true` adds `Secure` behind HTTPS).
+- **Security headers** on every response: a Content-Security-Policy that limits images and
+  styles to this app, TMDb, fanart.tv and the configured theme host, `frame-ancestors 'none'`,
+  `nosniff`, a same-origin referrer policy. Alpine.js needs `unsafe-eval`, so the script
+  policy is not strict; treat the CSP as a limit on where content can come from, not as XSS
+  protection.
+- **Request bodies are capped** at 2 MB; a config backup is a few tens of kilobytes.
+- **List and calendar URLs carry the key in the query string** because neither the *arrs nor a
+  calendar app can send a header. The endpoints are read-only and the key is revocable from
+  Settings.
+- **Nothing auto-adds.** Only a click, or an import list the user configured inside Radarr or
+  Sonarr, sends anything anywhere.
+
