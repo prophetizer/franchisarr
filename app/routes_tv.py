@@ -15,7 +15,7 @@ from fastapi.responses import HTMLResponse
 from app.auth.dependencies import DbSession, RequiredUser
 from app.clients.sonarr_client import MONITOR_MODE_LABELS, SonarrError
 from app.clients.tmdb_client import TmdbClient
-from app.models import DismissedItem, ItemType, SpinoffMapping
+from app.models import MappingSource, DismissedItem, ItemType, SpinoffMapping
 from app.services import (
     add_service,
     cross_media_service,
@@ -39,6 +39,10 @@ def _mapping_rows(session) -> list[dict]:
             "spinoff_name": tv_spinoff_service._show_name(session, mapping.spinoff_show_tmdb_id),
         }
         for mapping in tv_spinoff_service.list_mappings(session)
+        # The section is headed "your own list", so it lists what the person added or confirmed
+        # -- not the hundreds a scan brings in from Wikidata, which the Suggested list already
+        # shows and which a scan is free to revise.
+        if mapping.source != MappingSource.WIKIDATA.value
     ]
 
 

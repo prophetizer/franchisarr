@@ -282,3 +282,26 @@ def test_the_spinoff_page_lists_films_from_shows_with_a_radarr_add(client: TestC
     assert 'hx-get="/franchisarr/add/275"' in body
     # and the add dialog can name it, though it is in no owned collection
     assert "Fargo" in client.get(f"{BASE}/add/275").text
+
+
+def test_the_confirmed_mappings_section_lists_only_the_users_own(client: TestClient) -> None:
+    """The heading says "your own list"; a scan's Wikidata mappings belong in Suggested, not
+    here -- on a real library that was hundreds of rows under the wrong heading."""
+    from app.models import SpinoffMapping, TmdbShow
+
+    with Session(get_engine()) as session:
+        session.add(TmdbShow(tmdb_id=1, name="Mine")); session.add(TmdbShow(tmdb_id=2, name="Found"))
+        session.add(TmdbShow(tmdb_id=10, name="Source"))
+        session.add(LibraryItem(server_id=ensure_server(session), library_key="2", item_key="s10", item_type="show",
+                                title="Source", tmdb_id=10, match_source="guid"))
+        session.add(SpinoffMapping(source_show_tmdb_id=10, spinoff_show_tmdb_id=1, source="local"))
+        session.add(SpinoffMapping(source_show_tmdb_id=10, spinoff_show_tmdb_id=2, source="wikidata"))
+        session.commit()
+
+    response = client.get(f"{BASE}/shows")
+    assert response.status_code == 200, response.headers.get("location")
+    body = response.text
+    assert "Confirmed spin-off mappings" in body, body[-600:]
+    section = body.split("Confirmed spin-off mappings")[1]
+
+    assert "Mine" in section and "Found" not in section
