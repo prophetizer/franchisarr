@@ -31,6 +31,11 @@ Emby, to TV spin-offs and cross-media franchises, and to import lists the *arrs 
 **Status:** pre-1.0 and in daily use against a real library of ~3,400 films and ~660 shows.
 Images are published to GHCR for amd64 and arm64.
 
+**How it was built:** with heavy use of Claude Code, directed, tested and reviewed by a human.
+Every feature was measured against that real library before it shipped — the numbers are in the
+[changelog](CHANGELOG.md) — there are ~850 tests with no live network calls, and the full git
+history was scanned for secrets before the repo went public. The code is MIT; read it.
+
 ## What it looks like
 
 <p align="center"><img src="docs/screenshots/collections.jpg" alt="Collections with gaps: each collection you own part of, with its missing films" width="900"></p>
