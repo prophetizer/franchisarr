@@ -297,10 +297,14 @@ injected theme-options stylesheet takes effect on its own. The whole page follow
 header icon included — verified against all eleven official theme options
 ([screenshots](contrib/theme-park/screenshots)).
 
-If you host your own theme.park, `contrib/theme-park/franchisarr-base.css` is a base stylesheet
-ready to drop in as `css/base/franchisarr/franchisarr-base.css`. See
-[`contrib/theme-park/README.md`](contrib/theme-park/README.md). It isn't in the upstream
-theme.park yet.
+Franchisarr's *base* stylesheet — the one a proxy or the theme.park mod injects when you point
+it at `app=franchisarr` — was
+[merged into theme.park](https://github.com/themepark-dev/theme.park/pull/737) on 2026-09-22.
+It is on their `develop` branch, so `develop.theme-park.dev` serves it today and
+`theme-park.dev` will once they cut a release. If you host your own copy,
+`contrib/theme-park/franchisarr-base.css` is the same file, ready to drop in as
+`css/base/franchisarr/franchisarr-base.css` (see
+[`contrib/theme-park/README.md`](contrib/theme-park/README.md)).
 
 Leave it all unset and nothing is fetched from anywhere but your own server.
 
