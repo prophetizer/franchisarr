@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] — 2026-09-22
+
+### Added
+
+- **Overseerr / Jellyseerr as an add target.** Configured on the Instances page alongside
+  Radarr and Sonarr; every Add dialog then offers "Request via Overseerr" next to the direct
+  add. Seerr chooses the *arr, profile and folder itself and may hold the request for
+  approval -- the dialog says which happened. Open requests (pending or approved) are cached
+  on every scan and keep a title out of the lists, like a queued Radarr add. Requests appear on
+  the Activity page labelled with the Seerr instance; the config export carries the instances
+  (redacted copy blanks the key); keys are masked in the UI and redacted in logs.
+- `/api/lists/stats.json?api_key=…` -- the headline numbers as one flat document for a
+  dashboard widget (Homepage `customapi`, Glance, Dashy), cached for a minute. README has a
+  Homepage example.
+- Web app manifest and apple-touch-icon, so a phone can put Franchisarr on its home screen
+  with the icon; `start_url` and icon paths follow `BASE_URL`.
+- Unraid Community Applications template in `contrib/unraid/`, with the submission steps.
+
+### Changed
+
+- **Measured at 20,000 films / 2,000 shows** with a new `scripts/loadtest.py` (every external
+  client faked; nothing from anyone's library). Before: the first scan never finished -- every
+  library row stayed in the session through the collection and director passes, so each of
+  the thousands of commits paid to expire all of them, O(n²) -- and the pages that did render
+  took eleven seconds. After: first scan 48 s, enrichment 71 s, steady state 38 s; every page
+  under 1.5 s (home 11.3 → 1.3 s, Collections 11.3 → 0.7 s, one collection 7.1 → 0.4 s,
+  Franchises 9.6 → 1.5 s, Upcoming 5.3 → 0.6 s). Read-time services select columns rather than
+  building tens of thousands of ORM objects, `collection_gaps` runs three queries instead of
+  three per collection, and the detail pages compute one collection, franchise or director
+  rather than all of them.
+
 ## [0.18.0] — 2026-09-22
 
 ### Added

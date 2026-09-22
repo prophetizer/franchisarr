@@ -79,6 +79,11 @@ You need a **TMDb API key** — the free v3 one from
 value on that page; the v4 Read Access Token won't work, and Franchisarr will tell you so if you
 paste it by mistake.
 
+### Unraid
+
+A Community Applications template is in [`contrib/unraid/`](contrib/unraid/) — add the folder as a
+template repository under *Docker → Add Container* until it's in the CA feed.
+
 ## Configuration
 
 Everything can be set in the app's Settings page. Environment variables are a convenience for
@@ -156,6 +161,15 @@ those answer API requests with a login page, and an API key can't get past one. 
 so rather than blaming your API key. If you'd rather keep the public URL, add a bypass rule in
 the proxy for `/api` so API-key requests are let through.
 
+## Overseerr / Jellyseerr
+
+If your household routes requests through Overseerr or Jellyseerr, add it on the Instances page
+(Settings → General → API Key in Seerr). Every Add dialog then offers **Request via Overseerr**
+next to the direct Radarr/Sonarr choice: Seerr picks the *arr, profile and folder from its own
+settings and may hold the request for approval. Open requests keep a title out of the lists the
+way a queued Radarr add does. Requests are made as the API key's owner, so that account's
+auto-approval and quota settings apply.
+
 ## Calendar
 
 The Upcoming page is also an iCalendar feed, so announced films in franchises you own appear in
@@ -168,6 +182,40 @@ https://franchisarr.example/api/lists/upcoming.ics?api_key=YOUR_KEY
 Apple Calendar: File → New Calendar Subscription. Google Calendar: Other calendars → From URL.
 Same key as the import lists (Settings → Import lists), and the URL is shown there. It refreshes
 daily; films with no date yet appear once TMDb gives them one.
+
+## Dashboard widget
+
+`/api/lists/stats.json?api_key=…` returns the headline numbers as one flat document — collections
+with gaps, missing films, spin-offs, upcoming films, incomplete franchises, directors, library
+size, last scan — cached for a minute. For [Homepage](https://gethomepage.dev):
+
+```yaml
+- Franchisarr:
+    icon: https://raw.githubusercontent.com/prophetizer/franchisarr/master/docs/brand/icon-512.png
+    href: https://franchisarr.example.com
+    widget:
+      type: customapi
+      url: https://franchisarr.example.com/api/lists/stats.json
+      headers:
+        X-Api-Key: your-key
+      refreshInterval: 300000
+      mappings:
+        - field: missing_films
+          label: Missing films
+          format: number
+        - field: collections_with_gaps
+          label: Collections
+          format: number
+        - field: missing_spinoffs
+          label: Spin-offs
+          format: number
+        - field: upcoming_films
+          label: Upcoming
+          format: number
+```
+
+The key is the one from Settings → Import lists; the header keeps it out of your dashboard's
+URL list, but `?api_key=` works too for widgets that can't send headers.
 
 ## Signing in
 
