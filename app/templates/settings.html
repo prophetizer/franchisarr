@@ -121,20 +121,40 @@ TP_COMMUNITY_THEME=false</code></pre>
 <article>
   <header><strong>Notifications</strong></header>
 
-  <form method="post" action="{{ url('/settings/webhook') }}">
-    <label for="webhook_url">Webhook URL</label>
-    <input type="url" id="webhook_url" name="webhook_url" value="{{ current_webhook_url }}"
-           placeholder="https://discord.com/api/webhooks/..." autocomplete="off">
-
-    <label for="webhook_format">Payload format</label>
-    <select id="webhook_format" name="webhook_format">
-      {% for value in webhook_formats %}
-        <option value="{{ value }}" {% if value == current_webhook_format %}selected{% endif %}>
-          {{ value | capitalize }}</option>
+  <form method="post" action="{{ url('/settings/webhook') }}"
+        x-data="{ format: '{{ current_webhook_format }}' }">
+    <label for="webhook_format">Send through</label>
+    <select id="webhook_format" name="webhook_format" x-model="format">
+      {% for value, label in webhook_formats %}
+        <option value="{{ value }}" {% if value == current_webhook_format %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
 
-    <small>
+    <label for="webhook_url">
+      <span x-show="format === 'apprise'">Apprise URLs — one per line</span>
+      <span x-show="format === 'apprise_api'">apprise-api notify endpoint</span>
+      <span x-show="format !== 'apprise' && format !== 'apprise_api'">Webhook URL</span>
+    </label>
+    {# Not type=url: Apprise URLs are tgram://, pover://, mailto://... and the browser would
+       refuse them. A textarea so several Apprise URLs fit one per line. #}
+    <textarea id="webhook_url" name="webhook_url" rows="2" autocomplete="off" spellcheck="false"
+              x-bind:placeholder="format === 'apprise' ? 'tgram://bot-token/chat-id\npover://user-key@app-token'
+                : format === 'apprise_api' ? 'http://apprise:8000/notify/franchisarr'
+                : 'https://discord.com/api/webhooks/...'">{{ current_webhook_url }}</textarea>
+
+    <small x-show="format === 'apprise'">
+      One line per destination, in Apprise's URL format — Telegram, Pushover, ntfy, Gotify,
+      Matrix, email and a hundred more; the
+      <a href="https://github.com/caronc/apprise/wiki" target="_blank" rel="noopener">Apprise wiki</a>
+      has each one. Delivered from inside Franchisarr; nothing else to run.
+    </small>
+    <small x-show="format === 'apprise_api'">
+      For a household that already runs
+      <a href="https://github.com/caronc/apprise-api" target="_blank" rel="noopener">apprise-api</a>:
+      the <code>/notify/&lt;key&gt;</code> URL of a saved configuration, or plain <code>/notify</code>
+      with the destinations kept there.
+    </small>
+    <small x-show="format !== 'apprise' && format !== 'apprise_api'">
       Sent after a scheduled scan, and only when something new turns up — not every run.
     </small>
 

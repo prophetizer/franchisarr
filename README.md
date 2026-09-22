@@ -18,7 +18,9 @@ notifications, and **import lists** Radarr and Sonarr can poll so you never have
 It reads **Plex, Jellyfin and Emby** — one of them or several at once, with a film on any of
 them counting as owned and a tick on what you've watched — supports multiple Radarr and Sonarr
 instances, signs you in with your media server account, scans on a schedule,
-shouts into Discord or Slack when it finds something new, wears your
+tells you when it finds something new — Discord, Slack, or anything
+[Apprise](https://github.com/caronc/apprise) reaches (Telegram, Pushover, ntfy, email, a hundred
+more) — wears your
 [theme.park](https://theme-park.dev) theme like the rest of your stack, and has a web UI and a
 CLI. Everything
 it hides — low-rated films, TV specials, shorts — is a preference, folded away rather than
@@ -182,6 +184,17 @@ https://franchisarr.example/api/lists/upcoming.ics?api_key=YOUR_KEY
 Apple Calendar: File → New Calendar Subscription. Google Calendar: Other calendars → From URL.
 Same key as the import lists (Settings → Import lists), and the URL is shown there. It refreshes
 daily; films with no date yet appear once TMDb gives them one.
+
+## Notifications
+
+After a scheduled scan that finds something new — never every run — Franchisarr sends one
+message. Settings → Notifications takes a Discord or Slack webhook, a generic JSON webhook for
+your own automation, or **Apprise URLs**, one per line (`tgram://…`, `pover://…`, `ntfy://…`,
+`mailto://…`; the [Apprise wiki](https://github.com/caronc/apprise/wiki) lists every service),
+delivered from inside the app. If you already run
+[apprise-api](https://github.com/caronc/apprise-api), point it at that instead and keep the
+destinations there. The URL is treated as a credential: redacted in logs and in the redacted
+config export.
 
 ## Dashboard widget
 

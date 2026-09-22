@@ -44,7 +44,7 @@ from app.routes_auth import router as auth_router
 from app.services import library_service, media_server_service, seerr_instance_service
 from app.services.auth_service import discover_machine_identifier
 from app.services import scheduler as scheduler_service
-from app.services.settings_service import SettingKey, get_setting, seed_settings_from_env
+from app.services.settings_service import SECRET_KEYS, SettingKey, get_setting, seed_settings_from_env
 from app.templating import STATIC_DIR, get_templates
 
 settings = get_settings()
@@ -103,6 +103,8 @@ async def lifespan(app: FastAPI):
             register_secret(server.credential)
         for seerr in seerr_instance_service.list_seerr(session):
             register_secret(seerr.api_key)
+        for key in SECRET_KEYS:
+            register_secret(get_setting(session, key))
         _discover_plex_server(session)
         scheduler_service.start(session)
 

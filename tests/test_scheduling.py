@@ -181,6 +181,55 @@ def test_nothing_is_sent_without_a_url() -> None:
         assert notifier.send("", _report(movies=1), "generic") is False
 
 
+# ------------------------------------------------------------------ apprise
+
+
+def test_the_text_form_is_titled_and_truncated_like_the_others() -> None:
+    title, body = notifier.build_text(_report(movies=20, shows=1))
+
+    assert title.startswith("Franchisarr: 20 missing films")
+    assert body.startswith("**Missing films**\n- ")
+    assert "…and 5 more" in body and "**Spin-offs**" in body
+
+
+def test_apprise_urls_split_on_lines_and_commas() -> None:
+    assert notifier.apprise_urls("tgram://a/b\n pover://c@d ,ntfy://e\n\n") == [
+        "tgram://a/b", "pover://c@d", "ntfy://e"]
+
+
+@responses.activate
+def test_apprise_delivers_through_the_library() -> None:
+    """Apprise's json:// service posts to an HTTP endpoint through requests, so the whole path
+    -- URL parsing, formatting, delivery -- is exercised without a real Telegram."""
+    responses.add(responses.POST, "https://hooks.example.com/abc", status=200)
+
+    assert notifier.send("jsons://hooks.example.com/abc", _report(movies=2), WebhookFormat.APPRISE.value) is True
+    sent = json.loads(responses.calls[0].request.body)
+    assert sent["title"].startswith("Franchisarr: 2 missing films") and "**Missing films**" in sent["message"]
+
+
+def test_an_apprise_url_nobody_understands_is_refused_not_raised() -> None:
+    with responses.RequestsMock():
+        assert notifier.send("nonsense", _report(movies=1), WebhookFormat.APPRISE.value) is False
+
+
+@responses.activate
+def test_apprise_api_gets_title_body_and_markdown() -> None:
+    responses.add(responses.POST, "http://apprise:8000/notify/franchisarr", status=200)
+
+    assert notifier.send("http://apprise:8000/notify/franchisarr", _report(movies=1),
+                         WebhookFormat.APPRISE_API.value) is True
+    sent = json.loads(responses.calls[0].request.body)
+    assert sent["format"] == "markdown" and sent["title"].startswith("Franchisarr:") and "- " in sent["body"]
+
+
+@responses.activate
+def test_a_rejecting_apprise_api_does_not_raise() -> None:
+    responses.add(responses.POST, "http://apprise:8000/notify", status=424)
+
+    assert notifier.send("http://apprise:8000/notify", _report(movies=1), WebhookFormat.APPRISE_API.value) is False
+
+
 # ------------------------------------------------------------------ new-since-last-run
 
 

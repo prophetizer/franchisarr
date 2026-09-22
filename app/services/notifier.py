@@ -1,7 +1,10 @@
-"""Outgoing webhooks when a scheduled scan finds something new.
+"""Outgoing notifications when a scheduled scan finds something new.
 
-Three payload shapes (docs/DESIGN.md decision log): a plain generic JSON body, and pre-shaped
-Discord and Slack ones, since those two are what this community actually uses.
+Three webhook payload shapes (docs/DESIGN.md decision log): a plain generic JSON body, and
+pre-shaped Discord and Slack ones, since those two are what this community actually uses. Then
+Apprise, for everyone else: one URL grammar for a hundred-odd services (Telegram, Pushover,
+ntfy, Gotify, email, Matrix...), either through the library in-process or through a
+self-hosted apprise-api that the household already runs.
 
 The limits are the interesting part. A first scan on a real library found 227 missing films, and
 every one of these services rejects an oversized payload outright -- Discord allows 10 embeds of
@@ -190,6 +193,63 @@ BUILDERS = {
 }
 
 
+def build_text(report: ScanReport) -> tuple[str, str]:
+    """A title and a Markdown body, for the services that take prose rather than a payload.
+
+    Truncated like the Discord and Slack shapes: Telegram caps a message at 4,096 characters,
+    Pushover at 1,024, and fifteen titles a section stays well inside both.
+    """
+    lines: list[str] = []
+    for heading, items in _sections(report):
+        if not items:
+            continue
+        shown, more = _listed(items)
+        lines.append(f"**{heading}**")
+        lines.extend(f"- {item.title}" + (f" — {item.detail}" if item.detail else "") for item in shown)
+        if more:
+            lines.append(f"- …and {more} more")
+        lines.append("")
+    return f"Franchisarr: {report.summary()}", "\n".join(lines).rstrip()
+
+
+def apprise_urls(field: str) -> list[str]:
+    """The URL field for the apprise format: one URL per line, or comma-separated."""
+    return [part.strip() for part in field.replace(",", "\n").splitlines() if part.strip()]
+
+
+def _send_apprise(field: str, report: ScanReport) -> bool:
+    import apprise
+
+    title, body = build_text(report)
+    client = apprise.Apprise()
+    rejected = [url for url in apprise_urls(field) if not client.add(url)]
+    if rejected:
+        # The URL itself may hold a token, so the log names the count, not the value.
+        logger.warning("%d Apprise URL(s) were not understood; check the format", len(rejected))
+    if not len(client):
+        return False
+    if not client.notify(title=title, body=body, body_format=apprise.NotifyFormat.MARKDOWN):
+        logger.warning("Apprise could not deliver to every URL")
+        return False
+    logger.info("Notified: %s", report.summary())
+    return True
+
+
+def _send_apprise_api(url: str, report: ScanReport, timeout: int) -> bool:
+    title, body = build_text(report)
+    try:
+        response = requests.post(url, json={"title": title, "body": body, "format": "markdown"},
+                                 timeout=timeout)
+    except requests.RequestException as exc:
+        logger.warning("Could not reach apprise-api: %s", exc)
+        return False
+    if response.status_code >= 400:
+        logger.warning("apprise-api rejected the notification with %s", response.status_code)
+        return False
+    logger.info("Notified: %s", report.summary())
+    return True
+
+
 def build_payload(report: ScanReport, webhook_format: str) -> dict:
     builder = BUILDERS.get(webhook_format)
     if builder is None:
@@ -210,6 +270,11 @@ def send(url: str, report: ScanReport, webhook_format: str, *, timeout: int = DE
     if not report.has_news:
         logger.debug("Nothing new found; no webhook sent")
         return False
+
+    if webhook_format == WebhookFormat.APPRISE.value:
+        return _send_apprise(url, report)
+    if webhook_format == WebhookFormat.APPRISE_API.value:
+        return _send_apprise_api(url, report, timeout)
 
     payload = build_payload(report, webhook_format)
     try:

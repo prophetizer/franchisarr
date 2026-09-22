@@ -422,6 +422,27 @@ def test_saving_a_webhook(client: TestClient) -> None:
     assert "hooks.example.com" in body
 
 
+def test_a_saved_notification_url_is_redacted_from_logs_from_then_on(app_factory) -> None:
+    """A Discord webhook URL lets anyone post to the channel and an Apprise URL carries the
+    service token, so saving one registers it with the log redactor -- and so does boot."""
+    from app.logging_config import clear_secrets, redact
+
+    url = "tgram://123456:secret-bot-token-zzz/9876"
+    module = app_factory(BASE)
+    with TestClient(module.app, follow_redirects=False) as client:
+        with Session(get_engine()) as session:
+            create_local_admin(session, "admin", PASSWORD); session.commit()
+        client.post(f"{BASE}/login", data={"username": "admin", "password": PASSWORD})
+        client.post(f"{BASE}/settings/webhook", data={"webhook_url": url, "webhook_format": "apprise"})
+        assert "secret-bot-token" not in redact(f"sending to {url}")
+
+    # And a restart re-registers what is stored.
+    clear_secrets()
+    assert "secret-bot-token" in redact(url)
+    with TestClient(app_factory(BASE).app):
+        assert "secret-bot-token" not in redact(url)
+
+
 @responses.activate
 def test_the_test_button_sends_one_and_reports_the_result(client: TestClient) -> None:
     responses.add(responses.POST, "https://hooks.example.com/abc", status=204)

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] — 2026-09-22
+
+### Added
+
+- **Apprise notifications.** Settings → Notifications takes Apprise URLs, one per line --
+  Telegram, Pushover, ntfy, Gotify, Matrix, email and a hundred-odd more -- delivered from
+  inside the app by the `apprise` library (pure Python; no build on arm64). Or, for a
+  household that already runs apprise-api, its `/notify` endpoint. Same message as the
+  webhooks: a title and a Markdown body, fifteen titles a section then "…and N more", so
+  Telegram's and Pushover's length caps are never hit. `WEBHOOK_FORMAT=apprise|apprise_api`.
+
+### Changed
+
+- The notification URL is now treated as a credential: a Discord webhook URL lets anyone post
+  to the channel and an Apprise URL carries the service token. It is registered with the log
+  redactor on save and at boot, and the redacted config export blanks it.
+- The notifications form: format first, and the URL field is a textarea that accepts
+  non-HTTP schemes.
+
 ## [0.20.0] — 2026-09-22
 
 ### Added

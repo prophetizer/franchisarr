@@ -338,7 +338,13 @@ def _settings_context(session, user, **extra) -> dict:
         "schedule_description": scheduler_service.describe(cron),
         "current_webhook_url": get_setting(session, SettingKey.WEBHOOK_URL) or "",
         "current_webhook_format": get_setting(session, SettingKey.WEBHOOK_FORMAT) or "generic",
-        "webhook_formats": [f.value for f in WebhookFormat],
+        "webhook_formats": [
+            (WebhookFormat.GENERIC.value, "Generic webhook (JSON)"),
+            (WebhookFormat.DISCORD.value, "Discord webhook"),
+            (WebhookFormat.SLACK.value, "Slack webhook"),
+            (WebhookFormat.APPRISE.value, "Apprise — 100+ services"),
+            (WebhookFormat.APPRISE_API.value, "apprise-api (self-hosted)"),
+        ],
         "saved": False,
         "error": None,
         "import_note": None,
@@ -417,12 +423,15 @@ def save_webhook(
     webhook_format: Annotated[str, Form()] = "generic",
     test: Annotated[str, Form()] = "",
 ):
+    from app.logging_config import register_secret
     from app.services import notifier
     from app.services.settings_service import set_setting
 
     set_setting(session, SettingKey.WEBHOOK_URL, webhook_url.strip())
     set_setting(session, SettingKey.WEBHOOK_FORMAT, webhook_format)
     session.commit()
+    # A Discord webhook URL or an Apprise URL is a credential; keep it out of the logs.
+    register_secret(webhook_url.strip())
 
     if test and webhook_url.strip():
         sample = notifier.ScanReport(

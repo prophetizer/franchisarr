@@ -20,6 +20,12 @@ requests==2.34.2
 plexapi==4.16.1
 bcrypt==4.2.1
 
+# Notifications
+# apprise is pure Python (py3-none-any wheel), so it needs no build on arm64. It brings
+# PyYAML, markdown and requests-oauthlib; PyYAML ships arm64 wheels. Pinned with click below
+# because apprise's CLI imports click too.
+apprise==1.13.1
+
 # CLI
 # typer <0.16 calls Click's Parameter.make_metavar() with the old signature and dies on import
 # against Click 8.2+. Click is pinned alongside it so a fresh image build can't reintroduce that.

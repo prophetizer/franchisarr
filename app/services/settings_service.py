@@ -77,6 +77,9 @@ DEFAULTS: dict[str, str] = {
 #: Settings whose values must never be logged or rendered unmasked.
 SECRET_KEYS = frozenset({
     SettingKey.TMDB_API_KEY, SettingKey.FANART_API_KEY,
+    # A Discord webhook URL lets anyone post to the channel, and an Apprise URL carries the
+    # service's token in the URL itself.
+    SettingKey.WEBHOOK_URL,
 })
 
 

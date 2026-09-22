@@ -59,6 +59,11 @@ class WebhookFormat(str, Enum):
     GENERIC = "generic"
     DISCORD = "discord"
     SLACK = "slack"
+    #: The URL field holds one or more Apprise URLs (tgram://, pover://, ntfy://, mailto://...),
+    #: delivered by the apprise library in-process.
+    APPRISE = "apprise"
+    #: The URL field is a self-hosted apprise-api endpoint (.../notify or .../notify/{key}).
+    APPRISE_API = "apprise_api"
 
 
 class User(SQLModel, table=True):

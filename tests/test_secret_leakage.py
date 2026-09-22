@@ -159,6 +159,8 @@ def test_the_redacted_export_carries_no_secret(client: TestClient) -> None:
     body = client.get(f"{BASE}/settings/export?redact=1").text
 
     _assert_clean(body, "the redacted export")
+    # A Discord webhook URL lets anyone post to the channel; an Apprise URL holds the token.
+    assert "hooks.example.com" not in body
 
 
 def test_the_diagnostics_bundle_carries_no_secret_and_names_what_did_not_match(client: TestClient) -> None:
