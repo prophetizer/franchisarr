@@ -181,7 +181,9 @@ def sonarr_known_ids(session: Session, instance_id: int | None = None) -> set[in
         if show.in_queue and not instance.hide_if_queued:
             continue
         known.add(show.tmdb_id)
-    return known
+    from app.services import seerr_instance_service
+
+    return known | seerr_instance_service.requested_ids(session, ItemType.SHOW.value)
 
 
 def owned_shows(session: Session) -> list[LibraryItem]:
@@ -299,6 +301,17 @@ def missing_spinoffs(
         ).all()
     } if user_id is not None else set()
 
+    # The show cache and the library's titles once, not three lookups per mapping.
+    shows = {show.tmdb_id: show for show in session.exec(select(TmdbShow)).all()}
+    library_titles = dict(session.exec(
+        select(LibraryItem.tmdb_id, LibraryItem.title)
+        .where(col(LibraryItem.item_type) == ItemType.SHOW.value, col(LibraryItem.tmdb_id).is_not(None))
+    ).all())
+
+    def name_of(tmdb_id: int) -> str:
+        show = shows.get(tmdb_id)
+        return show.name if show else library_titles.get(tmdb_id, f"TMDb {tmdb_id}")
+
     suggestions: list[SpinoffSuggestion] = []
     for mapping in list_mappings(session):
         if mapping.source_show_tmdb_id not in in_library:
@@ -308,13 +321,13 @@ def missing_spinoffs(
         if mapping.spinoff_show_tmdb_id in dismissed:
             continue
 
-        cached = session.get(TmdbShow, mapping.spinoff_show_tmdb_id)
+        cached = shows.get(mapping.spinoff_show_tmdb_id)
         suggestions.append(
             SpinoffSuggestion(
                 source_show_tmdb_id=mapping.source_show_tmdb_id,
-                source_show_name=_show_name(session, mapping.source_show_tmdb_id),
+                source_show_name=name_of(mapping.source_show_tmdb_id),
                 spinoff_tmdb_id=mapping.spinoff_show_tmdb_id,
-                spinoff_name=_show_name(session, mapping.spinoff_show_tmdb_id),
+                spinoff_name=name_of(mapping.spinoff_show_tmdb_id),
                 first_air_year=cached.first_air_year if cached else None,
                 confidence=mapping.confidence,
                 poster_path=cached.poster_path if cached else None,

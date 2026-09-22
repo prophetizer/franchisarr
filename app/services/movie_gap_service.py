@@ -23,6 +23,7 @@ collection has gaps" signal.
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
 from dataclasses import dataclass, replace
 from datetime import date
 
@@ -212,7 +213,11 @@ def radarr_known_ids(session: Session, instance_id: int | None = None) -> set[in
         if movie.in_queue and not instance.hide_if_queued:
             continue
         known.add(movie.tmdb_id)
-    return known
+    # An open Overseerr / Jellyseerr request is handled too: pending someone's approval or
+    # already passed on to a Radarr, there is nothing for the user to do about it.
+    from app.services import seerr_instance_service
+
+    return known | seerr_instance_service.requested_ids(session, ItemType.MOVIE.value)
 
 
 def excluded_ids(session: Session, collection_id: int) -> set[int]:
@@ -254,11 +259,13 @@ def collection_gaps(
     today: date | None = None,
     radarr_instance_id: int | None = None,
     sort: str = "rating",
+    only: set[int] | None = None,
 ) -> list[CollectionGap]:
     """Every cached collection the library touches, with its owned and missing films.
 
     Collections where nothing is owned are left out: those are collections the user has no
     demonstrated interest in, and including them would turn this into "every franchise on TMDb".
+    `only` narrows to those collection ids -- the detail page wants one, not all 3,000.
     """
     # "Owned" means in Plex or already handled by Radarr. Both hide a film for the same reason:
     # there is nothing for the user to do about it.
@@ -272,52 +279,77 @@ def collection_gaps(
     # let a single Radarr add pull an entire unrelated franchise into the gap list.
     in_library = owned_tmdb_ids(session)
     relevant = {
-        row.collection_id
-        for row in session.exec(
-            select(TmdbMovie).where(col(TmdbMovie.collection_id).is_not(None))
+        collection_id
+        for tmdb_id, collection_id in session.exec(
+            select(TmdbMovie.tmdb_id, TmdbMovie.collection_id)
+            .where(col(TmdbMovie.collection_id).is_not(None))
         ).all()
-        if row.collection_id and row.tmdb_id in in_library
+        if collection_id and tmdb_id in in_library
     }
+    if only is not None:
+        relevant &= only
 
     threshold = min_gap_rating(session)
 
+    # Three queries for everything, not three per collection. At 3,300 collections the
+    # per-collection form was 10,000 queries and eleven seconds a page (scripts/loadtest.py);
+    # every page calls this. The tables are filtered in Python rather than with IN (...), which
+    # SQLite caps at 999 parameters on older builds.
+    collections = {
+        c.tmdb_collection_id: c for c in session.exec(select(TmdbCollection)).all()
+        if c.tmdb_collection_id in relevant
+    }
+    # Column tuples rather than ORM rows: at 25,000 members the objects alone were half the
+    # page, and nothing here needs them to be objects.
+    members_by_collection: dict[int, list[tuple]] = defaultdict(list)
+    for row in session.exec(
+        select(TmdbCollectionMovie.collection_id, TmdbCollectionMovie.tmdb_movie_id,
+               TmdbCollectionMovie.title, TmdbCollectionMovie.release_year,
+               TmdbCollectionMovie.release_date, TmdbCollectionMovie.poster_path,
+               TmdbCollectionMovie.vote_average, TmdbCollectionMovie.vote_count,
+               TmdbCollectionMovie.popularity)
+        .order_by(col(TmdbCollectionMovie.collection_id), col(TmdbCollectionMovie.position))
+    ).all():
+        if row[0] in relevant:
+            members_by_collection[row[0]].append(row)
+    excluded_by_collection: dict[int, set[int]] = defaultdict(set)
+    for exclude in session.exec(select(CollectionExclude)).all():
+        excluded_by_collection[exclude.tmdb_collection_id].add(exclude.tmdb_movie_id)
+
     gaps: list[CollectionGap] = []
     for collection_id in relevant:
-        collection = session.get(TmdbCollection, collection_id)
+        collection = collections.get(collection_id)
         if collection is None:
             continue
 
-        members = session.exec(
-            select(TmdbCollectionMovie)
-            .where(col(TmdbCollectionMovie.collection_id) == collection_id)
-            .order_by(col(TmdbCollectionMovie.position))
-        ).all()
+        members = members_by_collection.get(collection_id)
         if not members:
             continue
 
-        excluded = excluded_ids(session, collection_id)
+        excluded = excluded_by_collection.get(collection_id, ())
         owned_here: list[MissingMovie] = []
         missing_here: list[MissingMovie] = []
         upcoming_here: list[MissingMovie] = []
         hidden_here: list[MissingMovie] = []
 
-        for member in members:
+        for (_, tmdb_id, title, release_year, release_date, poster_path,
+             vote_average, vote_count, popularity) in members:
+            info = details.get(tmdb_id) if tmdb_id in owned else None
             entry = MissingMovie(
-                tmdb_id=member.tmdb_movie_id,
-                title=member.title,
-                release_year=member.release_year,
-                release_date=member.release_date,
-                poster_path=member.poster_path,
-                vote_average=member.vote_average,
-                vote_count=member.vote_count,
-                popularity=member.popularity,
+                tmdb_id=tmdb_id,
+                title=title,
+                release_year=release_year,
+                release_date=release_date,
+                poster_path=poster_path,
+                vote_average=vote_average,
+                vote_count=vote_count,
+                popularity=popularity,
+                servers=info.servers if info else (),
+                watched=info.watched if info else None,
             )
-            if member.tmdb_movie_id in owned:
-                info = details.get(member.tmdb_movie_id)
-                if info is not None:
-                    entry = replace(entry, servers=info.servers, watched=info.watched)
+            if tmdb_id in owned:
                 owned_here.append(entry)
-            elif member.tmdb_movie_id in excluded or member.tmdb_movie_id in dismissed:
+            elif tmdb_id in excluded or tmdb_id in dismissed:
                 continue
             elif not entry.is_released(today):
                 upcoming_here.append(entry)

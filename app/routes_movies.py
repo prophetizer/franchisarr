@@ -23,7 +23,7 @@ from app.auth.dependencies import AdminUser, DbSession, RequiredUser
 from app.clients.radarr_client import RadarrError
 from app.config import get_settings
 from app.models import CollectionExclude, DismissedItem, ItemType, TmdbCollection
-from app.services import add_service, instance_service, movie_gap_service
+from app.services import add_service, instance_service, movie_gap_service, seerr_instance_service
 from app.services.settings_service import SettingKey, get_setting
 from app.templating import get_templates
 
@@ -37,7 +37,7 @@ def _url(path: str) -> str:
 
 
 def _gap_or_404(session, user, collection_id: int):
-    for gap in movie_gap_service.collection_gaps(session, user.id):
+    for gap in movie_gap_service.collection_gaps(session, user.id, only={collection_id}):
         if gap.collection_id == collection_id:
             return gap
     # A collection with nothing owned isn't listed at all, which is a 404 as far as the UI goes.
@@ -73,8 +73,7 @@ def collections(
             "min_rating": movie_gap_service.min_gap_rating(session),
             # Distinguishes "you have no gaps" from "you haven't scanned yet", which look
             # identical otherwise and mean completely different things.
-            "scanned": session.get(TmdbCollection, 0) is not None
-            or bool(movie_gap_service.collection_gaps(session, user.id))
+            "scanned": session.exec(select(TmdbCollection.tmdb_collection_id).limit(1)).first() is not None
             or bool(movie_gap_service.owned_tmdb_ids(session)),
         },
     )
@@ -178,13 +177,15 @@ def exclude(
 
 
 def _film_title(session, tmdb_id: int) -> str:
-    for gap in movie_gap_service.collection_gaps(session):
-        for movie in gap.missing + gap.upcoming + gap.hidden:
-            if movie.tmdb_id == tmdb_id:
-                return movie.title
-    # A film reached from a show it relates to is in no collection the user owns part of.
-    from app.models import CrossMediaMapping
+    """The title the dialog shows. The collection cache has it for any film in a collection;
+    a film reached from a show it relates to is in no collection the user owns part of."""
+    from app.models import CrossMediaMapping, TmdbCollectionMovie
 
+    title = session.exec(
+        select(TmdbCollectionMovie.title).where(col(TmdbCollectionMovie.tmdb_movie_id) == tmdb_id)
+    ).first()
+    if title:
+        return title
     row = session.exec(
         select(CrossMediaMapping).where(col(CrossMediaMapping.target_tmdb_id) == tmdb_id)
     ).first()
@@ -238,8 +239,35 @@ def add_dialog(
             "instances": instances,
             "selected": selected,
             "options": options,
+            "seerr_instances": seerr_instance_service.list_seerr(session),
         },
     )
+
+
+@router.post("/add/request", response_class=HTMLResponse)
+def submit_request(
+    request: Request,
+    session: DbSession,
+    user: RequiredUser,
+    tmdb_id: Annotated[int, Form()],
+    seerr_id: Annotated[int, Form()],
+):
+    """Ask Overseerr / Jellyseerr for the film instead of adding it to a Radarr directly."""
+    instance = seerr_instance_service.get_seerr(session, seerr_id)
+    if instance is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such instance.")
+
+    context: dict = {"user": user, "added": False, "requested": True, "error": "", "title": "",
+                     "instance": instance.name, "needs_approval": False}
+    try:
+        result = add_service.request_via_seerr(
+            session, instance=instance, item_type=ItemType.MOVIE.value, tmdb_id=tmdb_id,
+            title=_film_title(session, tmdb_id), user=user,
+        )
+        context.update(added=True, title=result.title, needs_approval=result.needs_approval)
+    except add_service.AddFailed as exc:
+        context["error"] = str(exc)
+    return get_templates().TemplateResponse(request, "partials/add_result.html", context)
 
 
 @router.post("/add", response_class=HTMLResponse)
@@ -463,7 +491,7 @@ def scan_status(request: Request, session: DbSession, user: RequiredUser):
 @router.get("/activity", response_class=HTMLResponse)
 def activity_page(request: Request, session: DbSession, user: RequiredUser, page: int = 1):
     """What Franchisarr added, newest first."""
-    from app.models import RadarrInstance, SonarrInstance, User
+    from app.models import RadarrInstance, SeerrInstance, SonarrInstance, User
     from app.services import activity_log
 
     page = max(1, page)
@@ -482,7 +510,10 @@ def activity_page(request: Request, session: DbSession, user: RequiredUser, page
             account = session.get(User, entry.triggered_by)
             who = (account.external_username or account.local_username) if account else "Unknown"
 
-        model = RadarrInstance if entry.item_type == "movie" else SonarrInstance
+        if entry.target == "seerr":
+            model = SeerrInstance
+        else:
+            model = RadarrInstance if entry.item_type == "movie" else SonarrInstance
         instance = session.get(model, entry.instance_id) if entry.instance_id else None
 
         rows.append({

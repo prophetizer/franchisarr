@@ -472,6 +472,51 @@ class TmdbCollectionMovie(SQLModel, table=True):
     position: int = Field(default=0)
 
 
+class SeerrKind(str, Enum):
+    OVERSEERR = "overseerr"
+    JELLYSEERR = "jellyseerr"
+
+
+class SeerrInstance(SQLModel, table=True):
+    """An Overseerr or Jellyseerr, as a place to send an Add instead of straight to an *arr.
+
+    The two share one API. Seerr decides the Radarr/Sonarr, profile and folder itself, and
+    may hold the request for approval -- so an instance here has no defaults to keep, only a
+    name, an address and a key. Sits alongside the *arr instances, not in place of them: a
+    household that routes every add through Seerr for approval keeps the direct path too.
+    """
+
+    __tablename__ = "seerr_instances"
+
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    kind: str = Field(default=SeerrKind.OVERSEERR.value)
+    url: str
+    api_key: str
+    is_default: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class SeerrRequest(SQLModel, table=True):
+    """What a Seerr instance already has a request for, cached like RadarrMovie is.
+
+    A pending or approved request is "handled" the way a queued Radarr add is: nothing for the
+    user to do, so it leaves the gap lists. Declined requests are not cached -- the user may
+    well want to ask again.
+    """
+
+    __tablename__ = "seerr_requests"
+    __table_args__ = (UniqueConstraint("instance_id", "media_type", "tmdb_id", name="uq_seerr_request"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    instance_id: int = Field(foreign_key="seerr_instances.id", ondelete="CASCADE", index=True)
+    media_type: str = Field(default=ItemType.MOVIE.value)
+    tmdb_id: int = Field(index=True)
+    #: Seerr's request status: 1 pending approval, 2 approved.
+    status: int = Field(default=1)
+    fetched_at: datetime = Field(default_factory=utcnow)
+
+
 class RadarrMovie(SQLModel, table=True):
     """What a Radarr instance already knows about, cached.
 
@@ -608,3 +653,6 @@ class ActivityLogEntry(SQLModel, table=True):
         default=None, foreign_key="users.id", ondelete="SET NULL"
     )
     trigger_source: str = Field(default=TriggerSource.MANUAL.value)
+    #: Where the add went: "radarr", "sonarr" or "seerr". Null on rows from before 0.20.0,
+    #: which were all *arr adds and are read by item type.
+    target: str | None = Field(default=None)

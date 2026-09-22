@@ -3,10 +3,17 @@
     <header>
       <button aria-label="Close" rel="prev" hx-get="{{ url('/add/close') }}"
               hx-target="#add-dialog" hx-swap="innerHTML"></button>
-      <strong>{{ 'Added' if added else "Couldn't add it" }}</strong>
+      <strong>{{ ('Requested' if requested else 'Added') if added else ("Couldn't request it" if requested else "Couldn't add it") }}</strong>
     </header>
 
-    {% if added %}
+    {% if added and requested %}
+      <p role="status" class="notice-good">
+        {{ title }} was requested through {{ instance }}{{ ' and is waiting for approval' if needs_approval else '' }}.
+      </p>
+      <p><small class="muted">
+        {{ instance }} decides where it goes from here — its own requests page shows the state.
+      </small></p>
+    {% elif added %}
       <p role="status" class="notice-good">
         {{ title }} was added to {{ instance }}{{ ', and a search has started' if searched else '' }}.
       </p>

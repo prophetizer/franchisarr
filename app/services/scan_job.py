@@ -28,6 +28,7 @@ from app.services import (
     movie_gap_service,
     notifier,
     scan_service,
+    seerr_instance_service,
     sonarr_instance_service,
     tv_spinoff_service,
     upcoming_service,
@@ -146,7 +147,8 @@ def run(
     if progress:
         progress("Checking Radarr and Sonarr", 0, 0)
     # Before the diff, so a film acquired since the last run isn't announced as missing.
-    refreshed = instance_service.refresh_all(session) + sonarr_instance_service.refresh_all(session)
+    refreshed = (instance_service.refresh_all(session) + sonarr_instance_service.refresh_all(session)
+                 + seerr_instance_service.refresh_all(session))
     result.instances_refreshed = sum(1 for r in refreshed if r.ok)
     result.errors.extend(r.error for r in refreshed if r.error)
 

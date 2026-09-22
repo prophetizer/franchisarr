@@ -1,0 +1,27 @@
+{# The "request it instead" form, shared by the film and show dialogs. Seerr chooses the *arr,
+   profile and folder itself and may hold the request for approval, so there is nothing to pick
+   beyond which Seerr, when there is more than one. Rendered under the direct-add form, or alone
+   when no *arr instance is configured. #}
+{% if seerr_instances %}
+  {% if instances and options.ok %}<hr>{% endif %}
+  <form hx-post="{{ url(request_path) }}" hx-target="#add-dialog" hx-swap="innerHTML"
+        class="seerr-request">
+    <input type="hidden" name="tmdb_id" value="{{ tmdb_id }}">
+    {% if seerr_instances | length > 1 %}
+      <label for="seerr_id">Request through</label>
+      <select id="seerr_id" name="seerr_id">
+        {% for seerr in seerr_instances %}
+          <option value="{{ seerr.id }}" {% if seerr.is_default %}selected{% endif %}>{{ seerr.name }}</option>
+        {% endfor %}
+      </select>
+    {% else %}
+      <input type="hidden" name="seerr_id" value="{{ seerr_instances[0].id }}">
+    {% endif %}
+    <footer>
+      <button type="submit" class="secondary" aria-busy="false">
+        Request via {{ seerr_instances[0].name if seerr_instances | length == 1 else 'Overseerr' }}</button>
+    </footer>
+    <p><small class="muted">{{ 'It' if seerr_instances | length == 1 else 'The one you pick' }} decides
+      which {{ 'Sonarr' if item_type == 'show' else 'Radarr' }} it goes to, and may hold it for approval.</small></p>
+  </form>
+{% endif %}

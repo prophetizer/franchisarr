@@ -22,7 +22,7 @@ from app.auth.dependencies import API_KEY_HEADER
 from app.auth.local_admin import create_local_admin
 from app.db import get_engine
 from app.models import User
-from app.services import instance_service, sonarr_instance_service
+from app.services import instance_service, seerr_instance_service, sonarr_instance_service
 from tests.conftest import seed_server
 from app.services.settings_service import SettingKey, set_setting
 
@@ -36,6 +36,7 @@ SECRETS = {
     "fanart_key": "FANARTKEY-zzz111aaa222bbb33",
     "radarr_key": "RADARRKEY-zzz111aaa222bbb333",
     "sonarr_key": "SONARRKEY-zzz111aaa222bbb333",
+    "seerr_key": "SEERRKEY-zzz111aaa222bbb3333",
 }
 
 
@@ -57,6 +58,10 @@ def client(app_factory):
             sonarr_instance_service.create_sonarr(
                 session, name="TV", url="http://sonarr.test:8989",
                 api_key=SECRETS["sonarr_key"],
+            )
+            seerr_instance_service.create_seerr(
+                session, name="Overseerr", url="http://overseerr.test:5055",
+                api_key=SECRETS["seerr_key"],
             )
         test_client.post(f"{BASE}/login", data={"username": "admin", "password": PASSWORD})
         yield test_client
@@ -180,7 +185,7 @@ def test_the_diagnostics_bundle_carries_no_secret_and_names_what_did_not_match(c
     assert document["library"]["unmatched"] == 1
     assert [t["title"] for t in document["unmatched_sample"]] == ["Some Obscure Film"]
     assert document["media_servers"][0]["kind"] == "plex"
-    assert document["instances"] == {"radarr": 1, "sonarr": 1}
+    assert document["instances"] == {"radarr": 1, "sonarr": 1, "seerr": 1}
 
 
 def test_the_full_export_does_carry_them_and_is_marked_as_such(client: TestClient) -> None:

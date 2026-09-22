@@ -7,10 +7,12 @@
       <strong>Add {{ title }}</strong>
     </header>
 
-    {% if not instances %}
+    {% if not instances and not seerr_instances %}
       <p role="alert" class="notice-bad">
         No Radarr instance is configured yet.
       </p>
+    {% elif not instances %}
+      {# Nothing direct to offer; the request form below is the whole dialog. #}
     {% elif not options.ok %}
       {# Technical challenge #15: say plainly that the instance is unreachable rather than
          presenting empty dropdowns that look like the instance has nothing configured. #}
@@ -66,5 +68,8 @@
         </footer>
       </form>
     {% endif %}
+    {% with request_path='/add/request', item_type='movie' %}
+      {% include "partials/seerr_request_form.html" %}
+    {% endwith %}
   </article>
 </dialog>

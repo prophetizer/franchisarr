@@ -26,7 +26,7 @@ from app.config import get_settings
 from app.logging_config import redact
 from app.models import (
     ActivityLogEntry, CrossMediaMapping, DirectorFilm, DismissedItem, Franchise, IncludedLibrary,
-    LibraryItem, MediaServer, MovieDirector, RadarrInstance, SonarrInstance, SpinoffMapping,
+    LibraryItem, MediaServer, MovieDirector, RadarrInstance, SeerrInstance, SonarrInstance, SpinoffMapping,
     TmdbCollection, TmdbMovie, TmdbShow,
 )
 from app.services import config_backup, scan_state
@@ -99,6 +99,7 @@ def build(session: Session) -> dict:
         "instances": {
             "radarr": _count(session, RadarrInstance),
             "sonarr": _count(session, SonarrInstance),
+            "seerr": _count(session, SeerrInstance),
         },
         "library": {
             "items_by_type": by_type,

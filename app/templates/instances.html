@@ -1,16 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Radarr & Sonarr — Franchisarr{% endblock %}
+{% block title %}Radarr, Sonarr & Overseerr — Franchisarr{% endblock %}
 
 {% block content %}
 <hgroup>
-  <h1>Radarr &amp; Sonarr</h1>
-  <p>Where Franchisarr sends the things you choose to add.</p>
+  <h1>Radarr, Sonarr &amp; Overseerr</h1>
+  <p>Where Franchisarr sends the things you choose to add — straight to an *arr, or as a request
+    through Overseerr or Jellyseerr, which decides for itself and may ask someone to approve.</p>
 </hgroup>
 
 {% if error %}<p role="alert" class="notice-bad">{{ error }}</p>{% endif %}
 {% if saved %}<p role="status" class="notice-good">Saved.</p>{% endif %}
 
-{% for kind, label, items in [('radarr', 'Radarr', radarr), ('sonarr', 'Sonarr', sonarr)] %}
+{% for kind, label, items in [('radarr', 'Radarr', radarr), ('sonarr', 'Sonarr', sonarr), ('seerr', 'Overseerr / Jellyseerr', seerr)] %}
   <section>
     <h2>{{ label }}</h2>
 
@@ -20,6 +21,7 @@
           <li class="film-row">
             <span class="film-title">
               {{ instance.name }}
+              {% if kind == 'seerr' %}<small class="muted">({{ instance.kind | capitalize }})</small>{% endif %}
               {% if instance.is_default %}<small class="muted">(default)</small>{% endif %}
             </span>
             <span class="film-meta muted">
@@ -48,14 +50,28 @@
     {% endif %}
 
     <details>
-      <summary>Add a {{ label }} instance</summary>
+      <summary>Add {{ 'an Overseerr or Jellyseerr' if kind == 'seerr' else 'a ' ~ label }} instance</summary>
       <form method="post" action="{{ url('/instances/' ~ kind ) }}">
-        <label>Name <input type="text" name="name" required placeholder="{{ label }}{% if kind == 'radarr' %} 4K{% endif %}"></label>
-        <label>URL <input type="url" name="url" required placeholder="http://{{ kind }}:{{ '7878' if kind == 'radarr' else '8989' }}"></label>
+        {% if kind == 'seerr' %}
+          <label>Which
+            <select name="seerr_kind">
+              <option value="overseerr">Overseerr</option>
+              <option value="jellyseerr">Jellyseerr</option>
+            </select>
+          </label>
+        {% endif %}
+        <label>Name <input type="text" name="name" required placeholder="{{ 'Overseerr' if kind == 'seerr' else label }}{% if kind == 'radarr' %} 4K{% endif %}"></label>
+        <label>URL <input type="url" name="url" required placeholder="http://{{ 'overseerr:5055' if kind == 'seerr' else kind ~ ':' ~ ('7878' if kind == 'radarr' else '8989') }}"></label>
         <label>API key <input type="password" name="api_key" required autocomplete="off"></label>
         <small>
-          Settings → General → API Key in {{ label }}. If {{ label }} sits behind a login proxy,
-          use its address on your own network instead — an API key can't get past a login page.
+          {% if kind == 'seerr' %}
+            Settings → General → API Key in Overseerr or Jellyseerr. Requests are made as the
+            key's owner, so its settings for auto-approval and limits apply.
+          {% else %}
+            Settings → General → API Key in {{ label }}.
+          {% endif %}
+          If it sits behind a login proxy, use its address on your own network instead — an
+          API key can't get past a login page.
         </small>
         <button type="submit">Add</button>
       </form>

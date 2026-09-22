@@ -34,6 +34,7 @@ from app.models import (
     MediaServer,
     RadarrInstance,
     Setting,
+    SeerrInstance,
     SonarrInstance,
     SpinoffMapping,
     User,
@@ -110,6 +111,11 @@ def export_config(session: Session, *, redact: bool = False) -> dict:
         "sonarr_instances": [
             _instance_dict(i, redact=redact) for i in session.exec(select(SonarrInstance)).all()
         ],
+        "seerr_instances": [
+            {"name": i.name, "kind": i.kind, "url": i.url,
+             "api_key": REDACTED if redact else i.api_key, "is_default": i.is_default}
+            for i in session.exec(select(SeerrInstance)).all()
+        ],
         "spinoff_mappings": [
             {
                 "source_show_tmdb_id": m.source_show_tmdb_id,
@@ -180,6 +186,7 @@ def validate(document: Any) -> dict:
         ("media_servers", list),
         ("radarr_instances", list),
         ("sonarr_instances", list),
+        ("seerr_instances", list),
         ("spinoff_mappings", list),
         ("collection_excludes", list),
         ("included_libraries", list),
@@ -188,7 +195,7 @@ def validate(document: Any) -> dict:
         if key in document and not isinstance(document[key], expected):
             raise InvalidBackup(f"The '{key}' section is the wrong shape.")
 
-    for section in ("media_servers", "radarr_instances", "sonarr_instances"):
+    for section in ("media_servers", "radarr_instances", "sonarr_instances", "seerr_instances"):
         for entry in document.get(section, []):
             if not isinstance(entry, dict) or not entry.get("name") or not entry.get("url"):
                 raise InvalidBackup(f"An entry in '{section}' is missing its name or URL.")
@@ -230,7 +237,7 @@ def import_config(session: Session, document: Any, *, replace: bool = False) -> 
     two installs -- and it must not fail on a unique constraint halfway through.
     """
     document = validate(document)
-    counts = {"settings": 0, "radarr": 0, "sonarr": 0, "mappings": 0, "excludes": 0,
+    counts = {"settings": 0, "radarr": 0, "sonarr": 0, "seerr": 0, "mappings": 0, "excludes": 0,
               "dismissals": 0, "dismissals_unmatched": 0,
               "libraries": 0, "skipped_redacted": 0, "already_present": 0, "media_servers": 0}
 
@@ -279,6 +286,7 @@ def import_config(session: Session, document: Any, *, replace: bool = False) -> 
     for section, model, key in (
         ("radarr_instances", RadarrInstance, "radarr"),
         ("sonarr_instances", SonarrInstance, "sonarr"),
+        ("seerr_instances", SeerrInstance, "seerr"),
     ):
         for entry in document.get(section, []):
             if entry.get("api_key") in (None, "", REDACTED):

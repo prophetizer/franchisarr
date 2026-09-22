@@ -1,4 +1,4 @@
-"""Managing Radarr and Sonarr instances from the UI.
+"""Managing Radarr, Sonarr and Overseerr/Jellyseerr instances from the UI.
 
 API keys are write-only here (docs/DEVELOPMENT.md convention 3): the list shows a mask, and changing a key
 means entering it again rather than editing a pre-filled field. A masked value that round-trips
@@ -16,10 +16,11 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.auth.dependencies import AdminUser, DbSession, RequiredUser
 from app.clients.radarr_client import RadarrError
+from app.clients.seerr_client import SeerrError
 from app.clients.sonarr_client import SonarrError
 from app.config import get_settings
 from app.logging_config import mask_secret
-from app.services import instance_service, sonarr_instance_service
+from app.services import instance_service, seerr_instance_service, sonarr_instance_service
 from app.templating import get_templates
 
 logger = logging.getLogger(__name__)
@@ -39,6 +40,7 @@ def _view(instance) -> dict:
         "url": instance.url,
         "is_default": instance.is_default,
         "masked_key": mask_secret(instance.api_key),
+        "kind": getattr(instance, "kind", None),
     }
 
 
@@ -47,6 +49,8 @@ def _service(kind: str):
         return instance_service
     if kind == "sonarr":
         return sonarr_instance_service
+    if kind == "seerr":
+        return seerr_instance_service
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown instance type.")
 
 
@@ -61,6 +65,7 @@ def instances_page(
             "user": user,
             "radarr": [_view(i) for i in instance_service.list_radarr(session)],
             "sonarr": [_view(i) for i in sonarr_instance_service.list_sonarr(session)],
+            "seerr": [_view(i) for i in seerr_instance_service.list_seerr(session)],
             "saved": saved,
             "error": None,
         },
@@ -76,18 +81,20 @@ def add_instance(
     name: Annotated[str, Form()],
     url: Annotated[str, Form()],
     api_key: Annotated[str, Form()],
+    seerr_kind: Annotated[str, Form()] = "overseerr",
 ):
     service = _service(kind)
-    creator = service.create_radarr if kind == "radarr" else service.create_sonarr
-    creator(session, name=name.strip(), url=url.strip(), api_key=api_key.strip())
+    fields = {"name": name.strip(), "url": url.strip(), "api_key": api_key.strip()}
+    if kind == "seerr":
+        fields["kind"] = seerr_kind if seerr_kind in ("overseerr", "jellyseerr") else "overseerr"
+    creator = getattr(service, f"create_{kind}")
+    creator(session, **fields)
     return RedirectResponse(_url("/instances?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/instances/{kind}/{instance_id}/delete", response_class=HTMLResponse)
 def remove_instance(session: DbSession, user: AdminUser, kind: str, instance_id: int):
-    service = _service(kind)
-    remover = service.delete_radarr if kind == "radarr" else service.delete_sonarr
-    remover(session, instance_id)
+    getattr(_service(kind), f"delete_{kind}")(session, instance_id)
     return RedirectResponse(_url("/instances?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -102,15 +109,14 @@ def test_instance(
     request: Request, session: DbSession, user: RequiredUser, kind: str, instance_id: int
 ):
     service = _service(kind)
-    getter = service.get_radarr if kind == "radarr" else service.get_sonarr
-    instance = getter(session, instance_id)
+    instance = getattr(service, f"get_{kind}")(session, instance_id)
     if instance is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such instance.")
 
     context: dict = {"user": user, "ok": False, "version": "", "error": ""}
     try:
         context.update(ok=True, version=service.client_for(instance).test_connection())
-    except (RadarrError, SonarrError) as exc:
+    except (RadarrError, SonarrError, SeerrError) as exc:
         context["error"] = str(exc)
 
     return get_templates().TemplateResponse(request, "partials/instance_test.html", context)

@@ -26,12 +26,14 @@ def record_add(
     instance_id: int | None,
     user: User | None,
     trigger_source: str = TriggerSource.MANUAL.value,
+    target: str | None = None,
 ) -> ActivityLogEntry:
     entry = ActivityLogEntry(
         item_type=item_type,
         tmdb_id=tmdb_id,
         title=title,
         instance_id=instance_id,
+        target=target,
         # Null means a scheduled scan did it, which is why this is the user id rather than a
         # name: the row must stay meaningful if the account is later renamed.
         triggered_by=user.id if user else None,

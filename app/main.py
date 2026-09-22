@@ -6,12 +6,13 @@ https://host/franchisarr/ is the same code path as serving at the root (technica
 
 from __future__ import annotations
 
+import json
 import logging
 from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, FastAPI, Form, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session
 
@@ -40,7 +41,7 @@ from app.routes_media_servers import router as media_servers_router
 from app.routes_preferences import router as preferences_router
 from app.routes_tv import router as tv_router
 from app.routes_auth import router as auth_router
-from app.services import library_service, media_server_service
+from app.services import library_service, media_server_service, seerr_instance_service
 from app.services.auth_service import discover_machine_identifier
 from app.services import scheduler as scheduler_service
 from app.services.settings_service import SettingKey, get_setting, seed_settings_from_env
@@ -100,6 +101,8 @@ async def lifespan(app: FastAPI):
         # otherwise stay unregistered until first used.
         for server in media_server_service.list_servers(session):
             register_secret(server.credential)
+        for seerr in seerr_instance_service.list_seerr(session):
+            register_secret(seerr.api_key)
         _discover_plex_server(session)
         scheduler_service.start(session)
 
@@ -124,6 +127,35 @@ router = APIRouter()
 def health() -> dict:
     """Liveness endpoint for Docker HEALTHCHECK / reverse-proxy monitoring. Unauthenticated."""
     return {"status": "ok"}
+
+
+@router.get("/manifest.webmanifest")
+def manifest() -> Response:
+    """Web app manifest, so a phone can put Franchisarr on its home screen with the icon.
+
+    A route rather than a static file because start_url and the icon paths depend on BASE_URL.
+    Unauthenticated: browsers fetch it without cookies on some platforms, and it holds nothing.
+    """
+    from app.templating import make_asset_builder, make_url_builder
+
+    base = get_settings().base_url
+    url, asset = make_url_builder(base), make_asset_builder(base)
+    document = {
+        "name": "Franchisarr",
+        "short_name": "Franchisarr",
+        "description": "The films and shows missing from the sets you already own.",
+        "start_url": url("/"),
+        "scope": url("/"),
+        "display": "standalone",
+        "background_color": "#2e3440",
+        "theme_color": "#2e3440",
+        "icons": [
+            {"src": asset("/static/icon-192.png"), "sizes": "192x192", "type": "image/png"},
+            {"src": asset("/static/icon-512.png"), "sizes": "512x512", "type": "image/png"},
+            {"src": asset("/static/icon.svg"), "sizes": "any", "type": "image/svg+xml"},
+        ],
+    }
+    return Response(json.dumps(document), media_type="application/manifest+json")
 
 
 @router.get("/", response_class=HTMLResponse)

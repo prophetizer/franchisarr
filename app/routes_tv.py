@@ -19,6 +19,7 @@ from app.models import MappingSource, DismissedItem, ItemType, SpinoffMapping
 from app.services import (
     add_service,
     cross_media_service,
+    seerr_instance_service,
     sonarr_instance_service,
     tv_spinoff_service,
 )
@@ -207,8 +208,35 @@ def add_show_dialog(
             "selected": selected,
             "options": options,
             "monitor_modes": list(MONITOR_MODE_LABELS.items()),
+            "seerr_instances": seerr_instance_service.list_seerr(session),
         },
     )
+
+
+@router.post("/shows/add/request", response_class=HTMLResponse)
+def submit_show_request(
+    request: Request,
+    session: DbSession,
+    user: RequiredUser,
+    tmdb_id: Annotated[int, Form()],
+    seerr_id: Annotated[int, Form()],
+):
+    """Ask Overseerr / Jellyseerr for the series instead of adding it to a Sonarr directly."""
+    instance = seerr_instance_service.get_seerr(session, seerr_id)
+    if instance is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such instance.")
+
+    context: dict = {"user": user, "added": False, "requested": True, "error": "", "title": "",
+                     "instance": instance.name, "needs_approval": False}
+    try:
+        result = add_service.request_via_seerr(
+            session, instance=instance, item_type=ItemType.SHOW.value, tmdb_id=tmdb_id,
+            title=_suggestion_title(session, tmdb_id), user=user,
+        )
+        context.update(added=True, title=result.title, needs_approval=result.needs_approval)
+    except add_service.AddFailed as exc:
+        context["error"] = str(exc)
+    return get_templates().TemplateResponse(request, "partials/add_result.html", context)
 
 
 @router.post("/shows/add", response_class=HTMLResponse)

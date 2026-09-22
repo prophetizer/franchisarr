@@ -20,15 +20,17 @@ from app.clients.sonarr_client import (
     SeriesAlreadyAddedError,
     SonarrError,
 )
+from app.clients.seerr_client import SeerrError
 from app.models import (
     ItemType,
     MonitorMode,
     RadarrInstance,
+    SeerrInstance,
     SonarrInstance,
     TriggerSource,
     User,
 )
-from app.services import activity_log, instance_service, sonarr_instance_service
+from app.services import activity_log, instance_service, seerr_instance_service, sonarr_instance_service
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +42,9 @@ class AddResult:
     instance_id: int
     instance_name: str
     searched: bool
+    #: A Seerr request that is waiting for someone to approve it, as opposed to one Seerr
+    #: auto-approved and has already passed on.
+    needs_approval: bool = False
 
 
 class AddFailed(RuntimeError):
@@ -177,3 +182,40 @@ def add_series(
         instance_name=instance.name,
         searched=search_on_add,
     )
+
+
+def request_via_seerr(
+    session: Session,
+    *,
+    instance: SeerrInstance,
+    item_type: str,
+    tmdb_id: int,
+    title: str,
+    user: User | None = None,
+    trigger_source: str = TriggerSource.MANUAL.value,
+) -> AddResult:
+    """Ask Overseerr / Jellyseerr for a film or a series, then record it.
+
+    Seerr chooses the *arr, the profile and the folder from its own settings and may hold the
+    request for approval; what comes back is whether it did. The request is cached at once so
+    the title leaves the lists without waiting for a scan.
+    """
+    client = seerr_instance_service.client_for(instance)
+    label = seerr_instance_service.label(instance)
+    try:
+        if item_type == ItemType.SHOW.value:
+            result = client.request_series(tmdb_id)
+        else:
+            result = client.request_movie(tmdb_id)
+    except SeerrError as exc:
+        raise AddFailed(str(exc)) from exc
+
+    seerr_instance_service.record_request(session, instance, item_type, tmdb_id, result.status)
+    activity_log.record_add(
+        session, item_type=item_type, tmdb_id=tmdb_id, title=title, instance_id=instance.id,
+        user=user, trigger_source=trigger_source, target="seerr",
+    )
+    logger.info("Requested %s %s via %s %r (%s)", item_type, tmdb_id, label, instance.name,
+                "pending approval" if result.needs_approval else "approved")
+    return AddResult(tmdb_id=tmdb_id, title=title, instance_id=instance.id, instance_name=instance.name,
+                     searched=False, needs_approval=result.needs_approval)

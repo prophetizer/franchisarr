@@ -6,8 +6,9 @@
       <strong>Add {{ title }}</strong>
     </header>
 
-    {% if not instances %}
+    {% if not instances and not seerr_instances %}
       <p role="alert" class="notice-bad">No Sonarr instance is configured yet.</p>
+    {% elif not instances %}
     {% elif not options.ok %}
       <p role="alert" class="notice-bad">{{ options.error }}</p>
       <p><small>Franchisarr can't read this instance's quality profiles or root folders right now,
@@ -68,5 +69,8 @@
         </footer>
       </form>
     {% endif %}
+    {% with request_path='/shows/add/request', item_type='show' %}
+      {% include "partials/seerr_request_form.html" %}
+    {% endwith %}
   </article>
 </dialog>
