@@ -132,21 +132,22 @@ class BodySizeLimit(BaseHTTPMiddleware):
 # ---------------------------------------------------------------- headers
 
 #: Alpine evaluates x-data expressions, which needs unsafe-eval, and the theme toggle and the
-#: list-URL filler are inline scripts; a stricter script policy would break the pages. What the
-#: CSP does buy: no images or styles from anywhere but this app, TMDb, fanart.tv and the
-#: configured theme host, no plugins, no framing.
-def security_headers(theme_host: str | None) -> dict[str, str]:
-    style_hosts = ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"]
-    img_hosts = ["'self'", "data:", "https://image.tmdb.org", "https://assets.fanart.tv"]
-    if theme_host:
-        style_hosts.append(theme_host)
-        img_hosts.append(theme_host)
+#: list-URL filler are inline scripts; a stricter script policy would break the pages.
+#:
+#: Styles, images and fonts may come from any HTTPS origin. The first cut allowed only this app,
+#: TMDb, fanart.tv and the theme host from THEME_URL -- and broke every install whose proxy
+#: injects the theme.park stylesheet itself (traefik-themepark, nginx sub_filter), which is the
+#: common way to run it and which the app cannot see. The theme's own @imports, fonts and
+#: background images can sit on any host the theme author chose. With inline scripts already
+#: allowed, a tight style policy bought nothing worth that breakage; what the CSP is here for
+#: is the rest: no framing, no plugins, no base-tag tricks, forms post only to us and plex.tv.
+def security_headers() -> dict[str, str]:
     csp = "; ".join([
         "default-src 'self'",
         "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-        f"style-src {' '.join(style_hosts)}",
-        f"img-src {' '.join(img_hosts)}",
-        "font-src 'self' https://fonts.gstatic.com",
+        "style-src 'self' 'unsafe-inline' https:",
+        "img-src 'self' data: https:",
+        "font-src 'self' data: https:",
         "connect-src 'self'",
         "frame-ancestors 'none'",
         "object-src 'none'",
@@ -165,10 +166,6 @@ def security_headers(theme_host: str | None) -> dict[str, str]:
 class SecurityHeaders(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):  # noqa: ANN001, ANN202
         response = await call_next(request)
-        from app.services.theme_service import resolve
-
-        theme_url = resolve().url
-        theme_host = f"{urlparse(theme_url).scheme}://{urlparse(theme_url).netloc}" if theme_url else None
-        for name, value in security_headers(theme_host).items():
+        for name, value in security_headers().items():
             response.headers.setdefault(name, value)
         return response

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.1] — 2026-09-21
+
+### Fixed
+
+- 0.17.0's Content-Security-Policy blocked theme.park themes injected by a reverse proxy
+  (traefik-themepark, nginx `sub_filter`): it allowed stylesheets only from the app and the
+  host in `THEME_URL`, and a proxy-injected theme lives on a host the app never sees. Styles,
+  images and fonts may now load from any HTTPS origin; scripts, framing, plugins, `<base>` and
+  form targets stay as restricted as before.
+
 ## [0.17.0] — 2026-09-21
 
 ### Security

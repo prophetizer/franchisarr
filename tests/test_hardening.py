@@ -123,11 +123,17 @@ def test_every_page_carries_the_security_headers(client: TestClient) -> None:
     h = response.headers
     assert h["X-Frame-Options"] == "DENY" and h["X-Content-Type-Options"] == "nosniff"
     assert "frame-ancestors 'none'" in h["Content-Security-Policy"]
-    assert "https://image.tmdb.org" in h["Content-Security-Policy"]
+    assert "img-src 'self' data: https:" in h["Content-Security-Policy"]
     assert "form-action 'self' https://app.plex.tv" in h["Content-Security-Policy"]
 
 
-def test_the_theme_host_is_allowed_by_the_csp() -> None:
-    csp = security_headers("https://theme-park.dev")["Content-Security-Policy"]
-    assert "style-src" in csp and "https://theme-park.dev" in csp.split("style-src")[1].split(";")[0]
-    assert "https://theme-park.dev" in csp.split("img-src")[1].split(";")[0]
+def test_a_proxy_injected_theme_stylesheet_is_allowed_by_the_csp() -> None:
+    """The proxy injects <link href="https://theme-park.example/css/..."> and the app never
+    learns the host, so styles (and the fonts and images a theme pulls in) must be allowed
+    from any HTTPS origin. Scripts stay 'self'."""
+    csp = security_headers()["Content-Security-Policy"]
+    directives = {d.split()[0]: d.split()[1:] for d in csp.split("; ")}
+    assert "https:" in directives["style-src"]
+    assert "https:" in directives["img-src"] and "https:" in directives["font-src"]
+    assert directives["script-src"] == ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
+    assert directives["frame-ancestors"] == ["'none'"]

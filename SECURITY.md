@@ -60,8 +60,11 @@ the parts that belong to the app, because only it knows what a sign-in or a form
   this install's own Plex server.
 - **Cross-site posts are refused** on `Sec-Fetch-Site` / `Origin`, on top of a `SameSite=Lax`,
   `HttpOnly` session cookie (`SESSION_COOKIE_SECURE=true` adds `Secure` behind HTTPS).
-- **Security headers** on every response: a Content-Security-Policy that limits images and
-  styles to this app, TMDb, fanart.tv and the configured theme host, `frame-ancestors 'none'`,
+- **Security headers** on every response: a Content-Security-Policy that forbids framing
+  (`frame-ancestors 'none'`), plugins and `<base>` tricks, keeps scripts and XHR to this app,
+  and lets forms post only here and to plex.tv. Styles, images and fonts may load from any
+  HTTPS origin, because a proxy-injected theme.park stylesheet (traefik-themepark, nginx
+  `sub_filter`) and whatever it imports are on hosts the app never sees;
   `nosniff`, a same-origin referrer policy. Alpine.js needs `unsafe-eval`, so the script
   policy is not strict; treat the CSP as a limit on where content can come from, not as XSS
   protection.
