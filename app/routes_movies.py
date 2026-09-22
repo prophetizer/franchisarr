@@ -47,9 +47,9 @@ def _gap_or_404(session, user, collection_id: int):
 @router.get("/collections", response_class=HTMLResponse)
 def collections(
     request: Request, session: DbSession, user: RequiredUser, sort: str = "rating",
-    started: bool = False,
+    started: bool = False, page: int = 1,
 ):
-    from app.services import scan_state
+    from app.services import pagination, scan_state
 
     sort = "name" if sort == "name" else "rating"
     gaps = movie_gap_service.collections_with_gaps(session, user.id, sort=sort)
@@ -58,13 +58,23 @@ def collections(
     watched_known = any(movie.watched is not None for gap in gaps for movie in gap.owned)
     if started and watched_known:
         gaps = [gap for gap in gaps if gap.started]
+    # The totals below describe every collection, not the page -- they are counted before the
+    # slice for exactly that reason.
+    pager = pagination.paginate(
+        gaps, page, path="/collections",
+        # The filter only applies when watched state is known, so the link carries it only
+        # then -- otherwise page 2 would claim a filter the page is not applying.
+        params={"sort": sort if sort != "rating" else None,
+                "started": 1 if (started and watched_known) else None},
+    )
     return get_templates().TemplateResponse(
         request,
         "collections.html",
         {
             "user": user,
             "progress": scan_state.current(),
-            "gaps": gaps,
+            "gaps": pager.items,
+            "pager": pager,
             "started": started and watched_known,
             "watched_known": watched_known,
             "total_missing": sum(len(gap.missing) for gap in gaps),
@@ -80,7 +90,7 @@ def collections(
 
 
 @router.get("/upcoming", response_class=HTMLResponse)
-def upcoming(request: Request, session: DbSession, user: RequiredUser):
+def upcoming(request: Request, session: DbSession, user: RequiredUser, page: int = 1):
     """Announced films in franchises the user owns part of, soonest first.
 
     The one thing no *arr calendar can show: Radarr knows what has been added, this knows what
@@ -88,15 +98,16 @@ def upcoming(request: Request, session: DbSession, user: RequiredUser):
     """
     from datetime import date
 
-    from app.services import upcoming_service
+    from app.services import pagination, upcoming_service
 
     films = upcoming_service.upcoming_films(session, user.id)
     today = date.today()
     soon = sum(1 for f in films if f.days_until(today) is not None and 0 <= f.days_until(today) <= 90)
+    pager = pagination.paginate(films, page, path="/upcoming")
     return get_templates().TemplateResponse(
         request,
         "upcoming.html",
-        {"user": user, "films": films, "today": today, "soon": soon},
+        {"user": user, "films": pager.items, "today": today, "soon": soon, "pager": pager},
     )
 
 

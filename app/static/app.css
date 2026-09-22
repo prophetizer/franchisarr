@@ -561,3 +561,13 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 .owned-where { white-space: nowrap; }
 .server-meta { flex: 1 1 100%; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 .plex-signin small { display: block; margin-top: calc(var(--pico-spacing) / 2); }
+
+/* Pager under a card grid. Only rendered when a list is long enough to be cut into pages. */
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 1.5rem 0 0.5rem;
+}
+.pager a[role="button"] { width: auto; margin: 0; }

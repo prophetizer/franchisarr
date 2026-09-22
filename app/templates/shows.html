@@ -55,6 +55,7 @@
                              url('/shows/dismiss/' ~ suggestion.spinoff_tmdb_id)) }}
         {% endfor %}
       </div>
+      {% include "partials/pager.html" %}
 
     {% else %}
       <p class="muted">
@@ -107,12 +108,12 @@
 
   <div id="spinoff-lists">{% include "partials/spinoff_lists.html" %}</div>
 
-  <details>
+  <details id="library" {% if library_pager.page > 1 %}open{% endif %}>
     <summary><strong>Search a single show</strong></summary>
     <p><small class="muted">
       Scans discover spin-offs automatically, so this is only worth reaching for when you think
       one has been missed. It searches TMDb for shows <em>named after</em> the one you pick, which
-      finds "NCIS: Los Angeles" but never "American Dad!" — {{ shows | length }} show{{ '' if shows | length == 1 else 's' }} in your library.
+      finds "NCIS: Los Angeles" but never "American Dad!" — {{ '{:,}'.format(owned_total) }} show{{ '' if owned_total == 1 else 's' }} in your library.
     </small></p>
     <ul class="film-list">
       {% for show in shows %}
@@ -128,6 +129,7 @@
         </li>
       {% endfor %}
     </ul>
+    {% with pager = library_pager %}{% include "partials/pager.html" %}{% endwith %}
   </details>
 
   <div id="candidates-loading" class="htmx-indicator"><small class="muted">Asking TMDb…</small></div>

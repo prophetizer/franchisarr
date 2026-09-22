@@ -64,6 +64,12 @@ Numbered because code comments cite them.
   queries; the label service returns one row per class of an entity, so dedupe by entity before
   counting. The client documents which properties are used and why.
 - **Never look things up per row inside a read-time service.** Build the lookup once per call.
+- **A paged list and its heading count different things.** `pagination.paginate()` slices what
+  the grid renders; the counts in the heading ("1,103 collections, missing 2,208 films") describe
+  the whole library and must be taken before the slice, or they silently become "120". Pagers
+  below the 120-item threshold render nothing at all, so a normal library sees no change — which
+  also means a bug up here only shows on a big one. Two pagers on one page need different
+  `page_param`s.
 - **Select columns, not rows, when you only need values; let loop locals die.** A dict of
   `LibraryItem` rows that outlived its loop kept 20,000 objects in the session, and every later
   commit expired them all — the scan went O(n²). Materialising 25,000 ORM objects to read two

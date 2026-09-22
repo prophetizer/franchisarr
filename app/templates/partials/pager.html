@@ -1,0 +1,16 @@
+{# Page links for a card grid. Renders nothing at all when everything fits on one page, so a
+   library below the threshold sees exactly the page it saw before paging existed. #}
+{% if pager.needed %}
+  <nav class="pager" aria-label="Pages">
+    {% if pager.previous %}
+      <a href="{{ url(pager.previous) }}" role="button" class="secondary">← Previous</a>
+    {% endif %}
+    <small class="muted">
+      {{ '{:,}'.format(pager.first_index) }}–{{ '{:,}'.format(pager.last_index) }}
+      of {{ '{:,}'.format(pager.total) }} · page {{ pager.page }} of {{ pager.pages }}
+    </small>
+    {% if pager.next %}
+      <a href="{{ url(pager.next) }}" role="button" class="secondary">Next →</a>
+    {% endif %}
+  </nav>
+{% endif %}

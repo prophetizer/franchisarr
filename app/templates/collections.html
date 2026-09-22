@@ -8,7 +8,7 @@
 <hgroup>
   <h1>Collections with gaps</h1>
   <p>
-    {{ gaps | length }} collection{{ '' if gaps | length == 1 else 's' }} you own part of,
+    {{ '{:,}'.format(pager.total) }} collection{{ '' if pager.total == 1 else 's' }} you own part of,
     missing {{ total_missing }} film{{ '' if total_missing == 1 else 's' }}.
   </p>
 </hgroup>
@@ -95,5 +95,6 @@
       </article>
     {% endfor %}
   </div>
+  {% include "partials/pager.html" %}
 {% endif %}
 {% endblock %}

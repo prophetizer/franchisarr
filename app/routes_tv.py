@@ -56,14 +56,34 @@ def _lists(request: Request, session, user) -> HTMLResponse:
 
 
 @router.get("/shows", response_class=HTMLResponse)
-def shows(request: Request, session: DbSession, user: RequiredUser):
+def shows(request: Request, session: DbSession, user: RequiredUser, page: int = 1,
+          library_page: int = 1):
+    """Spin-off suggestions, and the library list that the single-show search works from.
+
+    Two independent pagers: the suggestion grid at the top and the owned-show list inside
+    "Search a single show", which on a big library is thousands of rows and was most of this
+    page's weight.
+    """
+    from app.services import pagination
+
+    suggestions = tv_spinoff_service.missing_spinoffs(session, user.id)
+    owned = tv_spinoff_service.owned_shows(session)
+    pager = pagination.paginate(suggestions, page, path="/shows",
+                                params={"library_page": library_page if library_page > 1 else None})
+    library_pager = pagination.paginate(
+        owned, library_page, path="/shows", anchor="#library", page_param="library_page",
+        params={"page": pager.page if pager.page > 1 else None},
+    )
     return get_templates().TemplateResponse(
         request,
         "shows.html",
         {
             "user": user,
-            "shows": tv_spinoff_service.owned_shows(session),
-            "suggestions": tv_spinoff_service.missing_spinoffs(session, user.id),
+            "shows": library_pager.items,
+            "owned_total": library_pager.total,
+            "library_pager": library_pager,
+            "suggestions": pager.items,
+            "pager": pager,
             "mappings": _mapping_rows(session),
             "shows_from_films": cross_media_service.suggestions(
                 session, ItemType.SHOW.value, user.id),

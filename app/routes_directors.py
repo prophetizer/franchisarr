@@ -27,15 +27,23 @@ def _url(path: str) -> str:
 
 
 @router.get("/directors", response_class=HTMLResponse)
-def directors(request: Request, session: DbSession, user: RequiredUser, sort: str = "owned"):
+def directors(request: Request, session: DbSession, user: RequiredUser, sort: str = "owned",
+              page: int = 1):
+    from app.services import pagination
+
     sort = sort if sort in ("owned", "rating", "name") else "owned"
     views = director_service.director_views(session, user.id, sort=sort)
+    pager = pagination.paginate(
+        views, page, path="/directors",
+        params={"sort": sort if sort != "owned" else None},
+    )
     return get_templates().TemplateResponse(
         request,
         "directors.html",
         {
             "user": user,
-            "directors": views,
+            "directors": pager.items,
+            "pager": pager,
             "sort": sort,
             "floor": director_service.min_director_films(session),
             "total_missing": sum(len(v.missing) for v in views),
