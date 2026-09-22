@@ -144,9 +144,11 @@ def test_a_long_list_is_paged_and_the_totals_still_describe_all_of_it(client: Te
     # The heading counts every collection and every missing film, not the page's share.
     assert f"{total} collections" in first
     assert f"missing {total} films" in first
-    # Each page holds its own slice, and page 2 is the remainder.
-    assert "Collection 0001" in first and "Collection 0121" not in first
-    assert "Collection 0121" in second and "Collection 0001" not in second
+    # Each page holds its own slice, and page 2 is the remainder. The boundary is derived
+    # from the threshold, not written in: raising DEFAULT_SIZE must not silently pass here.
+    first_of_page_two = f"Collection {DEFAULT_SIZE + 1:04d}"
+    assert "Collection 0001" in first and first_of_page_two not in first
+    assert first_of_page_two in second and "Collection 0001" not in second
     # The pager's range line wraps in the template, so compare with whitespace collapsed.
     flat = lambda html: " ".join(html.split())
     assert f"1–{DEFAULT_SIZE} of {total}" in flat(first)

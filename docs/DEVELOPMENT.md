@@ -67,7 +67,7 @@ Numbered because code comments cite them.
 - **A paged list and its heading count different things.** `pagination.paginate()` slices what
   the grid renders; the counts in the heading ("1,103 collections, missing 2,208 films") describe
   the whole library and must be taken before the slice, or they silently become "120". Pagers
-  below the 120-item threshold render nothing at all, so a normal library sees no change — which
+  below the 250-item threshold render nothing at all, so a normal library sees no change — which
   also means a bug up here only shows on a big one. Two pagers on one page need different
   `page_param`s.
 - **Select columns, not rows, when you only need values; let loop locals die.** A dict of

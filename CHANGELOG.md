@@ -7,23 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.1] — 2026-09-22
+
+### Changed
+
+- The paging threshold is 250 items, not 120. On the library this was built against, Upcoming
+  (147) and Directors (148) sat just above 120 and picked up a pager they did not need --
+  measured only after 0.22.0 was deployed. A 20,000-film page is ~225 KB instead of ~110 KB,
+  still down from a megabyte.
+
 ## [0.22.0] — 2026-09-22
 
 ### Changed
 
 - **The long list pages are paged.** At 20,000 films the Collections, Spin-offs, Upcoming and
   Directors pages each rendered around a megabyte of HTML -- slow to parse, heavy on a phone,
-  and nobody scrolls eleven hundred cards. Lists longer than 120 items are now cut into pages.
-  Below that nothing changes at all: no pager is rendered, and a normal library (the
-  developer's has 108 collections with gaps, 660 shows, 44 upcoming films) sees exactly the
-  page it saw before. The headings still count the whole library rather than the page, and a
-  pager link keeps the sort and filter you were looking at. Spin-offs has two independent
-  pagers, since the owned-show list behind "Search a single show" is its own long list.
+  and nobody scrolls eleven hundred cards. Lists longer than 250 items are cut into pages;
+  below that no pager is rendered and the page is exactly what it was. The headings count the
+  whole library rather than the page, and a pager link keeps the sort and filter you were
+  looking at. Spin-offs has two independent pagers, since the owned-show list behind "Search a
+  single show" is its own long list.
 
   Measured at 20,000 films and 2,000 shows: Collections 1,005 KB → 114 KB, Spin-offs
-  1,454 KB → 245 KB, Upcoming 1,008 KB → 120 KB, Directors 1,152 KB → 96 KB. This caps the
-  HTML, not the work behind it -- the read-time services still assemble the full list before
-  slicing, because that is what the totals describe.
+  1,454 KB → 245 KB, Upcoming 1,008 KB → 120 KB, Directors 1,152 KB → 96 KB (at the 120-item
+  threshold 0.22.0 shipped with; 0.22.1 raised it to 250, so roughly double those). This caps
+  the HTML, not the work behind it -- the read-time services still assemble the full list
+  before slicing, because that is what the totals describe.
 
 ## [0.21.0] — 2026-09-22
 

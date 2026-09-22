@@ -18,10 +18,12 @@ from dataclasses import dataclass, field
 from math import ceil
 from urllib.parse import urlencode
 
-#: Items per page. Chosen so a real library never sees a pager -- the developer's 108
-#: collections, 660 shows and 44 upcoming films all sit well under it -- while a page stays
-#: around 110 KB of HTML at roughly 0.9 KB a card.
-DEFAULT_SIZE = 120
+#: Items per page. Chosen so a real library still sees no pager: measured on the developer's
+#: library after this shipped, its lists are 109 collections with gaps, 148 directors and 147
+#: upcoming films -- 120 would have paged the last two, which is the sort of thing that only
+#: shows up once it is deployed. A page is roughly 0.9 KB a card, so this caps one at ~225 KB
+#: against the megabyte a 20,000-film library produced unpaged.
+DEFAULT_SIZE = 250
 
 
 @dataclass(frozen=True)
