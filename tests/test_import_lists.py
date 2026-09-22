@@ -127,6 +127,26 @@ def test_the_shows_list_carries_tvdb_ids_and_counts_what_it_could_not(client: Te
     assert response.headers["x-franchisarr-omitted-without-tvdb-id"] == "1"
 
 
+def test_the_stats_endpoint_counts_what_the_pages_show(client: TestClient) -> None:
+    """One flat document for a dashboard widget, behind the same key, cached for a minute."""
+    from app import routes_lists
+
+    _seed_films()
+    routes_lists._stats_cache.clear()
+    assert client.get(f"{BASE}/api/lists/stats.json").status_code == 401
+
+    key = _key()
+    response = client.get(f"{BASE}/api/lists/stats.json?api_key={key}")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["collections_with_gaps"] == 1 and body["missing_films"] == 2
+    assert body["upcoming_films"] == 1
+    assert body["library"] == {"films": 1, "shows": 0}
+    assert body["missing_spinoffs"] == 0 and "last_scan" in body
+    assert response.headers["cache-control"] == "max-age=60"
+
+
 def test_an_unknown_list_is_a_404(client: TestClient) -> None:
     assert client.get(f"{BASE}/api/lists/nope.json?api_key={_key()}").status_code == 404
 

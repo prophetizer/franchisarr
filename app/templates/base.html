@@ -26,6 +26,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Franchisarr{% endblock %}</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('/static/favicon.svg') }}">
+    <link rel="apple-touch-icon" href="{{ asset('/static/apple-touch-icon.png') }}">
+    <link rel="manifest" href="{{ url('/manifest.webmanifest') }}">
+    <meta name="theme-color" content="#2e3440">
     <link rel="stylesheet" href="{{ asset('/static/pico.min.css') }}">
     {#- A theme.park stylesheet, when TP_THEME or THEME_CSS_URL says so. The URL is validated
         server-side (http/https only) before it reaches this attribute. -#}

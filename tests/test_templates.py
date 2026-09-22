@@ -134,3 +134,24 @@ def test_html_pages_are_marked_no_cache(app_factory) -> None:
 
     assert page.headers["cache-control"] == "no-cache"
     assert "cache-control" not in asset.headers, "assets are versioned, so they may be cached"
+
+
+def test_the_web_app_manifest_follows_the_base_url(app_factory) -> None:
+    """A phone installs the app from the manifest; under a subpath every URL in it must carry
+    the subpath, or the home-screen icon opens the wrong place and shows no picture."""
+    from fastapi.testclient import TestClient
+
+    module = app_factory("/franchisarr")
+    with TestClient(module.app) as client:
+        page = client.get("/franchisarr/login").text
+        assert 'rel="manifest" href="/franchisarr/manifest.webmanifest"' in page
+        assert 'rel="apple-touch-icon" href="/franchisarr/static/apple-touch-icon.png?v=' in page
+
+        response = client.get("/franchisarr/manifest.webmanifest")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/manifest+json")
+    manifest = response.json()
+    assert manifest["start_url"] == "/franchisarr/" and manifest["scope"] == "/franchisarr/"
+    assert {icon["sizes"] for icon in manifest["icons"]} == {"192x192", "512x512", "any"}
+    assert all(icon["src"].startswith("/franchisarr/static/") for icon in manifest["icons"])

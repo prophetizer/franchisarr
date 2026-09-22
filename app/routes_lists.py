@@ -31,6 +31,7 @@ from app.services import (
     director_service,
     franchise_service,
     movie_gap_service,
+    scan_state,
     tv_spinoff_service,
     upcoming_service,
 )
@@ -173,6 +174,60 @@ def upcoming_calendar(request: Request, session: DbSession, user: User = Depends
     return Response(body, media_type="text/calendar; charset=utf-8",
                     headers={"Cache-Control": "no-cache",
                              "Content-Disposition": 'inline; filename="franchisarr-upcoming.ics"'})
+
+
+# ---------------------------------------------------------------------- dashboard stats
+
+#: Dashboard widgets poll every few seconds, and the numbers change once a scan. One minute.
+STATS_TTL_SECONDS = 60
+_stats_cache: dict[int, tuple[float, dict]] = {}
+
+
+def _stats(session: Session, user: User) -> dict:
+    gaps = movie_gap_service.collections_with_gaps(session, user.id)
+    franchises = franchise_service.franchise_views(session, user.id)
+    directors = director_service.director_views(session, user.id)
+    spinoffs = tv_spinoff_service.missing_spinoffs(session, user.id)
+    continuations = cross_media_service.suggestions(session, ItemType.SHOW.value, user.id)
+    scan = scan_state.current()
+    return {
+        "collections_with_gaps": len(gaps),
+        "missing_films": sum(len(g.missing) for g in gaps),
+        "upcoming_films": len(upcoming_service.upcoming_films(session, user.id)),
+        "missing_spinoffs": len(spinoffs) + len(continuations),
+        "franchises": len(franchises),
+        "franchises_incomplete": sum(1 for f in franchises if f.missing_films or f.missing_shows),
+        "missing_franchise_titles": sum(len(f.missing_films) + len(f.missing_shows) for f in franchises),
+        "directors": len(directors),
+        "missing_director_films": sum(len(d.missing) for d in directors),
+        "library": {
+            "films": len(movie_gap_service.owned_tmdb_ids(session)),
+            "shows": len(tv_spinoff_service.owned_show_ids(session)),
+        },
+        "last_scan": {
+            "running": scan.running,
+            "finished_at": scan.finished_at.isoformat() if scan.finished_at else None,
+            "summary": scan.summary,
+        },
+    }
+
+
+@router.get("/stats.json")
+def stats(session: DbSession, user: User = Depends(list_user)):
+    """The headline numbers, for a dashboard widget (Homepage's `customapi`, Glance, Dashy).
+
+    Flat keys so a widget can point at `missing_films` without a path expression. Cached per
+    user for a minute: the numbers move once a scan, and every read-time service runs to
+    produce them.
+    """
+    import time
+
+    now = time.monotonic()
+    hit = _stats_cache.get(user.id)
+    if hit is None or now - hit[0] > STATS_TTL_SECONDS:
+        hit = (now, _stats(session, user))
+        _stats_cache[user.id] = hit
+    return JSONResponse(hit[1], headers={"Cache-Control": f"max-age={STATS_TTL_SECONDS}"})
 
 
 @router.get("/{name}.json")

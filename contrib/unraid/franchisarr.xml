@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>franchisarr</Name>
+  <Repository>ghcr.io/prophetizer/franchisarr:latest</Repository>
+  <Registry>https://github.com/prophetizer/franchisarr/pkgs/container/franchisarr</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/prophetizer/franchisarr/issues</Support>
+  <Project>https://github.com/prophetizer/franchisarr</Project>
+  <Overview>Finds the films and TV spin-offs missing from the sets you already own. Scans Plex, Jellyfin or Emby, looks everything up on TMDb and Wikidata, and lists every collection you partly own with what's missing, spin-offs and continuations of shows you have, franchises across film and TV, directors' filmographies and announced films -- each with a one-click Add to Radarr or Sonarr, and each also available as an import-list URL so the *arrs can poll it. Nothing is added without you. Needs a free TMDb API key.&#xD;
+&#xD;
+After starting, open the web UI and sign in with the admin username and password set here (or with your Plex account once the Plex server is configured). Radarr and Sonarr can be added on the Instances page instead of here.</Overview>
+  <Category>MediaApp:Video Tools:</Category>
+  <WebUI>http://[IP]:[PORT:8000]</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/prophetizer/franchisarr/master/contrib/unraid/franchisarr.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/prophetizer/franchisarr/master/docs/brand/icon-512.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+  <Config Name="Web UI port" Target="8000" Default="8000" Mode="tcp" Description="" Type="Port" Display="always" Required="true" Mask="false">8000</Config>
+  <Config Name="Config folder" Target="/config" Default="/mnt/user/appdata/franchisarr" Mode="rw" Description="Database and settings." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/franchisarr</Config>
+  <Config Name="TMDb API key" Target="TMDB_API_KEY" Default="" Mode="" Description="Free from themoviedb.org &gt; Settings &gt; API. Required." Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="Admin username" Target="ADMIN_USERNAME" Default="admin" Mode="" Description="Local admin account for the web UI." Type="Variable" Display="always" Required="true" Mask="false">admin</Config>
+  <Config Name="Admin password" Target="ADMIN_PASSWORD" Default="" Mode="" Description="Set on first start. Changeable later in Settings." Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="Plex URL" Target="PLEX_URL" Default="" Mode="" Description="e.g. http://192.168.1.10:32400. Leave blank to use Jellyfin or Emby, or to add the server in the UI." Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="Plex token" Target="PLEX_TOKEN" Default="" Mode="" Description="Your X-Plex-Token." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+  <Config Name="Jellyfin URL" Target="JELLYFIN_URL" Default="" Mode="" Description="e.g. http://192.168.1.10:8096" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Jellyfin API key" Target="JELLYFIN_API_KEY" Default="" Mode="" Description="Dashboard &gt; API Keys." Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+  <Config Name="Emby URL" Target="EMBY_URL" Default="" Mode="" Description="e.g. http://192.168.1.10:8096" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Emby API key" Target="EMBY_API_KEY" Default="" Mode="" Description="Settings &gt; Advanced &gt; API Keys." Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+  <Config Name="Radarr URL" Target="RADARR_URL" Default="" Mode="" Description="Optional; can be added on the Instances page instead." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Radarr API key" Target="RADARR_API_KEY" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+  <Config Name="Sonarr URL" Target="SONARR_URL" Default="" Mode="" Description="Optional; can be added on the Instances page instead." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Sonarr API key" Target="SONARR_API_KEY" Default="" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="true"></Config>
+  <Config Name="Scan schedule" Target="SCAN_SCHEDULE_CRON" Default="0 3 * * *" Mode="" Description="Cron expression; blank to scan only by hand." Type="Variable" Display="advanced" Required="false" Mask="false">0 3 * * *</Config>
+  <Config Name="Base URL" Target="BASE_URL" Default="/" Mode="" Description="Only if served under a subpath behind a reverse proxy, e.g. /franchisarr" Type="Variable" Display="advanced" Required="false" Mask="false">/</Config>
+  <Config Name="Timezone" Target="TZ" Default="Etc/UTC" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="false">Etc/UTC</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+</Container>
