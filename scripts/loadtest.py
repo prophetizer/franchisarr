@@ -204,6 +204,8 @@ def main() -> int:
     parser.add_argument("--films", type=int, default=20000)
     parser.add_argument("--shows", type=int, default=2000)
     parser.add_argument("--keep", help="write the database here instead of a temp dir")
+    parser.add_argument("--reuse", action="store_true",
+                        help="with --keep: skip the seed and scans if the database is already there, time the pages only")
     args = parser.parse_args()
 
     workdir = args.keep or tempfile.mkdtemp(prefix="franchisarr-loadtest-")
@@ -223,8 +225,15 @@ def main() -> int:
     from app.services.settings_service import SettingKey
 
     FakeServer, FakeTmdb, FakeWikidata = build_fakes(args.films, args.shows)
+    reuse = args.reuse and args.keep and os.path.exists(db_path)
 
     run_migrations()
+    if reuse:
+        with Session(get_engine()) as s:
+            api_key = generate_api_key(s, s.exec(__import__("sqlmodel").select(__import__("app.models", fromlist=["User"]).User)).first())
+            s.commit()
+        print(f"reusing {db_path}")
+        return _pages(api_key, workdir if not args.keep else None)
     with Session(get_engine()) as s:
         server = MediaServer(name="Plex", kind="plex", url="http://plex:32400",
                              credential="loadtest-only-token-xxxxxxxx", machine_identifier="loadtest")
@@ -274,6 +283,12 @@ def main() -> int:
         if secs > 1:
             print(f"    {phase:<40} {secs:7.1f}s")
 
+    return _pages(api_key, None if args.keep else workdir)
+
+
+def _pages(api_key: str, cleanup: str | None) -> int:
+    from fastapi.testclient import TestClient
+
     from app.main import app
 
     with TestClient(app) as client:
@@ -291,9 +306,9 @@ def main() -> int:
             flag = "" if r1.status_code == 200 else f"  <-- HTTP {r1.status_code}"
             print(f"  {label:<38} {t1 - t0:7.2f}s {t2 - t1:7.2f}s  {size:6,} KB{flag}")
 
-    if not args.keep:
+    if cleanup:
         import shutil
-        shutil.rmtree(workdir, ignore_errors=True)
+        shutil.rmtree(cleanup, ignore_errors=True)
     return 0
 
 

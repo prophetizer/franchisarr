@@ -285,9 +285,12 @@ def _dismissed(session: Session, user_id: int | None) -> set[tuple[str, int]]:
 
 
 def franchise_views(
-    session: Session, user_id: int | None = None, *, today: date | None = None
+    session: Session, user_id: int | None = None, *, today: date | None = None,
+    only: str | None = None,
 ) -> list[FranchiseView]:
-    """Every franchise, assembled. Sorted by how much of it the user has, most first."""
+    """Every franchise, assembled. Sorted by how much of it the user has, most first. `only`
+    narrows to one Wikidata id for the detail page; the shared inputs (collection gaps,
+    spin-offs, continuations) are what cost, and those are computed once either way."""
     owned_films = movie_gap_service.owned_tmdb_ids(session)
     owned_shows = tv_spinoff_service.owned_show_ids(session)
     in_radarr = movie_gap_service.radarr_known_ids(session)
@@ -318,8 +321,12 @@ def franchise_views(
     for m in members:
         by_franchise.setdefault(m.franchise_id, []).append(m)
 
+    franchise_query = select(Franchise)
+    if only is not None:
+        franchise_query = franchise_query.where(col(Franchise.wikidata_id) == only)
+
     views: list[FranchiseView] = []
-    for franchise in session.exec(select(Franchise)).all():
+    for franchise in session.exec(franchise_query).all():
         view = FranchiseView(wikidata_id=franchise.wikidata_id, name=franchise.name,
                              kind=franchise.kind)
         film_ids: set[int] = set()
@@ -409,7 +416,7 @@ def _from_missing(mm: MissingMovie, via: str, collection_name: str) -> Title:
 
 
 def franchise_view(session: Session, wikidata_id: str, user_id: int | None = None) -> FranchiseView | None:
-    for view in franchise_views(session, user_id):
+    for view in franchise_views(session, user_id, only=wikidata_id):
         if view.wikidata_id == wikidata_id:
             return view
     return None

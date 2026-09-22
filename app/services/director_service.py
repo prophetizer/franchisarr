@@ -299,8 +299,10 @@ def discover(
 
 def director_views(
     session: Session, user_id: int | None = None, *, today: date | None = None,
-    sort: str = "owned",
+    sort: str = "owned", only: int | None = None,
 ) -> list[DirectorView]:
+    """Every director who clears the floor, with what of theirs is owned and missing. `only`
+    narrows to one person for the detail page."""
     today = today or date.today()
     owned = movie_gap_service.owned_tmdb_ids(session)
     from app.services.ownership_service import owned_details
@@ -319,16 +321,28 @@ def director_views(
     names: dict[int, str] = {}
     photos: dict[int, str] = {}
     owned_by: dict[int, set[int]] = {}
-    for row in session.exec(select(MovieDirector).where(col(MovieDirector.person_id) != 0)):
-        if row.tmdb_movie_id in owned:
-            owned_by.setdefault(row.person_id, set()).add(row.tmdb_movie_id)
-            names[row.person_id] = row.name
-            if row.profile_path:
-                photos[row.person_id] = row.profile_path
+    # Column tuples, not ORM rows: 20,000 credits and as many filmography rows as objects
+    # were most of this page at scale (scripts/loadtest.py).
+    for tmdb_movie_id, person_id, name, profile_path in session.exec(
+        select(MovieDirector.tmdb_movie_id, MovieDirector.person_id, MovieDirector.name,
+               MovieDirector.profile_path).where(col(MovieDirector.person_id) != 0)
+    ):
+        if tmdb_movie_id in owned:
+            owned_by.setdefault(person_id, set()).add(tmdb_movie_id)
+            names[person_id] = name
+            if profile_path:
+                photos[person_id] = profile_path
 
-    films_by: dict[int, list[DirectorFilm]] = {}
-    for row in session.exec(select(DirectorFilm)):
-        films_by.setdefault(row.person_id, []).append(row)
+    if only is not None:
+        owned_by = {only: owned_by[only]} if only in owned_by else {}
+    films_query = select(DirectorFilm.person_id, DirectorFilm.tmdb_movie_id, DirectorFilm.title,
+                         DirectorFilm.release_date, DirectorFilm.poster_path, DirectorFilm.vote_average,
+                         DirectorFilm.vote_count, DirectorFilm.is_documentary, DirectorFilm.runtime)
+    if only is not None:
+        films_query = films_query.where(col(DirectorFilm.person_id) == only)
+    films_by: dict[int, list[tuple]] = {}
+    for row in session.exec(films_query):
+        films_by.setdefault(row[0], []).append(row)
 
     views: list[DirectorView] = []
     for pid, owned_ids in owned_by.items():
@@ -341,13 +355,13 @@ def director_views(
             views.append(view)
             continue
         seen: set[int] = set()
-        for row in rows:
-            if row.tmdb_movie_id in seen:
+        for (_, tmdb_movie_id, title, release_date, poster_path, vote_average, vote_count,
+             is_documentary, runtime) in rows:
+            if tmdb_movie_id in seen:
                 continue
-            seen.add(row.tmdb_movie_id)
-            t = DirectorTitle(row.tmdb_movie_id, row.title, row.release_date, row.poster_path,
-                              row.vote_average, row.vote_count, row.is_documentary,
-                              row.runtime or None)
+            seen.add(tmdb_movie_id)
+            t = DirectorTitle(tmdb_movie_id, title, release_date, poster_path,
+                              vote_average, vote_count, is_documentary, runtime or None)
             if t.tmdb_id in owned_ids or t.tmdb_id in owned:
                 info = details.get(t.tmdb_id)
                 view.owned.append(replace(t, servers=info.servers, watched=info.watched) if info else t)
@@ -385,7 +399,7 @@ def director_views(
 
 
 def director_view(session: Session, person_id: int, user_id: int | None = None) -> DirectorView | None:
-    for view in director_views(session, user_id):
+    for view in director_views(session, user_id, only=person_id):
         if view.person_id == person_id:
             return view
     return None

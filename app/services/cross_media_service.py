@@ -145,17 +145,19 @@ def _source_titles(session: Session, source_type: str) -> dict[int, str]:
     library, which is timeout territory for an *arr polling it."""
     from app.models import LibraryItem, TmdbMovie, TmdbShow
 
+    # Two columns, not the rows: 20,000 ORM objects for a dict of titles was most of the cost
+    # of every page that lists continuations (scripts/loadtest.py).
     titles: dict[int, str] = {}
     if source_type == ItemType.SHOW.value:
-        for row in session.exec(select(TmdbShow)):
-            titles[row.tmdb_id] = row.name
+        titles.update(session.exec(select(TmdbShow.tmdb_id, TmdbShow.name)).all())
     else:
-        for row in session.exec(select(TmdbMovie)):
-            titles[row.tmdb_id] = row.title
+        titles.update(session.exec(select(TmdbMovie.tmdb_id, TmdbMovie.title)).all())
     # The library's own title wins: it is what the user sees in Plex.
-    for row in session.exec(select(LibraryItem).where(col(LibraryItem.item_type) == source_type)):
-        if row.tmdb_id is not None:
-            titles[row.tmdb_id] = row.title
+    for tmdb_id, title in session.exec(
+        select(LibraryItem.tmdb_id, LibraryItem.title).where(col(LibraryItem.item_type) == source_type)
+    ).all():
+        if tmdb_id is not None:
+            titles[tmdb_id] = title
     return titles
 
 

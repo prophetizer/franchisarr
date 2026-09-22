@@ -64,6 +64,12 @@ Numbered because code comments cite them.
   queries; the label service returns one row per class of an entity, so dedupe by entity before
   counting. The client documents which properties are used and why.
 - **Never look things up per row inside a read-time service.** Build the lookup once per call.
+- **Select columns, not rows, when you only need values; let loop locals die.** A dict of
+  `LibraryItem` rows that outlived its loop kept 20,000 objects in the session, and every later
+  commit expired them all — the scan went O(n²). Materialising 25,000 ORM objects to read two
+  columns of each is most of a page. `python scripts/loadtest.py --films 20000 --shows 2000`
+  (no network; every client faked) is the check after touching a scan step or a read-time
+  service — the 0.20.0 changelog has the numbers to beat.
 - **Wait a few seconds between pushing a tag and creating its release.** A release created in the
   same instant as the tag push has been stamped with the epoch and sorted last.
 
