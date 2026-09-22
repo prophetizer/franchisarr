@@ -152,14 +152,14 @@ class SpinoffSuggestion:
 def owned_show_ids(session: Session) -> set[int]:
     """TMDb ids of shows in the library. Unconfirmed matches don't count, for the same reason
     they don't on the movie side: a guess must not be able to hide a real gap."""
-    rows = session.exec(
-        select(LibraryItem).where(
+    ids = session.exec(
+        select(LibraryItem.tmdb_id).where(
             col(LibraryItem.item_type) == ItemType.SHOW.value,
             col(LibraryItem.tmdb_id).is_not(None),
             col(LibraryItem.needs_review) == False,  # noqa: E712 - SQL, not Python
         )
     ).all()
-    return {row.tmdb_id for row in rows if row.tmdb_id}
+    return {tmdb_id for tmdb_id in ids if tmdb_id}
 
 
 def sonarr_known_ids(session: Session, instance_id: int | None = None) -> set[int]:

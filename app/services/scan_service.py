@@ -124,33 +124,8 @@ def scan_movie_libraries(
         return summary
 
     for source, library in targets:
-        try:
-            items = list(source.client.iter_movies(library.library_key))
-        except MediaServerError as exc:
-            logger.warning("Skipping library %r on %s: %s", library.library_name,
-                           source.server.name, exc)
-            summary.errors.append(f"{source.server.name} / {library.library_name}: {exc}")
-            continue
-
-        summary.libraries_scanned += 1
-
-        # Every existing row for this library is loaded once, up front. Querying per item
-        # instead is quadratic: SQLAlchemy autoflushes the pending objects before each query, so
-        # by the three-thousandth film every lookup flushes thousands of rows. Worth perhaps 15%
-        # of a 3,400-film scan today, but the cost grows faster than linearly, so it matters more
-        # on the larger libraries a public tool will meet than it does here.
-        existing = _existing_rows(session, library)
-
-        for index, item in enumerate(items, start=1):
-            summary.items_seen += 1
-            _upsert_item(session, library, item, tmdb, summary, existing)
-            if index % COMMIT_BATCH == 0:
-                session.commit()
-            if progress and index % PROGRESS_EVERY == 0:
-                progress(f"Reading {library.library_name}", index, len(items))
-
-        session.commit()
-        summary.removed += _prune_missing(session, library, started)
+        _read_library(session, source, library, tmdb, summary, started, progress,
+                      item_type=ItemType.MOVIE.value)
 
     summary.collections_found = _cache_collections(
         session, tmdb, ttl, summary, progress, fanart=fanart
@@ -206,30 +181,8 @@ def scan_show_libraries(
         return summary
 
     for source, library in targets:
-        try:
-            items = list(source.client.iter_shows(library.library_key))
-        except MediaServerError as exc:
-            logger.warning("Skipping library %r on %s: %s", library.library_name,
-                           source.server.name, exc)
-            summary.errors.append(f"{source.server.name} / {library.library_name}: {exc}")
-            continue
-
-        summary.libraries_scanned += 1
-        existing = _existing_rows(session, library)
-
-        for index, item in enumerate(items, start=1):
-            summary.items_seen += 1
-            _upsert_item(
-                session, library, item, tmdb, summary, existing,
-                item_type=ItemType.SHOW.value,
-            )
-            if index % COMMIT_BATCH == 0:
-                session.commit()
-            if progress and index % PROGRESS_EVERY == 0:
-                progress(f"Reading {library.library_name}", index, len(items))
-
-        session.commit()
-        summary.removed += _prune_missing(session, library, started)
+        _read_library(session, source, library, tmdb, summary, started, progress,
+                      item_type=ItemType.SHOW.value)
 
     _cache_shows(session, tmdb, ttl, summary, progress)
     if enrich and wikidata is not None:
@@ -337,19 +290,9 @@ def _cache_shows(
     session: Session, tmdb: TmdbClient, ttl: timedelta, summary: ScanSummary, progress=None
 ) -> None:
     """Fetch and cache details for each owned show, so spin-off views have names to display."""
-    from app.services.tv_spinoff_service import cache_show
+    from app.services.tv_spinoff_service import cache_show, owned_show_ids
 
-    owned = {
-        row.tmdb_id
-        for row in session.exec(
-            select(LibraryItem).where(
-                col(LibraryItem.item_type) == ItemType.SHOW.value,
-                col(LibraryItem.tmdb_id).is_not(None),
-                col(LibraryItem.needs_review) == False,  # noqa: E712 - SQL, not Python
-            )
-        ).all()
-        if row.tmdb_id
-    }
+    owned = owned_show_ids(session)
 
     for index, tmdb_id in enumerate(sorted(owned), start=1):
         if progress and index % PROGRESS_EVERY == 0:
@@ -382,6 +325,47 @@ def _targets(session: Session, sources: list[ScanSource], item_type: str):
                 targets.append((source, library))
     return targets
 
+
+
+def _read_library(session: Session, source: ScanSource, library, tmdb: TmdbClient,
+                  summary: ScanSummary, started: datetime, progress, *, item_type: str) -> None:
+    """Refresh the snapshot rows for one library.
+
+    A function rather than a loop body so that `existing` and `items` die on return. Left as
+    loop variables they outlived the loop: 20,000 LibraryItem objects sat in the session's
+    identity map through the collection and director passes, and every commit there paid to
+    expire all of them -- 23 ms a commit at 4,000 films, O(n²) overall, the scan at 20,000
+    films never finishing (scripts/loadtest.py).
+    """
+    iterate = source.client.iter_movies if item_type == ItemType.MOVIE.value else source.client.iter_shows
+    try:
+        items = list(iterate(library.library_key))
+    except MediaServerError as exc:
+        logger.warning("Skipping library %r on %s: %s", library.library_name,
+                       source.server.name, exc)
+        summary.errors.append(f"{source.server.name} / {library.library_name}: {exc}")
+        return
+
+    summary.libraries_scanned += 1
+
+    # Every existing row for this library is loaded once, up front. Querying per item
+    # instead is quadratic: SQLAlchemy autoflushes the pending objects before each query, so
+    # by the three-thousandth film every lookup flushes thousands of rows.
+    existing = _existing_rows(session, library)
+
+    for index, item in enumerate(items, start=1):
+        summary.items_seen += 1
+        _upsert_item(session, library, item, tmdb, summary, existing, item_type=item_type)
+        if index % COMMIT_BATCH == 0:
+            session.commit()
+        if progress and index % PROGRESS_EVERY == 0:
+            progress(f"Reading {library.library_name}", index, len(items))
+
+    session.commit()
+    summary.removed += _prune_missing(session, library, started)
+    # Nothing needs the rows again. Cleared explicitly rather than trusting the frame to end,
+    # so the point is visible: the identity map holds them only while something else does.
+    existing.clear()
 
 def _existing_rows(session: Session, library) -> dict[str, LibraryItem]:
     return {
@@ -476,18 +460,17 @@ def _cache_collections(
     *,
     fanart: FanartClient | None = None,
 ) -> int:
-    """Look up which collection each owned film belongs to, then cache those collections."""
-    owned_ids = {
-        row.tmdb_id
-        for row in session.exec(
-            select(LibraryItem).where(
-                col(LibraryItem.tmdb_id).is_not(None),
-                col(LibraryItem.item_type) == ItemType.MOVIE.value,
-                col(LibraryItem.needs_review) == False,  # noqa: E712 - SQL, not Python
-            )
-        ).all()
-        if row.tmdb_id
-    }
+    """Look up which collection each owned film belongs to, then cache those collections.
+
+    Commits every 100 films rather than every film. A commit expires everything the session
+    holds, so with the whole library loaded the per-film commit cost grew with the library:
+    O(n²), 100 ms a film at 20,000 films, hidden on the real library only because the network
+    call was slower still (found by scripts/loadtest.py). The director loop below batches the
+    same way; a crash mid-batch loses at most 100 lookups, which the next scan repeats.
+    """
+    from app.services import movie_gap_service
+
+    owned_ids = movie_gap_service.owned_tmdb_ids(session)
 
     collection_ids: set[int] = set()
     for index, tmdb_id in enumerate(sorted(owned_ids), start=1):
@@ -513,18 +496,19 @@ def _cache_collections(
                 continue
 
             summary.tmdb_lookups += 1
-            cached = TmdbMovie(
-                tmdb_id=details.tmdb_id,
-                title=details.title,
-                release_year=details.year,
-                collection_id=details.collection_id,
-                fetched_at=utcnow(),
-            )
-            session.merge(cached)
-            session.commit()
+            if cached is None:
+                cached = TmdbMovie(tmdb_id=details.tmdb_id, title=details.title)
+                session.add(cached)
+            cached.title = details.title
+            cached.release_year = details.year
+            cached.collection_id = details.collection_id
+            cached.fetched_at = utcnow()
+            if summary.tmdb_lookups % 100 == 0:
+                session.commit()
 
         if cached.collection_id:
             collection_ids.add(cached.collection_id)
+    session.commit()
 
     for index, collection_id in enumerate(sorted(collection_ids), start=1):
         if progress:

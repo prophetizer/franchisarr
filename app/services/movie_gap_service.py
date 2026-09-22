@@ -174,14 +174,16 @@ def owned_tmdb_ids(session: Session) -> set[int]:
     Items flagged for review are excluded: an unconfirmed guess must not be able to mark a film
     as owned, because that would silently hide a real gap.
     """
-    rows = session.exec(
-        select(LibraryItem).where(
+    # The column, not the row: 20,000 LibraryItem objects in the session's identity map make
+    # every later commit pay to expire them all (scripts/loadtest.py found the scan going O(n²)).
+    ids = session.exec(
+        select(LibraryItem.tmdb_id).where(
             col(LibraryItem.item_type) == ItemType.MOVIE.value,
             col(LibraryItem.tmdb_id).is_not(None),
             col(LibraryItem.needs_review) == False,  # noqa: E712 - SQL, not Python
         )
     ).all()
-    return {row.tmdb_id for row in rows if row.tmdb_id}
+    return {tmdb_id for tmdb_id in ids if tmdb_id}
 
 
 def radarr_known_ids(session: Session, instance_id: int | None = None) -> set[int]:
