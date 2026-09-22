@@ -1,0 +1,55 @@
+name: Bug report
+description: Something is wrong -- a crash, an error, a page that doesn't work.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks. The diagnostics file answers most of what a maintainer needs to ask, so
+        please attach it: **Settings → Backup & restore → Download diagnostics**. Every credential
+        in it is blanked; it contains your version, library counts, the titles that didn't match and
+        the last scan's result. Do **not** attach the full config export -- that one has your keys.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Franchisarr version
+      description: Bottom of any page, or in the diagnostics file.
+      placeholder: "0.17.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: server
+    attributes:
+      label: Media server
+      multiple: true
+      options: [Plex, Jellyfin, Emby]
+    validations:
+      required: true
+  - type: dropdown
+    id: how
+    attributes:
+      label: How it's running
+      options: [Docker Compose, Docker (other), Unraid, Kubernetes, Other]
+  - type: input
+    id: proxy
+    attributes:
+      label: Reverse proxy and base URL
+      description: e.g. "Traefik, at the root" or "nginx, under /franchisarr". Leave blank if none.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log lines
+      description: From `docker logs franchisarr` around the time it happened. Secrets are redacted by the app, but glance before pasting.
+      render: text
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics file
+      description: Drag `franchisarr-diagnostics.json` in here.

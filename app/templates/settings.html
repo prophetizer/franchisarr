@@ -167,6 +167,10 @@ TP_COMMUNITY_THEME=false</code></pre>
     paste into a forum thread when asking for help.
   </small></p>
 
+  <p><a href="{{ url('/settings/diagnostics') }}" role="button" class="secondary">Download diagnostics</a></p>
+  <p><small>Version, library and cache counts, the titles that didn't match, the last scan's
+    result — credentials blanked. Attach it to a bug report.</small></p>
+
   <form method="post" action="{{ url('/settings/import') }}" enctype="multipart/form-data">
     <label for="backup">Restore from a config file</label>
     <input type="file" id="backup" name="backup" accept="application/json,.json" required>

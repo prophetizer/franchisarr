@@ -249,6 +249,15 @@ Settings has a config download. **The full one contains your Plex token and ever
 text** — treat it like a password. There's a redacted download alongside it with those blanked
 out; that's the one to paste into a forum thread when asking for help.
 
+## Reporting a problem
+
+Settings also has **Download diagnostics**: version, library and cache counts, the titles that
+didn't match or need review, and the last scan's result, with every credential blanked. Attach it
+to a [bug report](https://github.com/prophetizer/franchisarr/issues/new/choose) — it answers most
+of what would otherwise be the first round of questions. Security issues go through
+[private reporting](https://github.com/prophetizer/franchisarr/security/advisories/new), not a
+public issue.
+
 ## Troubleshooting: items aren't being matched
 
 Franchisarr can only work with a Plex item if it can resolve it to a TMDb ID. To see what your own

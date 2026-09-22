@@ -15,7 +15,7 @@ import logging
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.auth.api_keys import generate_api_key
 from app.auth.dependencies import API_KEY_HEADER
@@ -154,6 +154,33 @@ def test_the_redacted_export_carries_no_secret(client: TestClient) -> None:
     body = client.get(f"{BASE}/settings/export?redact=1").text
 
     _assert_clean(body, "the redacted export")
+
+
+def test_the_diagnostics_bundle_carries_no_secret_and_names_what_did_not_match(client: TestClient) -> None:
+    """The bundle is meant for a public issue. Every credential is blanked; the unmatched titles
+    -- the thing a matching report is about -- are in it by name."""
+    from app.models import LibraryItem, MediaServer
+
+    with Session(get_engine()) as session:
+        server = session.exec(select(MediaServer)).first()
+        session.add(LibraryItem(server_id=server.id, library_key="1", item_key="m1", item_type="movie",
+                                title="Some Obscure Film", year=1987, tmdb_id=None))
+        session.add(LibraryItem(server_id=server.id, library_key="1", item_key="m2", item_type="movie",
+                                title="Matched Film", year=2001, tmdb_id=42, match_source="guid"))
+        session.commit()
+
+    response = client.get(f"{BASE}/settings/diagnostics")
+    body = response.text
+
+    assert response.status_code == 200
+    assert "franchisarr-diagnostics.json" in response.headers["content-disposition"]
+    _assert_clean(body, "the diagnostics bundle")
+    document = json.loads(body)
+    assert document["config"]["redacted"] is True
+    assert document["library"]["unmatched"] == 1
+    assert [t["title"] for t in document["unmatched_sample"]] == ["Some Obscure Film"]
+    assert document["media_servers"][0]["kind"] == "plex"
+    assert document["instances"] == {"radarr": 1, "sonarr": 1}
 
 
 def test_the_full_export_does_carry_them_and_is_marked_as_such(client: TestClient) -> None:

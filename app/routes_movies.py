@@ -523,6 +523,20 @@ def export_config(session: DbSession, user: AdminUser, redact: bool = False):
     )
 
 
+@router.get("/settings/diagnostics")
+def diagnostics(session: DbSession, user: AdminUser):
+    """A redacted bundle for a bug report: versions, counts, unmatched titles, last scan."""
+    from fastapi.responses import Response
+
+    from app.services import diagnostics as diagnostics_service
+
+    return Response(
+        content=diagnostics_service.render(session),
+        media_type="application/json",
+        headers={"Content-Disposition": 'attachment; filename="franchisarr-diagnostics.json"'},
+    )
+
+
 @router.post("/settings/import", response_class=HTMLResponse)
 async def import_config(
     request: Request,

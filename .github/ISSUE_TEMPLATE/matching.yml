@@ -1,0 +1,53 @@
+name: Wrong or missing match
+description: A film or show matched the wrong thing, didn't match, or a gap / spin-off is wrong.
+labels: ["matching"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Matching reports are the useful ones -- every library is different. The diagnostics file
+        (**Settings → Backup & restore → Download diagnostics**) lists what didn't match and what
+        needs review, so please attach it. Credentials are blanked.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem
+      options:
+        - A library item matched the wrong TMDb entry
+        - A library item didn't match at all
+        - A collection gap is wrong (film shown missing that I own, or the reverse)
+        - A spin-off suggestion is wrong or missing
+        - A franchise or director page is wrong
+    validations:
+      required: true
+  - type: textarea
+    id: titles
+    attributes:
+      label: The titles involved
+      description: Title, year, and the TMDb id or URL if you know it. How the file is named in your library helps for a no-match.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Franchisarr version
+    validations:
+      required: true
+  - type: dropdown
+    id: server
+    attributes:
+      label: Media server
+      multiple: true
+      options: [Plex, Jellyfin, Emby]
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: Metadata agent
+      description: For Plex, which agent the library uses (Plex Movie, TMDb, legacy). Skip if unsure.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics file
+      description: Drag `franchisarr-diagnostics.json` in here.

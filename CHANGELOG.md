@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] — 2026-09-22
+
+### Added
+
+- **Download diagnostics** on the Settings page: a redacted JSON bundle for bug reports --
+  version, platform, media servers and libraries, instance counts, library and cache counts,
+  up to 200 unmatched and 200 needs-review titles, the last scan's outcome and recent activity.
+  Credentials are blanked twice over (the redacted config export, then the logging redactor).
+- Issue forms on GitHub for bugs, matching problems and feature requests, each asking for the
+  diagnostics file; security reports are routed to private reporting.
+
 ## [0.17.1] — 2026-09-21
 
 ### Fixed
