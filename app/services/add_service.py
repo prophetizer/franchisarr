@@ -194,7 +194,7 @@ def request_via_seerr(
     user: User | None = None,
     trigger_source: str = TriggerSource.MANUAL.value,
 ) -> AddResult:
-    """Ask Overseerr / Jellyseerr for a film or a series, then record it.
+    """Ask Seerr (or an older Overseerr / Jellyseerr) for a film or a series, then record it.
 
     Seerr chooses the *arr, the profile and the folder from its own settings and may hold the
     request for approval; what comes back is whether it did. The request is cached at once so

@@ -60,7 +60,7 @@ def client(app_factory):
                 api_key=SECRETS["sonarr_key"],
             )
             seerr_instance_service.create_seerr(
-                session, name="Overseerr", url="http://overseerr.test:5055",
+                session, name="Seerr", url="http://seerr.test:5055",
                 api_key=SECRETS["seerr_key"],
             )
         test_client.post(f"{BASE}/login", data={"username": "admin", "password": PASSWORD})

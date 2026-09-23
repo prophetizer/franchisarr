@@ -19,7 +19,7 @@
     {% endif %}
     <footer>
       <button type="submit" class="secondary" aria-busy="false">
-        Request via {{ seerr_instances[0].name if seerr_instances | length == 1 else 'Overseerr' }}</button>
+        Request via {{ seerr_instances[0].name if seerr_instances | length == 1 else 'Seerr' }}</button>
     </footer>
     <p><small class="muted">{{ 'It' if seerr_instances | length == 1 else 'The one you pick' }} decides
       which {{ 'Sonarr' if item_type == 'show' else 'Radarr' }} it goes to, and may hold it for approval.</small></p>

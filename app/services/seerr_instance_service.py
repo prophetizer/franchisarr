@@ -1,4 +1,4 @@
-"""Overseerr / Jellyseerr instances: CRUD, the request cache, and what it means for the lists.
+"""Seerr instances: CRUD, the request cache, and what it means for the lists.
 
 Mirrors instance_service for Radarr, minus the defaults -- Seerr has no profile or folder to
 choose, it decides those itself. What it adds is the notion of a request that exists but has
@@ -18,7 +18,11 @@ from app.models import ItemType, SeerrInstance, SeerrKind, SeerrRequest, utcnow
 
 logger = logging.getLogger(__name__)
 
-LABELS = {SeerrKind.OVERSEERR.value: "Overseerr", SeerrKind.JELLYSEERR.value: "Jellyseerr"}
+LABELS = {
+    SeerrKind.SEERR.value: "Seerr",
+    SeerrKind.OVERSEERR.value: "Overseerr",
+    SeerrKind.JELLYSEERR.value: "Jellyseerr",
+}
 
 
 @dataclass(frozen=True)
@@ -34,7 +38,7 @@ class SeerrRefresh:
 
 
 def label(instance: SeerrInstance) -> str:
-    return LABELS.get(instance.kind, "Overseerr")
+    return LABELS.get(instance.kind, "Seerr")
 
 
 def list_seerr(session: Session) -> list[SeerrInstance]:

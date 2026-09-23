@@ -478,14 +478,19 @@ class TmdbCollectionMovie(SQLModel, table=True):
 
 
 class SeerrKind(str, Enum):
+    #: Seerr is what Overseerr and Jellyseerr became: Jellyseerr was renamed to Seerr in 2026
+    #: and Overseerr was archived in February that year. The older two stay here because
+    #: plenty of installs still run them, and the API is the same for all three.
+    SEERR = "seerr"
     OVERSEERR = "overseerr"
     JELLYSEERR = "jellyseerr"
 
 
 class SeerrInstance(SQLModel, table=True):
-    """An Overseerr or Jellyseerr, as a place to send an Add instead of straight to an *arr.
+    """A Seerr -- or an older Overseerr or Jellyseerr -- as a place to send an Add instead of
+    straight to an *arr.
 
-    The two share one API. Seerr decides the Radarr/Sonarr, profile and folder itself, and
+    All three share one API. Seerr decides the Radarr/Sonarr, profile and folder itself, and
     may hold the request for approval -- so an instance here has no defaults to keep, only a
     name, an address and a key. Sits alongside the *arr instances, not in place of them: a
     household that routes every add through Seerr for approval keeps the direct path too.
@@ -495,7 +500,7 @@ class SeerrInstance(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True)
-    kind: str = Field(default=SeerrKind.OVERSEERR.value)
+    kind: str = Field(default=SeerrKind.SEERR.value)
     url: str
     api_key: str
     is_default: bool = Field(default=False)

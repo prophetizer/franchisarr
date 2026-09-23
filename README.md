@@ -164,14 +164,19 @@ those answer API requests with a login page, and an API key can't get past one. 
 so rather than blaming your API key. If you'd rather keep the public URL, add a bypass rule in
 the proxy for `/api` so API-key requests are let through.
 
-## Overseerr / Jellyseerr
+## Seerr
 
-If your household routes requests through Overseerr or Jellyseerr, add it on the Instances page
-(Settings → General → API Key in Seerr). Every Add dialog then offers **Request via Overseerr**
-next to the direct Radarr/Sonarr choice: Seerr picks the *arr, profile and folder from its own
-settings and may hold the request for approval. Open requests keep a title out of the lists the
-way a queued Radarr add does. Requests are made as the API key's owner, so that account's
-auto-approval and quota settings apply.
+If your household routes requests through [Seerr](https://github.com/seerr-team/seerr) — or the
+Overseerr or Jellyseerr it grew out of — add it on the Instances page (Settings → General → API
+Key there). Every Add dialog then offers **Request via Seerr** next to the direct Radarr/Sonarr
+choice: Seerr picks the *arr, profile and folder from its own settings and may hold the request
+for approval. Open requests keep a title out of the lists the way a queued Radarr add does.
+Requests are made as the API key's owner, so that account's auto-approval and quota settings
+apply.
+
+Jellyseerr was renamed **Seerr** in 2026 and Overseerr was archived that February. All three
+speak the same `/api/v1`, so an older instance keeps working — pick which one you run when you
+add it, and it's only the label that changes.
 
 ## Calendar
 

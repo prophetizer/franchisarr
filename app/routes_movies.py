@@ -263,7 +263,7 @@ def submit_request(
     tmdb_id: Annotated[int, Form()],
     seerr_id: Annotated[int, Form()],
 ):
-    """Ask Overseerr / Jellyseerr for the film instead of adding it to a Radarr directly."""
+    """Ask Seerr for the film instead of adding it to a Radarr directly."""
     instance = seerr_instance_service.get_seerr(session, seerr_id)
     if instance is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such instance.")

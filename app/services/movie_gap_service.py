@@ -213,7 +213,7 @@ def radarr_known_ids(session: Session, instance_id: int | None = None) -> set[in
         if movie.in_queue and not instance.hide_if_queued:
             continue
         known.add(movie.tmdb_id)
-    # An open Overseerr / Jellyseerr request is handled too: pending someone's approval or
+    # An open Seerr request is handled too: pending someone's approval or
     # already passed on to a Radarr, there is nothing for the user to do about it.
     from app.services import seerr_instance_service
 

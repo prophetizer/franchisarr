@@ -1,8 +1,8 @@
-"""Overseerr / Jellyseerr as an add target.
+"""Seerr as an add target.
 
 The client against a fake HTTP server, the request cache and what it hides, the request path
-through add_service, and the dialogs offering the choice. Seerr's API is mocked from the shapes
-in Overseerr's own OpenAPI document.
+through add_service, and the dialogs offering the choice. The API is mocked from the shapes in
+Seerr's own OpenAPI document, which Overseerr and Jellyseerr share.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from app.models import (
 from app.services import add_service, movie_gap_service, seerr_instance_service, tv_spinoff_service
 from tests.conftest import ensure_server
 
-URL = "http://overseerr.test:5055"
+URL = "http://seerr.test:5055"
 API = "seerr-key-zzz111aaa222bbb333"
 COLLECTION = 85861
 BASE = "/franchisarr"
@@ -127,17 +127,28 @@ def _library_with_gap(session: Session) -> None:
 
 
 def test_the_first_seerr_instance_becomes_the_default(session: Session) -> None:
-    first = seerr_instance_service.create_seerr(session, name="Overseerr", url=URL, api_key=API)
-    second = seerr_instance_service.create_seerr(session, name="Jellyseerr", kind="jellyseerr",
+    first = seerr_instance_service.create_seerr(session, name="Seerr", url=URL, api_key=API)
+    second = seerr_instance_service.create_seerr(session, name="Old one", kind="jellyseerr",
                                                  url="http://j.test:5055", api_key="k" * 30)
     assert first.is_default and not second.is_default
     assert seerr_instance_service.label(second) == "Jellyseerr"
 
 
+def test_all_three_generations_are_labelled_and_a_new_one_defaults_to_seerr(session: Session) -> None:
+    """Jellyseerr became Seerr and Overseerr was archived, but installs still run the older
+    two and the API is the same for all of them."""
+    made = [seerr_instance_service.create_seerr(session, name=n, url=f"http://{n}.test:5055",
+                                                api_key="k" * 30, **k)
+            for n, k in [("new", {}), ("old", {"kind": "overseerr"}), ("mid", {"kind": "jellyseerr"})]]
+
+    assert [seerr_instance_service.label(i) for i in made] == ["Seerr", "Overseerr", "Jellyseerr"]
+    assert made[0].kind == "seerr"
+
+
 @responses.activate
 def test_refreshing_caches_open_requests_and_they_stop_being_gaps(session: Session) -> None:
     _library_with_gap(session)
-    instance = seerr_instance_service.create_seerr(session, name="Overseerr", url=URL, api_key=API)
+    instance = seerr_instance_service.create_seerr(session, name="Seerr", url=URL, api_key=API)
     responses.add(responses.GET, f"{URL}/api/v1/request",
                   json=_requests_page(_req(96), _req(96, status=2), _req(2, media_type="tv")))
 
@@ -151,7 +162,7 @@ def test_refreshing_caches_open_requests_and_they_stop_being_gaps(session: Sessi
 
 @responses.activate
 def test_an_unreachable_seerr_keeps_its_previous_cache(session: Session) -> None:
-    instance = seerr_instance_service.create_seerr(session, name="Overseerr", url=URL, api_key=API)
+    instance = seerr_instance_service.create_seerr(session, name="Seerr", url=URL, api_key=API)
     seerr_instance_service.record_request(session, instance, ItemType.MOVIE.value, 96, 1)
     from requests.exceptions import ConnectionError as RequestsConnectionError
 
@@ -166,7 +177,7 @@ def test_an_unreachable_seerr_keeps_its_previous_cache(session: Session) -> None
 @responses.activate
 def test_a_request_is_logged_as_a_seerr_request_and_leaves_the_list_at_once(session: Session) -> None:
     _library_with_gap(session)
-    instance = seerr_instance_service.create_seerr(session, name="Overseerr", url=URL, api_key=API)
+    instance = seerr_instance_service.create_seerr(session, name="Seerr", url=URL, api_key=API)
     user = User(local_username="admin", is_admin=True)
     session.add(user); session.commit(); session.refresh(user)
     responses.add(responses.POST, f"{URL}/api/v1/request", status=201, json={"id": 9, "status": 1})
@@ -174,7 +185,7 @@ def test_a_request_is_logged_as_a_seerr_request_and_leaves_the_list_at_once(sess
     result = add_service.request_via_seerr(session, instance=instance, item_type=ItemType.MOVIE.value,
                                            tmdb_id=96, title="Beverly Hills Cop II", user=user)
 
-    assert result.needs_approval and result.instance_name == "Overseerr"
+    assert result.needs_approval and result.instance_name == "Seerr"
     entry = session.exec(select(ActivityLogEntry)).one()
     assert (entry.target, entry.instance_id, entry.triggered_by) == ("seerr", instance.id, user.id)
     assert [m.tmdb_id for m in movie_gap_service.collections_with_gaps(session)[0].missing] == [306]
@@ -199,21 +210,21 @@ def client(app_factory):
 def test_the_dialogs_offer_a_request_only_when_a_seerr_is_configured(client: TestClient) -> None:
     assert "Request via" not in client.get(f"{BASE}/add/96").text
 
-    client.post(f"{BASE}/instances/seerr", data={"name": "Overseerr", "url": URL, "api_key": API,
-                                                "seerr_kind": "overseerr"})
+    client.post(f"{BASE}/instances/seerr", data={"name": "Seerr", "url": URL, "api_key": API,
+                                                "seerr_kind": "seerr"})
 
     film = client.get(f"{BASE}/add/96").text
     show = client.get(f"{BASE}/shows/add/1433").text
-    assert "Request via Overseerr" in film and "/franchisarr/add/request" in film
-    assert "Request via Overseerr" in show and "/franchisarr/shows/add/request" in show
+    assert "Request via Seerr" in film and "/franchisarr/add/request" in film
+    assert "Request via Seerr" in show and "/franchisarr/shows/add/request" in show
     assert "No Radarr instance is configured" not in film
     page = client.get(f"{BASE}/instances").text
-    assert "Overseerr" in page and API not in page and API[-4:] in page
+    assert "Seerr" in page and API not in page and API[-4:] in page
 
 
 @responses.activate
 def test_submitting_a_request_reports_the_approval_state_and_the_activity_page_names_seerr(client: TestClient) -> None:
-    client.post(f"{BASE}/instances/seerr", data={"name": "Overseerr", "url": URL, "api_key": API})
+    client.post(f"{BASE}/instances/seerr", data={"name": "Seerr", "url": URL, "api_key": API})
     with Session(get_engine()) as session:
         seerr_id = session.exec(select(seerr_instance_service.SeerrInstance)).one().id
     responses.add(responses.POST, f"{URL}/api/v1/request", status=201, json={"id": 9, "status": 1})
@@ -223,12 +234,12 @@ def test_submitting_a_request_reports_the_approval_state_and_the_activity_page_n
     assert "Requested" in result and "waiting for approval" in result
     assert "Beverly Hills Cop II" in result
     activity = client.get(f"{BASE}/activity").text
-    assert "Overseerr" in activity
+    assert "Seerr" in activity
 
 
 @responses.activate
 def test_a_seerr_refusal_is_shown_in_the_dialog(client: TestClient) -> None:
-    client.post(f"{BASE}/instances/seerr", data={"name": "Overseerr", "url": URL, "api_key": API})
+    client.post(f"{BASE}/instances/seerr", data={"name": "Seerr", "url": URL, "api_key": API})
     with Session(get_engine()) as session:
         seerr_id = session.exec(select(seerr_instance_service.SeerrInstance)).one().id
     responses.add(responses.POST, f"{URL}/api/v1/request", status=400, json={"message": "Quota exceeded"})

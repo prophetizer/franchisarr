@@ -1,11 +1,13 @@
-"""Overseerr and Jellyseerr, which share one API.
+"""Seerr -- and the Overseerr and Jellyseerr it grew out of, which share its API.
 
 The subset used: `/status` to test a connection, `POST /request` to ask for a film or a series,
 and `GET /request` to learn what has already been asked for. A request is identified by TMDb id
 for both media types (Seerr looks the TVDB id up itself), and Seerr chooses the *arr, profile and
 folder from its own settings -- there is nothing to offer the user beyond "request it".
 
-Field names are from Overseerr's own OpenAPI document; Jellyseerr is a fork and keeps them.
+Field names are from Seerr's own OpenAPI document (`seerr-api.yml`), checked against it in
+September 2026: `/api/v1`, an `X-Api-Key` header, and the same request shapes and status codes
+Overseerr used, so one client serves all three.
 """
 
 from __future__ import annotations
@@ -54,7 +56,7 @@ class SeerrRequestResult:
 
 
 class SeerrClient:
-    def __init__(self, url: str, api_key: str, *, label: str = "Overseerr",
+    def __init__(self, url: str, api_key: str, *, label: str = "Seerr",
                  timeout: int = DEFAULT_TIMEOUT, session: requests.Session | None = None) -> None:
         self._base = url.rstrip("/")
         self._api_key = api_key.strip()

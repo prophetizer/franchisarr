@@ -1,4 +1,4 @@
-"""Managing Radarr, Sonarr and Overseerr/Jellyseerr instances from the UI.
+"""Managing Radarr, Sonarr and Seerr instances from the UI.
 
 API keys are write-only here (docs/DEVELOPMENT.md convention 3): the list shows a mask, and changing a key
 means entering it again rather than editing a pre-filled field. A masked value that round-trips
@@ -41,6 +41,10 @@ def _view(instance) -> dict:
         "is_default": instance.is_default,
         "masked_key": mask_secret(instance.api_key),
         "kind": getattr(instance, "kind", None),
+        # Shown beside the name only when it says something the name doesn't -- an instance
+        # called "Seerr" does not need "(Seerr)" after it.
+        "kind_label": (seerr_instance_service.label(instance)
+                       if getattr(instance, "kind", None) else None),
     }
 
 
@@ -81,12 +85,12 @@ def add_instance(
     name: Annotated[str, Form()],
     url: Annotated[str, Form()],
     api_key: Annotated[str, Form()],
-    seerr_kind: Annotated[str, Form()] = "overseerr",
+    seerr_kind: Annotated[str, Form()] = "seerr",
 ):
     service = _service(kind)
     fields = {"name": name.strip(), "url": url.strip(), "api_key": api_key.strip()}
     if kind == "seerr":
-        fields["kind"] = seerr_kind if seerr_kind in ("overseerr", "jellyseerr") else "overseerr"
+        fields["kind"] = seerr_kind if seerr_kind in ("seerr", "overseerr", "jellyseerr") else "seerr"
     creator = getattr(service, f"create_{kind}")
     creator(session, **fields)
     return RedirectResponse(_url("/instances?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
