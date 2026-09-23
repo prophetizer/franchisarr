@@ -2,7 +2,8 @@
 
 # Franchisarr
 
-Franchisarr looks at your Plex library and finds two things you probably want and don't have:
+Franchisarr looks at your **Plex, Jellyfin or Emby** library and finds two things you probably
+want and don't have:
 
 - **Films missing from collections you already own part of.** You have *Beverly Hills Cop* and
   *II* but not *III* — one click sends it to Radarr.
@@ -15,9 +16,9 @@ you have 6 of 27*), **director pages** (*you own 11 Nolan films; missing* Follow
 Insomnia), an **Upcoming** page of announced films in franchises you own with release-date
 notifications, and **import lists** Radarr and Sonarr can poll so you never have to click Add.
 
-It reads **Plex, Jellyfin and Emby** — one of them or several at once, with a film on any of
-them counting as owned and a tick on what you've watched — supports multiple Radarr and Sonarr
-instances, signs you in with your media server account, scans on a schedule,
+It reads all three — one of them or several at once, with a film on any of them counting as
+owned and a tick on what you've watched — supports multiple Radarr and Sonarr instances, signs
+you in with your media-server account, scans on a schedule,
 tells you when it finds something new — Discord, Slack, or anything
 [Apprise](https://github.com/caronc/apprise) reaches (Telegram, Pushover, ntfy, email, a hundred
 more) — wears your
@@ -35,7 +36,7 @@ Images are published to GHCR for amd64 and arm64.
 
 **How it was built:** with heavy use of Claude Code, directed, tested and reviewed by a human.
 Every feature was measured against that real library before it shipped — the numbers are in the
-[changelog](CHANGELOG.md) — there are ~850 tests with no live network calls, and the full git
+[changelog](CHANGELOG.md) — there are ~900 tests with no live network calls, and the full git
 history was scanned for secrets before the repo went public. The code is MIT; read it.
 
 ## What it looks like
@@ -74,7 +75,7 @@ docker compose up -d
 The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.10.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
-Then open <http://localhost:8000>, sign in, choose which Plex libraries to scan, and run a scan.
+Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
 
 You need a **TMDb API key** — the free v3 one from
 [themoviedb.org/settings/api](https://www.themoviedb.org/settings/api). Note it's the *shorter*
@@ -232,12 +233,15 @@ URL list, but `?api_key=` works too for widgets that can't send headers.
 
 ## Signing in
 
-**Sign in with Plex** is the main route — Franchisarr never sees your Plex password. Only accounts
-that can actually reach *your* Plex server are admitted, so having a Plex account isn't enough;
-the server's owner becomes an administrator and people you share with get ordinary accounts.
+**Sign in with your media server account.** For Plex that is the usual OAuth button, and
+Franchisarr never sees your Plex password; only accounts that can actually reach *your* Plex
+server are admitted, so having a Plex account isn't enough. For Jellyfin and Emby it is a
+username and password, checked against the server itself. Who administers Franchisarr follows
+from the server: with Plex it's the server's owner, with Jellyfin and Emby it's anyone who is an
+administrator there. Everyone else gets an ordinary account with their own dismiss list.
 
-The local admin account from `ADMIN_USERNAME`/`ADMIN_PASSWORD` is the fallback for when Plex isn't
-configured yet or plex.tv is unreachable. It's created on **first boot only**, so changing those
+The local admin account from `ADMIN_USERNAME`/`ADMIN_PASSWORD` is the fallback for when no server
+is configured yet, or plex.tv is unreachable. It's created on **first boot only**, so changing those
 variables later has no effect — if you forget the password:
 
 ```bash
@@ -245,9 +249,10 @@ docker exec -it franchisarr python scripts/reset_admin_password.py            # 
 docker exec -it franchisarr python scripts/reset_admin_password.py michael    # prompts for a new one
 ```
 
-If the Plex button isn't offered, Franchisarr couldn't reach your Plex server at startup — it has
-to know which server it belongs to before it can check that a Plex account is allowed in. Press
-**Test** on the server under *Servers*, or check `PLEX_URL`/`PLEX_TOKEN` and restart.
+If no sign-in button is offered, Franchisarr couldn't reach your server at startup — with Plex
+it has to know which server it belongs to before it can check that an account is allowed in.
+Press **Test** on the server under *Servers*, or check that server's address and key and
+restart.
 
 ### Several servers
 
@@ -310,7 +315,7 @@ Leave it all unset and nothing is fetched from anywhere but your own server.
 
 ## Backing up
 
-Settings has a config download. **The full one contains your Plex token and every API key in plain
+Settings has a config download. **The full one contains your media server credentials and every API key in plain
 text** — treat it like a password. There's a redacted download alongside it with those blanked
 out; that's the one to paste into a forum thread when asking for help.
 
@@ -325,8 +330,9 @@ public issue.
 
 ## Troubleshooting: items aren't being matched
 
-Franchisarr can only work with a Plex item if it can resolve it to a TMDb ID. To see what your own
-libraries look like:
+Franchisarr can only work with an item if it can resolve it to a TMDb ID. **Settings → Download
+diagnostics** lists what didn't match on any server, which is the quickest way to see the shape
+of the problem. For Plex specifically there is also a standalone audit:
 
 ```bash
 export PLEX_URL=http://your-plex-host:32400
@@ -334,8 +340,9 @@ export PLEX_TOKEN=your-plex-token
 python scripts/plex_guid_audit.py
 ```
 
-It's read-only. For each library it reports how many items carry a TMDb ID, which GUID formats are
-in use, and a sample of what didn't resolve. Libraries of home videos, concert rips or test clips
+It's read-only, and Plex-only — Jellyfin and Emby report their provider IDs directly, so there
+is nothing equivalent to audit. For each library it reports how many items carry a TMDb ID, which
+GUID formats are in use, and a sample of what didn't resolve. Libraries of home videos, concert rips or test clips
 will legitimately show 0% — untick those in Franchisarr rather than trying to match them.
 
 If it ends with an `UNRECOGNISED AGENTS` section, please report it: your library uses a GUID format
@@ -350,7 +357,7 @@ pytest
 uvicorn app.main:app --reload
 ```
 
-Tests never touch the network — Plex, TMDb, Radarr and Sonarr are all mocked. See `docs/DEVELOPMENT.md` for
+Tests never touch the network — Plex, Jellyfin, Emby, TMDb, Radarr and Sonarr are all mocked. See `docs/DEVELOPMENT.md` for
 the conventions this codebase holds itself to, and `docs/DESIGN.md` for the design and the
 28 documented technical challenges behind it.
 
