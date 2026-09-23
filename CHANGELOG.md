@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] — 2026-09-23
+
+### Changed
+
+- **The request target is called Seerr.** Jellyseerr was renamed
+  [Seerr](https://github.com/seerr-team/seerr) and Overseerr was archived in February 2026, so
+  the UI, the dialogs and the docs lead with Seerr. Nothing breaks: all three speak the same
+  `/api/v1` with the same request shapes (checked against Seerr's own `seerr-api.yml`), an
+  existing instance keeps its label and keeps working, and the Instances form still offers
+  Overseerr and Jellyseerr for installs that run them. New instances default to Seerr.
+
 ## [0.22.1] — 2026-09-22
 
 ### Changed
