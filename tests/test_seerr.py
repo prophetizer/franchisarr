@@ -43,16 +43,33 @@ def _req(tmdb_id: int, *, media_type: str = "movie", status: int = 1) -> dict:
 
 
 @responses.activate
-def test_test_connection_returns_the_version_and_sends_the_key() -> None:
-    responses.add(responses.GET, f"{URL}/api/v1/status", json={"version": "1.33.2"})
+def test_test_connection_returns_the_version_and_proves_the_key() -> None:
+    responses.add(responses.GET, f"{URL}/api/v1/status", json={"version": "3.4.1"})
+    responses.add(responses.GET, f"{URL}/api/v1/auth/me", json={"id": 1, "permissions": 2})
 
-    assert SeerrClient(URL, API).test_connection() == "1.33.2"
-    assert responses.calls[0].request.headers["X-Api-Key"] == API
+    assert SeerrClient(URL, API).test_connection() == "3.4.1"
+    assert [c.request.url.split("/api/v1")[1] for c in responses.calls] == ["/status", "/auth/me"]
+    assert all(c.request.headers["X-Api-Key"] == API for c in responses.calls)
+
+
+@responses.activate
+def test_a_wrong_key_fails_the_test_even_though_status_answers() -> None:
+    """Measured on a live Seerr 3.4.1: /status is public and answered 200 to a made-up key,
+    so a test that stopped there reported success for an instance that refuses every request.
+    /auth/me is what actually checks the key."""
+    responses.add(responses.GET, f"{URL}/api/v1/status", json={"version": "3.4.1"})
+    responses.add(responses.GET, f"{URL}/api/v1/auth/me", status=403, json={"message": "Unauthorized"})
+
+    with pytest.raises(SeerrAuthError) as refused:
+        SeerrClient(URL, "x" * 68, label="Seerr").test_connection()
+    # The message names the app that refused -- it said "Radarr" until the live test.
+    assert "Seerr rejected the API key" in str(refused.value)
 
 
 @responses.activate
 def test_a_rejected_key_and_an_unreachable_server_are_told_apart() -> None:
-    responses.add(responses.GET, f"{URL}/api/v1/status", status=403, json={"message": "no"})
+    responses.add(responses.GET, f"{URL}/api/v1/status", json={"version": "3.4.1"})
+    responses.add(responses.GET, f"{URL}/api/v1/auth/me", status=403, json={"message": "no"})
     with pytest.raises(SeerrAuthError):
         SeerrClient(URL, API).test_connection()
 
@@ -94,7 +111,7 @@ def test_a_seerr_refusal_carries_its_message() -> None:
 
 
 @responses.activate
-def test_listing_requests_pages_through_and_drops_declined_ones() -> None:
+def test_listing_requests_pages_through_and_keeps_only_the_handled_ones() -> None:
     responses.add(responses.GET, f"{URL}/api/v1/request",
                   json=_requests_page(*[_req(i) for i in range(1, 101)], more=True))
     responses.add(responses.GET, f"{URL}/api/v1/request",
@@ -106,6 +123,20 @@ def test_listing_requests_pages_through_and_drops_declined_ones() -> None:
     assert ("tv", 1433) in {(r.media_type, r.tmdb_id) for r in found}
     assert 500 not in {r.tmdb_id for r in found}
     assert responses.calls[1].request.params["skip"] == "100"
+
+
+@responses.activate
+def test_all_five_request_statuses_are_sorted_the_way_a_user_would() -> None:
+    """Seerr's published spec documents three statuses; the live server returned five
+    (MediaRequestStatus: pending, approved, declined, failed, completed). Pending, approved and
+    completed are handled. Declined and failed are not -- a failed request never reached an
+    *arr, so hiding it would make the film vanish with nothing on its way."""
+    responses.add(responses.GET, f"{URL}/api/v1/request", json=_requests_page(
+        _req(1, status=1), _req(2, status=2), _req(3, status=3), _req(4, status=4), _req(5, status=5)))
+
+    kept = {r.tmdb_id for r in SeerrClient(URL, API).list_requests()}
+
+    assert kept == {1, 2, 5}
 
 
 # ------------------------------------------------------------------ cache and gaps

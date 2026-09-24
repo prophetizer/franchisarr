@@ -273,12 +273,14 @@ def _auth_failure_message(response: requests.Response, base: str, app: str) -> s
 
     if looks_like_a_login_page:
         return (
-            f"{base} is behind an authentication proxy, not answering as Radarr. "
+            f"{base} is behind an authentication proxy, not answering as {app}. "
             f"Franchisarr sends an API key, which a login-page proxy doesn't understand. "
-            f"Either point Franchisarr at Radarr directly on your internal network, or add a "
+            f"Either point Franchisarr at {app} directly on your internal network, or add a "
             f"bypass rule in the proxy for /api so API-key requests are let through."
         )
-    return f"Radarr rejected the API key for this instance."
+    # `app`, not a literal: Seerr's client reuses this helper, and a rejected Seerr key was
+    # reported as "Radarr rejected the API key" until a live test against a real Seerr.
+    return f"{app} rejected the API key for this instance."
 
 
 def _describe_failure(response: requests.Response) -> str:

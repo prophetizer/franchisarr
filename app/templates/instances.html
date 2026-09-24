@@ -69,8 +69,8 @@
         <small>
           {% if kind == 'seerr' %}
             Settings → General → API Key in Seerr (or an older Overseerr or Jellyseerr —
-            all three speak the same API). Requests are made as the key's owner, so its
-            settings for auto-approval and limits apply.
+            all three speak the same API). That key acts as Seerr's administrator, so requests
+            made with it are normally approved at once rather than waiting in the queue.
           {% else %}
             Settings → General → API Key in {{ label }}.
           {% endif %}

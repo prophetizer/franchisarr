@@ -21,7 +21,8 @@
       <button type="submit" class="secondary" aria-busy="false">
         Request via {{ seerr_instances[0].name if seerr_instances | length == 1 else 'Seerr' }}</button>
     </footer>
-    <p><small class="muted">{{ 'It' if seerr_instances | length == 1 else 'The one you pick' }} decides
-      which {{ 'Sonarr' if item_type == 'show' else 'Radarr' }} it goes to, and may hold it for approval.</small></p>
+    <p><small class="muted">{{ 'It' if seerr_instances | length == 1 else 'The one you pick' }} chooses the
+      {{ 'Sonarr' if item_type == 'show' else 'Radarr' }}, profile and folder. Seerr's API key acts as its
+      administrator, so this is normally approved straight away; the result says if it isn't.</small></p>
   </form>
 {% endif %}

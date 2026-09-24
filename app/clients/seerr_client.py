@@ -20,10 +20,19 @@ from app.clients.radarr_client import _auth_failure_message
 from app.logging_config import register_secret
 
 DEFAULT_TIMEOUT = 15
-#: Seerr's own vocabulary for a request's state.
+#: Seerr's own vocabulary for a request's state (`MediaRequestStatus` in its source). The
+#: published API spec lists only the first three; a live Seerr 3.4.1 returned all five, 634 of
+#: them COMPLETED and 5 FAILED on the developer's install.
 STATUS_PENDING = 1
 STATUS_APPROVED = 2
 STATUS_DECLINED = 3
+STATUS_FAILED = 4
+STATUS_COMPLETED = 5
+
+#: Statuses that mean "someone has already dealt with this". A DECLINED request may be worth
+#: asking again, and a FAILED one never reached an *arr -- both must come back as gaps, or the
+#: title disappears from the lists with nothing on its way.
+HANDLED_STATUSES = frozenset({STATUS_PENDING, STATUS_APPROVED, STATUS_COMPLETED})
 
 
 class SeerrError(RuntimeError):
@@ -93,16 +102,22 @@ class SeerrClient:
     # ---------------------------------------------------------------- reads
 
     def test_connection(self) -> str:
-        """The instance's version, for "Test connection"."""
+        """The instance's version, for "Test connection" -- after proving the key works.
+
+        `/status` alone is not a test: it is public, so it answered 200 to a made-up key on a
+        live Seerr and the button reported success for an instance that would refuse every
+        request. `/auth/me` needs the key, so it is asked second and a 403 there is the answer.
+        """
         payload = self._get_json("/status")
         version = payload.get("version") if isinstance(payload, dict) else None
         if not version:
             raise SeerrError(f"{self._base} answered, but doesn't look like {self._label}.")
+        self._get_json("/auth/me")   # raises SeerrAuthError on a rejected key
         return str(version)
 
     def list_requests(self) -> list[SeerrRequestInfo]:
-        """Every request that is pending or approved. Declined ones are left out: those are
-        the ones the user may want to ask about again."""
+        """Every request someone has already dealt with: pending, approved or completed.
+        Declined and failed ones are left out -- those are the ones worth asking again."""
         out: list[SeerrRequestInfo] = []
         skip, page = 0, 100
         while True:
@@ -111,7 +126,7 @@ class SeerrClient:
             for item in results:
                 media = item.get("media") or {}
                 tmdb_id, status = media.get("tmdbId"), item.get("status")
-                if tmdb_id is None or status == STATUS_DECLINED:
+                if tmdb_id is None or status not in HANDLED_STATUSES:
                     continue
                 media_type = "tv" if item.get("type") == "tv" or media.get("mediaType") == "tv" else "movie"
                 out.append(SeerrRequestInfo(media_type=media_type, tmdb_id=int(tmdb_id), status=int(status or 0)))
