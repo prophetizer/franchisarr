@@ -322,16 +322,44 @@ def submit_add(
 
 
 def _update_status(session=None):
-    """Cached so the settings page doesn't call out on every render."""
+    """Cached so the settings page doesn't call out on every render. None when the check is
+    switched off -- and then no request is made at all."""
     from app.services import update_checker
 
     global _UPDATE_CACHE
+    if not update_checker.enabled(session):
+        return None
     if _UPDATE_CACHE is None:
         _UPDATE_CACHE = update_checker.check(update_checker.releases_url(session))
     return _UPDATE_CACHE
 
 
 _UPDATE_CACHE = None
+
+
+def _update_check_enabled(session) -> bool:
+    from app.services import update_checker
+
+    return update_checker.enabled(session)
+
+
+def _update_check_forced() -> bool:
+    from app.services import update_checker
+
+    return update_checker.forced_by_env()
+
+
+@router.post("/settings/update-check")
+def set_update_check(session: DbSession, user: AdminUser,
+                     enabled: Annotated[str, Form()] = ""):
+    """The one outbound request the user didn't configure, and so the one they can turn off."""
+    from app.services.settings_service import set_setting
+
+    global _UPDATE_CACHE
+    set_setting(session, SettingKey.UPDATE_CHECK, "true" if enabled else "false")
+    session.commit()
+    _UPDATE_CACHE = None     # a re-enabled check should ask afresh, not show a stale answer
+    return RedirectResponse(_url("/settings?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
 
 
 def _settings_context(session, user, **extra) -> dict:
@@ -360,6 +388,8 @@ def _settings_context(session, user, **extra) -> dict:
         "error": None,
         "import_note": None,
         "update": _update_status(session),
+        "update_check_enabled": _update_check_enabled(session),
+        "update_check_forced": _update_check_forced(),
         # Import lists: the URLs Radarr and Sonarr can poll. The key is never rendered; the page
         # shows whether one exists and mints a new one on request, shown once.
         "has_api_key": bool(user.api_key),

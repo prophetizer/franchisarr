@@ -168,6 +168,28 @@ TP_COMMUNITY_THEME=false</code></pre>
 </article>
 
 <article>
+  <header><strong>Update check</strong></header>
+  {% if update_check_forced %}
+    <p>{{ 'On' if update_check_enabled else 'Off' }} — set by <code>UPDATE_CHECK</code> in the
+      environment, which overrides this page.</p>
+  {% else %}
+    <form method="post" action="{{ url('/settings/update-check') }}">
+      <label>
+        <input type="checkbox" name="enabled" value="1" {% if update_check_enabled %}checked{% endif %}>
+        Check GitHub for new versions
+      </label>
+      <p><button type="submit" class="secondary">Save</button></p>
+    </form>
+  {% endif %}
+  <p><small class="muted">
+    When this page opens, Franchisarr asks GitHub's public releases API whether a newer version
+    exists — nothing about you or your library is sent, though GitHub sees the request come from
+    your address, as with any web request. It's the only connection the app makes that you
+    didn't set up yourself. Turned off, it makes none.
+  </small></p>
+</article>
+
+<article>
   <header><strong>Account</strong></header>
   <p><a href="{{ url('/password') }}" role="button" class="secondary">Change password</a></p>
 </article>

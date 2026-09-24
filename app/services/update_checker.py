@@ -65,6 +65,34 @@ def releases_url(session=None) -> str:
     return (get_setting(session, SettingKey.UPDATE_RELEASES_URL) or "").strip() or DEFAULT_RELEASES_URL
 
 
+def enabled(session=None) -> bool:
+    """Whether the update check may call out at all.
+
+    `UPDATE_CHECK=false` in the environment wins, and is read live rather than seeded: settings
+    are only seeded from the environment on first boot, so an env switch that behaved like the
+    others would silently do nothing on an existing install -- the wrong failure for a privacy
+    setting. Otherwise the Settings checkbox decides.
+    """
+    import os
+
+    from app.config import parse_bool
+    from app.services.settings_service import SettingKey, get_bool_setting
+
+    raw = os.environ.get("UPDATE_CHECK", "").strip()
+    if raw:
+        return parse_bool(raw, default=True)
+    if session is None:
+        return True
+    return get_bool_setting(session, SettingKey.UPDATE_CHECK, True)
+
+
+def forced_by_env() -> bool:
+    """True when UPDATE_CHECK is set, so the page can say the checkbox is overridden."""
+    import os
+
+    return bool(os.environ.get("UPDATE_CHECK", "").strip())
+
+
 def check(url: str = DEFAULT_RELEASES_URL, *, timeout: int = DEFAULT_TIMEOUT) -> UpdateStatus:
     try:
         response = requests.get(url, timeout=timeout, headers={"Accept": "application/json"})

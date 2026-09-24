@@ -50,6 +50,9 @@ class SettingKey:
     #: Where to look for new releases. Empty uses the built-in default; set it to point at a fork,
     #: or at nothing, if you'd rather the install asked no one.
     UPDATE_RELEASES_URL = "update_releases_url"
+    #: Whether Franchisarr asks GitHub's public releases API for newer versions. The only
+    #: request the app makes that the user didn't configure, so it can be turned off.
+    UPDATE_CHECK = "update_check"
 
 
 #: Values used when neither the environment nor the user has said otherwise.
@@ -68,6 +71,7 @@ DEFAULTS: dict[str, str] = {
     SettingKey.DIRECTOR_INCLUDE_SHORTS: "false",
     SettingKey.PREFERENCES_REVIEWED: "false",
     SettingKey.UPDATE_RELEASES_URL: "",
+    SettingKey.UPDATE_CHECK: "true",
 }
 
 #: Theming moved to environment variables in 0.2.0 (TP_THEME and friends), so a homelab can set

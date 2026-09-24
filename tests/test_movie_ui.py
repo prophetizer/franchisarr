@@ -784,3 +784,37 @@ def test_a_show_related_to_several_owned_ones_is_listed_once(client: TestClient)
     assert body.count(f'/shows/add/1405"') == 1, "one row, one Add button"
     assert ("precedes Dexter: New Blood, Dexter: Original Sin and Dexter: Resurrection"
             in body)
+
+
+# ------------------------------------------------------------------ update check switch
+
+
+def test_the_update_check_can_be_switched_off_and_then_makes_no_request(client: TestClient) -> None:
+    """The only connection the app makes that the user didn't configure. Off must mean off:
+    `responses.RequestsMock` fails the test if anything is fetched."""
+    from app import routes_movies
+
+    client.post(f"{BASE}/settings/update-check", data={})   # unchecked box -> off
+    routes_movies._UPDATE_CACHE = None
+
+    with responses.RequestsMock():
+        page = client.get(f"{BASE}/settings").text
+
+    assert "Check GitHub for new versions" in page
+    assert 'name="enabled" value="1" checked' not in page
+
+
+def test_the_environment_overrides_the_checkbox(client: TestClient, monkeypatch) -> None:
+    """Env values only seed settings on first boot, so UPDATE_CHECK is read live -- otherwise
+    setting it on an existing install would silently do nothing."""
+    from app import routes_movies
+
+    client.post(f"{BASE}/settings/update-check", data={"enabled": "1"})   # checkbox says on
+    monkeypatch.setenv("UPDATE_CHECK", "false")                           # environment says off
+    routes_movies._UPDATE_CACHE = None
+
+    with responses.RequestsMock():
+        page = client.get(f"{BASE}/settings").text
+
+    assert "set by <code>UPDATE_CHECK</code>" in page
+    assert "Off —" in page
