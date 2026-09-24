@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.1] — 2026-09-24
+
+Found by testing against a real Seerr 3.4.1 for the first time -- every one of these passed
+against the fake server the tests used.
+
+### Fixed
+
+- **Seerr's Test button passed with a wrong API key.** `/status` is public in Seerr, so it
+  answered 200 to a made-up key and the button reported success for an instance that would
+  refuse every request. Test now also asks `/auth/me`, which needs the key.
+- **Failed Seerr requests were hidden.** Seerr has five request statuses -- pending, approved,
+  declined, failed, completed -- though its published API spec documents three. Everything
+  except "declined" was treated as handled, so a request that failed to reach Radarr made its
+  film vanish from the lists with nothing on its way. Only pending, approved and completed now
+  count; declined and failed come back as gaps.
+- A rejected Seerr key was reported as "Radarr rejected the API key" -- a shared error helper
+  ignored the app name it was given.
+- The request dialog, the Instances page and the README said Seerr "may hold the request for
+  approval". Seerr's API key acts as its administrator, whose requests are approved
+  automatically, so a request from Franchisarr normally goes straight through. The wording now
+  says so; the result still reports it when a request does wait.
+
+### Added
+
+- **The update check can be turned off**, under Settings → Update check or with
+  `UPDATE_CHECK=false`, which overrides the checkbox and is read live (so it works on an
+  existing install, unlike a seeded setting). It is the only connection the app makes that the
+  user didn't set up; turned off, it makes none.
+- A README section, **What it connects to**, listing every outside service and when.
+
 ## [0.23.0] — 2026-09-23
 
 ### Changed

@@ -169,10 +169,13 @@ the proxy for `/api` so API-key requests are let through.
 If your household routes requests through [Seerr](https://github.com/seerr-team/seerr) — or the
 Overseerr or Jellyseerr it grew out of — add it on the Instances page (Settings → General → API
 Key there). Every Add dialog then offers **Request via Seerr** next to the direct Radarr/Sonarr
-choice: Seerr picks the *arr, profile and folder from its own settings and may hold the request
-for approval. Open requests keep a title out of the lists the way a queued Radarr add does.
-Requests are made as the API key's owner, so that account's auto-approval and quota settings
-apply.
+choice: Seerr picks the *arr, profile and folder from its own settings, and the request shows up
+in Seerr's history like any other. Open requests keep a title out of the lists the way a queued
+Radarr add does; declined and failed ones come back, since those are worth asking again.
+
+One thing to know: Seerr's API key acts as its **administrator**, and administrators' requests
+are approved automatically. So a request made from Franchisarr normally goes straight through
+rather than waiting for someone to approve it — the result in the dialog says which happened.
 
 Jellyseerr was renamed **Seerr** in 2026 and Overseerr was archived that February. All three
 speak the same `/api/v1`, so an older instance keeps working — pick which one you run when you
@@ -317,6 +320,24 @@ It is on their `develop` branch, so `develop.theme-park.dev` serves it today and
 [`contrib/theme-park/README.md`](contrib/theme-park/README.md)).
 
 Leave it all unset and nothing is fetched from anywhere but your own server.
+
+## What it connects to
+
+Everything Franchisarr contacts, from the server:
+
+| Service | When | Why |
+|---|---|---|
+| **TMDb** (`api.themoviedb.org`) | During scans | Collections, films, shows, directors — needs your free key |
+| **Wikidata** (`query.wikidata.org`) | During scans | Spin-offs, continuations and franchises. No account; requests carry a User-Agent naming this project, as Wikidata asks |
+| **plex.tv** | Only when someone signs in with Plex | The sign-in PIN flow, and checking the account can reach your server |
+| **fanart.tv** | Only if you set a fanart.tv key | Franchise logos |
+| **GitHub** (`api.github.com`) | When Settings is opened | The update banner. Sends nothing about you or your library. **Off** under Settings → Update check, or with `UPDATE_CHECK=false` |
+
+Plus whatever you point it at yourself: your media servers, Radarr, Sonarr, Seerr, a webhook or
+Apprise, a theme.park host. In the browser, posters load from TMDb's image CDN and logos from
+fanart.tv's.
+
+**No telemetry, no analytics, no accounts with anyone but the services above.**
 
 ## Backing up
 
