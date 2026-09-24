@@ -321,6 +321,24 @@ It is on their `develop` branch, so `develop.theme-park.dev` serves it today and
 
 Leave it all unset and nothing is fetched from anywhere but your own server.
 
+## What's been tested, and on what
+
+Honest about what has run against the real thing and what has only run against the test suite:
+
+| Piece | Tested against |
+|---|---|
+| Plex | The developer's own library — ~3,400 films, ~660 shows — every day |
+| Jellyfin 10.11, Emby 4.9 | Real servers during development, library scans and sign-in both; not in daily use |
+| Seerr 3.4.1 | End to end on a real instance: connection, request cache, and a real request through to Radarr (September 2026). That first live test found three bugs, fixed in 0.23.1 |
+| Radarr 6.3, Sonarr 4.0 | Real instances, one of each, every day |
+| Several Radarr or Sonarr instances | The test suite only — the developer runs one of each |
+| Overseerr, Jellyseerr | The test suite only; they speak Seerr's API, which is tested for real |
+| Unraid template | Not yet run on Unraid |
+| Large libraries | A synthetic 20,000-film, 2,000-show library (`scripts/loadtest.py`) |
+
+If your setup is in one of the lower rows and something doesn't work, that's the most useful bug
+report there is.
+
 ## What it connects to
 
 Everything Franchisarr contacts, from the server:
