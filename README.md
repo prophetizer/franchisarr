@@ -84,8 +84,11 @@ paste it by mistake.
 
 ### Unraid
 
-A Community Applications template is in [`contrib/unraid/`](contrib/unraid/) — add the folder as a
-template repository under *Docker → Add Container* until it's in the CA feed.
+**Coming, after more testing.** A Community Applications template is drafted in
+[`contrib/unraid/`](contrib/unraid/), but it hasn't been run on Unraid yet, so it isn't
+recommended. Until then it runs on Unraid like any other container: image
+`ghcr.io/prophetizer/franchisarr`, port 8000, a path mapped to `/config`, and the environment
+variables from the Configuration table below.
 
 ## Configuration
 
@@ -333,7 +336,7 @@ Honest about what has run against the real thing and what has only run against t
 | Radarr 6.3, Sonarr 4.0 | Real instances, one of each, every day |
 | Several Radarr or Sonarr instances | The test suite only — the developer runs one of each |
 | Overseerr, Jellyseerr | The test suite only; they speak Seerr's API, which is tested for real |
-| Unraid template | Not yet run on Unraid |
+| Unraid template | Not yet run on Unraid — coming after more testing |
 | Large libraries | A synthetic 20,000-film, 2,000-show library (`scripts/loadtest.py`) |
 
 If your setup is in one of the lower rows and something doesn't work, that's the most useful bug

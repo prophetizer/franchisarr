@@ -1,5 +1,9 @@
 # Unraid template
 
+> **Draft — not yet tested on Unraid.** Coming after more testing. The install route below is
+> also unverified: it isn't certain Unraid accepts a template-repository URL pointing into a
+> subfolder. Both get checked before this is recommended anywhere.
+
 `franchisarr.xml` is a Community Applications template. Until it is in the CA feed, install it by
 hand: **Docker → Add Container → Template repositories**, add
 
