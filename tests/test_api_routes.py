@@ -59,7 +59,7 @@ def test_the_api_rejects_anonymous_callers(client: TestClient) -> None:
 def test_an_api_key_authenticates_without_a_browser_session(
     client: TestClient, api_key: str
 ) -> None:
-    """`docker exec franchisarr cli.py scan movies` has no cookie to borrow."""
+    """`docker exec franchisarr cli.py scan` has no cookie to borrow."""
     response = client.get(f"{BASE}/api/me", headers={API_KEY_HEADER: api_key})
 
     assert response.status_code == 200

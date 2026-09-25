@@ -478,9 +478,10 @@ class TmdbCollectionMovie(SQLModel, table=True):
 
 
 class SeerrKind(str, Enum):
-    #: Seerr is what Overseerr and Jellyseerr became: Jellyseerr was renamed to Seerr in 2026
-    #: and Overseerr was archived in February that year. The older two stay here because
-    #: plenty of installs still run them, and the API is the same for all three.
+    #: Seerr is what Overseerr and Jellyseerr became: the two teams merged into it in February
+    #: 2026 (one codebase, both projects' features) and Overseerr's repository was archived.
+    #: The older two stay here because plenty of installs still run them, and the API is the
+    #: same for all three.
     SEERR = "seerr"
     OVERSEERR = "overseerr"
     JELLYSEERR = "jellyseerr"

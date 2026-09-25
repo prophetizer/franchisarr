@@ -103,7 +103,7 @@ def test_tmdb() -> None:
 def scan(
     watch: Annotated[bool, typer.Option(help="Follow progress until it finishes.")] = True,
 ) -> None:
-    """Scan your Plex libraries and refresh what's missing.
+    """Scan your libraries and refresh what's missing.
 
     The scan runs in the background on the server, so this can be interrupted at any point
     without stopping it.
@@ -237,7 +237,7 @@ def review() -> None:
         typer.secho("Everything matched cleanly.", fg="green")
 
 
-instances = typer.Typer(help="Manage Radarr instances.")
+instances = typer.Typer(help="Manage Radarr and Sonarr instances.")
 app.add_typer(instances, name="instances")
 
 
