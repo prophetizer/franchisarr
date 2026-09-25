@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.2] — 2026-09-25
+
+A correctness pass over the README and the app's own wording, each claim checked against the
+code rather than memory.
+
+### Fixed
+
+- The Settings page said notifications are "sent after a scheduled scan". They go out after any
+  scan that finds something new, scheduled or started by hand -- never the very first.
+- `cli.py --help` described `scan` as scanning "your Plex libraries" and `instances` as managing
+  "Radarr instances"; it covers every media server, and Sonarr instances too.
+
+### Documentation
+
+- The README's CLI example, `python cli.py scan movies`, failed ("unexpected extra argument"):
+  `scan` takes no argument and covers films and TV together.
+- The development instructions crashed on a fresh checkout, because the database defaults to
+  `/config`; they now set `DB_PATH` and an admin account.
+- "Environment variables are only read on first boot" was wrong for about half of them --
+  `BASE_URL`, `TZ`, `PUID`/`PGID`, `LOG_LEVEL`, `SESSION_COOKIE_SECURE`, `SHOW_ARTWORK`, the
+  `TP_*` variables and `UPDATE_CHECK` are read on every start. The README now says which is which.
+- "Every feature was measured against a real library before it shipped" overstated it: the core
+  was, the integrations weren't all -- now said precisely, with a link to what's been tested.
+- The Seerr history described a rename and an abandonment; per Seerr's own announcement of
+  10 February 2026, the Overseerr and Jellyseerr teams merged into it.
+- Smaller corrections: the import lists answer to Sonarr's settings as well as Radarr's; servers
+  in `.env` are seeded on first boot only; the theme note no longer implies the whole app
+  fetches nothing; the example version, host and username are current and generic.
+
 ## [0.23.1] — 2026-09-24
 
 Found by testing against a real Seerr 3.4.1 for the first time -- every one of these passed
@@ -41,8 +70,9 @@ against the fake server the tests used.
 
 ### Changed
 
-- **The request target is called Seerr.** Jellyseerr was renamed
-  [Seerr](https://github.com/seerr-team/seerr) and Overseerr was archived in February 2026, so
+- **The request target is called Seerr.** The Overseerr and Jellyseerr teams merged into
+  [Seerr](https://github.com/seerr-team/seerr) in February 2026 and Overseerr's repository was
+  archived, so
   the UI, the dialogs and the docs lead with Seerr. Nothing breaks: all three speak the same
   `/api/v1` with the same request shapes (checked against Seerr's own `seerr-api.yml`), an
   existing instance keeps its label and keeps working, and the Instances form still offers

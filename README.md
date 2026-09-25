@@ -9,7 +9,8 @@ want and don't have:
   *II* but not *III* — one click sends it to Radarr.
 - **Spin-offs of shows you already watch.** You have *NCIS* but not *NCIS: Los Angeles* — one
   click sends it to Sonarr. Found through Wikidata, so it also knows *Family Guy* → *American
-  Dad!* and *Serenity* → *Firefly*, which no name search could.
+  Dad!*, which no name search could — and crosses between film and TV: own the film *Serenity*
+  and it suggests the series *Firefly*.
 
 And, built on the same data: **franchise pages** that put films and TV together (*Star Trek —
 you have 6 of 27*), **director pages** (*you own 11 Nolan films; missing* Following *and*
@@ -34,10 +35,13 @@ Emby, to TV spin-offs and cross-media franchises, and to import lists the *arrs 
 **Status:** pre-1.0 and in daily use against a real library of ~3,400 films and ~660 shows.
 Images are published to GHCR for amd64 and arm64.
 
-**How it was built:** with heavy use of Claude Code, directed, tested and reviewed by a human.
-Every feature was measured against that real library before it shipped — the numbers are in the
-[changelog](CHANGELOG.md) — there are ~900 tests with no live network calls, and the full git
-history was scanned for secrets before the repo went public. The code is MIT; read it.
+**How it was built:** largely written by Claude Code, Anthropic's AI coding tool — directed,
+tested against a real library and reviewed by a human. The core — matching, gaps, spin-offs,
+franchises, directors — was measured against that library as it was built (the numbers are in
+the [changelog](CHANGELOG.md)); what hasn't been tested for real is listed under
+[What's been tested](#whats-been-tested-and-on-what). There are ~900 tests with no live network
+calls, and the full git history was scanned for secrets before the repo went public. The code is
+MIT; read it.
 
 ## What it looks like
 
@@ -72,7 +76,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.10.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.23.2`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -92,9 +96,17 @@ variables from the Configuration table below.
 
 ## Configuration
 
-Everything can be set in the app's Settings page. Environment variables are a convenience for
-docker-compose deployments and are only read on first boot — after that the database wins, so
-changing a variable later has no effect. See [`.env.example`](.env.example) for the full list.
+Almost everything can be set in the app itself — media servers under **Servers**, Radarr,
+Sonarr and Seerr under **Instances**, the rest under **Settings**. Environment variables are a
+convenience for docker-compose, and they behave in one of two ways:
+
+- **Seeded once:** media servers, Radarr, Sonarr, the admin account, and the values Settings
+  owns (TMDb and fanart.tv keys, schedule, notifications). Read on first boot only; after that
+  the database wins, so change them in the app.
+- **Read every start:** `BASE_URL`, `TZ`, `PUID`/`PGID`, `LOG_LEVEL`, `SESSION_COOKIE_SECURE`,
+  `SHOW_ARTWORK`, the `TP_*` theme variables and `UPDATE_CHECK`. Change these and restart.
+
+See [`.env.example`](.env.example) for the full list.
 
 | Variable | Purpose |
 |---|---|
@@ -130,8 +142,8 @@ and paste a films URL, for example:
 https://franchisarr.example.com/api/lists/films.json?api_key=YOUR_KEY&min_rating=7
 ```
 
-Sonarr takes the `shows` URL the same way. Radarr's own settings then decide what to monitor
-and where — Franchisarr never adds anything itself. Your dismissals and preferences apply to the
+Sonarr takes the `shows` URL the same way. Radarr's and Sonarr's own settings then decide what
+to monitor and where — Franchisarr never adds anything itself. Your dismissals and preferences apply to the
 lists; `min_rating` on the URL overrides the household floor for that list only.
 
 ### Artwork
@@ -170,8 +182,8 @@ the proxy for `/api` so API-key requests are let through.
 ## Seerr
 
 If your household routes requests through [Seerr](https://github.com/seerr-team/seerr) — or the
-Overseerr or Jellyseerr it grew out of — add it on the Instances page (Settings → General → API
-Key there). Every Add dialog then offers **Request via Seerr** next to the direct Radarr/Sonarr
+Overseerr or Jellyseerr it grew out of — add it on the Instances page, with the API key from
+Seerr's own Settings → General. Every Add dialog then offers **Request via Seerr** next to the direct Radarr/Sonarr
 choice: Seerr picks the *arr, profile and folder from its own settings, and the request shows up
 in Seerr's history like any other. Open requests keep a title out of the lists the way a queued
 Radarr add does; declined and failed ones come back, since those are worth asking again.
@@ -180,9 +192,11 @@ One thing to know: Seerr's API key acts as its **administrator**, and administra
 are approved automatically. So a request made from Franchisarr normally goes straight through
 rather than waiting for someone to approve it — the result in the dialog says which happened.
 
-Jellyseerr was renamed **Seerr** in 2026 and Overseerr was archived that February. All three
-speak the same `/api/v1`, so an older instance keeps working — pick which one you run when you
-add it, and it's only the label that changes.
+In February 2026 the Overseerr and Jellyseerr teams
+[merged into Seerr](https://docs.seerr.dev/blog/seerr-release) — one codebase with both
+projects' features — and Overseerr's own repository was archived. All three speak the same
+`/api/v1`, so an older instance keeps working: pick which one you run when you add it, and only
+the label changes.
 
 ## Calendar
 
@@ -190,7 +204,7 @@ The Upcoming page is also an iCalendar feed, so announced films in franchises yo
 your calendar app — one all-day event per film, with the collection and how much of it you have:
 
 ```
-https://franchisarr.example/api/lists/upcoming.ics?api_key=YOUR_KEY
+https://franchisarr.example.com/api/lists/upcoming.ics?api_key=YOUR_KEY
 ```
 
 Apple Calendar: File → New Calendar Subscription. Google Calendar: Other calendars → From URL.
@@ -199,8 +213,9 @@ daily; films with no date yet appear once TMDb gives them one.
 
 ## Notifications
 
-After a scheduled scan that finds something new — never every run — Franchisarr sends one
-message. Settings → Notifications takes a Discord or Slack webhook, a generic JSON webhook for
+After a scan that finds something new — scheduled or started by hand, never every run, and
+never the very first scan, whose findings are the state of your library rather than news —
+Franchisarr sends one message. Settings → Notifications takes a Discord or Slack webhook, a generic JSON webhook for
 your own automation, or **Apprise URLs**, one per line (`tgram://…`, `pover://…`, `ntfy://…`,
 `mailto://…`; the [Apprise wiki](https://github.com/caronc/apprise/wiki) lists every service),
 delivered from inside the app. If you already run
@@ -257,7 +272,7 @@ variables later has no effect — if you forget the password:
 
 ```bash
 docker exec -it franchisarr python scripts/reset_admin_password.py            # lists accounts
-docker exec -it franchisarr python scripts/reset_admin_password.py michael    # prompts for a new one
+docker exec -it franchisarr python scripts/reset_admin_password.py admin      # prompts for a new one
 ```
 
 If no sign-in button is offered, Franchisarr couldn't reach your server at startup — with Plex
@@ -267,8 +282,8 @@ restart.
 
 ### Several servers
 
-Every filled-in pair in `.env` becomes a server, and more can be added under **Servers** in the
-app (name, address, key; a *watched as* username for Jellyfin/Emby, since an API key belongs to
+On first boot every filled-in pair in `.env` becomes a server; after that, add and change them
+under **Servers** in the app (name, address, key; a *watched as* username for Jellyfin/Emby, since an API key belongs to
 nobody). Their libraries are chosen together on the Libraries page and scanned in one pass. A
 film on two servers is owned once; its detail row says which servers hold it. Watched films get a
 tick, and the Collections page can be filtered to franchises you've actually started.
@@ -281,12 +296,12 @@ can reach the app.
 ```bash
 export FRANCHISARR_URL=http://localhost:8000
 export FRANCHISARR_API_KEY=...          # Settings, or `cli.py api-key`
-python cli.py scan movies
+python cli.py scan
 python cli.py gaps
 python cli.py add 176 --instance 1
 ```
 
-`scan movies` / `scan tv` walk your libraries; `gaps` and `spinoffs` list what's missing;
+`scan` walks your libraries, films and TV together; `gaps` and `spinoffs` list what's missing;
 `review` shows matches that need confirming; `add`, `add-show` and `add-collection` send things to
 Radarr/Sonarr; `instances` and `activity` inspect the rest.
 
@@ -322,7 +337,7 @@ It is on their `develop` branch, so `develop.theme-park.dev` serves it today and
 `css/base/franchisarr/franchisarr-base.css` (see
 [`contrib/theme-park/README.md`](contrib/theme-park/README.md)).
 
-Leave it all unset and nothing is fetched from anywhere but your own server.
+Leave it all unset and no stylesheet is fetched from anywhere but your own server.
 
 ## What's been tested, and on what
 
@@ -401,10 +416,10 @@ Franchisarr doesn't parse yet, and that section says exactly what's needed.
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 pytest
-uvicorn app.main:app --reload
+DB_PATH=./franchisarr.db ADMIN_USERNAME=admin ADMIN_PASSWORD=change-me uvicorn app.main:app --reload
 ```
 
-Tests never touch the network — Plex, Jellyfin, Emby, TMDb, Radarr and Sonarr are all mocked. See `docs/DEVELOPMENT.md` for
+Tests never touch the network — Plex, Jellyfin, Emby, TMDb, Wikidata, fanart.tv, Radarr, Sonarr and Seerr are all mocked. See `docs/DEVELOPMENT.md` for
 the conventions this codebase holds itself to, and `docs/DESIGN.md` for the design and the
 28 documented technical challenges behind it.
 
