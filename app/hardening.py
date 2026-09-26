@@ -8,9 +8,11 @@ what a login attempt or a form post is.
 
 from __future__ import annotations
 
+import ipaddress
+import os
 import threading
 import time
-from collections import defaultdict, deque
+from collections import deque
 from urllib.parse import urlparse
 
 from fastapi import HTTPException, Request, status
@@ -22,6 +24,13 @@ from starlette.responses import Response
 #: Failed sign-ins allowed per client address in the window before the form answers 429.
 LOGIN_ATTEMPTS = 10
 LOGIN_WINDOW_SECONDS = 15 * 60
+#: Failed sign-ins allowed per *username* across every address. Higher than the per-address
+#: limit, because it is shared by everyone who can reach the page: its job is to stop guesses
+#: spread over many addresses, not to lock the owner out after a few typos.
+USERNAME_ATTEMPTS = 20
+#: Upper bound on how many addresses/usernames are tracked at once, so a flood of distinct keys
+#: can't grow memory without limit. The oldest are dropped first.
+MAX_TRACKED_KEYS = 10_000
 
 
 class LoginLimiter:
@@ -35,14 +44,18 @@ class LoginLimiter:
     media-server password.
     """
 
-    def __init__(self, attempts: int = LOGIN_ATTEMPTS, window: float = LOGIN_WINDOW_SECONDS) -> None:
+    def __init__(self, attempts: int = LOGIN_ATTEMPTS, window: float = LOGIN_WINDOW_SECONDS,
+                 max_keys: int = MAX_TRACKED_KEYS) -> None:
         self.attempts = attempts
         self.window = window
-        self._failures: dict[str, deque[float]] = defaultdict(deque)
+        self.max_keys = max_keys
+        self._failures: dict[str, deque[float]] = {}
         self._lock = threading.Lock()
 
     def _prune(self, key: str, now: float) -> deque[float]:
-        q = self._failures[key]
+        q = self._failures.get(key)
+        if q is None:
+            q = self._failures[key] = deque()
         while q and q[0] <= now - self.window:
             q.popleft()
         return q
@@ -50,7 +63,12 @@ class LoginLimiter:
     def check(self, key: str) -> None:
         """Raise 429 when the client has used up its attempts."""
         with self._lock:
+            if key not in self._failures:
+                return
             q = self._prune(key, time.monotonic())
+            if not q:
+                del self._failures[key]
+                return
             if len(q) >= self.attempts:
                 retry = int(self.window - (time.monotonic() - q[0])) + 1
                 raise HTTPException(
@@ -61,7 +79,12 @@ class LoginLimiter:
 
     def failed(self, key: str) -> None:
         with self._lock:
-            self._prune(key, time.monotonic()).append(time.monotonic())
+            now = time.monotonic()
+            self._prune(key, now).append(now)
+            if len(self._failures) > self.max_keys:
+                # Dicts keep insertion order: drop the longest-tracked keys first.
+                for stale in list(self._failures)[: len(self._failures) - self.max_keys]:
+                    del self._failures[stale]
 
     def succeeded(self, key: str) -> None:
         with self._lock:
@@ -73,16 +96,53 @@ class LoginLimiter:
 
 
 login_limiter = LoginLimiter()
+#: Per-username failures, keyed "local:<name>" or "server:<id>:<name>".
+username_limiter = LoginLimiter(attempts=USERNAME_ATTEMPTS)
+#: Starting a Plex sign-in creates a PIN at plex.tv under this install's client id; every start
+#: counts, success or not, so nobody can make the install spam plex.tv.
+plex_start_limiter = LoginLimiter(attempts=30)
+
+
+def username_key(username: str, server_id: int | None = None) -> str:
+    name = (username or "").strip().casefold()
+    return f"server:{server_id}:{name}" if server_id is not None else f"local:{name}"
+
+
+def _is_internal(address: str) -> bool:
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return False
+    return ip.is_private or ip.is_loopback
+
+
+def trusted_proxy_hops() -> int:
+    """How many reverse proxies sit in front of the app (TRUSTED_PROXY_HOPS, default 1)."""
+    try:
+        return max(1, int(os.environ.get("TRUSTED_PROXY_HOPS", "1")))
+    except ValueError:
+        return 1
 
 
 def client_key(request: Request) -> str:
-    """The address to count against. Behind a reverse proxy that is the first X-Forwarded-For
-    entry, which the proxy sets; uvicorn already honours it for request.client when started
-    with --proxy-headers, but not every install does."""
+    """The address to count sign-in failures against.
+
+    X-Forwarded-For is only believed when the request actually came from a proxy on the same
+    network (a private or loopback peer) -- from anywhere else it's just a header the sender
+    wrote. And even then only the entries *our* proxies appended count: each proxy appends the
+    address it saw, so with N proxies in front the client is the Nth entry from the right.
+    Everything to the left of that was supplied by the client and is ignored. Reading the
+    first entry, as this used to, let anyone pick a fresh address per request and guess
+    passwords without limit.
+    """
+    peer = request.client.host if request.client else "unknown"
     forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+    if not forwarded or not _is_internal(peer):
+        return peer
+    hops = [h.strip() for h in forwarded.split(",") if h.strip()]
+    if not hops:
+        return peer
+    return hops[-min(trusted_proxy_hops(), len(hops))]
 
 
 # ---------------------------------------------------------------- cross-site posts

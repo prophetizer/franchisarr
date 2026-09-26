@@ -53,9 +53,15 @@ the parts that belong to the app, because only it knows what a sign-in or a form
 - **Secrets are never rendered or logged.** Keys show as their last four characters; a log
   redactor is loaded with every stored credential at startup, so a value cannot reach a log
   line through a third-party library either. The config export redacts on request.
-- **Sign-in is rate-limited** per client address: ten failures in fifteen minutes, then 429.
-  Only failures count. The Jellyfin/Emby form relays attempts to that server, so this also
+- **Sign-in is rate-limited** per client address (ten failures in fifteen minutes, then 429)
+  and per username across all addresses (twenty). Only failures count. The address comes from
+  `X-Forwarded-For` only when the request arrives from a proxy on the local network, and only
+  the entries that proxy appended (`TRUSTED_PROXY_HOPS`) — before 0.25.1 the first,
+  client-written entry was trusted, which let the limit be bypassed. The Jellyfin/Emby form relays attempts to that server, so this also
   stops Franchisarr being used to guess a media-server password.
+- **The Plex sign-in PIN stays on the server.** The browser holds a random single-use handle,
+  never plex.tv's sequential PIN id, so a PIN can't be guessed and polled from another browser.
+  Starting a Plex sign-in is rate-limited too.
 - **A Plex token is not an authorisation.** Sign-in is refused unless the account can reach
   this install's own Plex server.
 - **Only administrators sign in by default.** Reaching the Plex server isn't enough: people it is

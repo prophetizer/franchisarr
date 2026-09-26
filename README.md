@@ -76,7 +76,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.25.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.25.1`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -103,7 +103,7 @@ convenience for docker-compose, and they behave in one of two ways:
 - **Seeded once:** media servers, Radarr, Sonarr, the admin account, and the values Settings
   owns (TMDb and fanart.tv keys, schedule, notifications). Read on first boot only; after that
   the database wins, so change them in the app.
-- **Read every start:** `BASE_URL`, `TZ`, `PUID`/`PGID`, `LOG_LEVEL`, `SESSION_COOKIE_SECURE`,
+- **Read every start:** `BASE_URL`, `TZ`, `PUID`/`PGID`, `LOG_LEVEL`, `SESSION_COOKIE_SECURE`, `TRUSTED_PROXY_HOPS`,
   `SHOW_ARTWORK`, the `TP_*` theme variables and `UPDATE_CHECK`. Change these and restart.
 
 See [`.env.example`](.env.example) for the full list.
@@ -124,6 +124,7 @@ See [`.env.example`](.env.example) for the full list.
 | `SCAN_SCHEDULE_CRON` | e.g. `0 3 * * *`; empty disables scheduled scans |
 | `TZ` | Which timezone the schedule runs in |
 | `PUID`, `PGID` | Ownership of the config volume, as in the linuxserver.io images |
+| `TRUSTED_PROXY_HOPS` | Reverse proxies in front of the app (default 1; 2 behind Cloudflare's proxy plus Traefik). Lets the sign-in rate limit see visitors' real addresses |
 
 ### Spin-offs
 

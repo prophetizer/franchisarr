@@ -14,7 +14,7 @@ from typing import Annotated
 from fastapi import APIRouter, Form, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from app.auth import plex_oauth
+from app.auth import plex_oauth, plex_pins
 from app.auth.dependencies import CurrentUser, DbSession
 from app.auth.local_admin import authenticate_local, has_local_admin
 from app.auth.sessions import COOKIE_NAME, SESSION_LIFETIME, create_session, delete_session
@@ -117,13 +117,15 @@ def login_submit(
     password: Annotated[str, Form()] = "",
     next: Annotated[str, Form()] = "",
 ):
-    from app.hardening import client_key, login_limiter
+    from app.hardening import client_key, login_limiter, username_key, username_limiter
 
-    key = client_key(request)
+    key, name_key = client_key(request), username_key(username)
     login_limiter.check(key)
+    username_limiter.check(name_key)
     user = authenticate_local(session, username, password)
     if user is None:
         login_limiter.failed(key)
+        username_limiter.failed(name_key)
         # One message for both causes: saying which was wrong tells an attacker which usernames
         # exist.
         return get_templates().TemplateResponse(
@@ -133,6 +135,7 @@ def login_submit(
         )
 
     login_limiter.succeeded(key)
+    username_limiter.succeeded(name_key)
     token = create_session(session, user)
     response = RedirectResponse(_safe_next(next), status_code=status.HTTP_303_SEE_OTHER)
     _set_session_cookie(response, token)
@@ -155,14 +158,16 @@ def server_login_submit(
         MediaServerSignInUnavailable, MemberSignInDisabled, sign_in_with_media_server,
     )
 
-    from app.hardening import client_key, login_limiter
+    from app.hardening import client_key, login_limiter, username_key, username_limiter
 
-    key = client_key(request)
+    key, name_key = client_key(request), username_key(username, server_id)
     login_limiter.check(key)
+    username_limiter.check(name_key)
     try:
         user = sign_in_with_media_server(session, server_id, username, password)
     except EmbyAuthError:
         login_limiter.failed(key)
+        username_limiter.failed(name_key)
         # The server's own message would say which was wrong; ours does not.
         return get_templates().TemplateResponse(
             request, "login.html",
@@ -182,6 +187,7 @@ def server_login_submit(
         )
 
     login_limiter.succeeded(key)
+    username_limiter.succeeded(name_key)
     token = create_session(session, user)
     response = RedirectResponse(_safe_next(next), status_code=status.HTTP_303_SEE_OTHER)
     _set_session_cookie(response, token)
@@ -198,8 +204,13 @@ def logout(request: Request, session: DbSession):
 
 
 @router.post("/auth/plex/start")
-def plex_start(session: DbSession):
+def plex_start(request: Request, session: DbSession):
     """Create a sign-in PIN and hand back the app.plex.tv URL for the popup."""
+    from app.hardening import client_key, plex_start_limiter
+
+    key = client_key(request)
+    plex_start_limiter.check(key)
+    plex_start_limiter.failed(key)     # every start counts: each one creates a PIN at plex.tv
     if not plex_sign_in_available(session):
         return JSONResponse(
             {
@@ -216,15 +227,18 @@ def plex_start(session: DbSession):
         return JSONResponse({"error": str(exc)}, status_code=status.HTTP_502_BAD_GATEWAY)
 
     response = JSONResponse({"auth_url": plex_oauth.build_auth_url(client_id, pin.code)})
-    response.set_cookie(PIN_COOKIE, str(pin.id), max_age=900, **_cookie_kwargs())
+    # The browser gets an opaque handle, never the PIN id: see app/auth/plex_pins.py.
+    response.set_cookie(PIN_COOKIE, plex_pins.remember(pin.id),
+                        max_age=plex_pins.PIN_LIFETIME_SECONDS, **_cookie_kwargs())
     return response
 
 
 @router.post("/auth/plex/poll")
 def plex_poll(request: Request, session: DbSession, next: Annotated[str, Form()] = ""):
     """Has the user finished signing in at plex.tv yet?"""
-    raw_pin = request.cookies.get(PIN_COOKIE)
-    if not raw_pin or not raw_pin.isdigit():
+    handle = request.cookies.get(PIN_COOKIE)
+    pin_id = plex_pins.lookup(handle)
+    if pin_id is None:
         return JSONResponse(
             {"error": "This sign-in attempt expired. Please start again."},
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -232,13 +246,16 @@ def plex_poll(request: Request, session: DbSession, next: Annotated[str, Form()]
 
     client_id = get_or_create_client_id(session)
     try:
-        token = plex_oauth.check_pin(client_id, int(raw_pin))
+        token = plex_oauth.check_pin(client_id, pin_id)
     except plex_oauth.PlexOAuthError as exc:
         return JSONResponse({"error": str(exc)}, status_code=status.HTTP_502_BAD_GATEWAY)
 
     if token is None:
         return JSONResponse({"status": "pending"})
 
+    # The PIN has produced its token: spend the handle whatever happens next, so it can't be
+    # replayed for a second session.
+    plex_pins.forget(handle)
     try:
         user = sign_in_with_plex_token(session, token)
     except (PlexAccessDenied, MemberSignInDisabled) as exc:

@@ -85,9 +85,29 @@ def ensure_server(session: Session) -> int:
 def isolated_env(monkeypatch: pytest.MonkeyPatch) -> None:
     for name in FRANCHISARR_ENV_VARS:
         monkeypatch.delenv(name, raising=False)
+    monkeypatch.delenv("TRUSTED_PROXY_HOPS", raising=False)
+    _reset_limiters()
     reset_engine()
     yield
     reset_engine()
+    _reset_limiters()
+
+
+def _reset_limiters() -> None:
+    """The sign-in limiters and the Plex PIN store live in memory for the whole process; a test
+    that fails a few logins must not spend the next test's allowance."""
+    from app import hardening
+
+    for name in ("login_limiter", "username_limiter", "plex_start_limiter"):
+        limiter = getattr(hardening, name, None)
+        if limiter is not None:
+            limiter.reset()
+    try:
+        from app.auth import plex_pins
+
+        plex_pins.reset()
+    except ImportError:
+        pass
 
 
 @pytest.fixture

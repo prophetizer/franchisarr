@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.1] — 2026-09-26
+
+Two sign-in fixes from a security review. Update if Franchisarr can be reached from the internet.
+
+### Security
+
+- **The sign-in rate limit could be bypassed.** It counted failures against the first address in
+  the `X-Forwarded-For` header, which the visitor writes themselves, so a different made-up
+  address on every attempt meant unlimited password guesses — against the local admin, and
+  through the Jellyfin/Emby form against those servers' accounts. The header is now believed
+  only when the request comes from a proxy on your own network, and only the part that proxy
+  added. Failures are also counted per username across all addresses, so spreading guesses
+  over many real addresses doesn't help either.
+- **The Plex sign-in PIN could be guessed.** The browser held plex.tv's PIN number in a cookie,
+  and those numbers are sequential; someone who guessed the number of a PIN you were signing in
+  with could collect your session. The PIN now stays on the server; the browser gets a random
+  handle that works once. Starting a Plex sign-in is rate-limited.
+
+### Added
+
+- `TRUSTED_PROXY_HOPS` (default 1): how many reverse proxies are in front of the app. Set 2 if
+  another proxy sits in front of your usual one, such as Cloudflare's proxy in front of
+  Traefik, so the rate limit sees visitors' real addresses.
+
 ## [0.25.0] — 2026-09-26
 
 Only administrators can sign in now, unless you choose otherwise.
