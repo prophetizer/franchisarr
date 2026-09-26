@@ -23,14 +23,14 @@
         {% endif %}
       </p>
       <footer>
-        <button hx-post="{{ url('/scan') }}" hx-target="#scan-status" hx-swap="outerHTML">
+{% if user and user.is_admin %}        <button hx-post="{{ url('/scan') }}" hx-target="#scan-status" hx-swap="outerHTML">
           {{ 'Scan my library' if not scanned else 'Rescan my library' }}</button>
         {% if scanned %}
           <button class="secondary outline" hx-post="{{ url('/scan') }}"
                   hx-vals='{"refresh": "1"}'
                   hx-target="#scan-status" hx-swap="outerHTML">Refresh everything</button>
         {% endif %}
-        <small class="muted">
+{% endif %}        <small class="muted">
           Runs in the background — on a few thousand items it takes a handful of minutes, and you
           don't have to stay on this page.
           {% if scanned %}
@@ -103,6 +103,6 @@
 
   <p><small class="muted">
     Scanning {{ libraries | length }} Plex librar{{ 'y' if libraries | length == 1 else 'ies' }}.
-    <a href="{{ url('/libraries') }}">Change</a>
-  </small></p>
+{% if user and user.is_admin %}    <a href="{{ url('/libraries') }}">Change</a>
+{% endif %}  </small></p>
 {% endblock %}

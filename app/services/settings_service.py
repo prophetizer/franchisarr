@@ -53,6 +53,10 @@ class SettingKey:
     #: Whether Franchisarr asks GitHub's public releases API for newer versions. The only
     #: request the app makes that the user didn't configure, so it can be turned off.
     UPDATE_CHECK = "update_check"
+    #: Whether anyone besides an administrator may sign in: people the Plex server is shared
+    #: with, and Jellyfin/Emby accounts that aren't administrators there. Off unless an admin
+    #: turns it on, because "can reach my Plex" is a much wider group than "runs this house".
+    ALLOW_MEMBER_SIGNIN = "allow_member_signin"
 
 
 #: Values used when neither the environment nor the user has said otherwise.
@@ -72,6 +76,7 @@ DEFAULTS: dict[str, str] = {
     SettingKey.PREFERENCES_REVIEWED: "false",
     SettingKey.UPDATE_RELEASES_URL: "",
     SettingKey.UPDATE_CHECK: "true",
+    SettingKey.ALLOW_MEMBER_SIGNIN: "false",
 }
 
 #: Theming moved to environment variables in 0.2.0 (TP_THEME and friends), so a homelab can set

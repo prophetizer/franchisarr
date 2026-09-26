@@ -113,7 +113,7 @@ def upcoming(request: Request, session: DbSession, user: RequiredUser, page: int
 
 @router.post("/collections/rating-filter")
 def set_rating_filter(
-    session: DbSession, user: RequiredUser, min_rating: Annotated[str, Form()] = "0"
+    session: DbSession, user: AdminUser, min_rating: Annotated[str, Form()] = "0"
 ):
     """Set the household's rating floor. A shared setting, like the dedup toggle, because the
     people in one household share one library -- and one opinion of Hellraiser IX is enough."""
@@ -167,7 +167,7 @@ def dismiss(
 
 @router.post("/collections/{collection_id}/exclude/{tmdb_id}", response_class=HTMLResponse)
 def exclude(
-    request: Request, session: DbSession, user: RequiredUser, collection_id: int, tmdb_id: int
+    request: Request, session: DbSession, user: AdminUser, collection_id: int, tmdb_id: int
 ):
     """Mark a film as not really part of this collection -- a TMDb data correction, shared by
     everyone, and scoped to this one collection rather than to the user's whole view."""
@@ -213,7 +213,7 @@ def close_dialog() -> HTMLResponse:
 def add_dialog(
     request: Request,
     session: DbSession,
-    user: RequiredUser,
+    user: AdminUser,
     tmdb_id: int,
     instance_id: int | None = None,
 ):
@@ -259,7 +259,7 @@ def add_dialog(
 def submit_request(
     request: Request,
     session: DbSession,
-    user: RequiredUser,
+    user: AdminUser,
     tmdb_id: Annotated[int, Form()],
     seerr_id: Annotated[int, Form()],
 ):
@@ -285,7 +285,7 @@ def submit_request(
 def submit_add(
     request: Request,
     session: DbSession,
-    user: RequiredUser,
+    user: AdminUser,
     tmdb_id: Annotated[int, Form()],
     instance_id: Annotated[int, Form()],
     quality_profile_id: Annotated[int, Form()],
@@ -343,6 +343,12 @@ def _update_check_enabled(session) -> bool:
     return update_checker.enabled(session)
 
 
+def _members_allowed(session) -> bool:
+    from app.services.auth_service import members_allowed
+
+    return members_allowed(session)
+
+
 def _update_check_forced() -> bool:
     from app.services import update_checker
 
@@ -359,6 +365,17 @@ def set_update_check(session: DbSession, user: AdminUser,
     set_setting(session, SettingKey.UPDATE_CHECK, "true" if enabled else "false")
     session.commit()
     _UPDATE_CACHE = None     # a re-enabled check should ask afresh, not show a stale answer
+    return RedirectResponse(_url("/settings?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/settings/members")
+def set_members(session: DbSession, user: AdminUser, enabled: Annotated[str, Form()] = ""):
+    """Whether non-administrators may sign in. Off by default; see auth_service.members_allowed."""
+    from app.services.settings_service import set_setting
+
+    set_setting(session, SettingKey.ALLOW_MEMBER_SIGNIN, "true" if enabled else "false")
+    session.commit()
+    logger.info("Member sign-in %s by user %s", "allowed" if enabled else "turned off", user.id)
     return RedirectResponse(_url("/settings?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -389,6 +406,7 @@ def _settings_context(session, user, **extra) -> dict:
         "import_note": None,
         "update": _update_status(session),
         "update_check_enabled": _update_check_enabled(session),
+        "members_allowed": _members_allowed(session),
         "update_check_forced": _update_check_forced(),
         # Import lists: the URLs Radarr and Sonarr can poll. The key is never rendered; the page
         # shows whether one exists and mints a new one on request, shown once.
@@ -402,14 +420,14 @@ def _settings_context(session, user, **extra) -> dict:
 
 
 @router.get("/settings", response_class=HTMLResponse)
-def settings_page(request: Request, session: DbSession, user: RequiredUser, saved: bool = False):
+def settings_page(request: Request, session: DbSession, user: AdminUser, saved: bool = False):
     return get_templates().TemplateResponse(
         request, "settings.html", _settings_context(session, user, saved=saved)
     )
 
 
 @router.post("/settings/api-key", response_class=HTMLResponse)
-def settings_new_api_key(request: Request, session: DbSession, user: RequiredUser):
+def settings_new_api_key(request: Request, session: DbSession, user: AdminUser):
     """Mint the per-user key the import lists and the CLI use. Shown once, in full, here."""
     from app.auth.api_keys import generate_api_key
 
@@ -424,7 +442,7 @@ def settings_new_api_key(request: Request, session: DbSession, user: RequiredUse
 def save_schedule(
     request: Request,
     session: DbSession,
-    user: RequiredUser,
+    user: AdminUser,
     scan_schedule_cron: Annotated[str, Form()] = "",
 ):
     """Save the scan schedule and apply it immediately, so the page can't disagree with reality."""
@@ -459,7 +477,7 @@ def save_schedule(
 def save_webhook(
     request: Request,
     session: DbSession,
-    user: RequiredUser,
+    user: AdminUser,
     webhook_url: Annotated[str, Form()] = "",
     webhook_format: Annotated[str, Form()] = "generic",
     test: Annotated[str, Form()] = "",
@@ -497,7 +515,7 @@ def save_webhook(
 def trigger_scan(
     request: Request,
     session: DbSession,
-    user: RequiredUser,
+    user: AdminUser,
     refresh: Annotated[str, Form()] = "",
 ):
     """Start a scan and return immediately.

@@ -200,6 +200,15 @@ def test_signing_in_with_jellyfin_provisions_the_person(client: TestClient) -> N
     responses.add(responses.POST, f"{JF}/Users/AuthenticateByName", json={
         "User": {"Id": "u-9", "Name": "alice", "Policy": {"IsAdministrator": False}}, "AccessToken": "t"})
 
+    # Not an administrator there, so refused until an admin lets members in -- right password,
+    # so it isn't counted as a failed attempt, and no account is left behind.
+    refused = client.post(f"{BASE}/auth/server/login", data={"username": "alice", "password": "pw"})
+    assert refused.status_code == 403 and "Only administrators can sign in" in refused.text
+    with Session(get_engine()) as session:
+        assert session.exec(select(User)).all() == []
+        set_setting(session, SettingKey.ALLOW_MEMBER_SIGNIN, "true")
+        session.commit()
+
     response = client.post(f"{BASE}/auth/server/login", data={"username": "alice", "password": "pw", "next": "/franchisarr/"})
 
     assert response.status_code == 303 and response.headers["location"] == "/franchisarr/"

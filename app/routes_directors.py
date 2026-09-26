@@ -7,7 +7,7 @@ from typing import Annotated
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from app.auth.dependencies import DbSession, RequiredUser
+from app.auth.dependencies import AdminUser, DbSession, RequiredUser
 from app.config import get_settings
 from app.services import director_service
 from app.templating import get_templates
@@ -53,7 +53,7 @@ def directors(request: Request, session: DbSession, user: RequiredUser, sort: st
 
 
 @router.post("/directors/floor")
-def set_floor(session: DbSession, user: RequiredUser, floor: Annotated[str, Form()] = "5"):
+def set_floor(session: DbSession, user: AdminUser, floor: Annotated[str, Form()] = "5"):
     """How many owned films a director needs before they are worth a page. Household-wide."""
     from app.services.settings_service import SettingKey, set_setting
 

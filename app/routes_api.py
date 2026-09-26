@@ -62,7 +62,7 @@ def whoami(user: RequiredUser) -> dict:
 
 
 @router.post("/me/api-key")
-def issue_api_key(session: DbSession, user: RequiredUser) -> dict:
+def issue_api_key(session: DbSession, user: AdminUser) -> dict:
     """Generate a CLI credential. Shown in full once and never again."""
     return {
         "api_key": generate_api_key(session, user),
@@ -71,7 +71,7 @@ def issue_api_key(session: DbSession, user: RequiredUser) -> dict:
 
 
 @router.get("/tmdb/test")
-def test_tmdb(session: DbSession, user: RequiredUser) -> dict:
+def test_tmdb(session: DbSession, user: AdminUser) -> dict:
     """Check the configured TMDb key and explain precisely what's wrong if it fails."""
     try:
         _tmdb(session).validate_key()
@@ -83,7 +83,7 @@ def test_tmdb(session: DbSession, user: RequiredUser) -> dict:
 
 
 @router.post("/scan")
-def start_scan(session: DbSession, user: RequiredUser) -> dict:
+def start_scan(session: DbSession, user: AdminUser) -> dict:
     """Start a scan in the background and return at once.
 
     Scanning used to happen inside the request, which on a real library meant minutes of silence
@@ -193,7 +193,7 @@ class SpinoffMappingIn(BaseModel):
 
 @router.post("/spinoffs/mappings", status_code=status.HTTP_201_CREATED)
 def add_spinoff_mapping(
-    session: DbSession, user: RequiredUser, payload: SpinoffMappingIn
+    session: DbSession, user: AdminUser, payload: SpinoffMappingIn
 ) -> dict:
     """Record a spin-off relationship. Always written as a local, confirmed mapping."""
     try:
@@ -212,7 +212,7 @@ def add_spinoff_mapping(
 
 
 @router.get("/matches/review")
-def matches_needing_review(session: DbSession, user: RequiredUser) -> dict:
+def matches_needing_review(session: DbSession, user: AdminUser) -> dict:
     """Plausible but unconfirmed matches, plus items nothing matched at all."""
     return {
         "needs_review": [
@@ -266,7 +266,7 @@ def _require_instance(session, instance_id: int):
 
 
 @router.get("/instances/radarr")
-def list_instances(session: DbSession, user: RequiredUser) -> dict:
+def list_instances(session: DbSession, user: AdminUser) -> dict:
     preferred = instance_service.preferred_instance(session, user)
     return {
         "instances": [
@@ -297,7 +297,7 @@ def make_default(session: DbSession, user: AdminUser, instance_id: int) -> dict:
 
 
 @router.get("/instances/radarr/{instance_id}/test")
-def test_instance(session: DbSession, user: RequiredUser, instance_id: int) -> dict:
+def test_instance(session: DbSession, user: AdminUser, instance_id: int) -> dict:
     instance = _require_instance(session, instance_id)
     try:
         return {"ok": True, "version": instance_service.client_for(instance).test_connection()}
@@ -306,7 +306,7 @@ def test_instance(session: DbSession, user: RequiredUser, instance_id: int) -> d
 
 
 @router.get("/instances/radarr/{instance_id}/options")
-def instance_options(session: DbSession, user: RequiredUser, instance_id: int) -> dict:
+def instance_options(session: DbSession, user: AdminUser, instance_id: int) -> dict:
     """Quality profiles and root folders, fetched live at add time.
 
     Options are never stored -- only the chosen default is (docs/DESIGN.md section 5). An
@@ -336,7 +336,7 @@ def instance_options(session: DbSession, user: RequiredUser, instance_id: int) -
 
 
 @router.post("/instances/radarr/refresh")
-def refresh_instances(session: DbSession, user: RequiredUser) -> dict:
+def refresh_instances(session: DbSession, user: AdminUser) -> dict:
     """Re-read what each instance holds, so gap views reflect it without live calls."""
     results = instance_service.refresh_all(session)
     return {
@@ -360,7 +360,7 @@ class AddMovieIn(BaseModel):
 
 
 @router.post("/radarr/add")
-def add_movie(session: DbSession, user: RequiredUser, payload: AddMovieIn) -> dict:
+def add_movie(session: DbSession, user: AdminUser, payload: AddMovieIn) -> dict:
     """Send one film to Radarr, monitored and searched immediately by default."""
     if payload.instance_id is not None:
         instance = _require_instance(session, payload.instance_id)
@@ -452,7 +452,7 @@ def _require_sonarr(session, instance_id: int):
 
 
 @router.get("/instances/sonarr")
-def list_sonarr_instances(session: DbSession, user: RequiredUser) -> dict:
+def list_sonarr_instances(session: DbSession, user: AdminUser) -> dict:
     preferred = sonarr_instance_service.preferred_instance(session, user)
     return {
         "instances": [
@@ -486,7 +486,7 @@ def make_sonarr_default(session: DbSession, user: AdminUser, instance_id: int) -
 
 
 @router.get("/instances/sonarr/{instance_id}/test")
-def test_sonarr_instance(session: DbSession, user: RequiredUser, instance_id: int) -> dict:
+def test_sonarr_instance(session: DbSession, user: AdminUser, instance_id: int) -> dict:
     instance = _require_sonarr(session, instance_id)
     try:
         return {
@@ -498,7 +498,7 @@ def test_sonarr_instance(session: DbSession, user: RequiredUser, instance_id: in
 
 
 @router.get("/instances/sonarr/{instance_id}/options")
-def sonarr_instance_options(session: DbSession, user: RequiredUser, instance_id: int) -> dict:
+def sonarr_instance_options(session: DbSession, user: AdminUser, instance_id: int) -> dict:
     instance = _require_sonarr(session, instance_id)
     client = sonarr_instance_service.client_for(instance)
     try:
@@ -522,7 +522,7 @@ def sonarr_instance_options(session: DbSession, user: RequiredUser, instance_id:
 
 
 @router.post("/instances/sonarr/refresh")
-def refresh_sonarr_instances(session: DbSession, user: RequiredUser) -> dict:
+def refresh_sonarr_instances(session: DbSession, user: AdminUser) -> dict:
     results = sonarr_instance_service.refresh_all(session)
     return {
         "instances": [
@@ -543,7 +543,7 @@ class AddSeriesIn(BaseModel):
 
 
 @router.post("/sonarr/add")
-def add_series_endpoint(session: DbSession, user: RequiredUser, payload: AddSeriesIn) -> dict:
+def add_series_endpoint(session: DbSession, user: AdminUser, payload: AddSeriesIn) -> dict:
     if payload.instance_id is not None:
         instance = _require_sonarr(session, payload.instance_id)
     else:

@@ -15,7 +15,7 @@
       {% elif t.via == 'franchise' %}{{ t.note }}
       {% else %}{{ t.note }}{% endif %}
     </span></p>
-    {% if css != 'owned' %}
+    {% if css != 'owned' and user and user.is_admin %}
       <p class="card-actions">
         {% if t.item_type == 'movie' %}
           <button class="{{ 'outline' if css == 'upcoming' else '' }}"

@@ -14,7 +14,7 @@ from typing import Annotated
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from app.auth.dependencies import AdminUser, DbSession, RequiredUser
+from app.auth.dependencies import AdminUser, DbSession
 from app.clients.radarr_client import RadarrError
 from app.clients.seerr_client import SeerrError
 from app.clients.sonarr_client import SonarrError
@@ -60,7 +60,7 @@ def _service(kind: str):
 
 @router.get("/instances", response_class=HTMLResponse)
 def instances_page(
-    request: Request, session: DbSession, user: RequiredUser, saved: bool = False
+    request: Request, session: DbSession, user: AdminUser, saved: bool = False
 ):
     return get_templates().TemplateResponse(
         request,
@@ -110,7 +110,7 @@ def make_default(session: DbSession, user: AdminUser, kind: str, instance_id: in
 
 @router.get("/instances/{kind}/{instance_id}/test", response_class=HTMLResponse)
 def test_instance(
-    request: Request, session: DbSession, user: RequiredUser, kind: str, instance_id: int
+    request: Request, session: DbSession, user: AdminUser, kind: str, instance_id: int
 ):
     service = _service(kind)
     instance = getattr(service, f"get_{kind}")(session, instance_id)

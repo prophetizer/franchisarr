@@ -25,12 +25,14 @@
         {% if sort == key %}<strong>{{ label }}</strong>{% else %}<a href="{{ url('/directors?sort=' ~ key) }}">{{ label }}</a>{% endif %}{% if not loop.last %} · {% endif %}
       {% endfor %}
     </p>
+    {% if user and user.is_admin %}
     <form method="post" action="{{ url('/directors/floor') }}" class="gap-filter">
       <label for="floor">Show directors you own at least</label>
       <input type="number" id="floor" name="floor" min="2" max="50" value="{{ floor }}" inputmode="numeric">
       <span>films by</span>
       <button type="submit" class="secondary">Apply</button>
     </form>
+    {% endif %}
   </div>
 
   <div class="collection-grid collection-grid--compact">

@@ -33,12 +33,12 @@
       {% endfor %}
       <footer>
         <a href="{{ url('/collections') }}" role="button">See collections</a>
-        <button class="secondary" hx-post="{{ url('/scan') }}" hx-target="#scan-status"
+{% if user and user.is_admin %}        <button class="secondary" hx-post="{{ url('/scan') }}" hx-target="#scan-status"
                 hx-swap="outerHTML">Scan again</button>
         <button class="secondary outline" hx-post="{{ url('/scan') }}"
                 hx-vals='{"refresh": "1"}' hx-target="#scan-status"
                 hx-swap="outerHTML">Refresh everything</button>
-      </footer>
+{% endif %}      </footer>
     </article>
   {% endif %}
 </div>

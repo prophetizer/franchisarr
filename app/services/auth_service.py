@@ -75,6 +75,35 @@ def discover_machine_identifier(
     return machine_identifier
 
 
+class MemberSignInDisabled(PermissionError):
+    """A real account on this install's server, but not an administrator, and the admin hasn't
+    allowed anyone else in. Separate from a wrong password so the message can say what to do."""
+
+
+def members_allowed(session: Session) -> bool:
+    """Whether non-administrators may sign in (Settings → Who can sign in). Off by default."""
+    from app.services.settings_service import SettingKey, get_setting
+
+    return (get_setting(session, SettingKey.ALLOW_MEMBER_SIGNIN) or "").strip().lower() == "true"
+
+
+MEMBER_REFUSAL = (
+    "Only administrators can sign in to this Franchisarr. An administrator can let other "
+    "people on the server in from Settings."
+)
+
+
+def _refuse_member(session: Session, external_id: str, is_admin_there: bool) -> None:
+    """Refuse a non-administrator unless members are allowed. An existing account an admin has
+    already been given (is_admin here) is let through even if the server no longer says so."""
+    if is_admin_there or members_allowed(session):
+        return
+    existing = session.exec(select(User).where(col(User.external_user_id) == external_id)).first()
+    if existing is not None and existing.is_admin:
+        return
+    raise MemberSignInDisabled(MEMBER_REFUSAL)
+
+
 def provision_plex_user(session: Session, account: plex_oauth.PlexAccount, *, is_owner: bool) -> User:
     """Find or create the local record for a Plex account.
 
@@ -108,7 +137,8 @@ def sign_in_with_plex_token(session: Session, token: str) -> User:
 
     Raises PlexAccessDenied unless the account can reach one of *this* install's Plex servers.
     That check is the entire reason this function exists rather than callers trusting the token.
-    Owning any of them administers the install.
+    Owning any of them administers the install. Anyone else the server is shared with is refused
+    with MemberSignInDisabled unless an admin has allowed members in.
     """
     client_id = get_or_create_client_id(session)
     servers = known_plex_servers(session)
@@ -126,6 +156,7 @@ def sign_in_with_plex_token(session: Session, token: str) -> User:
 
     account = plex_oauth.get_account(client_id, token)
     is_owner = any(plex_oauth.owns_server(client_id, token, s.machine_identifier) for s in reachable)
+    _refuse_member(session, account.id, is_owner)
     return provision_plex_user(session, account, is_owner=is_owner)
 
 
@@ -161,6 +192,7 @@ def sign_in_with_media_server(
     account = client.authenticate(username, password)
     provider = client.kind.value
     external_id = f"{provider}:{account['user_id']}"
+    _refuse_member(session, external_id, bool(account["is_admin"]))
 
     user = session.exec(select(User).where(col(User.external_user_id) == external_id)).first()
     if user is None:

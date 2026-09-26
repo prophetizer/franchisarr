@@ -169,6 +169,24 @@ TP_COMMUNITY_THEME=false</code></pre>
 </article>
 
 <article>
+  <header><strong>Who can sign in</strong></header>
+  <form method="post" action="{{ url('/settings/members') }}">
+    <label>
+      <input type="checkbox" name="enabled" value="1" {% if members_allowed %}checked{% endif %}>
+      Let people I share my server with sign in
+    </label>
+    <p><button type="submit" class="secondary">Save</button></p>
+  </form>
+  <p><small class="muted">
+    Off, only administrators can sign in: the Plex server's owner, Jellyfin or Emby
+    administrators, and the local admin account. On, anyone with access to your media server
+    can sign in too — they can browse the lists and hide titles for themselves, but can't add
+    anything, start scans or change settings. Turning it off signs them out and stops their API
+    keys.
+  </small></p>
+</article>
+
+<article>
   <header><strong>Update check</strong></header>
   {% if update_check_forced %}
     <p>{{ 'On' if update_check_enabled else 'Off' }} — set by <code>UPDATE_CHECK</code> in the

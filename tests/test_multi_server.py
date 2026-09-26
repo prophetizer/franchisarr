@@ -253,18 +253,23 @@ def test_testing_a_plex_server_learns_its_identity(client: TestClient, fixtures_
         assert session.get(MediaServer, server_id).machine_identifier
 
 
-def test_a_non_admin_can_see_but_not_change_servers(app_factory) -> None:
+def test_a_non_admin_can_neither_see_nor_change_servers(app_factory) -> None:
+    """Servers are household configuration, admin-only since members could be let in at all
+    (tests/test_member_access.py). Members allowed here, so it is the admin check answering."""
     from app.models import User
+    from app.services.settings_service import SettingKey, set_setting
 
     module = app_factory(BASE)
     with TestClient(module.app, follow_redirects=False) as viewer:
         with Session(get_engine()) as session:
             create_local_admin(session, "admin", PASSWORD)
             user = session.exec(select(User)).one(); user.is_admin = False
-            session.add(user); session.commit()
+            session.add(user)
+            set_setting(session, SettingKey.ALLOW_MEMBER_SIGNIN, "true")
+            session.commit()
             seed_server(session, "plex")
         viewer.post(f"{BASE}/login", data={"username": "admin", "password": PASSWORD})
 
-        assert viewer.get(f"{BASE}/media-servers").status_code == 200
+        assert viewer.get(f"{BASE}/media-servers").status_code == 403
         assert viewer.post(f"{BASE}/media-servers", data={
             "name": "x", "kind": "plex", "url": "http://p", "credential": "t" * 20}).status_code == 403

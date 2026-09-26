@@ -12,7 +12,7 @@ from typing import Annotated
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 
-from app.auth.dependencies import DbSession, RequiredUser
+from app.auth.dependencies import AdminUser, DbSession, RequiredUser
 from app.clients.sonarr_client import MONITOR_MODE_LABELS, SonarrError
 from app.clients.tmdb_client import TmdbClient
 from app.models import MappingSource, DismissedItem, ItemType, SpinoffMapping
@@ -122,7 +122,7 @@ def close_candidates() -> HTMLResponse:
 
 
 @router.get("/shows/{tmdb_id}/candidates", response_class=HTMLResponse)
-def candidates(request: Request, session: DbSession, user: RequiredUser, tmdb_id: int):
+def candidates(request: Request, session: DbSession, user: AdminUser, tmdb_id: int):
     """Heuristic suggestions for one show. Computed live and never stored."""
     show = next(
         (item for item in tv_spinoff_service.owned_shows(session) if item.tmdb_id == tmdb_id),
@@ -156,7 +156,7 @@ def candidates(request: Request, session: DbSession, user: RequiredUser, tmdb_id
 def create_mapping(
     request: Request,
     session: DbSession,
-    user: RequiredUser,
+    user: AdminUser,
     source_show_tmdb_id: Annotated[int, Form()],
     spinoff_show_tmdb_id: Annotated[int, Form()],
 ):
@@ -189,7 +189,7 @@ def create_mapping(
 
 
 @router.post("/shows/mappings/{mapping_id}/delete", response_class=HTMLResponse)
-def delete_mapping(request: Request, session: DbSession, user: RequiredUser, mapping_id: int):
+def delete_mapping(request: Request, session: DbSession, user: AdminUser, mapping_id: int):
     tv_spinoff_service.remove_mapping(session, mapping_id)
     return _lists(request, session, user)
 
@@ -213,7 +213,7 @@ def close_add_dialog() -> HTMLResponse:
 def add_show_dialog(
     request: Request,
     session: DbSession,
-    user: RequiredUser,
+    user: AdminUser,
     tmdb_id: int,
     instance_id: int | None = None,
 ):
@@ -260,7 +260,7 @@ def add_show_dialog(
 def submit_show_request(
     request: Request,
     session: DbSession,
-    user: RequiredUser,
+    user: AdminUser,
     tmdb_id: Annotated[int, Form()],
     seerr_id: Annotated[int, Form()],
 ):
@@ -286,7 +286,7 @@ def submit_show_request(
 def submit_add_show(
     request: Request,
     session: DbSession,
-    user: RequiredUser,
+    user: AdminUser,
     tmdb_id: Annotated[int, Form()],
     instance_id: Annotated[int, Form()],
     quality_profile_id: Annotated[int, Form()],

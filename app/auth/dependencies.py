@@ -43,9 +43,18 @@ def current_user(request: Request, session: DbSession) -> User | None:
     same routes serve the web UI and the CLI without duplicating them.
     """
     user = get_session_user(session, request.cookies.get(COOKIE_NAME))
-    if user is not None:
-        return user
-    return find_user_by_api_key(session, request.headers.get(API_KEY_HEADER))
+    if user is None:
+        user = find_user_by_api_key(session, request.headers.get(API_KEY_HEADER))
+    return user if user_may_use(session, user) else None
+
+
+def user_may_use(session: Session, user: User | None) -> bool:
+    """A non-admin account works only while an admin allows members. Checked on every request,
+    not just at sign-in, so turning the switch off also ends sessions and API keys already
+    issued to members."""
+    from app.services.auth_service import members_allowed
+
+    return user is not None and (user.is_admin or members_allowed(session))
 
 
 CurrentUser = Annotated[User | None, Depends(current_user)]

@@ -94,7 +94,11 @@ every `IncludedLibrary` and `LibraryItem` carries a `server_id`. Ownership is a 
 so a film on two servers is owned once; `ownership_service` adds which servers hold it and whether
 it was watched on any. Sign-in: Plex by PIN with a server-access check against every known Plex
 row (owning any of them administers); Jellyfin/Emby by the person's own username and password
-against the server they pick, which is the same authorisation in different clothes. Watched state
+against the server they pick, which is the same authorisation in different clothes. Neither is
+enough on its own for a non-administrator: `auth_service.members_allowed` (Settings → Who can
+sign in, off by default) gates them at sign-in and on every request (`dependencies.user_may_use`).
+A route that adds, scans or changes household state takes `AdminUser`; `tests/test_member_access.py`
+lists them, so a new one belongs in its `ADMIN_ONLY` table. Watched state
 is per account, and an API key is nobody's, so a Jellyfin/Emby row names a `watched_user`
 (default: the first administrator); Plex reports the token owner's. Measured before building: both of the developer's servers carry a TMDb id on
 99.7–100% of items, so matching is id-first with the IMDb `/find` fallback for the rest.

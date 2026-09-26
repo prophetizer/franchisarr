@@ -20,6 +20,7 @@ from app.auth.local_admin import authenticate_local, has_local_admin
 from app.auth.sessions import COOKIE_NAME, SESSION_LIFETIME, create_session, delete_session
 from app.config import get_settings
 from app.services.auth_service import (
+    MemberSignInDisabled,
     PlexAccessDenied,
     plex_sign_in_available,
     get_or_create_client_id,
@@ -150,7 +151,9 @@ def server_login_submit(
     """Sign in with a Jellyfin or Emby account. The credentials go to that server and are not
     stored here; what comes back is the server's word that this person has an account on it."""
     from app.clients.emby_client import EmbyAuthError, EmbyClientError
-    from app.services.auth_service import MediaServerSignInUnavailable, sign_in_with_media_server
+    from app.services.auth_service import (
+        MediaServerSignInUnavailable, MemberSignInDisabled, sign_in_with_media_server,
+    )
 
     from app.hardening import client_key, login_limiter
 
@@ -165,6 +168,12 @@ def server_login_submit(
             request, "login.html",
             _login_context(session, next=next, error="Incorrect username or password."),
             status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+    except MemberSignInDisabled as exc:
+        # The password was right, so this is not a failed attempt for the rate limiter.
+        return get_templates().TemplateResponse(
+            request, "login.html", _login_context(session, next=next, error=str(exc)),
+            status_code=status.HTTP_403_FORBIDDEN,
         )
     except (EmbyClientError, MediaServerSignInUnavailable) as exc:
         return get_templates().TemplateResponse(
@@ -232,8 +241,9 @@ def plex_poll(request: Request, session: DbSession, next: Annotated[str, Form()]
 
     try:
         user = sign_in_with_plex_token(session, token)
-    except PlexAccessDenied as exc:
-        # Expected and important: a valid Plex account that isn't allowed on this server.
+    except (PlexAccessDenied, MemberSignInDisabled) as exc:
+        # Expected and important: a valid Plex account that isn't allowed on this install --
+        # either it can't reach the server, or it can but isn't the owner and members are off.
         return JSONResponse({"error": str(exc)}, status_code=status.HTTP_403_FORBIDDEN)
     except plex_oauth.PlexOAuthError as exc:
         return JSONResponse({"error": str(exc)}, status_code=status.HTTP_502_BAD_GATEWAY)

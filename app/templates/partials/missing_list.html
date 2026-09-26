@@ -8,8 +8,10 @@
         <header><strong class="film-title">{{ movie.title }}</strong> {% include "partials/rating.html" %}</header>
         <p class="collection-counts muted"><span>{{ movie.release_year or '' }}</span></p>
         <p class="card-actions">
+          {% if user and user.is_admin %}
           <button hx-get="{{ url('/add/' ~ movie.tmdb_id) }}"
                   hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
+          {% endif %}
 
           {# Two different kinds of "hide this", deliberately not one button. Dismiss is a personal
              preference; exclude is a correction to TMDb's data that everyone should get. #}
@@ -18,11 +20,13 @@
                   hx-target="#missing-list" hx-swap="innerHTML"
                   title="Hide this film from your own lists only">Not interested</button>
 
+          {% if user and user.is_admin %}
           <button class="secondary outline"
                   hx-post="{{ url('/collections/' ~ gap.collection_id ~ '/exclude/' ~ movie.tmdb_id) }}"
                   hx-target="#missing-list" hx-swap="innerHTML"
                   title="TMDb lists this as part of the collection, but it isn't really — hides it for everyone">
             Not part of this collection</button>
+          {% endif %}
         </p>
       {% endcall %}
     {% endfor %}

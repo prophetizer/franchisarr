@@ -220,6 +220,11 @@ def test_a_non_admin_cannot_reach_the_export(client: TestClient) -> None:
     with Session(get_engine()) as session:
         ordinary = User(external_user_id="99", external_username="housemate", is_admin=False)
         session.add(ordinary)
+        # Members allowed in, so this tests the admin check itself; with members off (the
+        # default) the key isn't accepted at all -- tests/test_member_access.py covers that.
+        from app.services.settings_service import SettingKey as _Key, set_setting as _set
+
+        _set(session, _Key.ALLOW_MEMBER_SIGNIN, "true")
         session.commit()
         session.refresh(ordinary)
         key = generate_api_key(session, ordinary)

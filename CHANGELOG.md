@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] — 2026-09-26
+
+Only administrators can sign in now, unless you choose otherwise.
+
+### Security
+
+- **Sign-in is limited to administrators by default.** Before, anyone your Plex server was shared
+  with could sign in, as could any account on a configured Jellyfin or Emby server. Now only the
+  Plex server's owner, Jellyfin/Emby administrators and the local admin account are let in.
+  **Settings → Who can sign in** lets everyone else in if you want that.
+- **People who aren't administrators can only browse and hide titles for themselves.** Before,
+  they could also add to Radarr and Sonarr, request through Seerr, start scans, and change
+  household settings, including the scan schedule and the **notification webhook URL**, as well
+  as "not part of this collection", spin-off mappings and preferences. All of that is admin-only
+  now, and the controls are hidden from them. The Servers, Instances, Libraries and Settings
+  pages are admin-only too.
+
+### Upgrading
+
+- If people who aren't administrators already use your install, they are signed out after this
+  update, and their API keys stop working, until you turn on **Settings → Who can sign in**.
+  Administrators aren't affected.
+
 ## [0.24.0] — 2026-09-25
 
 Every page that lists films or shows now uses the same tiles as the Collections page.

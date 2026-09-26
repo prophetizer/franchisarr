@@ -55,7 +55,9 @@ def _tmdb(session: Session):
 def list_user(request: Request, session: DbSession, api_key: str | None = Query(default=None)) -> User:
     """A key from the query string, or the usual header. No cookie: a list URL is for a machine."""
     user = find_user_by_api_key(session, api_key or request.headers.get(API_KEY_HEADER))
-    if user is None:
+    from app.auth.dependencies import user_may_use
+
+    if not user_may_use(session, user):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="A valid api_key is required.")
     return user
 

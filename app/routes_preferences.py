@@ -12,7 +12,7 @@ from typing import Annotated
 from fastapi import APIRouter, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from app.auth.dependencies import DbSession, RequiredUser
+from app.auth.dependencies import AdminUser, DbSession
 from app.config import get_settings
 from app.services.settings_service import SettingKey, get_setting, set_setting
 from app.templating import get_templates
@@ -33,7 +33,7 @@ def preferences_reviewed(session) -> bool:  # noqa: ANN001
 
 
 @router.get("/preferences", response_class=HTMLResponse)
-def preferences(request: Request, session: DbSession, user: RequiredUser,
+def preferences(request: Request, session: DbSession, user: AdminUser,
                 first: bool = False, saved: bool = False):
     from app.services import director_service, movie_gap_service
 
@@ -55,7 +55,7 @@ def preferences(request: Request, session: DbSession, user: RequiredUser,
 @router.post("/preferences")
 def save_preferences(
     session: DbSession,
-    user: RequiredUser,
+    user: AdminUser,
     min_rating: Annotated[str, Form()] = "0",
     director_floor: Annotated[str, Form()] = "5",
     include_tv_films: Annotated[str, Form()] = "",

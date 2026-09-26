@@ -55,10 +55,12 @@
             <a href="{{ url('/collections/' ~ film.collection_id) }}">{{ film.collection_name }}</a>
             · you have {{ film.owned_count }} of {{ film.total_count }}
           </small></p>
+          {% if user and user.is_admin %}
           <p class="card-actions">
             <button class="outline" hx-get="{{ url('/add/' ~ film.tmdb_id) }}"
                     hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
           </p>
+          {% endif %}
         </article>
     {% endfor %}
   </div>

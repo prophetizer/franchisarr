@@ -18,9 +18,9 @@
     {% if not scanned %}
       <header>Nothing scanned yet</header>
       <p>Run a scan to find the gaps in your library.</p>
-      <button hx-post="{{ url('/scan') }}" hx-target="#scan-status" hx-swap="outerHTML">
+{% if user and user.is_admin %}      <button hx-post="{{ url('/scan') }}" hx-target="#scan-status" hx-swap="outerHTML">
         Scan my library</button>
-      <footer><small>This walks your Plex libraries and looks each film up on TMDb. On a few
+{% endif %}      <footer><small>This walks your Plex libraries and looks each film up on TMDb. On a few
         thousand films it takes a handful of minutes, and runs in the background — you don't have
         to stay on this page.</small></footer>
     {% else %}
@@ -43,6 +43,7 @@
         {% if not started %}<strong>all</strong>{% else %}<a href="{{ url('/collections' ~ ('?sort=name' if sort == 'name' else '')) }}">all</a>{% endif %}
       {% endif %}
     </p>
+    {% if user and user.is_admin %}
     <form method="post" action="{{ url('/collections/rating-filter') }}" class="gap-filter">
       <label for="min_rating">Hide films rated below</label>
       <input type="number" id="min_rating" name="min_rating" min="0" max="10" step="0.1"
@@ -59,6 +60,7 @@
     </form>
     <button class="secondary outline" hx-post="{{ url('/scan') }}" hx-target="#scan-status"
             hx-swap="outerHTML">Rescan my library</button>
+    {% endif %}
   </div>
   <div class="collection-grid collection-grid--compact">
     {% for gap in gaps %}

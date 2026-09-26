@@ -57,11 +57,13 @@
             <li><a href="{{ url('/shows') }}">Spin-offs</a></li>
             <li><a href="{{ url('/upcoming') }}">Upcoming</a></li>
             <li><a href="{{ url('/directors') }}">Directors</a></li>
-            <li><a href="{{ url('/libraries') }}">Libraries</a></li>
+            {% if user.is_admin %}<li><a href="{{ url('/libraries') }}">Libraries</a></li>{% endif %}
             <li><a href="{{ url('/activity') }}">Activity</a></li>
-            <li><a href="{{ url('/media-servers') }}">Servers</a></li>
-            <li><a href="{{ url('/instances') }}">Instances</a></li>
-            <li><a href="{{ url('/settings') }}">Settings</a></li>
+            {% if user.is_admin %}
+              <li><a href="{{ url('/media-servers') }}">Servers</a></li>
+              <li><a href="{{ url('/instances') }}">Instances</a></li>
+              <li><a href="{{ url('/settings') }}">Settings</a></li>
+            {% endif %}
             <li>
               <small>{{ user.external_username or user.local_username }}</small>
             </li>

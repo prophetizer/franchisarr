@@ -76,7 +76,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.24.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.25.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -264,7 +264,14 @@ Franchisarr never sees your Plex password; only accounts that can actually reach
 server are admitted, so having a Plex account isn't enough. For Jellyfin and Emby it is a
 username and password, checked against the server itself. Who administers Franchisarr follows
 from the server: with Plex it's the server's owner, with Jellyfin and Emby it's anyone who is an
-administrator there. Everyone else gets an ordinary account with their own dismiss list.
+administrator there.
+
+**By default only administrators can sign in.** Being able to reach your Plex server is a much
+wider group than the people who run your house, so friends and family you share it with are
+refused. If you want them in, turn on **Settings → Who can sign in**. They can then browse the
+lists and hide titles for themselves, but they can't add anything to Radarr, Sonarr or Seerr,
+start scans, or change settings, and they don't see those controls. Turning it off again signs
+them out and stops their API keys.
 
 The local admin account from `ADMIN_USERNAME`/`ADMIN_PASSWORD` is the fallback for when no server
 is configured yet, or plex.tv is unreachable. It's created on **first boot only**, so changing those

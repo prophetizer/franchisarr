@@ -18,6 +18,7 @@ from sqlmodel import Session
 
 from app import __version__
 from app.auth.dependencies import (
+    AdminUser,
     CurrentUser,
     DbSession,
     LoginRequired,
@@ -163,8 +164,9 @@ def manifest() -> Response:
 @router.get("/", response_class=HTMLResponse)
 def index(request: Request, session: DbSession, user: RequiredUser):
     # The library-selection step is part of first-run setup: until something is chosen there is
-    # nothing for the rest of the app to work with.
-    if not library_service.has_selection(session):
+    # nothing for the rest of the app to work with. Only an admin can choose, so only an admin is
+    # sent there; a member sees the (empty) home page rather than a page they can't open.
+    if user.is_admin and not library_service.has_selection(session):
         return RedirectResponse(
             f"{settings.base_url}/libraries", status_code=status.HTTP_303_SEE_OTHER
         )
@@ -200,7 +202,7 @@ def index(request: Request, session: DbSession, user: RequiredUser):
 
 
 @router.get("/libraries", response_class=HTMLResponse)
-def libraries_form(request: Request, session: DbSession, user: RequiredUser):
+def libraries_form(request: Request, session: DbSession, user: AdminUser):
     """Show the library checkboxes, per server, refreshing each list when its server is up."""
     from app.services import media_server_service
 
@@ -218,7 +220,7 @@ def libraries_form(request: Request, session: DbSession, user: RequiredUser):
 def libraries_save(
     request: Request,
     session: DbSession,
-    user: RequiredUser,
+    user: AdminUser,
     keys: Annotated[list[int], Form()] = [],
 ):
     library_service.set_enabled_libraries(session, keys)

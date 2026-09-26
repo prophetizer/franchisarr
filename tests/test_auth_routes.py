@@ -324,10 +324,7 @@ def test_a_stranger_with_a_valid_plex_account_is_refused(client: TestClient) -> 
     assert provisioned == [], "a refused sign-in must not leave an account behind"
 
 
-@responses.activate
-def test_a_shared_user_is_signed_in_without_admin(client: TestClient) -> None:
-    _add_library()
-    _known_plex_server()
+def _shared_plex_user_responses() -> None:
     responses.add(responses.POST, PLEX_PINS_URL, json={"id": 77, "code": "WXYZ"})
     responses.add(responses.GET, f"{PLEX_PINS_URL}/77", json={"id": 77, "authToken": "tok"})
     responses.add(
@@ -336,6 +333,32 @@ def test_a_shared_user_is_signed_in_without_admin(client: TestClient) -> None:
         json=[{"clientIdentifier": OUR_SERVER, "provides": "server", "owned": False}],
     )
     responses.add(responses.GET, PLEX_USER_URL, json={"id": 999, "username": "housemate"})
+
+
+@responses.activate
+def test_someone_the_server_is_shared_with_is_refused_by_default(client: TestClient) -> None:
+    """Reaching the Plex server is not the same as running this house. Unless an admin allows
+    members in, only the owner signs in -- and a refusal leaves no account behind."""
+    _add_library()
+    _known_plex_server()
+    _shared_plex_user_responses()
+
+    client.post(f"{BASE}/auth/plex/start")
+    response = client.post(f"{BASE}/auth/plex/poll")
+
+    assert response.status_code == 403
+    assert "Only administrators can sign in" in response.json()["error"]
+    assert COOKIE_NAME not in response.cookies
+    with Session(get_engine()) as session:
+        assert session.exec(select(User).where(col(User.external_username) == "housemate")).first() is None
+
+
+@responses.activate
+def test_a_shared_user_is_signed_in_without_admin_once_members_are_allowed(client: TestClient) -> None:
+    _add_library()
+    _known_plex_server()
+    _seed(**{SettingKey.ALLOW_MEMBER_SIGNIN: "true"})
+    _shared_plex_user_responses()
 
     client.post(f"{BASE}/auth/plex/start")
     assert client.post(f"{BASE}/auth/plex/poll").json()["status"] == "ok"

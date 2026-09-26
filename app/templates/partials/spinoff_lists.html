@@ -12,11 +12,13 @@
         {% call tile(mapping.poster, 'mapping') %}
           <header><strong class="film-title">{{ mapping.spinoff_name }}</strong></header>
           <p class="collection-counts muted"><span>spin-off of {{ mapping.source_name }}</span></p>
+          {% if user and user.is_admin %}
           <p class="card-actions">
             <button class="secondary outline"
                     hx-post="{{ url('/shows/mappings/' ~ mapping.id ~ '/delete') }}"
                     hx-target="#spinoff-lists" hx-swap="innerHTML">Remove</button>
           </p>
+          {% endif %}
         {% endcall %}
       {% endfor %}
     </div>

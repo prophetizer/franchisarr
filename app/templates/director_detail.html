@@ -9,7 +9,7 @@
       {% if css == 'upcoming' %}{% if movie.release_date %}expected {{ movie.release_date }}{% else %}no release date{% endif %}
       {% else %}{{ movie.year or '' }}{% endif %}
     </span></p>
-    {% if addable %}
+    {% if addable and user and user.is_admin %}
       <p class="card-actions">
         <button class="{{ 'outline' if css != 'missing' else '' }}" hx-get="{{ url('/add/' ~ movie.tmdb_id) }}"
                 hx-target="#add-dialog" hx-swap="innerHTML">{{ 'Add anyway' if css == 'hidden' else 'Add' }}</button>

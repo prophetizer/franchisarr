@@ -13,7 +13,7 @@ from typing import Annotated
 from fastapi import APIRouter, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from app.auth.dependencies import AdminUser, DbSession, RequiredUser
+from app.auth.dependencies import AdminUser, DbSession
 from app.clients.media_server import MediaServerError, MediaServerKind
 from app.config import get_settings
 from app.logging_config import mask_secret
@@ -54,7 +54,7 @@ def _get(session, server_id: int):
 
 @router.get("/media-servers", response_class=HTMLResponse)
 def media_servers_page(
-    request: Request, session: DbSession, user: RequiredUser, saved: bool = False,
+    request: Request, session: DbSession, user: AdminUser, saved: bool = False,
     error: str | None = None,
 ):
     return get_templates().TemplateResponse(
@@ -141,7 +141,7 @@ def remove_server(session: DbSession, user: AdminUser, server_id: int):
 
 
 @router.get("/media-servers/{server_id}/test", response_class=HTMLResponse)
-def test_server(request: Request, session: DbSession, user: RequiredUser, server_id: int):
+def test_server(request: Request, session: DbSession, user: AdminUser, server_id: int):
     server = _get(session, server_id)
     context: dict = {"user": user, "ok": False, "version": "", "error": ""}
     try:

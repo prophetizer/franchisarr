@@ -18,7 +18,9 @@
       <span>{{ relationships }}{% if heuristic %} <small>· possible</small>{% endif %}</span>
     </p>
     <p class="card-actions">
-      <button hx-get="{{ add_url }}" hx-target="{{ add_target }}" hx-swap="innerHTML">Add</button>
+      {% if user and user.is_admin %}
+        <button hx-get="{{ add_url }}" hx-target="{{ add_target }}" hx-swap="innerHTML">Add</button>
+      {% endif %}
       {% if dismiss_url %}
         <button class="secondary outline" hx-post="{{ dismiss_url }}"
                 hx-target="#spinoff-lists" hx-swap="innerHTML">Not interested</button>
@@ -63,7 +65,7 @@
         Nothing found yet. Spin-offs are discovered from Wikidata during a scan — run one and
         they'll appear here. You can also add a mapping by hand below.
       </p>
-      {% if not progress.running %}
+      {% if not progress.running and user and user.is_admin %}
         <p>
           <button hx-post="{{ url('/scan') }}" hx-target="#scan-status" hx-swap="outerHTML">
             Scan my library</button>
@@ -109,6 +111,7 @@
 
   <div id="spinoff-lists">{% include "partials/spinoff_lists.html" %}</div>
 
+  {% if user and user.is_admin %}
   <details id="library" {% if library_pager.page > 1 %}open{% endif %}>
     <summary><strong>Search a single show</strong></summary>
     <p><small class="muted">
@@ -132,6 +135,7 @@
     </div>
     {% with pager = library_pager %}{% include "partials/pager.html" %}{% endwith %}
   </details>
+  {% endif %}
 
   <div id="candidates-loading" class="htmx-indicator"><small class="muted">Asking TMDb…</small></div>
   <div id="candidates"></div>

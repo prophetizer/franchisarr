@@ -58,6 +58,11 @@ the parts that belong to the app, because only it knows what a sign-in or a form
   stops Franchisarr being used to guess a media-server password.
 - **A Plex token is not an authorisation.** Sign-in is refused unless the account can reach
   this install's own Plex server.
+- **Only administrators sign in by default.** Reaching the Plex server isn't enough: people it is
+  shared with, and non-admin Jellyfin/Emby accounts, are refused unless an admin turns on
+  Settings → Who can sign in. Let in, they can browse and hide titles for themselves only; every
+  route that adds to an *arr, scans, or changes household settings requires an admin. Turning the
+  switch off ends their sessions and API keys on the next request.
 - **Cross-site posts are refused** on `Sec-Fetch-Site` / `Origin`, on top of a `SameSite=Lax`,
   `HttpOnly` session cookie (`SESSION_COOKIE_SECURE=true` adds `Secure` behind HTTPS).
 - **Security headers** on every response: a Content-Security-Policy that forbids framing
