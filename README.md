@@ -12,8 +12,8 @@ want and don't have:
   Dad!*, which no name search could — and crosses between film and TV: own the film *Serenity*
   and it suggests the series *Firefly*.
 
-And, built on the same data: **franchise pages** that put films and TV together (*Star Trek —
-you have 6 of 27*), **director pages** (*you own 11 Nolan films; missing* Following *and*
+And, built on the same data: **franchise pages** that put films and TV together (*Star Wars —
+you have 8 of 15*), **director pages** (*you own 11 Nolan films; missing* Following *and*
 Insomnia), an **Upcoming** page of announced films in franchises you own with release-date
 notifications, and **import lists** Radarr and Sonarr can poll so you never have to click Add.
 
@@ -39,8 +39,8 @@ Images are published to GHCR for amd64 and arm64.
 tested against a real library and reviewed by a human. The core — matching, gaps, spin-offs,
 franchises, directors — was measured against that library as it was built (the numbers are in
 the [changelog](CHANGELOG.md)); what hasn't been tested for real is listed under
-[What's been tested](#whats-been-tested-and-on-what). There are ~900 tests with no live network
-calls, and the full git history was scanned for secrets before the repo went public. The code is
+[What's been tested](#whats-been-tested-and-on-what). There are over 900 tests with no live
+network calls, and the full git history was scanned for secrets before the repo went public. The code is
 MIT; read it.
 
 ## What it looks like
@@ -49,11 +49,11 @@ MIT; read it.
 
 | Collection detail | Franchise |
 |---|---|
-| ![A collection's missing, coming-soon and owned films, with Add / Not interested](docs/screenshots/collection-detail.jpg) | ![A franchise page: films and shows across Star Wars, missing ones with Add buttons](docs/screenshots/franchise-star-wars.jpg) |
+| ![A collection's missing and owned films as tiles, with Add / Not interested](docs/screenshots/collection-detail.jpg) | ![A franchise page: films and shows across Star Wars, missing ones with Add buttons](docs/screenshots/franchise-star-wars.jpg) |
 
 | TV spin-offs | Directors |
 |---|---|
-| ![Spin-offs of shows you own, with how each relates](docs/screenshots/spinoffs.jpg) | ![Directors you own five or more films by, and what you're missing](docs/screenshots/directors.jpg) |
+| ![Spin-offs of shows you own, with how each relates](docs/screenshots/spinoffs.jpg) | ![Directors you own several films by, and what you're missing](docs/screenshots/directors.jpg) |
 
 <details>
 <summary>More: franchises, upcoming, media servers, sign-in</summary>
@@ -135,7 +135,7 @@ ones whose names give nothing away (*Family Guy* → *American Dad!*). Weaker ev
 ### Import lists for Radarr and Sonarr
 
 Rather than clicking Add per film, let the *arrs pull from Franchisarr. Under **Settings →
-Import lists**, generate a key; then in Radarr, *Settings → Import Lists → Add → Custom List*
+Import lists**, generate a key (Settings is for administrators); then in Radarr, *Settings → Import Lists → Add → Custom List*
 and paste a films URL, for example:
 
 ```
@@ -292,7 +292,7 @@ restart.
 On first boot every filled-in pair in `.env` becomes a server; after that, add and change them
 under **Servers** in the app (name, address, key; a *watched as* username for Jellyfin/Emby, since an API key belongs to
 nobody). Their libraries are chosen together on the Libraries page and scanned in one pass. A
-film on two servers is owned once; its detail row says which servers hold it. Watched films get a
+film on two servers is owned once; its tile on a collection page says which servers hold it. Watched films get a
 tick, and the Collections page can be filtered to franchises you've actually started.
 
 ## Command line
@@ -302,7 +302,7 @@ can reach the app.
 
 ```bash
 export FRANCHISARR_URL=http://localhost:8000
-export FRANCHISARR_API_KEY=...          # Settings, or `cli.py api-key`
+export FRANCHISARR_API_KEY=...          # an admin's key: Settings, or `cli.py api-key`
 python cli.py scan
 python cli.py gaps
 python cli.py add 176 --instance 1
@@ -310,7 +310,8 @@ python cli.py add 176 --instance 1
 
 `scan` walks your libraries, films and TV together; `gaps` and `spinoffs` list what's missing;
 `review` shows matches that need confirming; `add`, `add-show` and `add-collection` send things to
-Radarr/Sonarr; `instances` and `activity` inspect the rest.
+Radarr/Sonarr; `instances` and `activity` inspect the rest. Scanning and adding need an
+administrator's key, like the buttons they stand in for.
 
 ## Theming
 
@@ -360,6 +361,7 @@ Honest about what has run against the real thing and what has only run against t
 | Overseerr, Jellyseerr | The test suite only; they speak Seerr's API, which is tested for real |
 | Unraid template | Not yet run on Unraid — coming after more testing |
 | Large libraries | A synthetic 20,000-film, 2,000-show library (`scripts/loadtest.py`) |
+| Sign-in for people you share with | The test suite only: refused by default, the Settings switch, and what they can and can't do once let in. No real shared account has signed in on the developer's install |
 
 If your setup is in one of the lower rows and something doesn't work, that's the most useful bug
 report there is.
@@ -387,6 +389,18 @@ fanart.tv's.
 Settings has a config download. **The full one contains your media server credentials and every API key in plain
 text** — treat it like a password. There's a redacted download alongside it with those blanked
 out; that's the one to paste into a forum thread when asking for help.
+
+## Updating
+
+```bash
+docker compose pull franchisarr && docker compose up -d franchisarr
+```
+
+The database upgrades itself on start, and your settings, instances and dismissals are kept. The
+Settings page says when a new version is out (unless you've turned the update check off).
+Before a jump, skim the [changelog](CHANGELOG.md): anything that changes how an existing install
+behaves has an **Upgrading** note — 0.25.0, for example, signs out everyone who isn't an
+administrator until you choose to let them in.
 
 ## Reporting a problem
 
