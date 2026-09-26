@@ -68,6 +68,10 @@ STAR_WARS = {"films_owned": [11, 1891, 1892, 140607], "films_missing": [1893, 18
              "shows_owned": [82856], "shows_missing": [114461, 92830, 83867]}
 NOLAN = 525
 NOLAN_OWNED = {155, 27205, 157336, 872585, 374720, 49026, 1124}
+# NO_POSTER: unowned titles TMDb has no poster for yet (announced sequels, mostly) are left out of
+# the sample. The app shows them with a blank poster block, which is right in use but reads as a
+# broken image in a README screenshot. Owned titles are always kept, so the counts stay honest
+# about what the sample library holds.
 
 
 def seed(db_path: str) -> None:
@@ -111,6 +115,8 @@ def seed(db_path: str) -> None:
             s.add(TmdbCollection(tmdb_collection_id=cid, name=c.name, poster_path=c.poster_path,
                                  backdrop_path=c.backdrop_path))
             for pos, m in enumerate(c.movies):
+                if not m.poster_path and pos not in owned_pos:
+                    continue  # see NO_POSTER below
                 year = int(m.release_date[:4]) if m.release_date else None
                 s.add(TmdbCollectionMovie(collection_id=cid, tmdb_movie_id=m.tmdb_id, title=m.title,
                                           release_year=year, release_date=m.release_date, poster_path=m.poster_path,
@@ -137,6 +143,8 @@ def seed(db_path: str) -> None:
         s.add(Franchise(wikidata_id="Q462", name="Star Wars", kind="media franchise"))
         for fid in STAR_WARS["films_owned"] + STAR_WARS["films_missing"]:
             m = tmdb.get_movie(fid)
+            if not m.poster_path and fid not in STAR_WARS["films_owned"]:
+                continue
             year = int(m.release_date[:4]) if m.release_date else None
             s.add(FranchiseMember(franchise_id="Q462", item_type="movie", tmdb_id=fid, title=m.title, year=year,
                                   poster_path=m.poster_path))
@@ -157,6 +165,8 @@ def seed(db_path: str) -> None:
 
         person = tmdb.get_person(NOLAN)
         for f in tmdb.get_directed_films(NOLAN):
+            if not f.poster_path and f.tmdb_id not in NOLAN_OWNED:
+                continue
             s.add(DirectorFilm(person_id=NOLAN, tmdb_movie_id=f.tmdb_id, title=f.title, release_date=f.release_date,
                                poster_path=f.poster_path, vote_average=f.vote_average, vote_count=f.vote_count,
                                is_documentary=f.is_documentary))
