@@ -23,13 +23,13 @@ concurrency:
 
 jobs:
   screenshots:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # A commit this job makes touches only docs/screenshots, which is not in `paths`, so it
     # cannot retrigger itself.
     if: github.actor != 'github-actions[bot]'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
