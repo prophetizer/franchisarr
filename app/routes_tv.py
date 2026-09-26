@@ -31,19 +31,41 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _show_posters(session, tmdb_ids) -> dict[int, str | None]:
+    """Poster URLs for cached shows, in one query: these lists are tiles, and a lookup per tile
+    is the per-row pattern docs/DEVELOPMENT.md warns about."""
+    from sqlmodel import col, select
+
+    from app.models import TmdbShow
+    from app.services.artwork import SMALL_CARD_SIZE, poster_url
+
+    ids = {i for i in tmdb_ids if i is not None}
+    if not ids:
+        return {}
+    rows = session.exec(
+        select(TmdbShow.tmdb_id, TmdbShow.poster_path).where(col(TmdbShow.tmdb_id).in_(ids))
+    ).all()
+    return {tmdb_id: poster_url(path, SMALL_CARD_SIZE) for tmdb_id, path in rows}
+
+
 def _mapping_rows(session) -> list[dict]:
     """Mappings with both ends named, since ids alone are unreadable in a list."""
+    mappings = [
+        mapping for mapping in tv_spinoff_service.list_mappings(session)
+        # The section is headed "your own list", so it lists what the person added or confirmed
+        # -- not the hundreds a scan brings in from Wikidata, which the Suggested list already
+        # shows and which a scan is free to revise.
+        if mapping.source != MappingSource.WIKIDATA.value
+    ]
+    posters = _show_posters(session, [m.spinoff_show_tmdb_id for m in mappings])
     return [
         {
             "id": mapping.id,
             "source_name": tv_spinoff_service._show_name(session, mapping.source_show_tmdb_id),
             "spinoff_name": tv_spinoff_service._show_name(session, mapping.spinoff_show_tmdb_id),
+            "poster": posters.get(mapping.spinoff_show_tmdb_id),
         }
-        for mapping in tv_spinoff_service.list_mappings(session)
-        # The section is headed "your own list", so it lists what the person added or confirmed
-        # -- not the hundreds a scan brings in from Wikidata, which the Suggested list already
-        # shows and which a scan is free to revise.
-        if mapping.source != MappingSource.WIKIDATA.value
+        for mapping in mappings
     ]
 
 
@@ -80,6 +102,7 @@ def shows(request: Request, session: DbSession, user: RequiredUser, page: int = 
         {
             "user": user,
             "shows": library_pager.items,
+            "show_posters": _show_posters(session, [show.tmdb_id for show in library_pager.items]),
             "owned_total": library_pager.total,
             "library_pager": library_pager,
             "suggestions": pager.items,

@@ -25,8 +25,8 @@ CARD_SIZE = "w342"
 #: Backdrops are rendered full-width behind a heading, so they need the wide sizes.
 BACKDROP_SIZES = ("w300", "w780", "w1280", "original")
 HERO_SIZE = "w1280"
-THUMB_SIZE = "w92"
-#: A small card poster: 88 CSS px wide, so w185 stays sharp on a 2x screen.
+#: A small card poster: 88 CSS px wide, so w185 stays sharp on a 2x screen. Every film and show
+#: in a list is a tile of this size since 0.24.0, so the old w92 thumbnail size is gone.
 SMALL_CARD_SIZE = "w185"
 
 

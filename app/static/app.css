@@ -296,6 +296,21 @@ article > footer [role="button"] { margin-bottom: 0.25rem; }
 
 .collection-card--compact > .missing-preview li { margin-bottom: 0.15rem; }
 
+/* Film and show tiles (partials/tile.html): the compact card, one title each. Detail pages,
+   Upcoming and Spin-offs all use it, so every list of titles has the Collections page's shape. */
+.film-tile > header strong { font-size: 1rem; line-height: 1.3; }
+.film-tile > header .rating { margin-left: 0.25em; }
+
+/* Titles already in the library: the same tile, smaller and denser, so the missing ones above
+   stay what the eye lands on. */
+.collection-grid--owned {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+}
+.collection-grid--owned .collection-card--compact { grid-template-columns: 3.5rem 1fr; }
+.collection-grid--owned .film-tile > header strong { font-size: 0.9rem; }
+.film-tile.owned .collection-poster,
+.film-tile.hidden .collection-poster { opacity: 0.55; }
+
 .card-actions {
   display: flex;
   flex-wrap: wrap;
@@ -364,7 +379,8 @@ article > footer [role="button"] { margin-bottom: 0.25rem; }
 
 /* Upcoming films are visually quieter than missing ones on purpose: they are not something the
  * reader can act on today, and giving them equal weight is what made the raw gap list unusable. */
-.upcoming-section .film-row { opacity: 0.75; }
+.upcoming-section .film-row,
+.upcoming-section .film-tile { opacity: 0.75; }
 
 .owned .film-title::before {
   color: var(--pico-primary);

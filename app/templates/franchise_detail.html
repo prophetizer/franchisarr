@@ -1,34 +1,31 @@
 {% extends "base.html" %}
 {% block title %}{{ f.name }} — Franchisarr{% endblock %}
 
+{% from "partials/tile.html" import tile %}
 {% macro row(t, css) -%}
-  <li class="film-row {{ css }}">
-    {% if t.poster %}
-      <img class="film-poster" src="{{ t.poster }}" alt="" loading="lazy" decoding="async"
-           width="92" height="138">
-    {% endif %}
-    <span class="film-title">
-      {{ t.title }}{% if t.year %} <small class="muted">({{ t.year }})</small>{% endif %}
+  {% call tile(t.poster, css) %}
+    <header>
+      <strong class="film-title">{{ t.title }}</strong>{% if t.year %} <small class="muted">({{ t.year }})</small>{% endif %}
       <small class="muted">{{ 'film' if t.item_type == 'movie' else 'TV' }}</small>
       {% if css == 'owned' %}{% with entry=t %}{% include "partials/owned_mark.html" %}{% endwith %}{% endif %}
-    </span>
-    <span class="film-meta muted">
+    </header>
+    <p class="collection-counts muted"><span>
       {% if t.release_date and css == 'upcoming' %}expected {{ t.release_date }} · {% endif %}
       {% if t.via == 'collection' %}in the {{ t.note }}
       {% elif t.via == 'franchise' %}{{ t.note }}
       {% else %}{{ t.note }}{% endif %}
-    </span>
+    </span></p>
     {% if css != 'owned' %}
-      <span class="film-actions">
+      <p class="card-actions">
         {% if t.item_type == 'movie' %}
           <button class="{{ 'outline' if css == 'upcoming' else '' }}"
                   hx-get="{{ url('/add/' ~ t.tmdb_id) }}" hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
         {% else %}
           <button hx-get="{{ url('/shows/add/' ~ t.tmdb_id) }}" hx-target="#add-show-dialog" hx-swap="innerHTML">Add</button>
         {% endif %}
-      </span>
+      </p>
     {% endif %}
-  </li>
+  {% endcall %}
 {%- endmacro %}
 
 {% block content %}
@@ -59,23 +56,23 @@
 
 {% if f.missing_films %}
   <section><h2>Missing films</h2>
-    <ul class="film-list">{% for t in f.missing_films %}{{ row(t, 'missing') }}{% endfor %}</ul>
+    <div class="collection-grid collection-grid--compact">{% for t in f.missing_films %}{{ row(t, 'missing') }}{% endfor %}</div>
   </section>
 {% endif %}
 {% if f.missing_shows %}
   <section><h2>Missing shows</h2>
-    <ul class="film-list">{% for t in f.missing_shows %}{{ row(t, 'missing') }}{% endfor %}</ul>
+    <div class="collection-grid collection-grid--compact">{% for t in f.missing_shows %}{{ row(t, 'missing') }}{% endfor %}</div>
   </section>
 {% endif %}
 {% if f.upcoming_films %}
   <section class="upcoming-section"><h2>Coming soon</h2>
-    <ul class="film-list">{% for t in f.upcoming_films %}{{ row(t, 'upcoming') }}{% endfor %}</ul>
+    <div class="collection-grid collection-grid--compact">{% for t in f.upcoming_films %}{{ row(t, 'upcoming') }}{% endfor %}</div>
   </section>
 {% endif %}
 {% if f.specials %}
   <details class="hidden-section">
     <summary>{{ f.specials | length }} TV film{{ '' if f.specials | length == 1 else 's' }}, special{{ '' if f.specials | length == 1 else 's' }} or short{{ '' if f.specials | length == 1 else 's' }} — folded away by your preferences</summary>
-    <ul class="film-list">{% for t in f.specials %}{{ row(t, 'hidden') }}{% endfor %}</ul>
+    <div class="collection-grid collection-grid--compact">{% for t in f.specials %}{{ row(t, 'hidden') }}{% endfor %}</div>
   </details>
 {% endif %}
 {% if not f.missing and not f.upcoming_films %}
@@ -84,10 +81,10 @@
 
 {% if f.owned_films or f.owned_shows %}
   <section><h2>In your library</h2>
-    <ul class="film-list">
+    <div class="collection-grid collection-grid--compact collection-grid--owned">
       {% for t in f.owned_films %}{{ row(t, 'owned') }}{% endfor %}
       {% for t in f.owned_shows %}{{ row(t, 'owned') }}{% endfor %}
-    </ul>
+    </div>
   </section>
 {% endif %}
 

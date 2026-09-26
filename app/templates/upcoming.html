@@ -20,18 +20,12 @@
     here gain a release date, or move, the webhook says so.
   </small></p>
 
-  {#- Headings are emitted as encountered rather than via groupby, which sorts by key and would
-      put "No date yet" mid-list and months alphabetically. The list is already in date order. -#}
-  {% set ns = namespace(current=None) %}
-  {% for film in films %}
-    {% if film.month_label != ns.current %}
-      {% if ns.current is not none %}</div></section>{% endif %}
-      {% set ns.current = film.month_label %}
-      <section class="upcoming-month">
-        <h2>{{ film.month_label }}</h2>
-        <div class="collection-grid collection-grid--compact">
-    {% endif %}
-        <article class="collection-card collection-card--compact">
+  {#- One grid in date order, like every other list of titles. It used to be a heading per month,
+      which on a typical list meant one tile per heading and a single column down the page; the
+      month label moved onto each tile instead, and the list is already sorted, undated last. -#}
+  <div class="collection-grid collection-grid--compact">
+    {% for film in films %}
+        <article class="collection-card collection-card--compact film-tile upcoming">
           {% if film.poster %}
             <div class="collection-poster">
               <img src="{{ film.poster }}" alt="" loading="lazy" decoding="async" width="92" height="138">
@@ -39,20 +33,21 @@
           {% else %}
             <div class="collection-poster collection-poster--empty" aria-hidden="true"></div>
           {% endif %}
-          <header><strong>{{ film.title }}</strong></header>
+          <header><strong class="film-title">{{ film.title }}</strong></header>
+          {#- The month, then the exact date: the month is what the old per-month headings said,
+              now carried by each tile. -#}
           <p class="collection-counts muted">
             <span>
+              <strong class="month-label">{{ film.month_label }}</strong>
               {% if film.release_date %}
                 {% set days = film.days_until(today) %}
-                {{ film.release_date }}
+                · {{ film.release_date }}
                 {% if days is not none %}
                   {% if days == 0 %}· <strong>today</strong>
                   {% elif days == 1 %}· tomorrow
                   {% elif days > 0 %}· in {{ days }} days
                   {% endif %}
                 {% endif %}
-              {% else %}
-                no release date announced
               {% endif %}
             </span>
           </p>
@@ -65,8 +60,8 @@
                     hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
           </p>
         </article>
-  {% endfor %}
-  {% if ns.current is not none %}</div></section>{% endif %}
+    {% endfor %}
+  </div>
 
   {% include "partials/pager.html" %}
   <div id="add-dialog"></div>

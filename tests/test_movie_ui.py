@@ -499,7 +499,7 @@ def test_missing_films_show_a_thumbnail(client: TestClient) -> None:
 
     body = client.get(f"{BASE}/collections/{COLLECTION}").text
 
-    assert "https://image.tmdb.org/t/p/w92/film-poster.jpg" in body
+    assert "https://image.tmdb.org/t/p/w185/film-poster.jpg" in body
 
 
 def test_a_collection_with_no_artwork_renders_without_a_broken_image(
@@ -656,7 +656,7 @@ def test_a_spinoff_suggestion_shows_its_poster(client: TestClient) -> None:
 
     body = client.get(f"{BASE}/shows").text
 
-    assert "https://image.tmdb.org/t/p/w92/la.jpg" in body
+    assert "https://image.tmdb.org/t/p/w185/la.jpg" in body
 
 
 def test_a_spinoff_suggestion_links_to_where_you_can_see_what_it_is(client: TestClient) -> None:

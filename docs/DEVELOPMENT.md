@@ -57,6 +57,10 @@ Numbered because code comments cite them.
   stylesheet can repaint the UI. `tests/test_theming.py` enforces it.
 - **Static assets are versioned** (`?v=<version>`); pages are `Cache-Control: no-cache`. Use
   `asset()` for anything under `/static/`.
+- **Every list of films or shows is a grid of tiles.** Use `partials/tile.html` inside a
+  `collection-grid collection-grid--compact` (add `collection-grid--owned` for titles already in
+  the library), not a `film-list` of rows, so every page has the Collections page's shape. Rows
+  are for settings-like pages (servers, instances). Posters in tiles use `SMALL_CARD_SIZE`.
 - **Check layout at phone width.** The test suite cannot see layout. Two Pico defaults have bitten:
   `nav ul` never wraps, and `aria-busy` brings `white-space: nowrap`.
 - **Wikidata:** no `UNION` in a query with a `VALUES` batch (it times out where the two halves

@@ -127,9 +127,9 @@ class SpinoffSuggestion:
 
     @property
     def poster(self) -> str | None:
-        from app.services.artwork import THUMB_SIZE, poster_url
+        from app.services.artwork import SMALL_CARD_SIZE, poster_url
 
-        return poster_url(self.poster_path, THUMB_SIZE)
+        return poster_url(self.poster_path, SMALL_CARD_SIZE)
 
     @property
     def imdb_url(self) -> str | None:

@@ -62,7 +62,7 @@ SHOWS = [  # (tmdb id, owned, spin-off of -> (source id, wikidata relation))
     (1396, True, None), (60059, False, (1396, "P155")),
     (73586, True, None), (157744, False, (73586, "P155")), (118357, False, (73586, "P155")),
     (1434, True, None), (1433, False, (1434, "P2512")),
-    (1668, True, None), (2160, False, (1668, "P2512")),                  # Friends -> Joey
+    (1668, True, None), (1466, False, (1668, "P2512")),                  # Friends -> Joey
 ]
 STAR_WARS = {"films_owned": [11, 1891, 1892, 140607], "films_missing": [1893, 1894, 1895, 12180, 330459],
              "shows_owned": [82856], "shows_missing": [114461, 92830, 83867]}

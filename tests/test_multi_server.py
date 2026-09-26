@@ -87,7 +87,7 @@ def test_the_collection_counts_films_not_copies(client: TestClient) -> None:
     body = client.get(f"{BASE}/collections/{COLLECTION}").text
 
     assert "2 of 3 in your library, 1 watched." in body
-    assert body.count('class="film-row owned"') == 2
+    assert body.count('film-tile owned') == 2
     assert "on Attic, Living room" in body, "a two-server install says where a film is"
     assert 'class="watched-mark"' in body
 

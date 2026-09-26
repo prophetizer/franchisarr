@@ -82,9 +82,9 @@ class MissingMovie:
 
     @property
     def poster(self) -> str | None:
-        from app.services.artwork import THUMB_SIZE, poster_url
+        from app.services.artwork import SMALL_CARD_SIZE, poster_url
 
-        return poster_url(self.poster_path, THUMB_SIZE)
+        return poster_url(self.poster_path, SMALL_CARD_SIZE)
 
     def is_released(self, today: date | None = None) -> bool:
         """Whether this film exists yet.

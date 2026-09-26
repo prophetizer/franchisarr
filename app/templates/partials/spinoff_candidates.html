@@ -1,3 +1,4 @@
+{% from "partials/tile.html" import tile %}
 {# The lower-confidence tier (technical challenge #6). Visibly separate from confirmed mappings,
    and nothing here can be acted on without a person saying "yes, that's a spin-off" first. #}
 <article class="candidates-panel">
@@ -18,26 +19,22 @@
       Guesses based on the title, not facts. Confirm the ones that are really spin-offs and
       they'll join your mapping list.
     </small></p>
-    <ul class="film-list">
+    <div class="collection-grid collection-grid--compact">
       {% for candidate in candidates %}
-        <li class="film-row">
-          {% if candidate.poster %}
-            <img class="film-poster" src="{{ candidate.poster }}" alt="" loading="lazy"
-                 decoding="async" width="92" height="138">
-          {% endif %}
-          <span class="film-title">
-            {{ candidate.spinoff_name }}
+        {% call tile(candidate.poster, 'candidate') %}
+          <header>
+            <strong class="film-title">{{ candidate.spinoff_name }}</strong>
             {% if candidate.first_air_year %}<small class="muted">({{ candidate.first_air_year }})</small>{% endif %}
             {% with item = candidate %}{% include "partials/show_links.html" %}{% endwith %}
-          </span>
-          <span class="film-actions">
+          </header>
+          <p class="card-actions">
             <button hx-post="{{ url('/shows/mappings') }}"
                     hx-vals='{"source_show_tmdb_id": {{ candidate.source_show_tmdb_id }}, "spinoff_show_tmdb_id": {{ candidate.spinoff_tmdb_id }}}'
                     hx-target="#candidates" hx-swap="innerHTML">Yes, it's a spin-off</button>
-          </span>
-        </li>
+          </p>
+        {% endcall %}
       {% endfor %}
-    </ul>
+    </div>
   {% endif %}
 
   <footer>

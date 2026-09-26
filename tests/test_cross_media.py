@@ -262,7 +262,7 @@ def test_the_spinoff_page_lists_shows_from_films_with_a_sonarr_add(client: TestC
     assert "TV from films you own" in body
     assert "precedes Serenity" in body
     assert 'hx-get="/franchisarr/shows/add/1437"' in body
-    assert "https://image.tmdb.org/t/p/w92/ff.jpg" in body
+    assert "https://image.tmdb.org/t/p/w185/ff.jpg" in body
 
 
 def test_the_spinoff_page_lists_films_from_shows_with_a_radarr_add(client: TestClient) -> None:

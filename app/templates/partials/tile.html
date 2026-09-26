@@ -1,0 +1,19 @@
+{# One film or show as a tile: the same card the Collections, Franchises and Directors grids use,
+   so every page that lists titles looks alike. The body (title, meta, actions) is the caller's;
+   the tile supplies the card and the poster column, with a blank poster-shaped block when there
+   is no artwork so the text lines up with its neighbours.
+
+   Used inside <div class="collection-grid collection-grid--compact">, or --owned for the smaller
+   tiles of titles already in the library. #}
+{% macro tile(poster, css='') -%}
+  <article class="collection-card collection-card--compact film-tile {{ css }}">
+    {% if poster %}
+      <div class="collection-poster">
+        <img src="{{ poster }}" alt="" loading="lazy" decoding="async" width="92" height="138">
+      </div>
+    {% else %}
+      <div class="collection-poster collection-poster--empty" aria-hidden="true"></div>
+    {% endif %}
+    {{ caller() }}
+  </article>
+{%- endmacro %}

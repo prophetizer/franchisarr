@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/tile.html" import tile %}
 {% macro suggestion_card(poster, title, year, links, relationships, heuristic, add_url, add_target, dismiss_url) -%}
   <article class="collection-card collection-card--compact">
     {% if poster %}
@@ -115,20 +116,20 @@
       one has been missed. It searches TMDb for shows <em>named after</em> the one you pick, which
       finds "NCIS: Los Angeles" but never "American Dad!" — {{ '{:,}'.format(owned_total) }} show{{ '' if owned_total == 1 else 's' }} in your library.
     </small></p>
-    <ul class="film-list">
+    <div class="collection-grid collection-grid--compact collection-grid--owned">
       {% for show in shows %}
-        <li class="film-row">
-          <span class="film-title">{{ show.title }}</span>
-          <span class="film-meta muted">{{ show.year or '' }}</span>
-          <span class="film-actions">
+        {% call tile(show_posters.get(show.tmdb_id), 'library-show') %}
+          <header><strong class="film-title">{{ show.title }}</strong></header>
+          <p class="collection-counts muted"><span>{{ show.year or '' }}</span></p>
+          <p class="card-actions">
             <button class="outline"
                     hx-get="{{ url('/shows/' ~ show.tmdb_id ~ '/candidates') }}"
                     hx-target="#candidates" hx-swap="innerHTML"
                     hx-indicator="#candidates-loading">Look for spin-offs</button>
-          </span>
-        </li>
+          </p>
+        {% endcall %}
       {% endfor %}
-    </ul>
+    </div>
     {% with pager = library_pager %}{% include "partials/pager.html" %}{% endwith %}
   </details>
 

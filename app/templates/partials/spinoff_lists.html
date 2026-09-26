@@ -1,4 +1,5 @@
 {# Confirmed mappings. Re-rendered on its own by htmx after a mapping is added or removed. #}
+{% from "partials/tile.html" import tile %}
 {% if mappings %}
   <section>
     <h2>Confirmed spin-off mappings</h2>
@@ -6,18 +7,18 @@
       Your own list. Mappings you confirm or add by hand live here, and a scan never overwrites
       them — your judgement outranks Wikidata's.
     </small></p>
-    <ul class="film-list">
+    <div class="collection-grid collection-grid--compact">
       {% for mapping in mappings %}
-        <li class="film-row">
-          <span class="film-title">{{ mapping.spinoff_name }}</span>
-          <span class="film-meta muted">spin-off of {{ mapping.source_name }}</span>
-          <span class="film-actions">
+        {% call tile(mapping.poster, 'mapping') %}
+          <header><strong class="film-title">{{ mapping.spinoff_name }}</strong></header>
+          <p class="collection-counts muted"><span>spin-off of {{ mapping.source_name }}</span></p>
+          <p class="card-actions">
             <button class="secondary outline"
                     hx-post="{{ url('/shows/mappings/' ~ mapping.id ~ '/delete') }}"
                     hx-target="#spinoff-lists" hx-swap="innerHTML">Remove</button>
-          </span>
-        </li>
+          </p>
+        {% endcall %}
       {% endfor %}
-    </ul>
+    </div>
   </section>
 {% endif %}

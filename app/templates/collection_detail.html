@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/tile.html" import tile %}
 {% block title %}{{ gap.name }} — Franchisarr{% endblock %}
 
 {% block content %}
@@ -52,24 +53,20 @@
       Announced but not released. You can still add one — Radarr will monitor it and grab it when
       it appears.
     </small></p>
-    <ul class="film-list">
+    <div class="collection-grid collection-grid--compact">
       {% for movie in gap.upcoming %}
-        <li class="film-row upcoming">
-          {% if movie.poster %}
-            <img class="film-poster" src="{{ movie.poster }}" alt="" loading="lazy"
-                 decoding="async" width="92" height="138">
-          {% endif %}
-          <span class="film-title">{{ movie.title }}</span>
-          <span class="film-meta muted">
+        {% call tile(movie.poster, 'upcoming') %}
+          <header><strong class="film-title">{{ movie.title }}</strong></header>
+          <p class="collection-counts muted"><span>
             {% if movie.release_date %}expected {{ movie.release_date }}{% else %}no release date announced{% endif %}
-          </span>
-          <span class="film-actions">
+          </span></p>
+          <p class="card-actions">
             <button class="outline" hx-get="{{ url('/add/' ~ movie.tmdb_id) }}"
                     hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
-          </span>
-        </li>
+          </p>
+        {% endcall %}
       {% endfor %}
-    </ul>
+    </div>
   </section>
 {% endif %}
 
@@ -81,40 +78,32 @@
       {{ gap.hidden | length }} film{{ '' if gap.hidden | length == 1 else 's' }} hidden by your
       rating filter
     </summary>
-    <ul class="film-list">
+    <div class="collection-grid collection-grid--compact">
       {% for movie in gap.hidden %}
-        <li class="film-row hidden">
-          {% if movie.poster %}
-            <img class="film-poster" src="{{ movie.poster }}" alt="" loading="lazy"
-                 decoding="async" width="92" height="138">
-          {% endif %}
-          <span class="film-title">{{ movie.title }} {% include "partials/rating.html" %}</span>
-          <span class="film-meta muted">{{ movie.release_year or '' }}</span>
-          <span class="film-actions">
+        {% call tile(movie.poster, 'hidden') %}
+          <header><strong class="film-title">{{ movie.title }}</strong> {% include "partials/rating.html" %}</header>
+          <p class="collection-counts muted"><span>{{ movie.release_year or '' }}</span></p>
+          <p class="card-actions">
             <button class="outline" hx-get="{{ url('/add/' ~ movie.tmdb_id) }}"
                     hx-target="#add-dialog" hx-swap="innerHTML">Add anyway</button>
-          </span>
-        </li>
+          </p>
+        {% endcall %}
       {% endfor %}
-    </ul>
+    </div>
   </details>
 {% endif %}
 
 {% if gap.owned %}
   <section>
     <h2>In your library</h2>
-    <ul class="film-list">
+    <div class="collection-grid collection-grid--compact collection-grid--owned">
       {% for movie in gap.owned %}
-        <li class="film-row owned">
-          {% if movie.poster %}
-            <img class="film-poster" src="{{ movie.poster }}" alt="" loading="lazy"
-                 decoding="async" width="92" height="138">
-          {% endif %}
-          <span class="film-title">{{ movie.title }}{% with entry=movie %}{% include "partials/owned_mark.html" %}{% endwith %}</span>
-          <span class="film-meta muted">{{ movie.release_year or '' }}</span>
-        </li>
+        {% call tile(movie.poster, 'owned') %}
+          <header><strong class="film-title">{{ movie.title }}</strong>{% with entry=movie %}{% include "partials/owned_mark.html" %}{% endwith %}</header>
+          <p class="collection-counts muted"><span>{{ movie.release_year or '' }}</span></p>
+        {% endcall %}
       {% endfor %}
-    </ul>
+    </div>
   </section>
 {% endif %}
 

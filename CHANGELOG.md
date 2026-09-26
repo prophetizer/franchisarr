@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] — 2026-09-25
+
+Every page that lists films or shows now uses the same tiles as the Collections page.
+
+### Changed
+
+- The collection, franchise and director pages show each film or show as a poster tile, in the
+  same grid as the Collections page, not as a row in a list. Missing and coming-soon titles
+  get full tiles with their buttons; titles already in your library get smaller tiles below them.
+- Upcoming is one grid in date order. It used to put each month under its own heading, which
+  usually meant one tile per heading and a single column down the page. Each tile now shows
+  its month and date, with undated films labelled "No date yet" at the end.
+- On Spin-offs, your confirmed mappings, the possible matches from "Search a single show" and
+  the show library it searches from are tiles too, with posters.
+- Film and show posters load at TMDb's 185 px size, not 92 px, so they stay sharp at tile size
+  on a high-resolution screen.
+
+### Fixed
+
+- The README's spin-offs screenshot showed *Alvin and the Chipmunks* as a spin-off of *Friends*:
+  the sample library used the wrong TMDb id for *Joey*.
+
 ## [0.23.2] — 2026-09-25
 
 A correctness pass over the README and the app's own wording, each claim checked against the
