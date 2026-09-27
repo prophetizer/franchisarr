@@ -129,13 +129,16 @@ def test_signing_in_again_updates_the_username_without_duplicating(session: Sess
     assert users[0].external_username == "new"
 
 
-def test_admin_is_not_revoked_by_a_later_non_owner_sign_in(session: Session) -> None:
-    """Losing admin because plex.tv briefly reported ownership differently would be alarming."""
+def test_admin_follows_ownership_on_a_later_sign_in(session: Session) -> None:
+    """Reversed in 0.26.0. This used to keep admin once granted, for fear of plex.tv briefly
+    misreporting ownership -- but that meant a server handed to someone else left its old owner
+    administering this install for good (security review, 2026-09-26). Ownership comes from the
+    same plex.tv call sign-in already depends on, and the local admin is the fallback."""
     auth_service.provision_plex_user(session, _account(), is_owner=True)
 
     user = auth_service.provision_plex_user(session, _account(), is_owner=False)
 
-    assert user.is_admin is True
+    assert user.is_admin is False
 
 
 def test_the_client_id_is_generated_once_and_kept(session: Session) -> None:

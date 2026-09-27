@@ -161,10 +161,16 @@ def test_settings_shows_the_urls_and_mints_a_key_once(client: TestClient) -> Non
     assert "shown once" in minted
     assert f"{BASE}/api/lists/films.json?api_key=" in minted
 
+    import re
+
+    from app.auth.api_keys import hash_api_key
+
+    key = re.search(r"copy it now: <code>([A-Za-z0-9_-]{40,})</code>", minted).group(1)
     with Session(get_engine()) as session:
-        key = session.exec(__import__("sqlmodel").select(User)).first().api_key
-    assert key in minted
+        stored = session.exec(__import__("sqlmodel").select(User)).first().api_key
+    assert stored == hash_api_key(key) and key not in stored, "only the hash is kept (0.26.0)"
     assert key not in client.get(f"{BASE}/settings").text, "never rendered again"
+    assert client.get(f"{BASE}/api/lists/films.json?api_key={key}").status_code == 200
     assert "revokes the old one" in client.get(f"{BASE}/settings").text
 
 

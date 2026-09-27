@@ -69,7 +69,15 @@ the parts that belong to the app, because only it knows what a sign-in or a form
   Settings → Who can sign in. Let in, they can browse and hide titles for themselves only; every
   route that adds to an *arr, scans, or changes household settings requires an admin. Turning the
   switch off ends their sessions and API keys on the next request.
-- **Cross-site posts are refused** on `Sec-Fetch-Site` / `Origin`, on top of a `SameSite=Lax`,
+- **Admin rights follow the media server** at every sign-in, and **Settings → Users** can sign
+  anyone out everywhere, revoke their API key, or remove them.
+- **API keys and session tokens are stored only as SHA-256 hashes**, and credential-shaped query
+  parameters (`api_key=`, `token=`) are scrubbed from every log line.
+- **Backups can't grant access.** An import accepts only known settings and fields, validates
+  values, and adds media servers switched off.
+- **Request bodies are capped at 2 MB as they arrive**, chunked uploads included.
+- **Cross-site posts are refused** on `Sec-Fetch-Site` / `Origin` (same origin only — not sibling
+  subdomains), on top of a `SameSite=Lax`,
   `HttpOnly` session cookie (`SESSION_COOKIE_SECURE=true` adds `Secure` behind HTTPS).
 - **Security headers** on every response: a Content-Security-Policy that forbids framing
   (`frame-ancestors 'none'`), plugins and `<base>` tricks, keeps scripts and XHR to this app,

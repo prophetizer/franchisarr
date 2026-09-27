@@ -62,7 +62,10 @@ def releases_url(session=None) -> str:
 
     from app.services.settings_service import SettingKey, get_setting
 
-    return (get_setting(session, SettingKey.UPDATE_RELEASES_URL) or "").strip() or DEFAULT_RELEASES_URL
+    override = (get_setting(session, SettingKey.UPDATE_RELEASES_URL) or "").strip()
+    # https only: this is fetched without the admin looking, so it must not be pointable at
+    # internal http services.
+    return override if override.startswith("https://") else DEFAULT_RELEASES_URL
 
 
 def enabled(session=None) -> bool:
@@ -135,4 +138,7 @@ def check(url: str = DEFAULT_RELEASES_URL, *, timeout: int = DEFAULT_TIMEOUT) ->
         return UpdateStatus(current=__version__)
     tag, payload = best
 
-    return UpdateStatus(current=__version__, latest=tag, url=payload.get("html_url"))
+    link = payload.get("html_url")
+    # Rendered as a link on the Settings page: only an https URL, never javascript: or data:.
+    return UpdateStatus(current=__version__, latest=tag,
+                        url=link if isinstance(link, str) and link.startswith("https://") else None)

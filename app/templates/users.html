@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Users — Franchisarr{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>Users</h1>
+  <p>Everyone who has signed in. Accounts are made by signing in, so there's nothing to add here —
+     only access to take away.</p>
+</hgroup>
+
+{% if error %}<p role="alert" class="notice-bad">{{ error }}</p>{% endif %}
+{% if done %}<p role="status" class="notice-good">{{ done }}</p>{% endif %}
+
+<p><small class="muted">
+  {% if members_allowed %}
+    People you share your server with can sign in (Settings → Who can sign in).
+  {% else %}
+    Only administrators can sign in; other accounts listed here can't until you allow members in
+    Settings → Who can sign in.
+  {% endif %}
+  Whether someone is an administrator comes from your media server each time they sign in.
+  Removing an account ends its sessions and API key, but someone who can still sign in will get
+  a new account next time.
+</small></p>
+
+<div class="collection-grid collection-grid--compact">
+  {% for u in users %}
+    <article class="collection-card">
+      <header><strong>{{ u.name }}</strong>{% if u.id == user.id %} <small class="muted">(you)</small>{% endif %}</header>
+      <p class="collection-counts muted">
+        <span>{{ u.provider | capitalize }}</span>
+        <span>{{ 'Administrator' if u.is_admin else 'Member' }}</span>
+        <span>{{ u.sessions }} session{{ '' if u.sessions == 1 else 's' }}</span>
+        {% if u.has_api_key %}<span>API key</span>{% endif %}
+      </p>
+      <p class="card-actions">
+        {% if u.sessions %}
+          <button class="secondary outline" hx-post="{{ url('/users/' ~ u.id ~ '/end-sessions') }}"
+                  hx-target="body" hx-swap="innerHTML">Sign out everywhere</button>
+        {% endif %}
+        {% if u.has_api_key %}
+          <button class="secondary outline" hx-post="{{ url('/users/' ~ u.id ~ '/revoke-key') }}"
+                  hx-target="body" hx-swap="innerHTML">Revoke API key</button>
+        {% endif %}
+        {% if u.id != user.id %}
+          <button class="secondary outline" hx-post="{{ url('/users/' ~ u.id ~ '/remove') }}"
+                  hx-confirm="Remove {{ u.name }}? Their sessions, API key and hidden titles go with it."
+                  hx-target="body" hx-swap="innerHTML">Remove</button>
+        {% endif %}
+      </p>
+    </article>
+  {% endfor %}
+</div>
+{% endblock %}

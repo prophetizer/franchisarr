@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] — 2026-09-26
+
+The rest of the security review's findings, and a Users page.
+
+### Added
+
+- **Settings → Users**: everyone who has signed in, with sign out everywhere, revoke API key
+  and remove. Accounts are still made only by signing in.
+- A **Revoke the key** button next to your API key.
+
+### Security
+
+- **Admin rights follow the media server at every sign-in.** They used to be added but never
+  taken away, so someone who handed their Plex server over, or was demoted on Jellyfin, stayed
+  an admin here.
+- **A crafted backup could make a stranger an admin.** Importing now accepts only known settings
+  and each section's own fields, checks their values, ignores ids and server identities, and adds
+  media servers switched off until you review them.
+- **API keys are stored as hashes**, as session tokens already were, and keys in URLs
+  (`?api_key=`) no longer appear in logs after a restart.
+- **The webhook/Apprise URL is no longer shown in full** on the Settings page. It's masked, and a
+  blank field keeps it. A crafted notification format can no longer run script there.
+- **Requests from sibling subdomains are refused.** An XSS in another app on your domain could
+  otherwise have posted to Franchisarr with your session.
+- **Uploads are capped as they arrive.** The 2 MB limit only checked the declared size, so an
+  undeclared (chunked) upload of any size was read, even when anonymous.
+- **Open redirect after Plex sign-in closed**: a `next` link with a backslash sent you elsewhere.
+- Smaller fixes:
+  - release links must be `https`;
+  - calendar titles can't inject lines;
+  - a long run of spaces in a title no longer stalls matching;
+  - huge page numbers no longer cause errors;
+  - login timing no longer reveals which usernames exist;
+  - `/docs` and `/openapi.json` are gone;
+  - logout is POST-only;
+  - settings pages and downloads are never cached;
+  - the database is readable only by the app's user.
+
+### Upgrading
+
+- Existing API keys keep working: they're hashed in place on first start. Downgrading afterwards
+  clears them, so generate new ones if you ever go back.
+- Media servers in an imported backup now arrive switched off — switch them on under Servers.
+- `PUID=0` / `PGID=0` are refused (the container won't start), and an `ADMIN_PASSWORD` under 8
+  characters no longer creates the first-boot admin account.
+- Anyone who was an admin here but no longer is on the media server loses admin at their next
+  sign-in.
+
 ## [0.25.1] — 2026-09-26
 
 Two sign-in fixes from a security review. Update if Franchisarr can be reached from the internet.

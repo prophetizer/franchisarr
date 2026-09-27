@@ -72,6 +72,12 @@
       {{ 'Generate a new key (revokes the old one)' if has_api_key else 'Generate your key' }}
     </button>
   </form>
+  {% if has_api_key %}
+    <form method="post" action="{{ url('/settings/api-key/revoke') }}">
+      <button type="submit" class="secondary outline">Revoke the key</button>
+      <small class="muted">Every list URL, calendar and CLI using it stops working.</small>
+    </form>
+  {% endif %}
 </article>
 
 <article>
@@ -121,8 +127,10 @@ TP_COMMUNITY_THEME=false</code></pre>
 <article>
   <header><strong>Notifications</strong></header>
 
+  {# tojson, in a single-quoted attribute: the browser decodes HTML escapes before Alpine
+     evaluates the expression, so plain {{ }} escaping could not stop a crafted value. #}
   <form method="post" action="{{ url('/settings/webhook') }}"
-        x-data="{ format: '{{ current_webhook_format }}' }">
+        x-data='{ format: {{ current_webhook_format | tojson }} }'>
     <label for="webhook_format">Send through</label>
     <select id="webhook_format" name="webhook_format" x-model="format">
       {% for value, label in webhook_formats %}
@@ -140,7 +148,13 @@ TP_COMMUNITY_THEME=false</code></pre>
     <textarea id="webhook_url" name="webhook_url" rows="2" autocomplete="off" spellcheck="false"
               x-bind:placeholder="format === 'apprise' ? 'tgram://bot-token/chat-id\npover://user-key@app-token'
                 : format === 'apprise_api' ? 'http://apprise:8000/notify/franchisarr'
-                : 'https://discord.com/api/webhooks/...'">{{ current_webhook_url }}</textarea>
+                : 'https://discord.com/api/webhooks/...'"></textarea>
+    {# The saved URL is a credential (a Discord webhook URL is enough to post as it), so it is
+       never sent back to the browser: blank keeps it, as the server and instance forms do. #}
+    {% if webhook_masked %}
+      <small>Saved: <code>{{ webhook_masked }}</code> — leave blank to keep it.
+        <label><input type="checkbox" name="clear" value="1"> Remove it</label></small>
+    {% endif %}
 
     <small x-show="format === 'apprise'">
       One line per destination, in Apprise's URL format — Telegram, Pushover, ntfy, Gotify,
@@ -161,7 +175,7 @@ TP_COMMUNITY_THEME=false</code></pre>
 
     <p>
       <button type="submit">Save</button>
-      {% if current_webhook_url %}
+      {% if webhook_masked %}
         <button type="submit" name="test" value="1" class="secondary">Send a test</button>
       {% endif %}
     </p>
@@ -184,6 +198,8 @@ TP_COMMUNITY_THEME=false</code></pre>
     anything, start scans or change settings. Turning it off signs them out and stops their API
     keys.
   </small></p>
+  <p><a href="{{ url('/users') }}" role="button" class="secondary outline">Users</a>
+    <small class="muted">— who has signed in; sign someone out or remove them.</small></p>
 </article>
 
 <article>

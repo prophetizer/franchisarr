@@ -21,3 +21,4 @@ venv/
 .idea/
 .DS_Store
 ._*
+.coverage

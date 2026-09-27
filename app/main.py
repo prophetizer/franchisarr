@@ -38,6 +38,7 @@ from app.routes_movies import router as movies_router
 from app.routes_directors import router as directors_router
 from app.routes_franchises import router as franchises_router
 from app.routes_lists import router as lists_router
+from app.routes_users import router as users_router  # noqa: E402
 from app.routes_media_servers import router as media_servers_router
 from app.routes_preferences import router as preferences_router
 from app.routes_tv import router as tv_router
@@ -114,7 +115,10 @@ async def lifespan(app: FastAPI):
     scheduler_service.shutdown()
 
 
-app = FastAPI(title="Franchisarr", version=__version__, lifespan=lifespan)
+# No /docs, /redoc or /openapi.json: they listed every route to anyone, signed in or not, and
+# were mounted outside BASE_URL. The CLI and the README document the API that people use.
+app = FastAPI(title="Franchisarr", version=__version__, lifespan=lifespan,
+              docs_url=None, redoc_url=None, openapi_url=None)
 
 
 @app.exception_handler(LoginRequired)
@@ -244,6 +248,7 @@ app.include_router(franchises_router, prefix=settings.base_url)
 app.include_router(directors_router, prefix=settings.base_url)
 app.include_router(preferences_router, prefix=settings.base_url)
 app.include_router(lists_router, prefix=settings.base_url)
+app.include_router(users_router, prefix=settings.base_url)
 app.include_router(api_router, prefix=settings.base_url)
 
 # Mounted under BASE_URL for the same reason the routes are: behind a subpath proxy, /static
@@ -269,6 +274,10 @@ async def html_is_never_stale(request, call_next):  # noqa: ANN001 - Starlette s
     "ask before reusing", which is exactly the deal for a server-rendered page.
     """
     response = await call_next(request)
-    if response.headers.get("content-type", "").startswith("text/html"):
+    if f"{settings.base_url}/settings" in request.url.path:
+        # Settings pages and downloads carry credentials (the full export, the one-time API key
+        # reveal): no-store, so they never sit in the browser's disk or back/forward cache.
+        response.headers["Cache-Control"] = "no-store"
+    elif response.headers.get("content-type", "").startswith("text/html"):
         response.headers.setdefault("Cache-Control", "no-cache")
     return response

@@ -175,7 +175,9 @@ def validate(document: Any) -> dict:
         raise InvalidBackup(
             "That doesn't look like a Franchisarr export — it has no version marker."
         )
-    if not isinstance(version, int) or version > EXPORT_VERSION:
+    if isinstance(version, bool) or not isinstance(version, int) or version < 1:
+        raise InvalidBackup("That export's version marker is damaged.")
+    if version > EXPORT_VERSION:
         raise InvalidBackup(
             f"That export was made by a newer Franchisarr (format {version}); this one "
             f"understands up to {EXPORT_VERSION}. Upgrade before importing it."
@@ -195,10 +197,18 @@ def validate(document: Any) -> dict:
         if key in document and not isinstance(document[key], expected):
             raise InvalidBackup(f"The '{key}' section is the wrong shape.")
 
+    for section in ("media_servers", "radarr_instances", "sonarr_instances", "seerr_instances",
+                    "spinoff_mappings", "collection_excludes", "included_libraries",
+                    "dismissed_items"):
+        for entry in document.get(section, []):
+            if not isinstance(entry, dict):
+                raise InvalidBackup(f"An entry in '{section}' is the wrong shape.")
+
     for section in ("media_servers", "radarr_instances", "sonarr_instances", "seerr_instances"):
         for entry in document.get(section, []):
-            if not isinstance(entry, dict) or not entry.get("name") or not entry.get("url"):
-                raise InvalidBackup(f"An entry in '{section}' is missing its name or URL.")
+            if not isinstance(entry.get("name"), str) or not entry["name"].strip() \
+                    or not _is_http_url(entry.get("url")):
+                raise InvalidBackup(f"An entry in '{section}' is missing its name or a valid URL.")
 
     return document
 
@@ -225,6 +235,76 @@ def _legacy_server(settings: dict) -> dict | None:
 
 
 
+def _is_http_url(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    from urllib.parse import urlsplit
+
+    parts = urlsplit(value.strip())
+    return parts.scheme in ("http", "https") and bool(parts.netloc)
+
+
+# What each section may set: exactly the fields export_config writes, with their types. Anything
+# else in a file is ignored -- in particular a row's `id`, and a server's `machine_identifier`,
+# which decides whose Plex account administers the install. A backup is data about *your* setup;
+# it has no business choosing primary keys or identities.
+_STR, _INT, _BOOL = (str,), (int,), (bool,)
+_SERVER_FIELDS = {"name": _STR, "kind": _STR, "url": _STR, "credential": _STR,
+                  "enabled": _BOOL, "watched_user": _STR}
+_INSTANCE_FIELDS = {"name": _STR, "url": _STR, "api_key": _STR, "default_root_folder": _STR,
+                    "default_quality_profile_id": _INT, "is_default": _BOOL,
+                    "hide_if_queued": _BOOL, "default_monitor_mode": _STR}
+_SEERR_FIELDS = {"name": _STR, "kind": _STR, "url": _STR, "api_key": _STR, "is_default": _BOOL}
+_MAPPING_FIELDS = {"source_show_tmdb_id": _INT, "spinoff_show_tmdb_id": _INT, "source": _STR,
+                   "confidence": _STR, "origin_ref": _STR}
+_EXCLUDE_FIELDS = {"tmdb_collection_id": _INT, "tmdb_movie_id": _INT}
+_LIBRARY_FIELDS = {"library_key": _STR, "library_name": _STR, "library_type": _STR,
+                   "enabled": _BOOL}
+
+
+def _pick(entry: dict, allowed: dict[str, tuple[type, ...]], model) -> dict:  # noqa: ANN001
+    """The allowed fields of `entry` that have the right type and exist on `model`. A bool is
+    not accepted where an int is expected, even though Python says True is an int."""
+    picked = {}
+    for key, types in allowed.items():
+        if key not in entry or entry[key] is None or not hasattr(model, key):
+            continue
+        value = entry[key]
+        if isinstance(value, bool) and bool not in types:
+            continue
+        if isinstance(value, types):
+            picked[key] = value
+    return picked
+
+
+def _importable_settings() -> set[str]:
+    """Settings a backup may restore: every SettingKey except values this install generates for
+    itself. The Plex client id is one: it's what plex.tv ties this install's sign-in PINs to."""
+    from app.services.settings_service import SettingKey
+
+    keys = {v for k, v in vars(SettingKey).items() if k.isupper() and isinstance(v, str)}
+    return keys - {SettingKey.PLEX_CLIENT_ID}
+
+
+def _setting_value_ok(key: str, value: str) -> bool:
+    from app.models import WebhookFormat
+    from app.services.settings_service import SettingKey
+
+    if key == SettingKey.WEBHOOK_FORMAT:
+        return value in {f.value for f in WebhookFormat}
+    if key == SettingKey.SCAN_SCHEDULE_CRON:
+        from app.services.scheduler import InvalidSchedule, validate_cron
+
+        try:
+            validate_cron(value)
+        except InvalidSchedule:
+            return False
+        return True
+    if key == SettingKey.UPDATE_RELEASES_URL:
+        return value == "" or value.startswith("https://")
+    return len(value) <= 10_000
+
+
 def import_config(session: Session, document: Any, *, replace: bool = False) -> dict:
     """Apply a validated backup. Returns a count of what was written.
 
@@ -239,7 +319,8 @@ def import_config(session: Session, document: Any, *, replace: bool = False) -> 
     document = validate(document)
     counts = {"settings": 0, "radarr": 0, "sonarr": 0, "seerr": 0, "mappings": 0, "excludes": 0,
               "dismissals": 0, "dismissals_unmatched": 0,
-              "libraries": 0, "skipped_redacted": 0, "already_present": 0, "media_servers": 0}
+              "libraries": 0, "skipped_redacted": 0, "already_present": 0, "media_servers": 0,
+              "skipped_invalid": 0}
 
     from app.services.settings_service import set_setting
 
@@ -252,9 +333,18 @@ def import_config(session: Session, document: Any, *, replace: bool = False) -> 
         if settings.pop(key, None) == REDACTED:
             counts["skipped_redacted"] += 1
 
+    allowed_settings = _importable_settings()
     for key, value in settings.items():
         if value == REDACTED:
             counts["skipped_redacted"] += 1
+            continue
+        if isinstance(value, bool):
+            value = "true" if value else "false"
+        elif isinstance(value, (int, float)):
+            value = str(value)
+        if key not in allowed_settings or not isinstance(value, str) \
+                or not _setting_value_ok(key, value):
+            counts["skipped_invalid"] += 1
             continue
         set_setting(session, key, value)
         counts["settings"] += 1
@@ -278,7 +368,14 @@ def import_config(session: Session, document: Any, *, replace: bool = False) -> 
         ).first():
             counts["already_present"] += 1
             continue
-        fields = {k: v for k, v in entry.items() if hasattr(MediaServer, k)}
+        fields = _pick(entry, _SERVER_FIELDS, MediaServer)
+        if fields.get("kind") not in ("plex", "jellyfin", "emby") or not _is_http_url(fields.get("url")):
+            counts["skipped_invalid"] += 1
+            continue
+        # Always switched off. A media server decides who can sign in -- its owner or its admins
+        # administer this install -- so a file must never be able to hand that to someone. The
+        # admin reviews each imported server on the Servers page and switches it on.
+        fields["enabled"] = False
         session.add(MediaServer(**fields))
         session.flush()
         counts["media_servers"] += 1
@@ -299,7 +396,11 @@ def import_config(session: Session, document: Any, *, replace: bool = False) -> 
             ).first():
                 counts["already_present"] += 1
                 continue
-            fields = {k: v for k, v in entry.items() if hasattr(model, k)}
+            allowed = _SEERR_FIELDS if model is SeerrInstance else _INSTANCE_FIELDS
+            fields = _pick(entry, allowed, model)
+            if not _is_http_url(fields.get("url")) or not fields.get("api_key"):
+                counts["skipped_invalid"] += 1
+                continue
             session.add(model(**fields))
             session.flush()
             counts[key] += 1
@@ -313,8 +414,11 @@ def import_config(session: Session, document: Any, *, replace: bool = False) -> 
         ).first():
             counts["already_present"] += 1
             continue
-        session.add(SpinoffMapping(**{k: v for k, v in entry.items()
-                                      if hasattr(SpinoffMapping, k)}))
+        fields = _pick(entry, _MAPPING_FIELDS, SpinoffMapping)
+        if "source_show_tmdb_id" not in fields or "spinoff_show_tmdb_id" not in fields:
+            counts["skipped_invalid"] += 1
+            continue
+        session.add(SpinoffMapping(**fields))
         session.flush()
         counts["mappings"] += 1
 
@@ -327,8 +431,11 @@ def import_config(session: Session, document: Any, *, replace: bool = False) -> 
         ).first():
             counts["already_present"] += 1
             continue
-        session.add(CollectionExclude(**{k: v for k, v in entry.items()
-                                         if hasattr(CollectionExclude, k)}))
+        fields = _pick(entry, _EXCLUDE_FIELDS, CollectionExclude)
+        if len(fields) != 2:
+            counts["skipped_invalid"] += 1
+            continue
+        session.add(CollectionExclude(**fields))
         session.flush()
         counts["excludes"] += 1
 
@@ -379,10 +486,14 @@ def import_config(session: Session, document: Any, *, replace: bool = False) -> 
             )
         ).first()
         if existing:
-            existing.enabled = bool(entry.get("enabled", existing.enabled))
+            if isinstance(entry.get("enabled"), bool):
+                existing.enabled = entry["enabled"]
             session.add(existing)
         else:
-            fields = {k: v for k, v in entry.items() if hasattr(IncludedLibrary, k) and k != "server"}
+            fields = _pick(entry, _LIBRARY_FIELDS, IncludedLibrary)
+            if not fields.get("library_key"):
+                counts["skipped_invalid"] += 1
+                continue
             session.add(IncludedLibrary(server_id=server.id, **fields))
         counts["libraries"] += 1
 

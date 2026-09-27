@@ -61,6 +61,9 @@ ADMIN_ONLY = [
     ("get", "/instances"), ("get", "/media-servers"),
     ("get", "/api/instances/radarr"), ("get", "/api/instances/sonarr"),
     ("post", "/api/instances/radarr/refresh"),
+    ("post", "/settings/api-key/revoke"),
+    ("get", "/users"), ("post", "/users/1/end-sessions"), ("post", "/users/1/revoke-key"),
+    ("post", "/users/1/remove"),
 ]
 
 MEMBER_PAGES = ["/", "/collections", "/franchises", "/directors", "/upcoming", "/shows", "/activity"]

@@ -59,7 +59,10 @@ YEAR_TOLERANCE = 1
 _ARTICLES = ("the ", "a ", "an ")
 _PUNCTUATION = re.compile(r"[^\w\s]", re.UNICODE)
 _WHITESPACE = re.compile(r"\s+")
-_TRAILING_YEAR = re.compile(r"\s*\(\d{4}\)\s*$")
+# Anchored on the literal "(" rather than a leading \s*, which backtracked quadratically on a
+# title padded with a long run of spaces (a 40,000-space title took seconds); the whitespace
+# before the year is stripped separately.
+_TRAILING_YEAR = re.compile(r"\(\d{4}\)\s*$")
 
 #: Plex titles routinely carry edition markers that TMDb's titles do not.
 _EDITION_MARKERS = re.compile(
@@ -79,7 +82,7 @@ def normalise_title(title: str) -> str:
     text = unicodedata.normalize("NFKD", title or "")
     text = "".join(char for char in text if not unicodedata.combining(char))
     text = text.casefold()
-    text = _TRAILING_YEAR.sub("", text)
+    text = _TRAILING_YEAR.sub("", text).rstrip()
     text = _EDITION_MARKERS.sub(" ", text)
     text = _PUNCTUATION.sub(" ", text)
     text = _WHITESPACE.sub(" ", text).strip()

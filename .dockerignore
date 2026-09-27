@@ -1,0 +1,27 @@
+# Only requirements.txt, app/, alembic.ini and the entrypoint are copied into the image, but the
+# whole build context is sent to the builder -- keep secrets and local state out of it, so a
+# future `COPY . .` can't bake them in.
+.git
+.github
+.env
+.env.*
+!.env.example
+*.db
+*.db-*
+*.db.*
+.private/
+CLAUDE.md
+RUNBOOK.md
+PHASE1_PROMPT.md
+docs/announcement.md
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+._*
+.DS_Store
+tests/
+docs/screenshots/

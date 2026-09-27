@@ -545,7 +545,10 @@ def test_an_export_from_before_the_media_server_rename_still_imports(session: Se
 
     assert counts["libraries"] == 1 and counts["media_servers"] == 1 and counts["settings"] == 1
     server = session.exec(select(MediaServer)).one()
-    assert (server.kind, server.url, server.credential, server.machine_identifier) == ("plex", "http://plex.old:32400", "old-token-old-token", "abc")
+    # The identity isn't taken from the file, and the server arrives switched off: a backup must
+    # not be able to decide whose Plex account administers the install (0.26.0 review).
+    assert (server.kind, server.url, server.credential, server.machine_identifier, server.enabled) == \
+        ("plex", "http://plex.old:32400", "old-token-old-token", None, False)
     lib = session.exec(select(IncludedLibrary)).one()
     assert (lib.server_id, lib.library_key, lib.library_name, lib.enabled) == (server.id, "1", "Movies", True)
     assert get_setting(session, "plex_url") is None, "nothing reads that key any more"

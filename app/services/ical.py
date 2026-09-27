@@ -20,8 +20,11 @@ PRODID = "-//Franchisarr//Upcoming//EN"
 
 def _escape(text: str) -> str:
     """RFC 5545 3.3.11: backslash, semicolon and comma are escaped; newlines become \\n."""
-    return (text.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
-            .replace("\r\n", "\\n").replace("\n", "\\n"))
+    text = (text.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,")
+            .replace("\r\n", "\\n").replace("\r", "\\n").replace("\n", "\\n"))
+    # A bare CR, or any other control character from a TMDb title, could start a new property
+    # in a lenient parser; there's nothing legitimate for them to carry.
+    return "".join(ch for ch in text if ord(ch) >= 32 and ord(ch) != 127)
 
 
 def _fold(line: str) -> str:

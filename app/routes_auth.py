@@ -71,6 +71,12 @@ def _safe_next(raw: str | None) -> str:
     base_url = get_settings().base_url
     if not raw or not raw.startswith("/") or raw.startswith("//"):
         return _url("/")
+    # Browsers read a backslash as a slash, so "/\\evil.com" is "//evil.com" to them; control
+    # characters (tab, newline) are stripped by the URL parser and can hide the same trick. The
+    # server-side redirect happened to escape these, but the Plex flow hands `next` to
+    # JavaScript as-is -- so refuse them outright rather than rely on who encodes what.
+    if "\\" in raw or any(ord(ch) < 32 or ord(ch) == 127 for ch in raw):
+        return _url("/")
     if base_url and not raw.startswith(f"{base_url}/"):
         return _url("/")
     return raw
@@ -194,8 +200,8 @@ def server_login_submit(
     return response
 
 
+# POST only: a GET logout can be triggered by any page that embeds an image pointing here.
 @router.post("/logout")
-@router.get("/logout")
 def logout(request: Request, session: DbSession):
     delete_session(session, request.cookies.get(COOKIE_NAME))
     response = RedirectResponse(_url("/login"), status_code=status.HTTP_303_SEE_OTHER)

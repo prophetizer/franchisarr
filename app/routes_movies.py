@@ -379,6 +379,12 @@ def set_members(session: DbSession, user: AdminUser, enabled: Annotated[str, For
     return RedirectResponse(_url("/settings?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
 
 
+def _mask(value: str) -> str:
+    from app.logging_config import mask_secret
+
+    return mask_secret(value.strip())
+
+
 def _settings_context(session, user, **extra) -> dict:
     """One place that assembles the settings page, so a new field can't be added to the template
     and forgotten in one of the handlers that renders it."""
@@ -392,7 +398,7 @@ def _settings_context(session, user, **extra) -> dict:
         "theme_config": resolve_theme(),
         "current_cron": cron,
         "schedule_description": scheduler_service.describe(cron),
-        "current_webhook_url": get_setting(session, SettingKey.WEBHOOK_URL) or "",
+        "webhook_masked": _mask(get_setting(session, SettingKey.WEBHOOK_URL) or ""),
         "current_webhook_format": get_setting(session, SettingKey.WEBHOOK_FORMAT) or "generic",
         "webhook_formats": [
             (WebhookFormat.GENERIC.value, "Generic webhook (JSON)"),
@@ -438,6 +444,14 @@ def settings_new_api_key(request: Request, session: DbSession, user: AdminUser):
     )
 
 
+@router.post("/settings/api-key/revoke")
+def settings_revoke_api_key(session: DbSession, user: AdminUser):
+    from app.auth.api_keys import revoke_api_key
+
+    revoke_api_key(session, user)
+    return RedirectResponse(_url("/settings?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
+
+
 @router.post("/settings/schedule", response_class=HTMLResponse)
 def save_schedule(
     request: Request,
@@ -481,16 +495,29 @@ def save_webhook(
     webhook_url: Annotated[str, Form()] = "",
     webhook_format: Annotated[str, Form()] = "generic",
     test: Annotated[str, Form()] = "",
+    clear: Annotated[str, Form()] = "",
 ):
     from app.logging_config import register_secret
+    from app.models import WebhookFormat
     from app.services import notifier
     from app.services.settings_service import set_setting
 
-    set_setting(session, SettingKey.WEBHOOK_URL, webhook_url.strip())
+    if webhook_format not in {f.value for f in WebhookFormat}:
+        return get_templates().TemplateResponse(
+            request, "settings.html",
+            _settings_context(session, user, error="Unknown notification format."),
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    # Blank keeps the saved URL (the page never shows it); the checkbox removes it.
+    if clear:
+        set_setting(session, SettingKey.WEBHOOK_URL, "")
+    elif webhook_url.strip():
+        set_setting(session, SettingKey.WEBHOOK_URL, webhook_url.strip())
+        # A Discord webhook URL or an Apprise URL is a credential; keep it out of the logs.
+        register_secret(webhook_url.strip())
     set_setting(session, SettingKey.WEBHOOK_FORMAT, webhook_format)
     session.commit()
-    # A Discord webhook URL or an Apprise URL is a credential; keep it out of the logs.
-    register_secret(webhook_url.strip())
+    webhook_url = get_setting(session, SettingKey.WEBHOOK_URL) or ""
 
     if test and webhook_url.strip():
         sample = notifier.ScanReport(
@@ -562,7 +589,7 @@ def activity_page(request: Request, session: DbSession, user: RequiredUser, page
     from app.models import RadarrInstance, SeerrInstance, SonarrInstance, User
     from app.services import activity_log
 
-    page = max(1, page)
+    page = min(max(1, page), 10**6)      # a huge page number overflowed SQLite's integer
     per_page = 50
     entries = activity_log.recent(session, limit=per_page + 1, offset=(page - 1) * per_page)
     has_more = len(entries) > per_page
@@ -650,7 +677,7 @@ async def import_config(
 
     try:
         document = json.loads((await backup.read()).decode("utf-8"))
-    except (UnicodeDecodeError, json.JSONDecodeError):
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError):
         return get_templates().TemplateResponse(
             request,
             "settings.html",
@@ -679,6 +706,13 @@ async def import_config(
             f" {counts['skipped_redacted']} item(s) were skipped because the export was "
             f"redacted — those need entering by hand."
         )
+    if counts["media_servers"]:
+        note += (
+            f" {counts['media_servers']} media server(s) were added switched off: a server "
+            f"decides who can sign in, so check each one on the Servers page and switch it on."
+        )
+    if counts["skipped_invalid"]:
+        note += f" {counts['skipped_invalid']} item(s) were skipped as invalid or unknown."
 
     return get_templates().TemplateResponse(
         request, "settings.html", _settings_context(session, user, saved=True, import_note=note)

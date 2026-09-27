@@ -76,7 +76,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.25.1`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.26.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -143,7 +143,8 @@ and paste a films URL, for example:
 https://franchisarr.example.com/api/lists/films.json?api_key=YOUR_KEY&min_rating=7
 ```
 
-Sonarr takes the `shows` URL the same way. Radarr's and Sonarr's own settings then decide what
+Sonarr takes the `shows` URL the same way. The key is shown once, stored only as a hash, and can be
+revoked from the same place. Radarr's and Sonarr's own settings then decide what
 to monitor and where — Franchisarr never adds anything itself. Your dismissals and preferences apply to the
 lists; `min_rating` on the URL overrides the household floor for that list only.
 
@@ -265,14 +266,16 @@ Franchisarr never sees your Plex password; only accounts that can actually reach
 server are admitted, so having a Plex account isn't enough. For Jellyfin and Emby it is a
 username and password, checked against the server itself. Who administers Franchisarr follows
 from the server: with Plex it's the server's owner, with Jellyfin and Emby it's anyone who is an
-administrator there.
+administrator there — checked again every time they sign in, so handing the server over, or
+demoting someone on Jellyfin, takes their admin rights here with it.
 
 **By default only administrators can sign in.** Being able to reach your Plex server is a much
 wider group than the people who run your house, so friends and family you share it with are
 refused. If you want them in, turn on **Settings → Who can sign in**. They can then browse the
 lists and hide titles for themselves, but they can't add anything to Radarr, Sonarr or Seerr,
 start scans, or change settings, and they don't see those controls. Turning it off again signs
-them out and stops their API keys.
+them out and stops their API keys. **Settings → Users** lists everyone who has signed in, and can
+sign someone out everywhere, revoke their API key or remove them.
 
 The local admin account from `ADMIN_USERNAME`/`ADMIN_PASSWORD` is the fallback for when no server
 is configured yet, or plex.tv is unreachable. It's created on **first boot only**, so changing those
@@ -390,6 +393,10 @@ fanart.tv's.
 Settings has a config download. **The full one contains your media server credentials and every API key in plain
 text** — treat it like a password. There's a redacted download alongside it with those blanked
 out; that's the one to paste into a forum thread when asking for help.
+
+Importing a backup restores settings, instances, spin-off mappings and your hidden titles. Media
+servers in it arrive **switched off**: a server decides who can sign in, so check each one on the
+Servers page and switch it on. Anything in the file that isn't a known setting or field is skipped.
 
 ## Updating
 

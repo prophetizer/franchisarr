@@ -159,7 +159,9 @@ def same_site(request: Request) -> bool:
     """
     fetch_site = request.headers.get("sec-fetch-site")
     if fetch_site:
-        return fetch_site in ("same-origin", "same-site", "none")
+        # Not "same-site": that includes every sibling subdomain, and a homelab's *.domain is
+        # full of other apps -- one XSS in any of them could post here with the Lax cookie.
+        return fetch_site in ("same-origin", "none")
     origin = request.headers.get("origin")
     if origin:
         host = request.headers.get("host", "")
@@ -181,12 +183,65 @@ class CrossSiteGuard(BaseHTTPMiddleware):
 MAX_BODY_BYTES = 2 * 1024 * 1024
 
 
-class BodySizeLimit(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):  # noqa: ANN001, ANN202
-        length = request.headers.get("content-length")
-        if length and length.isdigit() and int(length) > MAX_BODY_BYTES:
-            return Response("Request body too large.", status_code=status.HTTP_413_CONTENT_TOO_LARGE)
-        return await call_next(request)
+class _BodyTooLarge(HTTPException):
+    """An HTTPException so FastAPI's body parsing re-raises it as-is (as a 413) rather than
+    folding it into a generic 400; the middleware below catches it if it gets that far."""
+
+    def __init__(self) -> None:
+        super().__init__(status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+                         detail="Request body too large.")
+
+
+class BodySizeLimit:
+    """Refuse bodies over MAX_BODY_BYTES, counting what actually arrives.
+
+    Checking Content-Length alone let a chunked upload (which has none) through at any size --
+    and FastAPI reads a form body before it checks who is asking, so that was anonymous. Plain
+    ASGI rather than BaseHTTPMiddleware so the byte count sits on the receive stream itself.
+    """
+
+    def __init__(self, app, max_bytes: int = MAX_BODY_BYTES) -> None:  # noqa: ANN001
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope, receive, send) -> None:  # noqa: ANN001
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        declared = dict(scope.get("headers") or []).get(b"content-length", b"")
+        if declared.isdigit() and int(declared) > self.max_bytes:
+            await _too_large(send)
+            return
+
+        received = 0
+        started = False
+
+        async def counting_receive():  # noqa: ANN202
+            nonlocal received
+            message = await receive()
+            if message["type"] == "http.request":
+                received += len(message.get("body", b""))
+                if received > self.max_bytes:
+                    raise _BodyTooLarge()
+            return message
+
+        async def tracking_send(message) -> None:  # noqa: ANN001
+            nonlocal started
+            if message["type"] == "http.response.start":
+                started = True
+            await send(message)
+
+        try:
+            await self.app(scope, counting_receive, tracking_send)
+        except _BodyTooLarge:
+            if not started:
+                await _too_large(send)
+
+
+async def _too_large(send) -> None:  # noqa: ANN001
+    await send({"type": "http.response.start", "status": status.HTTP_413_CONTENT_TOO_LARGE,
+                "headers": [(b"content-type", b"text/plain; charset=utf-8")]})
+    await send({"type": "http.response.body", "body": b"Request body too large."})
 
 
 # ---------------------------------------------------------------- headers

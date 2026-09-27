@@ -397,6 +397,8 @@ def add_movie(session: DbSession, user: AdminUser, payload: AddMovieIn) -> dict:
 @router.get("/activity")
 def activity(session: DbSession, user: RequiredUser, limit: int = 50, offset: int = 0) -> dict:
     """What Franchisarr added, and when. Not download status -- that stays Radarr's history."""
+    limit = min(max(limit, 1), 500)            # SQLite overflows on 10**20; -1 meant "all"
+    offset = min(max(offset, 0), 10**9)
     return {
         "total": activity_log.count(session),
         "note": "Franchisarr records the add only; see your Radarr instance's history for what "

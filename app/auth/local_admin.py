@@ -42,6 +42,19 @@ def create_local_admin(session: Session, username: str, password: str) -> User:
     return user
 
 
+_DUMMY_HASH: str | None = None
+
+
+def _dummy_hash() -> str:
+    """A real hash to check against when the account doesn't exist, made once. Hashing a fresh
+    one per attempt (as this used to) cost two bcrypt rounds against one for a real account,
+    and the difference was enough to tell which usernames exist."""
+    global _DUMMY_HASH
+    if _DUMMY_HASH is None:
+        _DUMMY_HASH = hash_password("timing-equalising-placeholder")
+    return _DUMMY_HASH
+
+
 def authenticate_local(session: Session, username: str, password: str) -> User | None:
     """Verify a username/password pair.
 
@@ -51,10 +64,7 @@ def authenticate_local(session: Session, username: str, password: str) -> User |
     user = get_local_admin(session, username) if username else None
     stored = user.password_hash if user else None
 
-    if not verify_password(password, stored):
-        if stored is None:
-            # Burn equivalent work so the timing matches a real failed password.
-            verify_password(password, hash_password("timing-equalising-placeholder"))
+    if not verify_password(password, stored if stored else _dummy_hash()) or stored is None:
         logger.warning("Failed local login for username=%r", username)
         return None
 
@@ -75,6 +85,12 @@ def seed_local_admin_from_env(session: Session, env: EnvSettings) -> User | None
 
     if has_local_admin(session):
         logger.debug("Local admin already exists; skipping env bootstrap")
+        return None
+    if len(env.admin_password) < 8:
+        # The same minimum the change-password screen and the reset script enforce. Refusing is
+        # better than creating a guessable account on something that may face the internet.
+        logger.error("ADMIN_PASSWORD is shorter than 8 characters, so no local admin was created. "
+                     "Set a longer one and restart.")
         return None
 
     user = create_local_admin(session, env.admin_username, env.admin_password)

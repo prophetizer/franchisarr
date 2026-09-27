@@ -94,12 +94,9 @@ MEMBER_REFUSAL = (
 
 
 def _refuse_member(session: Session, external_id: str, is_admin_there: bool) -> None:
-    """Refuse a non-administrator unless members are allowed. An existing account an admin has
-    already been given (is_admin here) is let through even if the server no longer says so."""
+    """Refuse a non-administrator unless members are allowed. Whether someone is an administrator
+    is the server's answer *now*, not what this install recorded last time."""
     if is_admin_there or members_allowed(session):
-        return
-    existing = session.exec(select(User).where(col(User.external_user_id) == external_id)).first()
-    if existing is not None and existing.is_admin:
         return
     raise MemberSignInDisabled(MEMBER_REFUSAL)
 
@@ -123,8 +120,9 @@ def provision_plex_user(session: Session, account: plex_oauth.PlexAccount, *, is
         logger.info("Provisioned Plex user %r (admin=%s)", account.username, is_owner)
     else:
         user.external_username = account.username
-        # Ownership can change -- a server can be handed over, or sharing revoked and regranted.
-        user.is_admin = user.is_admin or is_owner
+        # Follows the server on every sign-in, both ways: a server handed over to someone else
+        # must take admin with it. It used to only ever add ("or"), so an ex-owner stayed admin.
+        user.is_admin = is_owner
         session.add(user)
 
     session.commit()
@@ -202,7 +200,7 @@ def sign_in_with_media_server(
         logger.info("Provisioned %s user %r (admin=%s)", provider, account["username"], account["is_admin"])
     else:
         user.external_username = account["username"]
-        user.is_admin = user.is_admin or account["is_admin"]
+        user.is_admin = bool(account["is_admin"])   # the server's word, every sign-in
         session.add(user)
     session.commit()
     session.refresh(user)

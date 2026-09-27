@@ -12,6 +12,8 @@ plexapi's, httpx's, uvicorn's -- is scrubbed on the way out (docs/DEVELOPMENT.md
 
 from __future__ import annotations
 
+import re
+
 import logging
 import sys
 from datetime import datetime, timezone
@@ -44,12 +46,19 @@ class RedactingFormatter(logging.Formatter):
         return redact(super().format(record))
 
 
+#: Credentials that arrive in a URL -- the import lists and calendar take `?api_key=` because
+#: Radarr, Sonarr and calendar apps can't send a header -- and so land in uvicorn's access log.
+#: User API keys are stored hashed, so there is no plaintext to register; they're caught by
+#: shape instead.
+_QUERY_SECRET = re.compile(r"(?i)((?:api_?key|apikey|token|X-Plex-Token)=)[^&\s\"']+")
+
+
 def redact(text: str) -> str:
-    """Replace any registered secret appearing in `text`."""
+    """Replace any registered secret, and any credential-shaped query parameter, in `text`."""
     for secret in _secrets:
         if secret in text:
             text = text.replace(secret, REDACTED)
-    return text
+    return _QUERY_SECRET.sub(lambda m: m.group(1) + REDACTED, text)
 
 
 def register_secret(value: str | None) -> None:

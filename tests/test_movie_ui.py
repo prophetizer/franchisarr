@@ -22,6 +22,7 @@ from app.models import (
     TmdbShow,
 )
 from app.services import instance_service
+from app.services.settings_service import SettingKey, get_setting, set_setting
 from tests.conftest import ensure_server
 
 BASE = "/franchisarr"
@@ -412,14 +413,37 @@ def test_turning_scheduling_on_primes_the_backlog(client: TestClient) -> None:
         assert session.exec(select(SeenGap)).all(), "existing gaps should be marked as seen"
 
 
-def test_saving_a_webhook(client: TestClient) -> None:
-    response = client.post(f"{BASE}/settings/webhook", data={
-        "webhook_url": "https://hooks.example.com/abc", "webhook_format": "discord",
-    })
-
+def test_saving_a_webhook_masks_it_and_blank_keeps_it(client: TestClient) -> None:
+    """The URL is a credential: saved, it's shown masked and never sent back to the browser in
+    full -- so a blank field on the next save keeps it rather than wiping it."""
+    url = "https://hooks.example.com/secret-path-abcd"
+    response = client.post(f"{BASE}/settings/webhook", data={"webhook_url": url, "webhook_format": "discord"})
     assert response.status_code == 303
+
     body = client.get(f"{BASE}/settings").text
-    assert "hooks.example.com" in body
+    assert url not in body and "secret-path" not in body
+    assert "abcd" in body, "the last characters say which URL is saved"
+
+    client.post(f"{BASE}/settings/webhook", data={"webhook_url": "", "webhook_format": "slack"})
+    with Session(get_engine()) as session:
+        assert get_setting(session, SettingKey.WEBHOOK_URL) == url
+        assert get_setting(session, SettingKey.WEBHOOK_FORMAT) == "slack"
+
+    client.post(f"{BASE}/settings/webhook", data={"webhook_url": "", "webhook_format": "slack", "clear": "1"})
+    with Session(get_engine()) as session:
+        assert get_setting(session, SettingKey.WEBHOOK_URL) == ""
+
+
+def test_a_crafted_webhook_format_is_refused_and_cannot_reach_alpine(client: TestClient) -> None:
+    payload = "x'});alert(document.domain);({a:'"
+    response = client.post(f"{BASE}/settings/webhook", data={"webhook_url": "", "webhook_format": payload})
+    assert response.status_code == 400
+
+    with Session(get_engine()) as session:   # and even if one got stored (an old import), it's inert
+        set_setting(session, SettingKey.WEBHOOK_FORMAT, payload)
+        session.commit()
+    body = client.get(f"{BASE}/settings").text
+    assert "x-data='{ format: \"x\\u0027});alert(document.domain);({a:\\u0027\" }'" in body
 
 
 def test_a_saved_notification_url_is_redacted_from_logs_from_then_on(app_factory) -> None:
