@@ -55,26 +55,27 @@
 </div>
 
 {% with playlist_url = url('/franchises/' ~ f.wikidata_id ~ '/playlist') %}{% include "partials/playlist_button.html" %}{% endwith %}
+<div class="gap-controls"><p class="gap-sort">{% include "partials/sort_links.html" %}</p></div>
 
 {% if f.missing_films %}
   <section><h2>Missing films</h2>
-    <div class="collection-grid collection-grid--compact">{% for t in f.missing_films %}{{ row(t, 'missing') }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact">{% for t in sort_titles(f.missing_films, detail_sort or 'release') %}{{ row(t, 'missing') }}{% endfor %}</div>
   </section>
 {% endif %}
 {% if f.missing_shows %}
   <section><h2>Missing shows</h2>
-    <div class="collection-grid collection-grid--compact">{% for t in f.missing_shows %}{{ row(t, 'missing') }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact">{% for t in sort_titles(f.missing_shows, detail_sort or 'release') %}{{ row(t, 'missing') }}{% endfor %}</div>
   </section>
 {% endif %}
 {% if f.upcoming_films %}
   <section class="upcoming-section"><h2>Coming soon</h2>
-    <div class="collection-grid collection-grid--compact">{% for t in f.upcoming_films %}{{ row(t, 'upcoming') }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact">{% for t in sort_titles(f.upcoming_films, detail_sort or 'release') %}{{ row(t, 'upcoming') }}{% endfor %}</div>
   </section>
 {% endif %}
 {% if f.specials %}
   <details class="hidden-section">
     <summary>{{ f.specials | length }} TV film{{ '' if f.specials | length == 1 else 's' }}, special{{ '' if f.specials | length == 1 else 's' }} or short{{ '' if f.specials | length == 1 else 's' }} — folded away by your preferences</summary>
-    <div class="collection-grid collection-grid--compact">{% for t in f.specials %}{{ row(t, 'hidden') }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact">{% for t in sort_titles(f.specials, detail_sort or 'release') %}{{ row(t, 'hidden') }}{% endfor %}</div>
   </details>
 {% endif %}
 {% if not f.missing and not f.upcoming_films %}
@@ -84,8 +85,8 @@
 {% if f.owned_films or f.owned_shows %}
   <section><h2>In your library</h2>
     <div class="collection-grid collection-grid--compact collection-grid--owned">
-      {% for t in f.owned_films %}{{ row(t, 'owned') }}{% endfor %}
-      {% for t in f.owned_shows %}{{ row(t, 'owned') }}{% endfor %}
+      {% for t in sort_titles(f.owned_films, detail_sort or 'release') %}{{ row(t, 'owned') }}{% endfor %}
+      {% for t in sort_titles(f.owned_shows, detail_sort or 'release') %}{{ row(t, 'owned') }}{% endfor %}
     </div>
   </section>
 {% endif %}

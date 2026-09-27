@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.0] — 2026-09-27
+
+### Added
+
+- **Sort options on every list**, as "Sort by" links like Collections already had:
+  - **Franchises:** most owned, most missing, most complete, newest, name.
+  - **Collections and Directors** gain most missing, almost complete (one or two missing first),
+    most complete and newest missing.
+  - **Spin-offs:** by show, name, newest, oldest.
+  - **Upcoming:** soonest, collection, name.
+  - **The tiles on a collection, franchise or director page:** release date, rating, name.
+    Franchise pages offer release date and name only, since their titles carry no rating.
+- **Each page remembers your last sort on your account** (migration 0024), so it's the same on
+  every device. A link with `?sort=` always wins, so bookmarks and shared links mean what they say.
+
 ## [0.28.1] — 2026-09-27
 
 ### Fixed

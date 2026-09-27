@@ -151,6 +151,21 @@ class DismissedItem(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utcnow)
 
 
+class UserPreference(SQLModel, table=True):
+    """One person's remembered choice for a page -- how they last sorted it. Per account, so it
+    follows them across devices; see app/services/sorting.py."""
+
+    __tablename__ = "user_preferences"
+    __table_args__ = (UniqueConstraint("user_id", "key", name="uq_user_preference"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    # CASCADE: a preference means nothing without its person.
+    user_id: int = Field(foreign_key="users.id", ondelete="CASCADE", index=True)
+    key: str
+    value: str
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
 class SpinoffMapping(SQLModel, table=True):
     """Show -> spin-off relation. v1 only ever writes source='local'; the `source`/`confidence`/
     `origin_ref` columns exist from day one so a future community-sync feature is additive

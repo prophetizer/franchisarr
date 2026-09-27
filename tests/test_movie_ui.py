@@ -760,11 +760,12 @@ def test_the_sort_toggle_is_shown_and_honoured(client: TestClient) -> None:
     _seed_collection()
 
     page = client.get(f"{BASE}/collections").text
-    assert "<strong>rating</strong>" in page
+    assert "<strong>best missing film</strong>" in page
     assert 'href="/franchisarr/collections?sort=name"' in page
 
     page = client.get(f"{BASE}/collections?sort=name").text
     assert "<strong>name</strong>" in page
+    assert "<strong>name</strong>" in client.get(f"{BASE}/collections").text, "remembered"
 
 
 

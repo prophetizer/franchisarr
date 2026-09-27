@@ -32,15 +32,12 @@
 {% else %}
   <div class="gap-controls">
     <p class="gap-sort">
-      Sort by
-      {% if sort == 'rating' %}<strong>rating</strong>{% else %}<a href="{{ url('/collections' ~ ('?started=1' if started else '')) }}">rating</a>{% endif %}
-      ·
-      {% if sort == 'name' %}<strong>name</strong>{% else %}<a href="{{ url('/collections?sort=name' ~ ('&started=1' if started else '')) }}">name</a>{% endif %}
+      {% include "partials/sort_links.html" %}
       {% if watched_known %}
         · Show
-        {% if started %}<strong>started watching</strong>{% else %}<a href="{{ url('/collections?started=1' ~ ('&sort=name' if sort == 'name' else '')) }}">started watching</a>{% endif %}
+        {% if started %}<strong>started watching</strong>{% else %}<a href="{{ url('/collections?started=1&sort=' ~ sort) }}">started watching</a>{% endif %}
         /
-        {% if not started %}<strong>all</strong>{% else %}<a href="{{ url('/collections' ~ ('?sort=name' if sort == 'name' else '')) }}">all</a>{% endif %}
+        {% if not started %}<strong>all</strong>{% else %}<a href="{{ url('/collections?sort=' ~ sort) }}">all</a>{% endif %}
       {% endif %}
     </p>
     {% if user and user.is_admin %}

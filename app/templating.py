@@ -83,6 +83,9 @@ def build_templates(base_url: str) -> Jinja2Templates:
     templates.env.globals["url"] = make_url_builder(base_url)
     templates.env.globals["version"] = __version__
     templates.env.globals["asset"] = make_asset_builder(base_url)
+    from app.services.sorting import sort_titles
+
+    templates.env.globals["sort_titles"] = sort_titles
     return templates
 
 

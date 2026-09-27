@@ -34,6 +34,7 @@
 </div>
 
 {% with playlist_url = url('/collections/' ~ gap.collection_id ~ '/playlist') %}{% include "partials/playlist_button.html" %}{% endwith %}
+<div class="gap-controls"><p class="gap-sort">{% include "partials/sort_links.html" %}</p></div>
 
 {% if gap.missing %}
   <section>
@@ -56,7 +57,7 @@
       it appears.
     </small></p>
     <div class="collection-grid collection-grid--compact">
-      {% for movie in gap.upcoming %}
+      {% for movie in sort_titles(gap.upcoming, detail_sort or 'release') %}
         {% call tile(movie.poster, 'upcoming') %}
           <header><strong class="film-title">{{ movie.title }}</strong></header>
           <p class="collection-counts muted"><span>
@@ -83,7 +84,7 @@
       rating filter
     </summary>
     <div class="collection-grid collection-grid--compact">
-      {% for movie in gap.hidden %}
+      {% for movie in sort_titles(gap.hidden, detail_sort or 'release') %}
         {% call tile(movie.poster, 'hidden') %}
           <header><strong class="film-title">{{ movie.title }}</strong> {% include "partials/rating.html" %}</header>
           <p class="collection-counts muted"><span>{{ movie.release_year or '' }}</span></p>
@@ -103,7 +104,7 @@
   <section>
     <h2>In your library</h2>
     <div class="collection-grid collection-grid--compact collection-grid--owned">
-      {% for movie in gap.owned %}
+      {% for movie in sort_titles(gap.owned, detail_sort or 'release') %}
         {% call tile(movie.poster, 'owned') %}
           <header><strong class="film-title">{{ movie.title }}</strong>{% with entry=movie %}{% include "partials/owned_mark.html" %}{% endwith %}</header>
           <p class="collection-counts muted"><span>{{ movie.release_year or '' }}</span></p>

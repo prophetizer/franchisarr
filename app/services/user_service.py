@@ -14,7 +14,7 @@ from sqlmodel import Session, col, select, update
 
 from app.auth.api_keys import revoke_api_key
 from app.auth.sessions import delete_sessions_for_user
-from app.models import ActivityLogEntry, DismissedItem, User, UserSession
+from app.models import ActivityLogEntry, DismissedItem, User, UserPreference, UserSession
 
 logger = logging.getLogger(__name__)
 
@@ -64,8 +64,9 @@ def remove(session: Session, user_id: int, *, acting_user_id: int) -> None:
     if user.is_admin and len(admins) <= 1:
         raise CannotRemove("That's the only administrator left.")
     delete_sessions_for_user(session, user_id)
-    for row in session.exec(select(DismissedItem).where(col(DismissedItem.user_id) == user_id)).all():
-        session.delete(row)
+    for model in (DismissedItem, UserPreference):
+        for row in session.exec(select(model).where(col(model.user_id) == user_id)).all():
+            session.delete(row)
     session.exec(update(ActivityLogEntry).where(col(ActivityLogEntry.triggered_by) == user_id)
                  .values(triggered_by=None))
     session.delete(user)

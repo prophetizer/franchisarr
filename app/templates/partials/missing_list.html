@@ -3,7 +3,7 @@
 {% from "partials/tile.html" import tile %}
 {% if gap.missing %}
   <div class="collection-grid collection-grid--compact">
-    {% for movie in gap.missing %}
+    {% for movie in sort_titles(gap.missing, detail_sort or 'release') %}
       {% call tile(movie.poster, 'missing') %}
         <header><strong class="film-title">{{ movie.title }}</strong> {% include "partials/rating.html" %}</header>
         <p class="collection-counts muted"><span>{{ movie.release_year or '' }}</span></p>

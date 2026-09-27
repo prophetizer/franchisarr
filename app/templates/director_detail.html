@@ -34,6 +34,7 @@
 </div>
 
 {% with playlist_url = url('/directors/' ~ d.person_id ~ '/playlist') %}{% include "partials/playlist_button.html" %}{% endwith %}
+<div class="gap-controls"><p class="gap-sort">{% include "partials/sort_links.html" %}</p></div>
 
 {% if d.pending %}
   <p class="muted">Filmography not fetched yet — the next scan will.</p>
@@ -41,30 +42,30 @@
 
 {% if d.missing %}
   <section><h2>Missing</h2>
-    <div class="collection-grid collection-grid--compact">{% for m in d.missing %}{{ row(m, 'missing') }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact">{% for m in sort_titles(d.missing, detail_sort or 'release') %}{{ row(m, 'missing') }}{% endfor %}</div>
   </section>
 {% endif %}
 {% if d.upcoming %}
   <section class="upcoming-section"><h2>Coming soon</h2>
-    <div class="collection-grid collection-grid--compact">{% for m in d.upcoming %}{{ row(m, 'upcoming') }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact">{% for m in sort_titles(d.upcoming, detail_sort or 'release') %}{{ row(m, 'upcoming') }}{% endfor %}</div>
   </section>
 {% endif %}
 {% if d.hidden %}
   <details class="hidden-section">
     <summary>{{ d.hidden | length }} film{{ '' if d.hidden | length == 1 else 's' }} hidden by your rating filter</summary>
-    <div class="collection-grid collection-grid--compact">{% for m in d.hidden %}{{ row(m, 'hidden') }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact">{% for m in sort_titles(d.hidden, detail_sort or 'release') %}{{ row(m, 'hidden') }}{% endfor %}</div>
   </details>
 {% endif %}
 {% if d.shorts %}
   <details class="hidden-section">
     <summary>{{ d.shorts | length }} short{{ '' if d.shorts | length == 1 else 's' }} — folded away by your preferences</summary>
-    <div class="collection-grid collection-grid--compact">{% for m in d.shorts %}{{ row(m, 'hidden') }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact">{% for m in sort_titles(d.shorts, detail_sort or 'release') %}{{ row(m, 'hidden') }}{% endfor %}</div>
   </details>
 {% endif %}
 {% if d.documentaries %}
   <details class="hidden-section">
     <summary>{{ d.documentaries | length }} documentar{{ 'y' if d.documentaries | length == 1 else 'ies' }}</summary>
-    <div class="collection-grid collection-grid--compact">{% for m in d.documentaries %}{{ row(m, 'hidden') }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact">{% for m in sort_titles(d.documentaries, detail_sort or 'release') %}{{ row(m, 'hidden') }}{% endfor %}</div>
   </details>
 {% endif %}
 {% if not d.pending and not d.missing and not d.upcoming %}
@@ -73,7 +74,7 @@
 
 {% if d.owned %}
   <section><h2>In your library</h2>
-    <div class="collection-grid collection-grid--compact collection-grid--owned">{% for m in d.owned %}{{ row(m, 'owned', addable=False) }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact collection-grid--owned">{% for m in sort_titles(d.owned, detail_sort or 'release') %}{{ row(m, 'owned', addable=False) }}{% endfor %}</div>
   </section>
 {% endif %}
 <div id="add-dialog"></div>

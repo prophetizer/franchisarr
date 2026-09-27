@@ -12,6 +12,9 @@ want and don't have:
   Dad!*, which no name search could — and crosses between film and TV: own the film *Serenity*
   and it suggests the series *Firefly*.
 
+Every list can be sorted — most missing, almost complete, newest, and so on — and each page
+remembers your last choice on your account, so it follows you between devices.
+
 And, built on the same data: **franchise pages** that put films and TV together (*Star Wars —
 you have 8 of 15*), **director pages** (*you own 11 Nolan films; missing* Following *and*
 Insomnia), an **Upcoming** page of announced films in franchises you own with release-date
@@ -78,7 +81,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.28.1`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.29.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.

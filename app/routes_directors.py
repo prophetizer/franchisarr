@@ -27,16 +27,13 @@ def _url(path: str) -> str:
 
 
 @router.get("/directors", response_class=HTMLResponse)
-def directors(request: Request, session: DbSession, user: RequiredUser, sort: str = "owned",
+def directors(request: Request, session: DbSession, user: RequiredUser, sort: str | None = None,
               page: int = 1):
-    from app.services import pagination
+    from app.services import pagination, sorting
 
-    sort = sort if sort in ("owned", "rating", "name") else "owned"
-    views = director_service.director_views(session, user.id, sort=sort)
-    pager = pagination.paginate(
-        views, page, path="/directors",
-        params={"sort": sort if sort != "owned" else None},
-    )
+    sort = sorting.resolve(session, user.id, "directors", sort)
+    views = sorting.sort_groups(director_service.director_views(session, user.id), "directors", sort)
+    pager = pagination.paginate(views, page, path="/directors", params={"sort": sort})
     return get_templates().TemplateResponse(
         request,
         "directors.html",
@@ -45,6 +42,7 @@ def directors(request: Request, session: DbSession, user: RequiredUser, sort: st
             "directors": pager.items,
             "pager": pager,
             "sort": sort,
+            "sort_links": sorting.links("directors", sort, lambda key: _url(f"/directors?sort={key}")),
             "floor": director_service.min_director_films(session),
             "total_missing": sum(len(v.missing) for v in views),
             "pending": sum(1 for v in views if v.pending),
@@ -67,12 +65,19 @@ def set_floor(session: DbSession, user: AdminUser, floor: Annotated[str, Form()]
 
 
 @router.get("/directors/{person_id}", response_class=HTMLResponse)
-def director_detail(request: Request, session: DbSession, user: RequiredUser, person_id: int):
+def director_detail(request: Request, session: DbSession, user: RequiredUser, person_id: int,
+                    sort: str | None = None):
+    from app.services import sorting
+
+    detail_sort = sorting.resolve(session, user.id, "detail", sort)
     view = director_service.director_view(session, person_id, user.id)
     if view is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such director.")
     return get_templates().TemplateResponse(
         request, "director_detail.html",
         {"user": user, "d": view, "multi_server": _multi_server(session),
-         "can_playlist": playlist_service.available(session) and bool(view.owned)}
+         "can_playlist": playlist_service.available(session) and bool(view.owned),
+         "detail_sort": detail_sort,
+         "sort_links": sorting.links("detail", detail_sort,
+                                     lambda key: _url(f"/directors/{person_id}?sort={key}"))}
     )

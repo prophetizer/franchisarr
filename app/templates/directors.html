@@ -20,10 +20,7 @@
 {% if directors %}
   <div class="gap-controls">
     <p class="gap-sort">
-      Sort by
-      {% for key, label in (('owned', 'films owned'), ('rating', 'best missing film'), ('name', 'name')) %}
-        {% if sort == key %}<strong>{{ label }}</strong>{% else %}<a href="{{ url('/directors?sort=' ~ key) }}">{{ label }}</a>{% endif %}{% if not loop.last %} · {% endif %}
-      {% endfor %}
+      {% include "partials/sort_links.html" %}
     </p>
     {% if user and user.is_admin %}
     <form method="post" action="{{ url('/directors/floor') }}" class="gap-filter">
