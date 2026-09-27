@@ -78,7 +78,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.27.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.28.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -210,8 +210,10 @@ it was released: films by release date, and for a franchise that spans film and 
 episode placed by its air date — so *Agents of S.H.I.E.L.D.* falls between the Marvel films as it
 was broadcast. Specials (season 0) are left out.
 
-- It's called "*name* (Franchisarr)". Pressing the button again rebuilds it with what you own
-  now; playlists with any other name are never touched.
+- It's called "*name* (Franchisarr)" and gets its own poster: the franchise or collection
+  backdrop with the name, "In release order" and what's in it (a director gets a mosaic of their
+  films). Pressing the button again rebuilds it with what you own now; playlists with any other
+  name are never touched.
 - It goes into the account of the Plex token Franchisarr uses — normally yours as the server
   owner. Plex playlists can't be shared with other accounts.
 - The order is release order. Nothing records story order (where *Rogue One* sits in the saga),
@@ -398,6 +400,7 @@ Everything Franchisarr contacts, from the server:
 | **Wikidata** (`query.wikidata.org`) | During scans | Spin-offs, continuations and franchises. No account; requests carry a User-Agent naming this project, as Wikidata asks |
 | **plex.tv** | Only when someone signs in with Plex | The sign-in PIN flow, and checking the account can reach your server |
 | **fanart.tv** | Only if you set a fanart.tv key | Franchise logos |
+| **TMDb's image CDN** (`image.tmdb.org`) | Only when you make a playlist | The artwork for the playlist's poster, which Franchisarr composes and uploads to Plex. Not with `SHOW_ARTWORK=false` |
 | **GitHub** (`api.github.com`) | When Settings is opened | The update banner. Sends nothing about you or your library. **Off** under Settings → Update check, or with `UPDATE_CHECK=false` |
 
 Plus whatever you point it at yourself: your media servers, Radarr, Sonarr, Seerr, a webhook or

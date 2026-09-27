@@ -36,6 +36,17 @@ class ServerResult:
     films: int = 0
     episodes: int = 0
     error: str | None = None
+    #: Whether our own poster went on; a failure there never fails the playlist.
+    poster: bool = False
+
+
+@dataclass(frozen=True)
+class PosterArt:
+    """What a playlist poster is made from: a backdrop if the page has one, else film posters
+    (in release order) for a mosaic. See playlist_poster."""
+
+    backdrop_url: str | None = None
+    poster_urls: tuple[str, ...] = ()
 
 
 @dataclass
@@ -95,8 +106,10 @@ def order_entries(entries: list) -> list:  # noqa: ANN001 - PlaylistEntry
     ))
 
 
-def build(session: Session, name: str, refs: list[tuple[str, int]]) -> PlaylistResult:
-    """Build (or rebuild) the playlist for `name` from the owned (item_type, tmdb_id) pairs."""
+def build(session: Session, name: str, refs: list[tuple[str, int]],
+          art: PosterArt | None = None) -> PlaylistResult:
+    """Build (or rebuild) the playlist for `name` from the owned (item_type, tmdb_id) pairs,
+    and give it a poster made from `art`."""
     from app.services import media_server_service
 
     title = playlist_title(name)
@@ -125,6 +138,24 @@ def build(session: Session, name: str, refs: list[tuple[str, int]]) -> PlaylistR
             continue
         outcome.films = sum(1 for e in entries if e.show_key is None)
         outcome.episodes = len(entries) - outcome.films
+        if art is not None:
+            outcome.poster = apply_poster(client, title, name, outcome.films, outcome.episodes, art)
         logger.info("Playlist %r on %s: %d films, %d episodes", title, server.name,
                     outcome.films, outcome.episodes)
     return result
+
+
+def apply_poster(client, title: str, name: str, films: int, episodes: int,  # noqa: ANN001
+                 art: PosterArt) -> bool:
+    """Render and upload the poster. Never raises: True if it went on, False otherwise."""
+    from app.services import playlist_poster
+
+    image = playlist_poster.render(name, films=films, episodes=episodes,
+                                   backdrop_url=art.backdrop_url, poster_urls=list(art.poster_urls))
+    if image is None:
+        return False
+    try:
+        return bool(client.set_playlist_poster(title, image))
+    except Exception:  # noqa: BLE001
+        logger.warning("Couldn't upload the poster for %r", title, exc_info=True)
+        return False

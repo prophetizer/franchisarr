@@ -4,7 +4,7 @@
     <p role="alert" class="notice-bad">{{ s.server }}: {{ s.error }}</p>
   {% else %}
     <p role="status" class="notice-good">
-      “{{ r.title }}” is ready on {{ s.server }}: {{ s.films }} film{{ '' if s.films == 1 else 's' }}{% if s.episodes %} and {{ s.episodes }} episode{{ '' if s.episodes == 1 else 's' }}{% endif %}, in release order.
+      “{{ r.title }}” is ready on {{ s.server }}: {{ s.films }} film{{ '' if s.films == 1 else 's' }}{% if s.episodes %} and {{ s.episodes }} episode{{ '' if s.episodes == 1 else 's' }}{% endif %}, in release order{% if s.poster %}, with its own poster{% endif %}.
     </p>
   {% endif %}
 {% endfor %}

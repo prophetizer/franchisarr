@@ -124,6 +124,9 @@ class PlexClient:
     def replace_playlist(self, title: str, items: list) -> None:  # noqa: ANN001 - plexapi objects
         _replace_playlist(self, title, items)
 
+    def set_playlist_poster(self, title: str, image: bytes) -> bool:
+        return _set_playlist_poster(self, title, image)
+
     def test_connection(self) -> str:
         """Connect and return the server's friendly name. Used by the setup wizard's
         "Test Connection" button in Phase 2."""
@@ -284,6 +287,21 @@ def _replace_playlist(client: "PlexClient", title: str, items: list) -> None:  #
     playlist = server.createPlaylist(title, items=items[:PLAYLIST_CHUNK])
     for start in range(PLAYLIST_CHUNK, len(items), PLAYLIST_CHUNK):
         playlist.addItems(items[start:start + PLAYLIST_CHUNK])
+
+
+def _set_playlist_poster(client: "PlexClient", title: str, image: bytes) -> bool:
+    """Upload `image` (JPEG bytes) as the poster of the playlist called `title`. False if there
+    is no such playlist. plexapi uploads from a file path, hence the temporary file."""
+    import tempfile
+
+    for playlist in client.server.playlists():
+        if playlist.title == title:
+            with tempfile.NamedTemporaryFile(suffix=".jpg") as handle:
+                handle.write(image)
+                handle.flush()
+                playlist.uploadPoster(filepath=handle.name)
+            return True
+    return False
 
 
 def _disable_plexapi_autoreload() -> None:

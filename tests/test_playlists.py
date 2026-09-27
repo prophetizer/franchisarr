@@ -246,3 +246,91 @@ def test_the_franchise_page_offers_the_button_and_the_route_builds(client: TestC
     body = client.post(f"{BASE}/franchises/Q462/playlist").text
 
     assert "Star Wars (Franchisarr)" in body and "2 films and 1 episode" in body
+
+
+# ------------------------------------------------------------------ posters
+
+
+def _solid(colour):  # noqa: ANN001, ANN202
+    from PIL import Image
+
+    return Image.new("RGB", (1280, 720), colour)
+
+
+def test_the_poster_is_a_backdrop_with_the_name(monkeypatch) -> None:
+    from PIL import Image
+    import io
+
+    from app.services import playlist_poster
+
+    monkeypatch.setattr(playlist_poster, "_fetch", lambda url: _solid((200, 30, 30)))
+    data = playlist_poster.render("Star Wars", films=13, episodes=279, backdrop_url="https://x/b.jpg")
+
+    image = Image.open(io.BytesIO(data))
+    assert image.size == (1000, 1500) and image.format == "JPEG"
+    top, bottom = image.getpixel((500, 100)), image.getpixel((20, 1450))
+    assert top[0] > 150 and bottom[0] < 60, "artwork on top, darkened toward the text"
+
+
+def test_no_backdrop_falls_back_to_a_mosaic_and_no_art_means_no_poster(monkeypatch) -> None:
+    from app.services import playlist_poster
+
+    monkeypatch.setattr(playlist_poster, "_fetch", lambda url: _solid((30, 200, 30)))
+    assert playlist_poster.render("Christopher Nolan", films=11, episodes=0,
+                                  poster_urls=["https://x/1.jpg", "https://x/2.jpg"])
+    assert playlist_poster.render("Nothing", films=1, episodes=0) is None
+
+
+def test_a_poster_failure_or_artwork_switched_off_returns_none(monkeypatch) -> None:
+    from app.services import playlist_poster
+
+    def boom(url):  # noqa: ANN001, ANN202
+        raise ConnectionError("tmdb down")
+
+    monkeypatch.setattr(playlist_poster, "_fetch", boom)
+    assert playlist_poster.render("X", films=1, episodes=0, backdrop_url="https://x/b.jpg") is None
+
+    monkeypatch.setattr(playlist_poster, "_fetch", lambda url: _solid((1, 2, 3)))
+    monkeypatch.setenv("SHOW_ARTWORK", "false")
+    assert playlist_poster.render("X", films=1, episodes=0, backdrop_url="https://x/b.jpg") is None
+
+
+def test_the_poster_is_uploaded_to_our_playlist_only() -> None:
+    from app.clients.plex_client import _set_playlist_poster
+
+    uploaded: dict[str, bytes] = {}
+
+    class Uploadable(FakePlaylist):
+        def uploadPoster(self, filepath: str) -> None:  # noqa: N802
+            with open(filepath, "rb") as handle:
+                uploaded[self.title] = handle.read()
+
+    server = FakeServer({}, {}, playlists=[Uploadable("Star Wars"), Uploadable("Star Wars (Franchisarr)")])
+
+    assert _set_playlist_poster(FakeClient(server), "Star Wars (Franchisarr)", b"\xff\xd8jpeg") is True
+    assert uploaded == {"Star Wars (Franchisarr)": b"\xff\xd8jpeg"}
+    assert _set_playlist_poster(FakeClient(server), "Gone (Franchisarr)", b"x") is False
+
+
+def test_build_puts_the_poster_on_and_a_poster_failure_keeps_the_playlist(session: Session, monkeypatch) -> None:
+    _library(session)
+    server = FakeServer({1: FakeItem(1, aired=datetime(1977, 5, 25))}, {})
+    posters: list[tuple[str, bytes]] = []
+
+    class WithPoster(_AsPlexClient):
+        def set_playlist_poster(self, title, image):  # noqa: ANN001, ANN201
+            posters.append((title, image))
+            return True
+
+    from app.services import media_server_service, playlist_poster
+
+    monkeypatch.setattr(media_server_service, "client_for", lambda s: WithPoster(server))
+    monkeypatch.setattr(playlist_poster, "_fetch", lambda url: _solid((9, 9, 9)))
+    art = playlist_service.PosterArt(backdrop_url="https://x/b.jpg")
+
+    result = playlist_service.build(session, "Star Wars", [(ItemType.MOVIE.value, 11)], art)
+    assert result.servers[0].poster and posters[0][0] == "Star Wars (Franchisarr)"
+
+    monkeypatch.setattr(playlist_poster, "render", lambda *a, **k: None)
+    again = playlist_service.build(session, "Star Wars", [(ItemType.MOVIE.value, 11)], art)
+    assert again.made_any and again.servers[0].poster is False

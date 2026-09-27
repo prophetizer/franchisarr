@@ -31,3 +31,8 @@ apprise==1.13.1
 # against Click 8.2+. Click is pinned alongside it so a fresh image build can't reintroduce that.
 typer==0.27.2
 click==8.5.0
+
+# Playlist posters
+# Pillow composes the poster Franchisarr puts on the playlists it builds (a backdrop with the
+# name over it). Wheels for amd64 and arm64 on 3.12, so no build under QEMU.
+pillow==12.3.0

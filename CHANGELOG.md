@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.0] — 2026-09-27
+
+### Added
+
+- **Playlists get their own poster** in place of Plex's four-tile mosaic. It's the franchise or
+  collection backdrop, darkened at the foot, with the name, "In release order" and the number of
+  films and episodes; director playlists, having no backdrop, get a mosaic of the director's
+  films. Franchisarr downloads the artwork from TMDb and uploads the poster to Plex, so this
+  is the one time the server itself fetches images (not with `SHOW_ARTWORK=false`). If the
+  poster can't be made, the playlist is still built.
+- New dependency: Pillow, to compose the poster. The Noto Sans font it uses ships with the app,
+  with its licence.
+
 ## [0.27.0] — 2026-09-27
 
 Plex playlists of a franchise, collection or director, in release order.
