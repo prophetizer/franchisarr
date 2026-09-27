@@ -1,0 +1,17 @@
+{# The outcome of building a playlist, swapped in under the button. #}
+{% for s in r.servers %}
+  {% if s.error %}
+    <p role="alert" class="notice-bad">{{ s.server }}: {{ s.error }}</p>
+  {% else %}
+    <p role="status" class="notice-good">
+      “{{ r.title }}” is ready on {{ s.server }}: {{ s.films }} film{{ '' if s.films == 1 else 's' }}{% if s.episodes %} and {{ s.episodes }} episode{{ '' if s.episodes == 1 else 's' }}{% endif %}, in release order.
+    </p>
+  {% endif %}
+{% endfor %}
+{% if r.unsupported %}
+  <p class="muted"><small>{{ r.unsupported }} title{{ '' if r.unsupported == 1 else 's' }} on Jellyfin or Emby
+    left out — playlists there aren't supported yet.</small></p>
+{% endif %}
+{% if not r.servers and not r.unsupported %}
+  <p class="muted">Nothing here is in a library Franchisarr can see.</p>
+{% endif %}

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Iterator
+from datetime import date, datetime
 from dataclasses import dataclass, field
 
 import plexapi
@@ -116,6 +117,13 @@ class PlexClient:
             # The original is chained, so the logs (where redaction applies) keep the specifics.
             raise PlexUnreachableError(f"Could not reach the Plex server at {self._url}") from exc
 
+    def playlist_entries(self, films: list[str], shows: list[str]) -> list[PlaylistEntry]:
+        """Playable films and regular episodes for the given rating keys, with air dates."""
+        return _playlist_entries(self, films, shows)
+
+    def replace_playlist(self, title: str, items: list) -> None:  # noqa: ANN001 - plexapi objects
+        _replace_playlist(self, title, items)
+
     def test_connection(self) -> str:
         """Connect and return the server's friendly name. Used by the setup wizard's
         "Test Connection" button in Phase 2."""
@@ -205,6 +213,77 @@ class PlexClient:
         except (BadRequest, RequestException) as exc:
             raise PlexUnreachableError(f"Could not fetch Plex item {item_key}") from exc
         return _external_ids_of(item)
+
+
+@dataclass(frozen=True)
+class PlaylistEntry:
+    """One playable item for a playlist, with what it takes to put it in release order.
+
+    `raw` is the plexapi object itself: creating the playlist needs it, and holding on to it
+    saves fetching every item twice.
+    """
+
+    raw: object
+    aired: date | None
+    #: For episodes: position within the show, and the show's own key so a show's episodes
+    #: keep their order when several share an air date.
+    show_key: str | None = None
+    season: int = 0
+    episode: int = 0
+
+
+#: plexapi builds one URL listing every rating key; chunks keep it short on a big franchise.
+PLAYLIST_CHUNK = 100
+
+
+def _aired(raw) -> date | None:  # noqa: ANN001 - a plexapi Video
+    value = _attr(raw, "originallyAvailableAt")
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    year = _attr(raw, "year")
+    return date(int(year), 1, 1) if year else None
+
+
+def _playlist_entries(client: "PlexClient", films: list[str], shows: list[str]) -> list[PlaylistEntry]:
+    """Films and every regular episode of the shows, as PlaylistEntry, from as few requests as
+    plexapi allows: films in batches by rating key, then one request per show for its episodes."""
+    entries: list[PlaylistEntry] = []
+    server = client.server
+    for start in range(0, len(films), PLAYLIST_CHUNK):
+        keys = ",".join(films[start:start + PLAYLIST_CHUNK])
+        for raw in server.fetchItems(f"/library/metadata/{keys}"):
+            entries.append(PlaylistEntry(raw=raw, aired=_aired(raw)))
+    for show_key in shows:
+        try:
+            show = server.fetchItem(int(show_key))
+        except NotFound:
+            logger.warning("Show %s is no longer on the Plex server; skipped", show_key)
+            continue
+        previous: date | None = None
+        episodes = sorted(show.episodes(), key=lambda e: (_attr(e, "parentIndex", 0), _attr(e, "index", 0)))
+        for raw in episodes:
+            season = int(_attr(raw, "parentIndex", 0) or 0)
+            if season == 0:
+                continue     # specials: not part of the run, and usually not in air order
+            aired = _aired(raw) or previous   # an undated episode stays after the one before it
+            previous = aired or previous
+            entries.append(PlaylistEntry(raw=raw, aired=aired, show_key=str(show_key),
+                                         season=season, episode=int(_attr(raw, "index", 0) or 0)))
+    return entries
+
+
+def _replace_playlist(client: "PlexClient", title: str, items: list) -> None:  # noqa: ANN001
+    """Make `title` hold exactly `items`, in order. Only a playlist with this exact title is
+    touched: it is recreated rather than edited, which is one request instead of one per item."""
+    server = client.server
+    for playlist in server.playlists():
+        if playlist.title == title:
+            playlist.delete()
+    playlist = server.createPlaylist(title, items=items[:PLAYLIST_CHUNK])
+    for start in range(PLAYLIST_CHUNK, len(items), PLAYLIST_CHUNK):
+        playlist.addItems(items[start:start + PLAYLIST_CHUNK])
 
 
 def _disable_plexapi_autoreload() -> None:

@@ -15,7 +15,9 @@ want and don't have:
 And, built on the same data: **franchise pages** that put films and TV together (*Star Wars —
 you have 8 of 15*), **director pages** (*you own 11 Nolan films; missing* Following *and*
 Insomnia), an **Upcoming** page of announced films in franchises you own with release-date
-notifications, and **import lists** Radarr and Sonarr can poll so you never have to click Add.
+notifications, **import lists** Radarr and Sonarr can poll so you never have to click Add, and
+**Plex playlists** of a franchise, collection or director in release order — films and episodes
+together, so a franchise plays the way it came out.
 
 It reads all three — one of them or several at once, with a film on any of them counting as
 owned and a tick on what you've watched — supports multiple Radarr and Sonarr instances, signs
@@ -76,7 +78,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.26.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.27.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -199,6 +201,22 @@ In February 2026 the Overseerr and Jellyseerr teams
 projects' features — and Overseerr's own repository was archived. All three speak the same
 `/api/v1`, so an older instance keeps working: pick which one you run when you add it, and only
 the label changes.
+
+## Playlists
+
+Franchise, collection and director pages have a **Make a Plex playlist** button (administrators
+only). It builds a playlist on your Plex server of everything you own on that page, in the order
+it was released: films by release date, and for a franchise that spans film and TV, every
+episode placed by its air date — so *Agents of S.H.I.E.L.D.* falls between the Marvel films as it
+was broadcast. Specials (season 0) are left out.
+
+- It's called "*name* (Franchisarr)". Pressing the button again rebuilds it with what you own
+  now; playlists with any other name are never touched.
+- It goes into the account of the Plex token Franchisarr uses — normally yours as the server
+  owner. Plex playlists can't be shared with other accounts.
+- The order is release order. Nothing records story order (where *Rogue One* sits in the saga),
+  so that isn't offered.
+- Jellyfin and Emby are next; for now their titles are left out, and the result says how many.
 
 ## Calendar
 

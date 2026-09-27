@@ -54,6 +54,8 @@
   </div>
 </div>
 
+{% with playlist_url = url('/franchises/' ~ f.wikidata_id ~ '/playlist') %}{% include "partials/playlist_button.html" %}{% endwith %}
+
 {% if f.missing_films %}
   <section><h2>Missing films</h2>
     <div class="collection-grid collection-grid--compact">{% for t in f.missing_films %}{{ row(t, 'missing') }}{% endfor %}</div>

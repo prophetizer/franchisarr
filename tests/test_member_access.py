@@ -64,6 +64,8 @@ ADMIN_ONLY = [
     ("post", "/settings/api-key/revoke"),
     ("get", "/users"), ("post", "/users/1/end-sessions"), ("post", "/users/1/revoke-key"),
     ("post", "/users/1/remove"),
+    ("post", "/franchises/Q1/playlist"), ("post", "/collections/1/playlist"),
+    ("post", "/directors/1/playlist"),
 ]
 
 MEMBER_PAGES = ["/", "/collections", "/franchises", "/directors", "/upcoming", "/shows", "/activity"]

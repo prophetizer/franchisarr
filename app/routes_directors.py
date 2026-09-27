@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.auth.dependencies import AdminUser, DbSession, RequiredUser
 from app.config import get_settings
-from app.services import director_service
+from app.services import director_service, playlist_service
 from app.templating import get_templates
 
 router = APIRouter()
@@ -72,5 +72,7 @@ def director_detail(request: Request, session: DbSession, user: RequiredUser, pe
     if view is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such director.")
     return get_templates().TemplateResponse(
-        request, "director_detail.html", {"user": user, "d": view, "multi_server": _multi_server(session)}
+        request, "director_detail.html",
+        {"user": user, "d": view, "multi_server": _multi_server(session),
+         "can_playlist": playlist_service.available(session) and bool(view.owned)}
     )

@@ -33,6 +33,8 @@
   </div>
 </div>
 
+{% with playlist_url = url('/collections/' ~ gap.collection_id ~ '/playlist') %}{% include "partials/playlist_button.html" %}{% endwith %}
+
 {% if gap.missing %}
   <section>
     <h2>Missing</h2>

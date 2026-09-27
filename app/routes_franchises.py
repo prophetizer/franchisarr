@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 
 from app.auth.dependencies import DbSession, RequiredUser
-from app.services import franchise_service
+from app.services import franchise_service, playlist_service
 from app.templating import get_templates
 
 router = APIRouter()
@@ -40,5 +40,7 @@ def franchise_detail(request: Request, session: DbSession, user: RequiredUser, w
     if view is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such franchise.")
     return get_templates().TemplateResponse(
-        request, "franchise_detail.html", {"user": user, "f": view, "multi_server": _multi_server(session)}
+        request, "franchise_detail.html",
+        {"user": user, "f": view, "multi_server": _multi_server(session),
+         "can_playlist": playlist_service.available(session) and view.owned > 0}
     )

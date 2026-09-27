@@ -133,12 +133,13 @@ def collection_detail(
     request: Request, session: DbSession, user: RequiredUser, collection_id: int
 ):
     gap = _gap_or_404(session, user, collection_id)
-    from app.services import media_server_service
+    from app.services import media_server_service, playlist_service
 
     return get_templates().TemplateResponse(
         request, "collection_detail.html",
         {"user": user, "gap": gap,
-         "multi_server": len(media_server_service.list_servers(session)) > 1}
+         "multi_server": len(media_server_service.list_servers(session)) > 1,
+         "can_playlist": playlist_service.available(session) and bool(gap.owned)}
     )
 
 

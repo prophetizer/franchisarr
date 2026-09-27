@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.27.0] — 2026-09-27
+
+Plex playlists of a franchise, collection or director, in release order.
+
+### Added
+
+- **Make a Plex playlist** on franchise, collection and director pages (administrators only).
+  Everything you own on the page goes into one Plex playlist in the order it was released:
+  films by release date, and every episode of the franchise's shows placed by its air date, so
+  films and TV interleave as they were broadcast. Specials are left out. The playlist is named
+  "*name* (Franchisarr)", and pressing the button again rebuilds it. Plex only for now;
+  Jellyfin and Emby titles are left out, and the result says how many.
+
 ## [0.26.0] — 2026-09-26
 
 The rest of the security review's findings, and a Users page.

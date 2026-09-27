@@ -33,6 +33,8 @@
   </div>
 </div>
 
+{% with playlist_url = url('/directors/' ~ d.person_id ~ '/playlist') %}{% include "partials/playlist_button.html" %}{% endwith %}
+
 {% if d.pending %}
   <p class="muted">Filmography not fetched yet — the next scan will.</p>
 {% endif %}
