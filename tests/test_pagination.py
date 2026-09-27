@@ -162,7 +162,7 @@ def test_pager_links_keep_the_sort_and_the_subpath(client: TestClient) -> None:
 
     body = client.get(f"{BASE}/collections?sort=name").text
 
-    assert f'href="{BASE}/collections?sort=name&amp;page=2"' in body
+    assert f'href="{BASE}/collections?sort=name&amp;dir=asc&amp;page=2"' in body, "field and direction"
     assert "//collections" not in body
 
 

@@ -47,26 +47,26 @@ def _gap_or_404(session, user, collection_id: int):
 @router.get("/collections", response_class=HTMLResponse)
 def collections(
     request: Request, session: DbSession, user: RequiredUser, sort: str | None = None,
-    started: bool = False, page: int = 1,
+    started: bool = False, page: int = 1, dir: str | None = None,  # noqa: A002 - the query parameter's name
 ):
     from app.services import pagination, scan_state, sorting
 
-    sort = sorting.resolve(session, user.id, "collections", sort)
+    current = sorting.resolve(session, user.id, "collections", sort, dir)
     gaps = movie_gap_service.collections_with_gaps(session, user.id)
     # The filter is offered only once a server has reported watched state at all; before that
     # it would hide everything and look like a bug.
     watched_known = any(movie.watched is not None for gap in gaps for movie in gap.owned)
     if started and watched_known:
         gaps = [gap for gap in gaps if gap.started]
-    gaps = sorting.sort_groups(gaps, "collections", sort)
-    started_param = "&started=1" if (started and watched_known) else ""
+    gaps = sorting.sort_groups(gaps, "collections", current)
+    started_on = started and watched_known
     # The totals below describe every collection, not the page -- they are counted before the
     # slice for exactly that reason.
     pager = pagination.paginate(
         gaps, page, path="/collections",
         # The filter only applies when watched state is known, so the link carries it only
         # then -- otherwise page 2 would claim a filter the page is not applying.
-        params={"sort": sort, "started": 1 if (started and watched_known) else None},
+        params={"sort": current[0], "dir": current[1], "started": 1 if started_on else None},
     )
     return get_templates().TemplateResponse(
         request,
@@ -80,9 +80,9 @@ def collections(
             "watched_known": watched_known,
             "total_missing": sum(len(gap.missing) for gap in gaps),
             "total_hidden": sum(len(gap.hidden) for gap in gaps),
-            "sort": sort,
-            "sort_links": sorting.links("collections", sort,
-                                        lambda key: _url(f"/collections?sort={key}{started_param}")),
+            "sort_qs": f"sort={current[0]}&dir={current[1]}",
+            "sort_ctl": sorting.control("collections", current, _url("/collections"),
+                                        hidden={"started": 1 if started_on else None}),
             "min_rating": movie_gap_service.min_gap_rating(session),
             # Distinguishes "you have no gaps" from "you haven't scanned yet", which look
             # identical otherwise and mean completely different things.
@@ -94,7 +94,7 @@ def collections(
 
 @router.get("/upcoming", response_class=HTMLResponse)
 def upcoming(request: Request, session: DbSession, user: RequiredUser, page: int = 1,
-             sort: str | None = None):
+             sort: str | None = None, dir: str | None = None):  # noqa: A002
     """Announced films in franchises the user owns part of, soonest first.
 
     The one thing no *arr calendar can show: Radarr knows what has been added, this knows what
@@ -104,16 +104,16 @@ def upcoming(request: Request, session: DbSession, user: RequiredUser, page: int
 
     from app.services import pagination, sorting, upcoming_service
 
-    sort = sorting.resolve(session, user.id, "upcoming", sort)
-    films = sorting.sort_upcoming(upcoming_service.upcoming_films(session, user.id), sort)
+    current = sorting.resolve(session, user.id, "upcoming", sort, dir)
+    films = sorting.sort_upcoming(upcoming_service.upcoming_films(session, user.id), current)
     today = date.today()
     soon = sum(1 for f in films if f.days_until(today) is not None and 0 <= f.days_until(today) <= 90)
-    pager = pagination.paginate(films, page, path="/upcoming", params={"sort": sort})
+    pager = pagination.paginate(films, page, path="/upcoming", params={"sort": current[0], "dir": current[1]})
     return get_templates().TemplateResponse(
         request,
         "upcoming.html",
         {"user": user, "films": pager.items, "today": today, "soon": soon, "pager": pager,
-         "sort_links": sorting.links("upcoming", sort, lambda key: _url(f"/upcoming?sort={key}"))},
+         "sort_ctl": sorting.control("upcoming", current, _url("/upcoming"))},
     )
 
 
@@ -137,12 +137,12 @@ def set_rating_filter(
 @router.get("/collections/{collection_id}", response_class=HTMLResponse)
 def collection_detail(
     request: Request, session: DbSession, user: RequiredUser, collection_id: int,
-    sort: str | None = None,
+    sort: str | None = None, dir: str | None = None,  # noqa: A002
 ):
     gap = _gap_or_404(session, user, collection_id)
     from app.services import media_server_service, playlist_service, sorting
 
-    detail_sort = sorting.resolve(session, user.id, "detail", sort)
+    detail_sort = sorting.resolve(session, user.id, "detail", sort, dir)
 
     return get_templates().TemplateResponse(
         request, "collection_detail.html",
@@ -150,8 +150,7 @@ def collection_detail(
          "multi_server": len(media_server_service.list_servers(session)) > 1,
          "can_playlist": playlist_service.available(session) and bool(gap.owned),
          "detail_sort": detail_sort,
-         "sort_links": sorting.links("detail", detail_sort,
-                                     lambda key: _url(f"/collections/{collection_id}?sort={key}"))}
+         "sort_ctl": sorting.control("detail", detail_sort, _url(f"/collections/{collection_id}"))}
     )
 
 

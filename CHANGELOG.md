@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.0] — 2026-09-27
+
+### Changed
+
+- **Sorting is a dropdown and a direction button** instead of a row of links, the same on every
+  list page. The dropdown picks what to sort by, and applies at once. The button beside it says
+  which way the list runs ("↓ Most first", "↑ Oldest first", "A → Z") and reverses it, so every
+  sort now works both ways.
+- Options merged now that direction is separate:
+  - "almost complete" is **Missing, fewest first**;
+  - "newest" and "oldest" are one **Release date / First aired** option;
+  - Upcoming's "soonest" is **Release date, soonest first**.
+- Items with no date or no rating stay at the end in both directions, and fully owned
+  collections and directors still trail.
+
+### Upgrading
+
+- Sorts saved in 0.29.0 carry over, including "almost complete", and old `?sort=` links still
+  work.
+
 ## [0.29.0] — 2026-09-27
 
 ### Added

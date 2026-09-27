@@ -1,5 +1,0 @@
-{# "Sort by a · b · c". `sort_links` comes from sorting.links(): label, url, active. The choice
-   is remembered on the account, so the links are the whole control. #}
-<span class="sort-links">Sort by
-  {% for l in sort_links %}{% if l.active %}<strong>{{ l.label }}</strong>{% else %}<a href="{{ l.url }}">{{ l.label }}</a>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}
-</span>

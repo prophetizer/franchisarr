@@ -31,15 +31,14 @@
   </article>
 {% else %}
   <div class="gap-controls">
-    <p class="gap-sort">
-      {% include "partials/sort_links.html" %}
-      {% if watched_known %}
-        · Show
-        {% if started %}<strong>started watching</strong>{% else %}<a href="{{ url('/collections?started=1&sort=' ~ sort) }}">started watching</a>{% endif %}
+    {% include "partials/sort_control.html" %}
+    {% if watched_known %}
+      <p class="gap-sort">Show
+        {% if started %}<strong>started watching</strong>{% else %}<a href="{{ url('/collections?started=1&' ~ sort_qs) }}">started watching</a>{% endif %}
         /
-        {% if not started %}<strong>all</strong>{% else %}<a href="{{ url('/collections?sort=' ~ sort) }}">all</a>{% endif %}
-      {% endif %}
-    </p>
+        {% if not started %}<strong>all</strong>{% else %}<a href="{{ url('/collections?' ~ sort_qs) }}">all</a>{% endif %}
+      </p>
+    {% endif %}
     {% if user and user.is_admin %}
     <form method="post" action="{{ url('/collections/rating-filter') }}" class="gap-filter">
       <label for="min_rating">Hide films rated below</label>

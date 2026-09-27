@@ -79,7 +79,8 @@ def _lists(request: Request, session, user) -> HTMLResponse:
 
 @router.get("/shows", response_class=HTMLResponse)
 def shows(request: Request, session: DbSession, user: RequiredUser, page: int = 1,
-          library_page: int = 1, sort: str | None = None):
+          library_page: int = 1, sort: str | None = None,
+          dir: str | None = None):
     """Spin-off suggestions, and the library list that the single-show search works from.
 
     Two independent pagers: the suggestion grid at the top and the owned-show list inside
@@ -91,12 +92,12 @@ def shows(request: Request, session: DbSession, user: RequiredUser, page: int = 
     from app.config import get_settings
     from app.services import sorting
 
-    sort = sorting.resolve(session, user.id, "spinoffs", sort)
-    suggestions = sorting.sort_spinoffs(tv_spinoff_service.missing_spinoffs(session, user.id), sort)
+    current = sorting.resolve(session, user.id, "spinoffs", sort, dir)
+    suggestions = sorting.sort_spinoffs(tv_spinoff_service.missing_spinoffs(session, user.id), current)
     owned = tv_spinoff_service.owned_shows(session)
     pager = pagination.paginate(suggestions, page, path="/shows",
                                 params={"library_page": library_page if library_page > 1 else None,
-                                        "sort": sort})
+                                        "sort": current[0], "dir": current[1]})
     library_pager = pagination.paginate(
         owned, library_page, path="/shows", anchor="#library", page_param="library_page",
         params={"page": pager.page if pager.page > 1 else None},
@@ -111,8 +112,7 @@ def shows(request: Request, session: DbSession, user: RequiredUser, page: int = 
             "owned_total": library_pager.total,
             "library_pager": library_pager,
             "suggestions": pager.items,
-            "sort_links": sorting.links("spinoffs", sort,
-                                        lambda key: f"{get_settings().base_url}/shows?sort={key}"),
+            "sort_ctl": sorting.control("spinoffs", current, f"{get_settings().base_url}/shows"),
             "pager": pager,
             "mappings": _mapping_rows(session),
             "shows_from_films": cross_media_service.suggestions(

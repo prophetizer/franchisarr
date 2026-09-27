@@ -28,12 +28,13 @@ def _url(path: str) -> str:
 
 @router.get("/directors", response_class=HTMLResponse)
 def directors(request: Request, session: DbSession, user: RequiredUser, sort: str | None = None,
-              page: int = 1):
+              page: int = 1, dir: str | None = None):  # noqa: A002
     from app.services import pagination, sorting
 
-    sort = sorting.resolve(session, user.id, "directors", sort)
-    views = sorting.sort_groups(director_service.director_views(session, user.id), "directors", sort)
-    pager = pagination.paginate(views, page, path="/directors", params={"sort": sort})
+    current = sorting.resolve(session, user.id, "directors", sort, dir)
+    views = sorting.sort_groups(director_service.director_views(session, user.id), "directors", current)
+    pager = pagination.paginate(views, page, path="/directors",
+                                params={"sort": current[0], "dir": current[1]})
     return get_templates().TemplateResponse(
         request,
         "directors.html",
@@ -41,8 +42,7 @@ def directors(request: Request, session: DbSession, user: RequiredUser, sort: st
             "user": user,
             "directors": pager.items,
             "pager": pager,
-            "sort": sort,
-            "sort_links": sorting.links("directors", sort, lambda key: _url(f"/directors?sort={key}")),
+            "sort_ctl": sorting.control("directors", current, _url("/directors")),
             "floor": director_service.min_director_films(session),
             "total_missing": sum(len(v.missing) for v in views),
             "pending": sum(1 for v in views if v.pending),
@@ -66,10 +66,10 @@ def set_floor(session: DbSession, user: AdminUser, floor: Annotated[str, Form()]
 
 @router.get("/directors/{person_id}", response_class=HTMLResponse)
 def director_detail(request: Request, session: DbSession, user: RequiredUser, person_id: int,
-                    sort: str | None = None):
+                    sort: str | None = None, dir: str | None = None):  # noqa: A002
     from app.services import sorting
 
-    detail_sort = sorting.resolve(session, user.id, "detail", sort)
+    detail_sort = sorting.resolve(session, user.id, "detail", sort, dir)
     view = director_service.director_view(session, person_id, user.id)
     if view is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such director.")
@@ -78,6 +78,5 @@ def director_detail(request: Request, session: DbSession, user: RequiredUser, pe
         {"user": user, "d": view, "multi_server": _multi_server(session),
          "can_playlist": playlist_service.available(session) and bool(view.owned),
          "detail_sort": detail_sort,
-         "sort_links": sorting.links("detail", detail_sort,
-                                     lambda key: _url(f"/directors/{person_id}?sort={key}"))}
+         "sort_ctl": sorting.control("detail", detail_sort, _url(f"/directors/{person_id}"))}
     )

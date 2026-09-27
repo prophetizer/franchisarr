@@ -34,7 +34,7 @@
 </div>
 
 {% with playlist_url = url('/directors/' ~ d.person_id ~ '/playlist') %}{% include "partials/playlist_button.html" %}{% endwith %}
-<div class="gap-controls"><p class="gap-sort">{% include "partials/sort_links.html" %}</p></div>
+<div class="gap-controls">{% include "partials/sort_control.html" %}</div>
 
 {% if d.pending %}
   <p class="muted">Filmography not fetched yet — the next scan will.</p>

@@ -1,0 +1,15 @@
+{# The sort control on every list: a dropdown of what to sort by, and a button that says which way
+   the list runs and flips it. Changing the field applies at once, in that field's natural
+   direction; the choice is remembered on the account. `sort_ctl` comes from sorting.control().
+   Without JavaScript the Apply button (noscript) submits the field. #}
+<form method="get" action="{{ sort_ctl.action }}" class="sort-control">
+  <label for="sort-field">Sort</label>
+  <select id="sort-field" name="sort" onchange="this.form.submit()">
+    {% for o in sort_ctl.options %}<option value="{{ o.key }}"{% if o.selected %} selected{% endif %}>{{ o.label }}</option>{% endfor %}
+  </select>
+  {% for k, v in sort_ctl.hidden.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+  <button type="submit" name="dir" value="{{ sort_ctl.flip }}" class="secondary outline sort-dir"
+          title="Reverse the order ({{ sort_ctl.flip_label }})"
+          aria-label="Sorted {{ sort_ctl.dir_label }}. Reverse the order">{{ sort_ctl.dir_label }}</button>
+  <noscript><button type="submit" class="secondary">Apply</button></noscript>
+</form>

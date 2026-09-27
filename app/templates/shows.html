@@ -49,7 +49,7 @@
   <section>
     <h2>Suggested</h2>
     {% if suggestions %}
-      <div class="gap-controls"><p class="gap-sort">{% include "partials/sort_links.html" %}</p></div>
+      <div class="gap-controls">{% include "partials/sort_control.html" %}</div>
       <div class="collection-grid collection-grid--compact">
         {% for suggestion in suggestions %}
           {% set links %}{% with item = suggestion %}{% include "partials/show_links.html" %}{% endwith %}{% endset %}
