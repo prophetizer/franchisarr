@@ -179,7 +179,7 @@ def test_build_orders_and_reports_what_went_in(session: Session, monkeypatch) ->
         (ItemType.MOVIE.value, 11), (ItemType.MOVIE.value, 1891), (ItemType.SHOW.value, 82856)])
 
     assert result.title == "Star Wars (Franchisarr)" and result.made_any
-    assert (result.servers[0].films, result.servers[0].episodes) == (2, 1)
+    assert (result.servers[0].films, result.servers[0].shows, result.servers[0].episodes) == (2, 1, 1)
     assert [i.ratingKey for i in server.created[0].items] == [1, 2, 101]
 
 
@@ -245,7 +245,7 @@ def test_the_franchise_page_offers_the_button_and_the_route_builds(client: TestC
     monkeypatch.setattr(media_server_service, "client_for", lambda s: _AsPlexClient(server))
     body = client.post(f"{BASE}/franchises/Q462/playlist").text
 
-    assert "Star Wars (Franchisarr)" in body and "2 films and 1 episode" in body
+    assert "Star Wars (Franchisarr)" in body and "2 films, 1 show (1 episode)" in body
 
 
 # ------------------------------------------------------------------ posters
@@ -362,3 +362,45 @@ def test_build_puts_the_poster_on_and_a_poster_failure_keeps_the_playlist(sessio
     monkeypatch.setattr(playlist_poster, "render", lambda *a, **k: None)
     again = playlist_service.build(session, "Star Wars", [(ItemType.MOVIE.value, 11)], art)
     assert again.made_any and again.servers[0].poster is False
+
+
+def test_the_caption_counts_films_shows_and_episodes_leaving_out_zeros() -> None:
+    from app.services.playlist_poster import _caption
+
+    assert _caption(13, 279, 3) == "13 films · 3 shows · 279 episodes"
+    assert _caption(1, 1, 1) == "1 film · 1 show · 1 episode"
+    assert _caption(11, 0, 0) == "11 films"
+
+
+def test_reposting_finds_each_playlists_page_and_counts_from_plex(session: Session, monkeypatch) -> None:
+    from app.services import media_server_service, playlist_service
+
+    _library(session)
+    session.add(Franchise(wikidata_id="Q462", name="Star Wars", kind="media franchise"))
+    session.commit()
+
+    class Ep:
+        TYPE = "episode"
+
+        def __init__(self, show):  # noqa: ANN001
+            self.__dict__["grandparentRatingKey"] = show
+
+    class Film:
+        TYPE = "movie"
+
+    class Listed:
+        def __init__(self, title: str) -> None:
+            self.title = title
+
+        def items(self):  # noqa: ANN201
+            return [Film(), Film(), Ep(1), Ep(1), Ep(2)]
+
+    server = FakeServer({}, {}, playlists=[Listed("Star Wars (Franchisarr)"), Listed("My own list")])
+    calls = []
+    monkeypatch.setattr(media_server_service, "client_for", lambda s: FakeClient(server))
+    monkeypatch.setattr(playlist_service, "apply_poster",
+                        lambda client, title, name, films, episodes, art, shows=0:
+                        calls.append((title, films, shows, episodes)) or True)
+
+    assert playlist_service.repost_all(session) == [("Star Wars (Franchisarr)", True)]
+    assert calls == [("Star Wars (Franchisarr)", 2, 2, 3)], "our playlist only, counted from Plex"

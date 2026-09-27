@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.30.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.30.1`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -216,7 +216,7 @@ was broadcast. Specials (season 0) are left out.
 
 - It's called "*name* (Franchisarr)" and gets its own square poster (Plex shows playlists
   square): the franchise or collection backdrop across the top, and the name, "In release order"
-  and what's in it on a dark panel below (a director gets their film posters instead). Pressing the button again rebuilds it with what you own now; playlists with any other
+  and what's in it ("13 films · 3 shows · 279 episodes") on a dark panel below (a director gets their film posters instead). Pressing the button again rebuilds it with what you own now; playlists with any other
   name are never touched.
 - It goes into the account of the Plex token Franchisarr uses — normally yours as the server
   owner. Plex playlists can't be shared with other accounts.

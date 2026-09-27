@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.1] — 2026-09-27
+
+### Changed
+
+- **Playlist posters and the result message count shows as well as films and episodes**, e.g.
+  "13 films · 3 shows · 279 episodes". Anything that's zero is left out.
+- `playlist_service.repost_all()` gives every existing Franchisarr playlist a fresh poster
+  without touching its contents, reading the counts from the playlist in Plex.
+
 ## [0.30.0] — 2026-09-27
 
 ### Changed

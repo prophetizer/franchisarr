@@ -83,12 +83,12 @@ def _font(bold: bool, size: int):  # noqa: ANN202
     return ImageFont.truetype(str(FONTS / ("NotoSans-Bold.ttf" if bold else "NotoSans-Regular.ttf")), size)
 
 
-def _caption(films: int, episodes: int) -> str:
+def _caption(films: int, episodes: int, shows: int = 0) -> str:
+    """"13 films · 3 shows · 279 episodes"; a part that's zero is left out."""
     parts = []
-    if films:
-        parts.append(f"{films} film{'' if films == 1 else 's'}")
-    if episodes:
-        parts.append(f"{episodes} episode{'' if episodes == 1 else 's'}")
+    for count, noun in ((films, "film"), (shows, "show"), (episodes, "episode")):
+        if count:
+            parts.append(f"{count} {noun}{'' if count == 1 else 's'}")
     return " · ".join(parts)
 
 
@@ -113,7 +113,7 @@ def _name_lines(draw, name: str):  # noqa: ANN001, ANN202
     return [name], _font(True, size)
 
 
-def render(name: str, *, films: int, episodes: int, backdrop_url: str | None = None,
+def render(name: str, *, films: int, episodes: int, shows: int = 0, backdrop_url: str | None = None,
            poster_urls: list[str] | None = None) -> bytes | None:
     """The square poster as JPEG bytes, or None if there's no artwork to build it from (or it
     failed)."""
@@ -136,7 +136,7 @@ def render(name: str, *, films: int, episodes: int, backdrop_url: str | None = N
         draw = ImageDraw.Draw(image)
 
         lines, font = _name_lines(draw, name)
-        caption = _caption(films, episodes)
+        caption = _caption(films, episodes, shows)
         # Laid out upward from the foot: mark, caption, "in release order", then the name.
         y = SIZE - 105 if caption else SIZE - 150
         if caption:

@@ -34,6 +34,7 @@ SUFFIX = " (Franchisarr)"
 class ServerResult:
     server: str
     films: int = 0
+    shows: int = 0
     episodes: int = 0
     error: str | None = None
     #: Whether our own poster went on; a failure there never fails the playlist.
@@ -138,19 +139,21 @@ def build(session: Session, name: str, refs: list[tuple[str, int]],
             continue
         outcome.films = sum(1 for e in entries if e.show_key is None)
         outcome.episodes = len(entries) - outcome.films
+        outcome.shows = len({e.show_key for e in entries if e.show_key is not None})
         if art is not None:
-            outcome.poster = apply_poster(client, title, name, outcome.films, outcome.episodes, art)
+            outcome.poster = apply_poster(client, title, name, outcome.films, outcome.episodes, art,
+                                          shows=outcome.shows)
         logger.info("Playlist %r on %s: %d films, %d episodes", title, server.name,
                     outcome.films, outcome.episodes)
     return result
 
 
 def apply_poster(client, title: str, name: str, films: int, episodes: int,  # noqa: ANN001
-                 art: PosterArt) -> bool:
+                 art: PosterArt, *, shows: int = 0) -> bool:
     """Render and upload the poster. Never raises: True if it went on, False otherwise."""
     from app.services import playlist_poster
 
-    image = playlist_poster.render(name, films=films, episodes=episodes,
+    image = playlist_poster.render(name, films=films, episodes=episodes, shows=shows,
                                    backdrop_url=art.backdrop_url, poster_urls=list(art.poster_urls))
     if image is None:
         return False
@@ -159,3 +162,68 @@ def apply_poster(client, title: str, name: str, films: int, episodes: int,  # no
     except Exception:  # noqa: BLE001
         logger.warning("Couldn't upload the poster for %r", title, exc_info=True)
         return False
+
+
+def art_from(backdrop_path: str | None, titles) -> PosterArt:  # noqa: ANN001
+    """A poster's artwork: the page's backdrop, and film posters oldest first as a fallback."""
+    from app.services.artwork import backdrop_url, poster_url
+
+    dated = sorted((t for t in titles if getattr(t, "poster_path", None)),
+                   key=lambda t: str(getattr(t, "release_date", None) or getattr(t, "year", None)
+                                     or getattr(t, "release_year", None) or "9999"))
+    return PosterArt(
+        backdrop_url=backdrop_url(backdrop_path, "w1280") if backdrop_path else None,
+        poster_urls=tuple(poster_url(t.poster_path, "w342") for t in dated[:10]),
+    )
+
+
+def _art_for_name(session: Session, name: str) -> PosterArt | None:
+    """Find which page a playlist called "<name> (Franchisarr)" came from -- a franchise, a
+    collection or a director of that name, in that order -- and its artwork."""
+    from app.models import Franchise, MovieDirector, TmdbCollection
+    from app.services import director_service, franchise_service, movie_gap_service
+
+    franchise = session.exec(select(Franchise).where(col(Franchise.name) == name)).first()
+    if franchise is not None:
+        view = franchise_service.franchise_view(session, franchise.wikidata_id)
+        if view is not None:
+            return art_from(view.backdrop_path, view.owned_films)
+    collection = session.exec(select(TmdbCollection).where(col(TmdbCollection.name) == name)).first()
+    if collection is not None:
+        gap = next((g for g in movie_gap_service.collection_gaps(
+            session, None, only={collection.tmdb_collection_id})), None)
+        return art_from(collection.backdrop_path, gap.owned if gap else ())
+    person = session.exec(select(MovieDirector.person_id).where(col(MovieDirector.name) == name)).first()
+    if person is not None:
+        view = director_service.director_view(session, person)
+        if view is not None:
+            return art_from(None, view.owned)
+    return None
+
+
+def repost_all(session: Session) -> list[tuple[str, bool]]:
+    """Give every existing Franchisarr playlist on every Plex server a fresh poster, with the
+    counts read from the playlist itself and without touching its contents. Returns
+    (title, poster went on) per playlist. For when the poster design changes."""
+    from app.services import media_server_service
+
+    done: list[tuple[str, bool]] = []
+    for server in media_server_service.enabled_servers(session):
+        if media_server_service.kind_of(server) != MediaServerKind.PLEX:
+            continue
+        client = media_server_service.client_for(server)
+        for playlist in client.server.playlists():
+            if not playlist.title.endswith(SUFFIX):
+                continue
+            name = playlist.title[: -len(SUFFIX)]
+            art = _art_for_name(session, name)
+            if art is None:
+                done.append((playlist.title, False))
+                continue
+            items = playlist.items()
+            films = sum(1 for i in items if getattr(i, "TYPE", "") == "movie")
+            episodes = [i for i in items if getattr(i, "TYPE", "") == "episode"]
+            shows = len({i.__dict__.get("grandparentRatingKey") for i in episodes})
+            done.append((playlist.title, apply_poster(client, playlist.title, name, films, len(episodes),
+                                                      art, shows=shows)))
+    return done
