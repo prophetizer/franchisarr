@@ -1,11 +1,11 @@
-{# "Make a Plex playlist" for a detail page. `playlist_url` is the POST route; admins only, and
+{# "Make a playlist" for a detail page. `playlist_url` is the POST route; admins only, and
    only when a Plex server is configured and something here is owned (`can_playlist`). #}
 {% if can_playlist and user and user.is_admin %}
   <div class="playlist-action">
     <button class="secondary outline" hx-post="{{ playlist_url }}" hx-target="#playlist-result"
             hx-swap="innerHTML" hx-disabled-elt="this" hx-indicator="#playlist-busy"
             title="Everything you own here, films and episodes, in the order it came out">
-      Make a Plex playlist</button>
+      Make a playlist</button>
     <small id="playlist-busy" class="htmx-indicator muted">Building — a big franchise takes a few seconds…</small>
     <div id="playlist-result"></div>
   </div>

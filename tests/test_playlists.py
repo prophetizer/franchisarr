@@ -191,12 +191,25 @@ class _AsPlexClient(FakeClient):
         return _replace_playlist(self, title, items)
 
 
-def test_jellyfin_and_emby_items_are_counted_not_attempted(session: Session) -> None:
+def test_jellyfin_and_emby_servers_get_playlists_too(session: Session, monkeypatch) -> None:
+    from app.clients.media_server import PlaylistEntry
+    from app.services import media_server_service
+
     _library(session, kind="jellyfin")
+    built = []
+
+    class Jelly:
+        def playlist_entries(self, films, shows):  # noqa: ANN001, ANN201
+            return [PlaylistEntry(raw=f, aired=None) for f in films]
+
+        def replace_playlist(self, title, items):  # noqa: ANN001, ANN201
+            built.append((title, items))
+
+    monkeypatch.setattr(media_server_service, "client_for", lambda s: Jelly())
 
     result = playlist_service.build(session, "Star Wars", [(ItemType.MOVIE.value, 11)])
 
-    assert result.unsupported == 1 and result.servers == []
+    assert result.made_any and built == [("Star Wars (Franchisarr)", ["1"])]
 
 
 def test_a_plex_failure_is_reported_not_raised(session: Session, monkeypatch) -> None:
@@ -236,7 +249,7 @@ def client(app_factory):
 
 def test_the_franchise_page_offers_the_button_and_the_route_builds(client: TestClient, monkeypatch) -> None:
     page = client.get(f"{BASE}/franchises/Q462").text
-    assert "Make a Plex playlist" in page and f'hx-post="{BASE}/franchises/Q462/playlist"' in page
+    assert "Make a playlist" in page and f'hx-post="{BASE}/franchises/Q462/playlist"' in page
 
     server = FakeServer({1: FakeItem(1, aired=datetime(1977, 5, 25)), 2: FakeItem(2, aired=datetime(1980, 5, 21))},
                         {100: FakeShow([FakeItem(101, aired=datetime(2019, 11, 12), season=1, index=1)])})
@@ -397,7 +410,16 @@ def test_reposting_finds_each_playlists_page_and_counts_from_plex(session: Sessi
 
     server = FakeServer({}, {}, playlists=[Listed("Star Wars (Franchisarr)"), Listed("My own list")])
     calls = []
-    monkeypatch.setattr(media_server_service, "client_for", lambda s: FakeClient(server))
+    from app.clients.plex_client import _playlist_counts, _playlist_titles
+
+    class Counting(FakeClient):
+        def playlist_titles(self):  # noqa: ANN201
+            return _playlist_titles(self)
+
+        def playlist_counts(self, title):  # noqa: ANN001, ANN201
+            return _playlist_counts(self, title)
+
+    monkeypatch.setattr(media_server_service, "client_for", lambda s: Counting(server))
     monkeypatch.setattr(playlist_service, "apply_poster",
                         lambda client, title, name, films, episodes, art, shows=0:
                         calls.append((title, films, shows, episodes)) or True)

@@ -17,11 +17,14 @@ from __future__ import annotations
 import logging
 from collections.abc import Iterator
 
+from datetime import date
+
 import requests
 
 from app import __version__
 
 from app.clients.media_server import (
+    PlaylistEntry,
     MediaLibrary,
     MediaLibraryNotFoundError,
     MediaMovie,
@@ -83,6 +86,22 @@ def _external_ids(provider_ids: dict | None) -> ExternalIds:
     )
 
 
+#: Item ids per request when fetching or adding to a playlist; keeps the URL short.
+PLAYLIST_CHUNK = 100
+
+
+def _premiere(item: dict) -> date | None:
+    """An item's release/air date from PremiereDate, else 1 January of its ProductionYear."""
+    raw = item.get("PremiereDate")
+    if raw:
+        try:
+            return date.fromisoformat(str(raw)[:10])
+        except ValueError:
+            pass
+    year = item.get("ProductionYear")
+    return date(int(year), 1, 1) if year else None
+
+
 class EmbyLikeClient:
     def __init__(
         self,
@@ -128,9 +147,19 @@ class EmbyLikeClient:
     def label(self) -> str:
         return "Jellyfin" if self.kind == MediaServerKind.JELLYFIN else "Emby"
 
+    def _params(self, params: dict | None) -> dict | None:
+        """Jellyfin 12 matches query parameters case-sensitively and documents them camelCase:
+        `UserId` is ignored on some endpoints and a 400 on others, where `userId` works. Earlier
+        Jellyfin and Emby match case-insensitively, so Jellyfin always gets camelCase and Emby
+        keeps the PascalCase its own docs use."""
+        if not params or self.kind != MediaServerKind.JELLYFIN:
+            return params
+        return {key[:1].lower() + key[1:]: value for key, value in params.items()}
+
     def _get(self, path: str, params: dict | None = None) -> dict | list:
         try:
-            response = self._session.get(f"{self._base}{path}", params=params, timeout=self._timeout)
+            response = self._session.get(f"{self._base}{path}", params=self._params(params),
+                                         timeout=self._timeout)
         except requests.RequestException as exc:
             # Generic on purpose: the key rides in a header, but the URL is worth not quoting.
             raise EmbyClientError(f"Could not reach {self.label} at {self._base}") from exc
@@ -144,6 +173,113 @@ class EmbyLikeClient:
             return response.json()
         except ValueError as exc:
             raise EmbyClientError(f"{self.label} returned a response that wasn't JSON") from exc
+
+    def _send(self, method: str, path: str, *, params: dict | None = None, json: dict | None = None,
+              data: bytes | None = None, headers: dict | None = None) -> dict | None:
+        """A write, with the same error mapping as _get. Returns the JSON body if there is one."""
+        try:
+            response = self._session.request(method, f"{self._base}{path}", params=self._params(params), json=json,
+                                             data=data, headers=headers, timeout=self._timeout)
+        except requests.RequestException as exc:
+            raise EmbyClientError(f"Could not reach {self.label} at {self._base}") from exc
+        if response.status_code in (401, 403):
+            raise EmbyAuthError(f"{self.label} refused that ({response.status_code}).")
+        if response.status_code >= 400:
+            raise EmbyClientError(f"{self.label} returned {response.status_code} for {method} {path}")
+        try:
+            return response.json() if response.content else None
+        except ValueError:
+            return None
+
+    # ---------------------------------------------------------------- playlists
+
+    def _playlists(self) -> list[dict]:
+        """The watched-as user's playlists (id and name)."""
+        found = self._get("/Items", {"IncludeItemTypes": "Playlist", "Recursive": "true",
+                                     "UserId": self.watched_user_id(), "Fields": "ChildCount"})
+        return list(found.get("Items") or []) if isinstance(found, dict) else []
+
+    def _playlist_id(self, title: str) -> str | None:
+        return next((p["Id"] for p in self._playlists() if p.get("Name") == title), None)
+
+    def playlist_entries(self, films: list[str], shows: list[str]) -> list[PlaylistEntry]:
+        """Films and every regular episode of the shows, with air dates: films in batches by id,
+        then one request per show for its episodes."""
+        user = self.watched_user_id()
+        entries: list[PlaylistEntry] = []
+        for start in range(0, len(films), PLAYLIST_CHUNK):
+            batch = self._get("/Items", {"Ids": ",".join(films[start:start + PLAYLIST_CHUNK]),
+                                         "Fields": "PremiereDate,ProductionYear", "UserId": user})
+            for item in batch.get("Items") or []:
+                entries.append(PlaylistEntry(raw=item["Id"], aired=_premiere(item)))
+        for show_id in shows:
+            try:
+                episodes = self._get(f"/Shows/{show_id}/Episodes", {"UserId": user, "Fields": "PremiereDate"})
+            except MediaLibraryNotFoundError:
+                logger.warning("Show %s is no longer on %s; skipped", show_id, self.label)
+                continue
+            previous: date | None = None
+            rows = sorted(episodes.get("Items") or [],
+                          key=lambda e: (e.get("ParentIndexNumber") or 0, e.get("IndexNumber") or 0))
+            for item in rows:
+                season = int(item.get("ParentIndexNumber") or 0)
+                if season == 0:
+                    continue     # specials: not part of the run
+                aired = _premiere(item) or previous
+                previous = aired or previous
+                entries.append(PlaylistEntry(raw=item["Id"], aired=aired, show_key=str(show_id),
+                                             season=season, episode=int(item.get("IndexNumber") or 0)))
+        return entries
+
+    def replace_playlist(self, title: str, items: list) -> None:  # noqa: ANN001 - item ids
+        """Make `title` hold exactly `items` (ids), in order, in the watched-as user's account.
+        Only a playlist with this exact name is touched: it's deleted and made again."""
+        user = self.watched_user_id()
+        # Every copy of this exact name, server-wide, not just the user's view: an interrupted
+        # earlier run, or a changed "watched as" user, can leave one the user's view doesn't
+        # show. Only Franchisarr names playlists "... (Franchisarr)".
+        everywhere = self._get("/Items", {"IncludeItemTypes": "Playlist", "Recursive": "true"})
+        for playlist in (everywhere.get("Items") or []) if isinstance(everywhere, dict) else []:
+            if playlist.get("Name") == title:
+                self._send("DELETE", f"/Items/{playlist['Id']}")
+        first = [str(i) for i in items[:PLAYLIST_CHUNK]]
+        if self.kind == MediaServerKind.JELLYFIN:
+            created = self._send("POST", "/Playlists", json={
+                "Name": title, "Ids": first, "UserId": user, "MediaType": "Video"})
+        else:
+            created = self._send("POST", "/Playlists", params={
+                "Name": title, "Ids": ",".join(first), "UserId": user, "MediaType": "Video"})
+        playlist_id = (created or {}).get("Id") or self._playlist_id(title)
+        if not playlist_id:
+            raise EmbyClientError(f"{self.label} didn't say which playlist it made")
+        for start in range(PLAYLIST_CHUNK, len(items), PLAYLIST_CHUNK):
+            chunk = ",".join(str(i) for i in items[start:start + PLAYLIST_CHUNK])
+            self._send("POST", f"/Playlists/{playlist_id}/Items", params={"Ids": chunk, "UserId": user})
+
+    def set_playlist_poster(self, title: str, image: bytes) -> bool:
+        """Upload `image` (JPEG) as the playlist's primary image. Both servers take the image
+        base64-encoded in the body."""
+        import base64
+
+        playlist_id = self._playlist_id(title)
+        if playlist_id is None:
+            return False
+        self._send("POST", f"/Items/{playlist_id}/Images/Primary", data=base64.b64encode(image),
+                   headers={"Content-Type": "image/jpeg"})
+        return True
+
+    def playlist_titles(self) -> list[str]:
+        return [p.get("Name", "") for p in self._playlists()]
+
+    def playlist_counts(self, title: str) -> tuple[int, int, int] | None:
+        playlist_id = self._playlist_id(title)
+        if playlist_id is None:
+            return None
+        items = self._get(f"/Playlists/{playlist_id}/Items", {"UserId": self.watched_user_id()})
+        rows = items.get("Items") or [] if isinstance(items, dict) else []
+        episodes = [r for r in rows if r.get("Type") == "Episode"]
+        return (sum(1 for r in rows if r.get("Type") == "Movie"),
+                len({r.get("SeriesId") for r in episodes}), len(episodes))
 
     # ---------------------------------------------------------------- MediaServerClient
 

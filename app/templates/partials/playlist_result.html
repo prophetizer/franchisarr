@@ -8,10 +8,6 @@
     </p>
   {% endif %}
 {% endfor %}
-{% if r.unsupported %}
-  <p class="muted"><small>{{ r.unsupported }} title{{ '' if r.unsupported == 1 else 's' }} on Jellyfin or Emby
-    left out — playlists there aren't supported yet.</small></p>
-{% endif %}
-{% if not r.servers and not r.unsupported %}
+{% if not r.servers %}
   <p class="muted">Nothing here is in a library Franchisarr can see.</p>
 {% endif %}

@@ -7,11 +7,12 @@ sits in the timeline), so release order is the order there is.
 
 One playlist per media server, since a playlist can only hold that server's items, named
 "<name> (Franchisarr)". Pressing the button again rebuilds that playlist with whatever is owned
-now; playlists with any other name are never touched. Plex first: Jellyfin and Emby items are
-counted and reported as not yet supported.
+now; playlists with any other name are never touched. Plex, Jellyfin and Emby alike: each
+client implements playlist_entries / replace_playlist / set_playlist_poster.
 
-Created in the account whose token the server was configured with -- the server owner's --
-because Plex playlists belong to one account and can't be shared.
+Playlists belong to one account on every server. On Plex that's the token's owner (normally the
+server owner); on Jellyfin and Emby it's the server's "watched as" user, the first
+administrator unless set.
 """
 
 from __future__ import annotations
@@ -63,11 +64,10 @@ class PlaylistResult:
 
 
 def available(session: Session) -> bool:
-    """Whether any server here can take a playlist yet (an enabled Plex server)."""
+    """Whether any server here can take a playlist: Plex, Jellyfin and Emby all can."""
     from app.services import media_server_service
 
-    return any(media_server_service.kind_of(s) == MediaServerKind.PLEX
-               for s in media_server_service.enabled_servers(session))
+    return bool(media_server_service.enabled_servers(session))
 
 
 def playlist_title(name: str) -> str:
@@ -119,9 +119,6 @@ def build(session: Session, name: str, refs: list[tuple[str, int]],
         server = session.get(MediaServer, server_id)
         if server is None or not server.enabled:
             continue
-        if media_server_service.kind_of(server) != MediaServerKind.PLEX:
-            result.unsupported += len(items)
-            continue
         outcome = ServerResult(server=server.name)
         result.servers.append(outcome)
         films = [i.item_key for i in items if i.item_type == ItemType.MOVIE.value]
@@ -135,7 +132,7 @@ def build(session: Session, name: str, refs: list[tuple[str, int]],
             client.replace_playlist(title, [e.raw for e in entries])
         except Exception as exc:  # noqa: BLE001 -- reported to the admin, logged with detail
             logger.exception("Couldn't build playlist %r on %s", title, server.name)
-            outcome.error = f"Plex refused or couldn't be reached ({type(exc).__name__})."
+            outcome.error = f"The server refused or couldn't be reached ({type(exc).__name__})."
             continue
         outcome.films = sum(1 for e in entries if e.show_key is None)
         outcome.episodes = len(entries) - outcome.films
@@ -202,28 +199,23 @@ def _art_for_name(session: Session, name: str) -> PosterArt | None:
 
 
 def repost_all(session: Session) -> list[tuple[str, bool]]:
-    """Give every existing Franchisarr playlist on every Plex server a fresh poster, with the
-    counts read from the playlist itself and without touching its contents. Returns
-    (title, poster went on) per playlist. For when the poster design changes."""
+    """Give every existing Franchisarr playlist on every server a fresh poster, with the counts
+    read from the playlist itself and without touching its contents. Returns (title, poster went
+    on) per playlist. For when the poster design changes."""
     from app.services import media_server_service
 
     done: list[tuple[str, bool]] = []
     for server in media_server_service.enabled_servers(session):
-        if media_server_service.kind_of(server) != MediaServerKind.PLEX:
-            continue
         client = media_server_service.client_for(server)
-        for playlist in client.server.playlists():
-            if not playlist.title.endswith(SUFFIX):
+        for title in client.playlist_titles():
+            if not title.endswith(SUFFIX):
                 continue
-            name = playlist.title[: -len(SUFFIX)]
+            name = title[: -len(SUFFIX)]
             art = _art_for_name(session, name)
-            if art is None:
-                done.append((playlist.title, False))
+            counts = client.playlist_counts(title)
+            if art is None or counts is None:
+                done.append((title, False))
                 continue
-            items = playlist.items()
-            films = sum(1 for i in items if getattr(i, "TYPE", "") == "movie")
-            episodes = [i for i in items if getattr(i, "TYPE", "") == "episode"]
-            shows = len({i.__dict__.get("grandparentRatingKey") for i in episodes})
-            done.append((playlist.title, apply_poster(client, playlist.title, name, films, len(episodes),
-                                                      art, shows=shows)))
+            films, shows, episodes = counts
+            done.append((title, apply_poster(client, title, name, films, episodes, art, shows=shows)))
     return done

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.0] — 2026-09-27
+
+### Added
+
+- **Playlists on Jellyfin and Emby**, with the same release order, square poster and rebuild
+  behaviour as Plex. The button, now **Make a playlist**, builds one on every server that holds
+  titles from the page. On Jellyfin and Emby the playlist goes to the server's "watched as" user.
+  Tested against real Jellyfin 12.1.0 and Emby 4.10.0.40 servers: building, rebuilding in place,
+  the order, the counts and the poster.
+
+### Fixed
+
+- **Jellyfin 12 requests now use camelCase parameter names** (`userId`, not `UserId`).
+  Jellyfin 12 matches them case-sensitively, so some requests were ignored and others refused.
+  Library scans happened to be unaffected, but playlists and per-user lookups weren't.
+
 ## [0.30.2] — 2026-09-27
 
 ### Fixed

@@ -20,7 +20,7 @@ And, built on the same data: **franchise pages** that put films and TV together 
 you have 8 of 15*), **director pages** (*you own 11 Nolan films; missing* Following *and*
 Insomnia), an **Upcoming** page of announced films in franchises you own with release-date
 notifications, **import lists** Radarr and Sonarr can poll so you never have to click Add, and
-**Plex playlists** of a franchise, collection or director in release order — films and episodes
+**playlists** of a franchise, collection or director in release order, on Plex, Jellyfin or Emby — films and episodes
 together, so a franchise plays the way it came out.
 
 It reads all three — one of them or several at once, with a film on any of them counting as
@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.30.2`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.31.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -208,21 +208,23 @@ the label changes.
 
 ## Playlists
 
-Franchise, collection and director pages have a **Make a Plex playlist** button (administrators
-only). It builds a playlist on your Plex server of everything you own on that page, in the order
-it was released: films by release date, and for a franchise that spans film and TV, every
-episode placed by its air date — so *Agents of S.H.I.E.L.D.* falls between the Marvel films as it
-was broadcast. Specials (season 0) are left out.
+Franchise, collection and director pages have a **Make a playlist** button (administrators
+only). It builds a playlist of everything you own on that page, on each of your Plex, Jellyfin
+and Emby servers that holds some of it, in the order it was released: films by release date,
+and for a franchise that spans film and TV, every episode placed by its air date — so *Agents of
+S.H.I.E.L.D.* falls between the Marvel films as it was broadcast. Specials (season 0) are left
+out.
 
-- It's called "*name* (Franchisarr)" and gets its own square poster (Plex shows playlists
-  square): the franchise or collection backdrop across the top, and the name, "In release order"
-  and what's in it ("13 films · 3 shows · 279 episodes") on a dark panel below (a director gets their film posters instead). Pressing the button again rebuilds it with what you own now; playlists with any other
-  name are never touched.
-- It goes into the account of the Plex token Franchisarr uses — normally yours as the server
-  owner. Plex playlists can't be shared with other accounts.
+- It's called "*name* (Franchisarr)" and gets its own square poster: the franchise or
+  collection backdrop across the top, and the name, "In release order" and what's in it ("13
+  films · 3 shows · 279 episodes") on a dark panel below (a director gets their film posters
+  instead). Pressing the button again rebuilds it with what you own now; playlists with any
+  other name are never touched.
+- Playlists belong to one account. On Plex that's the account of the token Franchisarr uses —
+  normally yours as the server owner. On Jellyfin and Emby it's the server's *watched as* user
+  (Servers page), which is the first administrator unless you've set one.
 - The order is release order. Nothing records story order (where *Rogue One* sits in the saga),
   so that isn't offered.
-- Jellyfin and Emby are next; for now their titles are left out, and the result says how many.
 
 ## Calendar
 
@@ -383,7 +385,7 @@ Honest about what has run against the real thing and what has only run against t
 |---|---|
 | Plex | The developer's own library — ~3,400 films, ~660 shows — every day |
 | Jellyfin 10.11, Emby 4.9 | Real servers during development, library scans and sign-in both; not in daily use |
-| Jellyfin 12.1, Emby 4.10 | Connection and library listing against real servers (September 2026) |
+| Jellyfin 12.1, Emby 4.10 | Connection, library listing and playlists (build, rebuild, poster) against real servers (September 2026) |
 | Seerr 3.4.1 | End to end on a real instance: connection, request cache, and a real request through to Radarr (September 2026). That first live test found three bugs, fixed in 0.23.1 |
 | Radarr 6.3, Sonarr 4.0 | Real instances, one of each, every day |
 | Several Radarr or Sonarr instances | The test suite only — the developer runs one of each |

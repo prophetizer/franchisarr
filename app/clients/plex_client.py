@@ -35,6 +35,7 @@ from app.clients.media_server import (
     MediaServerError,
     MediaServerKind,
     MediaShow,
+    PlaylistEntry,
 )
 from app.clients.plex_guid import ExternalIds, extract_external_ids, unknown_schemes
 from app.logging_config import register_secret
@@ -127,6 +128,12 @@ class PlexClient:
     def set_playlist_poster(self, title: str, image: bytes) -> bool:
         return _set_playlist_poster(self, title, image)
 
+    def playlist_titles(self) -> list[str]:
+        return _playlist_titles(self)
+
+    def playlist_counts(self, title: str) -> tuple[int, int, int] | None:
+        return _playlist_counts(self, title)
+
     def test_connection(self) -> str:
         """Connect and return the server's friendly name. Used by the setup wizard's
         "Test Connection" button in Phase 2."""
@@ -218,23 +225,6 @@ class PlexClient:
         return _external_ids_of(item)
 
 
-@dataclass(frozen=True)
-class PlaylistEntry:
-    """One playable item for a playlist, with what it takes to put it in release order.
-
-    `raw` is the plexapi object itself: creating the playlist needs it, and holding on to it
-    saves fetching every item twice.
-    """
-
-    raw: object
-    aired: date | None
-    #: For episodes: position within the show, and the show's own key so a show's episodes
-    #: keep their order when several share an air date.
-    show_key: str | None = None
-    season: int = 0
-    episode: int = 0
-
-
 #: plexapi builds one URL listing every rating key; chunks keep it short on a big franchise.
 PLAYLIST_CHUNK = 100
 
@@ -287,6 +277,21 @@ def _replace_playlist(client: "PlexClient", title: str, items: list) -> None:  #
     playlist = server.createPlaylist(title, items=items[:PLAYLIST_CHUNK])
     for start in range(PLAYLIST_CHUNK, len(items), PLAYLIST_CHUNK):
         playlist.addItems(items[start:start + PLAYLIST_CHUNK])
+
+
+def _playlist_titles(client: "PlexClient") -> list[str]:
+    return [p.title for p in client.server.playlists()]
+
+
+def _playlist_counts(client: "PlexClient", title: str) -> tuple[int, int, int] | None:
+    """(films, shows, episodes) in the playlist called `title`, or None if there isn't one."""
+    playlist = next((p for p in client.server.playlists() if p.title == title), None)
+    if playlist is None:
+        return None
+    items = playlist.items()
+    films = sum(1 for i in items if getattr(i, "TYPE", "") == "movie")
+    episodes = [i for i in items if getattr(i, "TYPE", "") == "episode"]
+    return films, len({i.__dict__.get("grandparentRatingKey") for i in episodes}), len(episodes)
 
 
 def _set_playlist_poster(client: "PlexClient", title: str, image: bytes) -> bool:

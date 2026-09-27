@@ -588,7 +588,7 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 }
 .pager a[role="button"] { width: auto; margin: 0; }
 
-/* "Make a Plex playlist" under a detail page's heading. */
+/* "Make a playlist" under a detail page's heading. */
 .playlist-action { margin: 0 0 var(--pico-spacing); }
 .playlist-action > button { margin-bottom: 0.25rem; width: auto; }
 .playlist-action p { margin: 0.5rem 0 0; }

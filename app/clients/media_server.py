@@ -14,6 +14,7 @@ elsewhere.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import date
 from enum import Enum
 from typing import Iterator, Protocol
 
@@ -96,3 +97,21 @@ class MediaServerClient(Protocol):
     def iter_movies(self, library_key: str | int) -> Iterator[MediaMovie]: ...
 
     def iter_shows(self, library_key: str | int) -> Iterator[MediaShow]: ...
+
+
+@dataclass(frozen=True)
+class PlaylistEntry:
+    """One playable item for a playlist, with what it takes to put it in release order.
+
+    `raw` is whatever the server's client needs to put the item in a playlist: the plexapi
+    object for Plex (holding on to it saves fetching every item twice), the item id for
+    Jellyfin and Emby.
+    """
+
+    raw: object
+    aired: date | None
+    #: For episodes: position within the show, and the show's own key so a show's episodes
+    #: keep their order when several share an air date.
+    show_key: str | None = None
+    season: int = 0
+    episode: int = 0

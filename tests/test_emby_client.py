@@ -6,6 +6,8 @@ two servers answered every request identically, which is why one client covers b
 
 from __future__ import annotations
 
+import json
+
 import pytest
 import responses
 from requests.exceptions import ConnectionError as RequestsConnectionError
@@ -106,8 +108,9 @@ def test_movies_come_with_their_provider_ids() -> None:
     assert movies[1].has_external_ids is False
     assert movies[0].guids == (), "GUIDs are a Plex thing"
     query = responses.calls[1].request.url
-    assert "ParentId=f137a2dd" in query and "IncludeItemTypes=Movie" in query and "Recursive=true" in query
-    assert "UserId=u-admin" in query, "no watched_user named: the first administrator"
+    # Jellyfin gets camelCase parameters (Jellyfin 12 matches them case-sensitively).
+    assert "parentId=f137a2dd" in query and "includeItemTypes=Movie" in query and "recursive=true" in query
+    assert "userId=u-admin" in query, "no watched_user named: the first administrator"
 
 
 @responses.activate
@@ -121,7 +124,7 @@ def test_reads_are_paged_until_the_total_is_reached() -> None:
     movies = list(_client().iter_movies("x"))
 
     assert len(movies) == 750
-    assert "StartIndex=500" in responses.calls[2].request.url
+    assert "startIndex=500" in responses.calls[2].request.url
 
 
 @responses.activate
@@ -133,7 +136,7 @@ def test_shows_are_series_items() -> None:
     shows = list(_client().iter_shows("a656b907"))
 
     assert shows[0].external_ids.tmdb_id == 100565
-    assert "IncludeItemTypes=Series" in responses.calls[1].request.url
+    assert "includeItemTypes=Series" in responses.calls[1].request.url
 
 
 # ------------------------------------------------------------------ watched state
@@ -164,7 +167,7 @@ def test_a_named_watched_user_is_looked_up_by_name() -> None:
 
     list(EmbyLikeClient(URL, KEY, watched_user="Guest").iter_movies("lib"))
 
-    assert "UserId=u-guest" in responses.calls[1].request.url
+    assert "userId=u-guest" in responses.calls[1].request.url
 
 
 @responses.activate
@@ -252,3 +255,76 @@ def test_a_wrong_password_is_an_auth_error() -> None:
     responses.add(responses.POST, f"{URL}/Users/AuthenticateByName", status=401)
     with pytest.raises(EmbyAuthError):
         _client().authenticate("michael", "wrong")
+
+
+# ------------------------------------------------------------------ playlists
+
+
+def _user_lookup() -> None:
+    responses.add(responses.GET, f"{URL}/Users", json=[{"Name": "michael", "Id": "u1",
+                                                         "Policy": {"IsAdministrator": True}}])
+
+
+@responses.activate
+def test_jellyfin_playlist_calls_use_camel_case_parameters() -> None:
+    """Jellyfin 12 ignores `UserId` on some endpoints and answers 400 on others."""
+    from urllib.parse import parse_qs, urlparse
+
+    _user_lookup()
+    responses.add(responses.GET, f"{URL}/Items", json={"Items": [
+        {"Id": "m1", "PremiereDate": "1979-05-25T00:00:00Z"}, {"Id": "m2", "ProductionYear": 1986}]})
+    responses.add(responses.GET, f"{URL}/Shows/s1/Episodes", json={"Items": [
+        {"Id": "e2", "ParentIndexNumber": 1, "IndexNumber": 2},
+        {"Id": "e1", "ParentIndexNumber": 1, "IndexNumber": 1, "PremiereDate": "2019-11-12T00:00:00Z"},
+        {"Id": "e0", "ParentIndexNumber": 0, "IndexNumber": 1, "PremiereDate": "2019-01-01T00:00:00Z"}]})
+
+    entries = _client(MediaServerKind.JELLYFIN).playlist_entries(["m1", "m2"], ["s1"])
+
+    queries = [parse_qs(urlparse(c.request.url).query) for c in responses.calls if "/Users" not in c.request.url]
+    assert all(not any(k[0].isupper() for k in q) for q in queries), queries
+    by_id = {e.raw: e for e in entries}
+    assert set(by_id) == {"m1", "m2", "e1", "e2"}, "specials left out"
+    assert str(by_id["m2"].aired) == "1986-01-01" and str(by_id["e2"].aired) == "2019-11-12"
+
+
+@responses.activate
+@pytest.mark.parametrize("kind", [MediaServerKind.JELLYFIN, MediaServerKind.EMBY])
+def test_replacing_a_playlist_deletes_old_copies_creates_and_adds_in_chunks(kind, monkeypatch) -> None:  # noqa: ANN001
+    import app.clients.emby_client as ec
+
+    monkeypatch.setattr(ec, "PLAYLIST_CHUNK", 2)
+    _user_lookup()
+    responses.add(responses.GET, f"{URL}/Items", json={"Items": [
+        {"Id": "old1", "Name": "Alien (Franchisarr)"}, {"Id": "keep", "Name": "Alien"},
+        {"Id": "old2", "Name": "Alien (Franchisarr)"}]})
+    responses.add(responses.DELETE, f"{URL}/Items/old1")
+    responses.add(responses.DELETE, f"{URL}/Items/old2")
+    responses.add(responses.POST, f"{URL}/Playlists", json={"Id": "new"})
+    responses.add(responses.POST, f"{URL}/Playlists/new/Items")
+
+    _client(kind).replace_playlist("Alien (Franchisarr)", ["a", "b", "c", "d", "e"])
+
+    methods = [(c.request.method, c.request.url.split("?")[0].replace(URL, "")) for c in responses.calls]
+    assert ("DELETE", "/Items/old1") in methods and ("DELETE", "/Items/old2") in methods
+    assert ("DELETE", "/Items/keep") not in methods, "only our own name"
+    create = next(c for c in responses.calls if c.request.method == "POST" and c.request.url.split("?")[0].endswith("/Playlists"))
+    if kind == MediaServerKind.JELLYFIN:
+        assert json.loads(create.request.body)["Ids"] == ["a", "b"]
+    else:
+        assert "Ids=a%2Cb" in create.request.url
+    adds = [c.request.url for c in responses.calls if "/Playlists/new/Items" in c.request.url]
+    assert len(adds) == 2 and "ids=c%2cd" in adds[0].lower()
+
+
+@responses.activate
+def test_the_poster_goes_up_base64_encoded() -> None:
+    import base64
+
+    _user_lookup()
+    responses.add(responses.GET, f"{URL}/Items", json={"Items": [{"Id": "p1", "Name": "Alien (Franchisarr)"}]})
+    responses.add(responses.POST, f"{URL}/Items/p1/Images/Primary")
+
+    assert _client(MediaServerKind.EMBY).set_playlist_poster("Alien (Franchisarr)", b"\xff\xd8jpeg") is True
+
+    upload = responses.calls[-1].request
+    assert base64.b64decode(upload.body) == b"\xff\xd8jpeg" and upload.headers["Content-Type"] == "image/jpeg"
