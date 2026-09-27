@@ -72,7 +72,8 @@ the parts that belong to the app, because only it knows what a sign-in or a form
 - **Admin rights follow the media server** at every sign-in, and **Settings → Users** can sign
   anyone out everywhere, revoke their API key, or remove them.
 - **API keys and session tokens are stored only as SHA-256 hashes**, and credential-shaped query
-  parameters (`api_key=`, `token=`) are scrubbed from every log line.
+  parameters (`api_key=`, `token=`) are scrubbed from every log line. Secret-bearing database
+  fields are left out of `repr()`, so printing or logging a row can't show one.
 - **Backups can't grant access.** An import accepts only known settings and fields, validates
   values, and adds media servers switched off.
 - **Request bodies are capped at 2 MB as they arrive**, chunked uploads included.

@@ -252,3 +252,21 @@ def test_stored_media_server_credentials_are_redacted_from_startup(app_factory, 
     module = app_factory(BASE)
     with TestClient(module.app, follow_redirects=False):
         assert "JELLYKEY-zzz111aaa222bbb333ccc" not in redact("key is JELLYKEY-zzz111aaa222bbb333ccc")
+
+
+def test_printing_a_row_never_shows_its_credential() -> None:
+    """repr() of a model row is what a stray print or log line shows. It once printed a Plex
+    token in full; every secret-bearing field is now left out of it."""
+    from app.models import MediaServer, RadarrInstance, SeerrInstance, SonarrInstance, User, UserSession
+
+    rows = [
+        MediaServer(name="Plex", kind="plex", url="http://p", credential="PLEX-TOKEN-SECRET"),
+        RadarrInstance(name="R", url="http://r", api_key="RADARR-KEY-SECRET"),
+        SonarrInstance(name="S", url="http://s", api_key="SONARR-KEY-SECRET"),
+        SeerrInstance(name="O", kind="seerr", url="http://o", api_key="SEERR-KEY-SECRET"),
+        User(local_username="admin", password_hash="HASH-SECRET", api_key="sha256:KEYHASH-SECRET"),
+        UserSession(token_hash="SESSION-HASH-SECRET", user_id=1, expires_at=__import__("datetime").datetime.now()),
+    ]
+    for row in rows:
+        text = repr(row) + str(row)
+        assert "SECRET" not in text, type(row).__name__

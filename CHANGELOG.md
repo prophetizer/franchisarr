@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.31.1] — 2026-09-27
+
+### Security
+
+- **Printing a database row no longer shows its credential.** The text form of a media server,
+  instance, user or session record included its token, key or hash, so a stray print or log
+  line could reveal it. Those fields are now left out of it.
+
 ## [0.31.0] — 2026-09-27
 
 ### Added

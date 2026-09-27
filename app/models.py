@@ -82,9 +82,9 @@ class User(SQLModel, table=True):
     external_user_id: str | None = Field(default=None, index=True, unique=True)
     external_username: str | None = Field(default=None)
     local_username: str | None = Field(default=None, index=True, unique=True)
-    password_hash: str | None = Field(default=None)
+    password_hash: str | None = Field(default=None, repr=False)
     is_admin: bool = Field(default=False)
-    api_key: str | None = Field(default=None, index=True, unique=True)
+    api_key: str | None = Field(default=None, index=True, unique=True, repr=False)
     #: Which instance this person last added to, so the add dialog can pre-select it
     #: (technical challenge #3). Deliberately not a foreign key: a stale id after an instance is
     #: deleted should read as "no preference", not block the delete or need a cascade rule while
@@ -103,7 +103,7 @@ class RadarrInstance(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True)
     url: str
-    api_key: str
+    api_key: str = Field(repr=False)
     default_root_folder: str | None = Field(default=None)
     default_quality_profile_id: int | None = Field(default=None)
     is_default: bool = Field(default=False)
@@ -117,7 +117,7 @@ class SonarrInstance(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True)
     url: str
-    api_key: str
+    api_key: str = Field(repr=False)
     default_root_folder: str | None = Field(default=None)
     default_quality_profile_id: int | None = Field(default=None)
     default_monitor_mode: str = Field(default=MonitorMode.ALL.value)
@@ -330,8 +330,9 @@ class MediaServer(SQLModel, table=True):
     name: str = Field(index=True, unique=True)
     kind: str  # MediaServerKind value
     url: str
-    #: Plex token or Jellyfin/Emby API key. Never rendered or logged in full.
-    credential: str
+    #: Plex token or Jellyfin/Emby API key. Never rendered or logged in full -- and left out of
+    #: repr(), so printing or logging a row can't show it (it once did, in a debugging printout).
+    credential: str = Field(repr=False)
     enabled: bool = Field(default=True)
     #: Plex only: which server this is, for the sign-in access check. Learned on connect.
     machine_identifier: str | None = Field(default=None)
@@ -518,7 +519,7 @@ class SeerrInstance(SQLModel, table=True):
     name: str = Field(index=True)
     kind: str = Field(default=SeerrKind.SEERR.value)
     url: str
-    api_key: str
+    api_key: str = Field(repr=False)
     is_default: bool = Field(default=False)
     created_at: datetime = Field(default_factory=utcnow)
 
@@ -645,7 +646,7 @@ class UserSession(SQLModel, table=True):
     __tablename__ = "sessions"
 
     id: int | None = Field(default=None, primary_key=True)
-    token_hash: str = Field(index=True, unique=True)
+    token_hash: str = Field(index=True, unique=True, repr=False)
     # CASCADE: an orphaned session is meaningless and would be a live credential for an account
     # that no longer exists. Note the other tables referencing users deliberately do NOT cascade
     # -- deleting a user must not erase shared spin-off mappings or the audit log -- but those
