@@ -19,6 +19,8 @@ from collections.abc import Iterator
 
 import requests
 
+from app import __version__
+
 from app.clients.media_server import (
     MediaLibrary,
     MediaLibraryNotFoundError,
@@ -101,16 +103,25 @@ class EmbyLikeClient:
         self._api_key = api_key.strip()
         self._timeout = timeout
         self._session = session or requests.Session()
-        # Both servers accept the token in this header. The client identifiers are required by
-        # Emby's auth middleware and harmless on Jellyfin.
-        self._session.headers.update({
-            "X-Emby-Token": self._api_key,
-            "X-Emby-Client": "Franchisarr",
-            "X-Emby-Device-Name": "Franchisarr",
-            "X-Emby-Device-Id": "franchisarr",
-            "X-Emby-Client-Version": "1",
-            "Accept": "application/json",
-        })
+        self._session.headers["Accept"] = "application/json"
+        if kind == MediaServerKind.JELLYFIN:
+            # Jellyfin 12 refuses the legacy X-Emby-Token header outright (401) and takes the key
+            # only in its Authorization scheme -- which every Jellyfin since 10.x also accepts, so
+            # this is the one form that works on old and new alike.
+            self._session.headers["Authorization"] = (
+                'MediaBrowser Client="Franchisarr", Device="Franchisarr", DeviceId="franchisarr", '
+                f'Version="{__version__}", Token="{self._api_key}"'
+            )
+        else:
+            # Emby (4.10) still wants X-Emby-Token, with client identifiers its auth middleware
+            # requires.
+            self._session.headers.update({
+                "X-Emby-Token": self._api_key,
+                "X-Emby-Client": "Franchisarr",
+                "X-Emby-Device-Name": "Franchisarr",
+                "X-Emby-Device-Id": "franchisarr",
+                "X-Emby-Client-Version": "1",
+            })
         register_secret(self._api_key)
 
     @property
@@ -245,7 +256,8 @@ class EmbyLikeClient:
         account that can sign in here is an account on *this* server, which is what "sign in
         with Jellyfin" has to mean -- the equivalent of the Plex server-access check.
         """
-        headers = {k: v for k, v in self._session.headers.items() if k != "X-Emby-Token"}
+        headers = {k: v for k, v in self._session.headers.items()
+                   if k not in ("X-Emby-Token", "Authorization")}
         headers["Authorization"] = ('MediaBrowser Client="Franchisarr", Device="Franchisarr", '
                                     'DeviceId="franchisarr", Version="1"')
         try:

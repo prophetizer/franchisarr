@@ -52,12 +52,25 @@ def test_emby_leaves_product_name_empty_and_that_is_fine() -> None:
 
 
 @responses.activate
-def test_the_api_key_travels_in_the_header_both_servers_accept() -> None:
+def test_jellyfin_gets_the_key_in_its_authorization_header() -> None:
+    """Jellyfin 12 answers X-Emby-Token with 401; its Authorization scheme works on 10.x too."""
     responses.add(responses.GET, f"{URL}/System/Info", json={"ServerName": "x", "Version": "1"})
 
-    _client().test_connection()
+    _client(MediaServerKind.JELLYFIN).test_connection()
 
-    assert responses.calls[0].request.headers["X-Emby-Token"] == KEY
+    headers = responses.calls[0].request.headers
+    assert f'Token="{KEY}"' in headers["Authorization"] and headers["Authorization"].startswith("MediaBrowser ")
+    assert "X-Emby-Token" not in headers
+
+
+@responses.activate
+def test_emby_gets_the_key_in_x_emby_token() -> None:
+    responses.add(responses.GET, f"{URL}/System/Info", json={"ServerName": "x", "Version": "1"})
+
+    _client(MediaServerKind.EMBY).test_connection()
+
+    headers = responses.calls[0].request.headers
+    assert headers["X-Emby-Token"] == KEY and "Authorization" not in headers
 
 
 @responses.activate

@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.30.1`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.30.2`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -383,6 +383,7 @@ Honest about what has run against the real thing and what has only run against t
 |---|---|
 | Plex | The developer's own library — ~3,400 films, ~660 shows — every day |
 | Jellyfin 10.11, Emby 4.9 | Real servers during development, library scans and sign-in both; not in daily use |
+| Jellyfin 12.1, Emby 4.10 | Connection and library listing against real servers (September 2026) |
 | Seerr 3.4.1 | End to end on a real instance: connection, request cache, and a real request through to Radarr (September 2026). That first live test found three bugs, fixed in 0.23.1 |
 | Radarr 6.3, Sonarr 4.0 | Real instances, one of each, every day |
 | Several Radarr or Sonarr instances | The test suite only — the developer runs one of each |

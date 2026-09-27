@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.30.2] — 2026-09-27
+
+### Fixed
+
+- **Jellyfin 12 rejected Franchisarr's API key.** Jellyfin 12 no longer accepts the key in the
+  `X-Emby-Token` header, and answered every request with 401, so a Jellyfin 12 server couldn't
+  be tested, listed or scanned. Franchisarr now sends it in Jellyfin's
+  `Authorization: MediaBrowser … Token="…"` header, which older Jellyfin versions accept too.
+  Emby is unchanged. Checked against real Jellyfin 12.1.0 and Emby 4.10.0.40 servers.
+
 ## [0.30.1] — 2026-09-27
 
 ### Changed
