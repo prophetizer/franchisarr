@@ -443,7 +443,7 @@ Franchisarr doesn't parse yet, and that section says exactly what's needed.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 pytest
 DB_PATH=./franchisarr.db ADMIN_USERNAME=admin ADMIN_PASSWORD=change-me uvicorn app.main:app --reload
 ```

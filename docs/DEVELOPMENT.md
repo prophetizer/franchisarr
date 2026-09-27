@@ -15,7 +15,8 @@ anything that touches a route, an external API, or the database.
 | Packaging | One multi-arch (amd64/arm64) image, non-root with PUID/PGID |
 | Tests | pytest, external APIs mocked with `responses` |
 
-Local setup: `python -m venv .venv && .venv/bin/pip install -r requirements.txt`, then
+Local setup: `python -m venv .venv && .venv/bin/pip install -r requirements-dev.txt` (the app's own
+dependencies are `requirements.txt`, which is all the image installs), then
 `.venv/bin/pytest`. The image and CI target Python 3.12. CI also runs `pip-audit` against the
 pins; a published advisory for a pinned version fails the build, so bump and re-pin.
 

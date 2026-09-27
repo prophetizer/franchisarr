@@ -1,0 +1,11 @@
+# Everything the app needs, plus the test suite. The image installs requirements.txt only.
+-r requirements.txt
+
+# Testing
+pytest==9.1.1
+pytest-asyncio==1.4.0
+responses==0.25.3
+# Required by fastapi.testclient (Starlette's TestClient is built on it). Not used by the
+# application itself -- all outbound HTTP goes through requests.
+httpx==0.28.1
+pytest-cov==7.1.0

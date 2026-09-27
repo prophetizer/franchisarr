@@ -28,8 +28,12 @@ jobs:
     # cannot retrigger itself.
     if: github.actor != 'github-actions[bot]'
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          # Don't leave the write token in .git/config for every later step (pip install, the
+          # capture script) to read; only the final push step gets it.
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: "3.12"
           cache: pip
@@ -43,6 +47,8 @@ jobs:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
         run: python scripts/screenshots.py
       - name: Commit if changed
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -51,5 +57,5 @@ jobs:
             echo "screenshots unchanged"
           else
             git commit -m "Screenshots: regenerated for $(git rev-parse --short HEAD)"
-            git push
+            git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:${GITHUB_REF_NAME}"
           fi

@@ -1,5 +1,6 @@
-# Pinned to a digest-stable tag rather than 'latest' so a rebuild produces the same base.
-FROM python:3.12-slim AS base
+# Pinned by digest so a rebuild produces the same base; Dependabot proposes digest updates
+# weekly, so security fixes to the base image still arrive (as a reviewable pull request).
+FROM python:3.12-slim@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f AS base
 
 # Python behaves better in a container this way: no .pyc clutter on the read-only layers, and
 # logs appear immediately instead of sitting in a buffer when the container is killed.
@@ -16,10 +17,10 @@ RUN apt-get update \
 
 WORKDIR /app
 
+# Runtime dependencies only: the test suite's live in requirements-dev.txt. (This used to install
+# everything and uninstall the test packages with `|| true`, which also hid a failed install.)
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
-    # The test-only dependencies have no business in a runtime image.
-    && pip uninstall -y pytest pytest-asyncio pytest-cov responses httpx 2>/dev/null || true
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app/ ./app/
 # Not needed to run (the app builds its Alembic config in code) — copied so `docker exec` into a

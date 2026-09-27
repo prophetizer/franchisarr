@@ -31,12 +31,3 @@ apprise==1.13.1
 # against Click 8.2+. Click is pinned alongside it so a fresh image build can't reintroduce that.
 typer==0.27.2
 click==8.5.0
-
-# Testing
-pytest==9.1.1
-pytest-asyncio==1.4.0
-responses==0.25.3
-# Required by fastapi.testclient (Starlette's TestClient is built on it). Not used by the
-# application itself -- all outbound HTTP goes through requests.
-httpx==0.28.1
-pytest-cov==7.1.0
