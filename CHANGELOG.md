@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.1] — 2026-09-27
+
+### Fixed
+
+- **Playlist posters are square.** Plex shows playlists square, so the tall poster was cropped
+  to its middle and lost "In release order" and the counts. The poster is now the whole
+  backdrop across the top, uncropped, above a dark panel with the name and counts. Long names
+  wrap to two lines, and a director's poster grid fits the number of films so no cell is empty.
+
 ## [0.28.0] — 2026-09-27
 
 ### Added

@@ -22,7 +22,7 @@ def _art(backdrop_path: str | None, titles) -> playlist_service.PosterArt:  # no
                                      or getattr(t, "release_year", None) or "9999"))
     return playlist_service.PosterArt(
         backdrop_url=backdrop_url(backdrop_path, "w1280") if backdrop_path else None,
-        poster_urls=tuple(poster_url(t.poster_path, "w342") for t in dated[:9]),
+        poster_urls=tuple(poster_url(t.poster_path, "w342") for t in dated[:10]),
     )
 
 

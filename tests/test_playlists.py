@@ -267,9 +267,37 @@ def test_the_poster_is_a_backdrop_with_the_name(monkeypatch) -> None:
     data = playlist_poster.render("Star Wars", films=13, episodes=279, backdrop_url="https://x/b.jpg")
 
     image = Image.open(io.BytesIO(data))
-    assert image.size == (1000, 1500) and image.format == "JPEG"
-    top, bottom = image.getpixel((500, 100)), image.getpixel((20, 1450))
-    assert top[0] > 150 and bottom[0] < 60, "artwork on top, darkened toward the text"
+    assert image.size == (1000, 1000) and image.format == "JPEG", "square: Plex shows playlists square"
+    top, panel = image.getpixel((500, 100)), image.getpixel((20, 900))
+    assert top[0] > 150 and panel[0] < 40, "the backdrop across the top, the text on a dark panel"
+
+
+def test_a_long_name_wraps_rather_than_shrinking_to_nothing() -> None:
+    from PIL import Image, ImageDraw
+
+    from app.services import playlist_poster
+
+    draw = ImageDraw.Draw(Image.new("RGB", (1000, 1000)))
+    lines, font = playlist_poster._name_lines(draw, "DC Universe Animated Original Movies")
+    assert len(lines) == 2 and font.size >= 56
+    lines, font = playlist_poster._name_lines(draw, "Alien")
+    assert lines == ["Alien"] and font.size == 104
+
+
+@pytest.mark.parametrize("count,columns", [(12, 5), (9, 4), (6, 3), (4, 4), (1, 1)])
+def test_the_director_mosaic_leaves_no_empty_cell(monkeypatch, count: int, columns: int) -> None:
+    from app.services import playlist_poster
+
+    sizes: list[tuple[int, int]] = []
+    monkeypatch.setattr(playlist_poster, "_fetch", lambda url: _solid((50, 50, 50)))
+    real_fit = playlist_poster._fit
+    monkeypatch.setattr(playlist_poster, "_fit", lambda img, w, h: (sizes.append((w, h)), real_fit(img, w, h))[1])
+
+    playlist_poster._poster_rows([f"https://x/{i}.jpg" for i in range(count)])
+
+    assert sizes and all(w == 1000 // columns for w, _ in sizes)
+    rows = 1 if count < 6 else 2
+    assert len(sizes) == columns * rows, "every cell filled"
 
 
 def test_no_backdrop_falls_back_to_a_mosaic_and_no_art_means_no_poster(monkeypatch) -> None:

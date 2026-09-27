@@ -1,8 +1,10 @@
 """A poster for a Franchisarr playlist, so it doesn't wear Plex's four-tile mosaic.
 
-The franchise or collection backdrop, cropped to a poster and darkened toward the bottom, with
-the name, "In release order" and what's in it. Director pages have no backdrop, so they get a
-mosaic of the director's first films instead, under the same text.
+Square, because Plex shows playlists square: a tall poster was cropped to its middle and lost
+its text (0.28.0). The top 9:16 of the square is the franchise or collection backdrop, whole --
+a backdrop is already that shape, so none of it is cut -- fading into a dark panel that carries
+the name, "In release order" and what's in it. Director pages have no backdrop, so the top is
+two rows of the director's film posters instead.
 
 Images come from TMDb's CDN, fetched by the server -- the one place Franchisarr downloads artwork
 itself rather than leaving it to the browser -- so SHOW_ARTWORK=false means no poster. Anything
@@ -20,7 +22,9 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-WIDTH, HEIGHT = 1000, 1500
+SIZE = 1000
+#: The artwork band across the top: the shape of a TMDb backdrop, so it isn't cropped.
+ART_HEIGHT = SIZE * 9 // 16
 FONTS = Path(__file__).resolve().parent.parent / "assets" / "fonts"
 TIMEOUT = 20
 #: Nord frost, the app's own accent, for the "In release order" line.
@@ -54,17 +58,23 @@ def _darken_bottom(image, start: float, strength: int):  # noqa: ANN001, ANN202
     return Image.composite(Image.new("RGB", image.size, INK), image, mask.resize(image.size))
 
 
-def _mosaic(urls: list[str]):  # noqa: ANN202
+def _poster_rows(urls: list[str]):  # noqa: ANN202
+    """The director's film posters filling the artwork band, in a grid sized to how many there
+    are so no cell is left empty: two rows of five (200x281, almost a poster's own 2:3) for ten
+    or more, fewer columns for fewer films, one row below six."""
     from PIL import Image
 
-    canvas = Image.new("RGB", (WIDTH, HEIGHT), INK)
-    cell_w, cell_h = WIDTH // 3, HEIGHT // 3
-    for i, url in enumerate(urls[:9]):
+    count = min(len(urls), 10)
+    columns, rows = ((5, 2) if count >= 10 else (4, 2) if count >= 8 else (3, 2) if count >= 6
+                     else (max(count, 1), 1))
+    band = Image.new("RGB", (SIZE, ART_HEIGHT), INK)
+    cell_w, cell_h = SIZE // columns, ART_HEIGHT // rows
+    for i, url in enumerate(urls[:columns * rows]):
         try:
-            canvas.paste(_fit(_fetch(url), cell_w, cell_h), ((i % 3) * cell_w, (i // 3) * cell_h))
+            band.paste(_fit(_fetch(url), cell_w, cell_h), ((i % columns) * cell_w, (i // columns) * cell_h))
         except Exception:  # noqa: BLE001 -- one missing tile leaves a dark cell, not no poster
             logger.debug("Poster tile %s unavailable", url)
-    return canvas
+    return band
 
 
 def _font(bold: bool, size: int):  # noqa: ANN202
@@ -82,34 +92,63 @@ def _caption(films: int, episodes: int) -> str:
     return " · ".join(parts)
 
 
+def _name_lines(draw, name: str):  # noqa: ANN001, ANN202
+    """The name as one line at the largest size that fits, or two balanced lines if one would
+    have to shrink below readable at thumbnail size. Returns (lines, font)."""
+    limit = SIZE - 110
+    for size in range(104, 63, -4):
+        if draw.textlength(name, font=_font(True, size)) <= limit:
+            return [name], _font(True, size)
+    words = name.split()
+    if len(words) > 1:
+        best = min(range(1, len(words)), key=lambda i: abs(len(" ".join(words[:i])) - len(" ".join(words[i:]))))
+        lines = [" ".join(words[:best]), " ".join(words[best:])]
+        for size in range(72, 39, -4):
+            if all(draw.textlength(line, font=_font(True, size)) <= limit for line in lines):
+                return lines, _font(True, size)
+        return lines, _font(True, 40)
+    size = 64
+    while size > 36 and draw.textlength(name, font=_font(True, size)) > limit:
+        size -= 4
+    return [name], _font(True, size)
+
+
 def render(name: str, *, films: int, episodes: int, backdrop_url: str | None = None,
            poster_urls: list[str] | None = None) -> bytes | None:
-    """The poster as JPEG bytes, or None if there's no artwork to build it from (or it failed)."""
+    """The square poster as JPEG bytes, or None if there's no artwork to build it from (or it
+    failed)."""
     from app.services.artwork import images_enabled
 
     if not images_enabled():
         return None
     try:
-        from PIL import ImageDraw
+        from PIL import Image, ImageDraw
 
         if backdrop_url:
-            image = _darken_bottom(_fit(_fetch(backdrop_url), WIDTH, HEIGHT), start=0.45, strength=235)
+            band = _fit(_fetch(backdrop_url), SIZE, ART_HEIGHT)
         elif poster_urls:
-            image = _darken_bottom(_mosaic(poster_urls), start=0.35, strength=245)
+            band = _poster_rows(poster_urls)
         else:
             return None
 
+        image = Image.new("RGB", (SIZE, SIZE), INK)
+        image.paste(_darken_bottom(band, start=0.70, strength=255), (0, 0))
         draw = ImageDraw.Draw(image)
-        size = 118
-        while size > 48 and draw.textlength(name, font=_font(True, size)) > WIDTH - 120:
-            size -= 4
-        base = 1360
-        draw.text((WIDTH // 2, base - 150), name, font=_font(True, size), fill=(245, 245, 245), anchor="ms")
-        draw.text((WIDTH // 2, base - 80), "IN RELEASE ORDER", font=_font(True, 34), fill=ACCENT, anchor="ms")
+
+        lines, font = _name_lines(draw, name)
         caption = _caption(films, episodes)
+        # Laid out upward from the foot: mark, caption, "in release order", then the name.
+        y = SIZE - 105 if caption else SIZE - 150
         if caption:
-            draw.text((WIDTH // 2, base - 25), caption, font=_font(False, 40), fill=(210, 210, 210), anchor="ms")
-        draw.text((WIDTH // 2, HEIGHT - 40), "FRANCHISARR", font=_font(True, 26), fill=(150, 150, 150), anchor="ms")
+            draw.text((SIZE // 2, y), caption, font=_font(False, 36), fill=(210, 210, 210), anchor="ms")
+        y -= 48
+        draw.text((SIZE // 2, y), "IN RELEASE ORDER", font=_font(True, 32), fill=ACCENT, anchor="ms")
+        line_height = int(font.size * 1.1)
+        y -= 60
+        for line in reversed(lines):
+            draw.text((SIZE // 2, y), line, font=font, fill=(245, 245, 245), anchor="ms")
+            y -= line_height
+        draw.text((SIZE // 2, SIZE - 28), "FRANCHISARR", font=_font(True, 22), fill=(150, 150, 150), anchor="ms")
 
         out = io.BytesIO()
         image.save(out, format="JPEG", quality=88)
