@@ -169,12 +169,15 @@ class CollectionGap:
         return max(rated) if rated else -1.0
 
 
-def owned_tmdb_ids(session: Session) -> set[int]:
+def owned_tmdb_ids(session: Session, *, all_servers: bool = False) -> set[int]:
     """TMDb ids of films actually in the library.
 
     Items flagged for review are excluded: an unconfirmed guess must not be able to mark a film
-    as owned, because that would silently hide a real gap.
+    as owned, because that would silently hide a real gap. So are servers that are switched off,
+    unless `all_servers` (scan-time steps, see ownership_service).
     """
+    from app.services.ownership_service import on_enabled_server
+
     # The column, not the row: 20,000 LibraryItem objects in the session's identity map make
     # every later commit pay to expire them all (scripts/loadtest.py found the scan going O(n²)).
     ids = session.exec(
@@ -182,6 +185,7 @@ def owned_tmdb_ids(session: Session) -> set[int]:
             col(LibraryItem.item_type) == ItemType.MOVIE.value,
             col(LibraryItem.tmdb_id).is_not(None),
             col(LibraryItem.needs_review) == False,  # noqa: E712 - SQL, not Python
+            *(() if all_servers else (on_enabled_server(),)),
         )
     ).all()
     return {tmdb_id for tmdb_id in ids if tmdb_id}
@@ -408,20 +412,24 @@ def items_needing_review(session: Session) -> list[LibraryItem]:
     Surfaced rather than silently skipped: a film that didn't match is otherwise invisible, and
     the user has no way to discover why a gap they expected isn't showing.
     """
+    from app.services.ownership_service import on_enabled_server
+
     return list(
         session.exec(
             select(LibraryItem)
-            .where(col(LibraryItem.needs_review) == True)  # noqa: E712 - SQL, not Python
+            .where(col(LibraryItem.needs_review) == True, on_enabled_server())  # noqa: E712 - SQL
             .order_by(col(LibraryItem.title))
         ).all()
     )
 
 
 def unmatched_items(session: Session) -> list[LibraryItem]:
+    from app.services.ownership_service import on_enabled_server
+
     return list(
         session.exec(
             select(LibraryItem)
-            .where(col(LibraryItem.tmdb_id).is_(None))
+            .where(col(LibraryItem.tmdb_id).is_(None), on_enabled_server())
             .order_by(col(LibraryItem.title))
         ).all()
     )

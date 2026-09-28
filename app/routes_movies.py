@@ -87,7 +87,7 @@ def collections(
             # Distinguishes "you have no gaps" from "you haven't scanned yet", which look
             # identical otherwise and mean completely different things.
             "scanned": session.exec(select(TmdbCollection.tmdb_collection_id).limit(1)).first() is not None
-            or bool(movie_gap_service.owned_tmdb_ids(session)),
+            or bool(movie_gap_service.owned_tmdb_ids(session, all_servers=True)),
         },
     )
 

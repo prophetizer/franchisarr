@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.31.1`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.32.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -324,6 +324,12 @@ under **Servers** in the app (name, address, key; a *watched as* username for Je
 nobody). Their libraries are chosen together on the Libraries page and scanned in one pass. A
 film on two servers is owned once; its tile on a collection page says which servers hold it. Watched films get a
 tick, and the Collections page can be filtered to franchises you've actually started.
+
+Each server on the Servers page has its own **Scan** button (just that server's libraries) and a
+**Turn off / Turn on** switch. A server that's off isn't scanned, isn't a playlist target, and
+nothing on it counts as owned; what it holds stays in the database, so turning it back on needs
+no rescan. **Use only this** turns every other server off at once, with a banner on every page
+to turn them back on: the quick way to see what one server has on its own.
 
 ## Command line
 

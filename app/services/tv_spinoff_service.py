@@ -149,14 +149,18 @@ class SpinoffSuggestion:
         return self.confidence == MappingConfidence.CONFIRMED.value
 
 
-def owned_show_ids(session: Session) -> set[int]:
+def owned_show_ids(session: Session, *, all_servers: bool = False) -> set[int]:
     """TMDb ids of shows in the library. Unconfirmed matches don't count, for the same reason
-    they don't on the movie side: a guess must not be able to hide a real gap."""
+    they don't on the movie side: a guess must not be able to hide a real gap. Nor do servers
+    that are switched off, unless `all_servers` (scan-time steps, see ownership_service)."""
+    from app.services.ownership_service import on_enabled_server
+
     ids = session.exec(
         select(LibraryItem.tmdb_id).where(
             col(LibraryItem.item_type) == ItemType.SHOW.value,
             col(LibraryItem.tmdb_id).is_not(None),
             col(LibraryItem.needs_review) == False,  # noqa: E712 - SQL, not Python
+            *(() if all_servers else (on_enabled_server(),)),
         )
     ).all()
     return {tmdb_id for tmdb_id in ids if tmdb_id}
@@ -187,6 +191,8 @@ def sonarr_known_ids(session: Session, instance_id: int | None = None) -> set[in
 
 
 def owned_shows(session: Session) -> list[LibraryItem]:
+    from app.services.ownership_service import on_enabled_server
+
     return list(
         session.exec(
             select(LibraryItem)
@@ -194,6 +200,7 @@ def owned_shows(session: Session) -> list[LibraryItem]:
                 col(LibraryItem.item_type) == ItemType.SHOW.value,
                 col(LibraryItem.tmdb_id).is_not(None),
                 col(LibraryItem.needs_review) == False,  # noqa: E712 - SQL, not Python
+                on_enabled_server(),
             )
             .order_by(col(LibraryItem.title))
         ).all()

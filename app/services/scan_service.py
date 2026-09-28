@@ -214,7 +214,7 @@ def _discover_spinoffs(
     """
     from app.services import tv_spinoff_service
 
-    owned = sorted(tv_spinoff_service.owned_show_ids(session))
+    owned = sorted(tv_spinoff_service.owned_show_ids(session, all_servers=True))
     if not owned:
         return
 
@@ -258,7 +258,7 @@ def _discover_spinoffs(
     # limiter's pace -- and it is enrichment, so it comes last and a failure costs only itself.
     from app.services import cross_media_service, movie_gap_service
 
-    movie_ids = sorted(movie_gap_service.owned_tmdb_ids(session))
+    movie_ids = sorted(movie_gap_service.owned_tmdb_ids(session, all_servers=True))
     if progress:
         progress("Looking across films and TV", 0, len(owned) + len(movie_ids))
     try:
@@ -292,7 +292,7 @@ def _cache_shows(
     """Fetch and cache details for each owned show, so spin-off views have names to display."""
     from app.services.tv_spinoff_service import cache_show, owned_show_ids
 
-    owned = owned_show_ids(session)
+    owned = owned_show_ids(session, all_servers=True)
 
     for index, tmdb_id in enumerate(sorted(owned), start=1):
         if progress and index % PROGRESS_EVERY == 0:
@@ -470,7 +470,7 @@ def _cache_collections(
     """
     from app.services import movie_gap_service
 
-    owned_ids = movie_gap_service.owned_tmdb_ids(session)
+    owned_ids = movie_gap_service.owned_tmdb_ids(session, all_servers=True)
 
     collection_ids: set[int] = set()
     for index, tmdb_id in enumerate(sorted(owned_ids), start=1):

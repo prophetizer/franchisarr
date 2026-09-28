@@ -6,8 +6,14 @@
   <h1>Media servers</h1>
   <p>Where Franchisarr reads what you own. Add every Plex, Jellyfin or Emby you use; their libraries are scanned together.</p>
 </hgroup>
+{% if several %}
+  <p><small class="muted">A server that's turned off isn't scanned or counted, and can't be signed in
+    through (except while "Use only this" has paused it); what it holds stays here, so turning it
+    back on needs no rescan.</small></p>
+{% endif %}
 
 {% if error %}<p role="alert" class="notice-bad">{{ error }}</p>{% endif %}
+{% include "partials/scan_status.html" %}
 {% if saved %}<p role="status" class="notice-good">Saved.</p>{% endif %}
 
 {% if servers %}
@@ -33,6 +39,22 @@
                   hx-target="#test-result-{{ server.id }}"
                   hx-swap="innerHTML">Test</button>
           {% if user.is_admin %}
+            {% if server.enabled %}
+              <button class="outline" title="Scan only this server's libraries"
+                      hx-post="{{ url('/media-servers/' ~ server.id ~ '/scan') }}"
+                      hx-target="#scan-status" hx-swap="outerHTML">Scan</button>
+            {% endif %}
+            <form method="post" action="{{ url('/media-servers/' ~ server.id ~ '/toggle') }}" class="nav-form">
+              <button type="submit" class="secondary outline"
+                      title="{{ 'Stop counting what this server holds, without deleting anything' if server.enabled else 'Count this server again; no rescan needed' }}">
+                {{ 'Turn off' if server.enabled else 'Turn on' }}</button>
+            </form>
+            {% if several %}
+              <form method="post" action="{{ url('/media-servers/' ~ server.id ~ '/only') }}" class="nav-form">
+                <button type="submit" class="secondary outline"
+                        title="Turn every other server off until you turn them back on">Use only this</button>
+              </form>
+            {% endif %}
             <button type="button" class="secondary outline" @click="editing = !editing">Edit</button>
             <form method="post" action="{{ url('/media-servers/' ~ server.id ~ '/delete') }}" class="nav-form"
                   onsubmit="return confirm('Remove {{ server.name | e }} and everything scanned from it?')">

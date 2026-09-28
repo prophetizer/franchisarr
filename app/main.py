@@ -201,7 +201,7 @@ def index(request: Request, session: DbSession, user: RequiredUser):
             # Scanning is the thing the whole app depends on, so its control belongs on the page
             # people land on -- it used to live only on the collections page. Progress itself
             # comes from a context processor, since several pages show it now.
-            "scanned": bool(movie_gap_service.owned_tmdb_ids(session)),
+            "scanned": bool(movie_gap_service.owned_tmdb_ids(session, all_servers=True)),
         },
     )
 

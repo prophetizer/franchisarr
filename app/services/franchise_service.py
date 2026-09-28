@@ -147,8 +147,8 @@ def discover(
         if newest is not None and _as_utc(newest) + ttl > utcnow():
             return len(session.exec(select(Franchise)).all())
 
-    show_ids = sorted(tv_spinoff_service.owned_show_ids(session))
-    movie_ids = sorted(movie_gap_service.owned_tmdb_ids(session))
+    show_ids = sorted(tv_spinoff_service.owned_show_ids(session, all_servers=True))
+    movie_ids = sorted(movie_gap_service.owned_tmdb_ids(session, all_servers=True))
     if progress:
         progress("Grouping into franchises", 0, len(show_ids) + len(movie_ids))
 

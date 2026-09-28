@@ -84,6 +84,20 @@
     </header>
 
     <main class="container">
+      {% if solo %}
+        <p role="status" class="notice-warn solo-banner">
+          {%- macro names(list) -%}
+            {{ list[:-1] | join(", ") ~ " and " ~ list[-1] if list | length > 1 else (list[0] if list else "no server") }}
+          {%- endmacro %}
+          <span>Showing only <strong>{{ names(solo.on) }}</strong>: {{ names(solo.off) }}
+          {{ "is" if solo.off | length == 1 else "are" }} turned off, so nothing there counts as owned.</span>
+          {% if user and user.is_admin %}
+            <form method="post" action="{{ url('/media-servers/restore') }}" class="nav-form">
+              <button type="submit" class="secondary outline">Turn {{ "it" if solo.off | length == 1 else "them" }} back on</button>
+            </form>
+          {% endif %}
+        </p>
+      {% endif %}
       {% block content %}{% endblock %}
     </main>
 

@@ -76,9 +76,31 @@ def _scan_context(request) -> dict:  # noqa: ANN001 - a Starlette Request
     return {"progress": scan_state.current()}
 
 
+def _solo_context(request) -> dict:  # noqa: ANN001 - a Starlette Request
+    """"Showing only Jellyfin" on every page while "Use only this server" is on.
+
+    Every page, because that's where it matters: with the other servers off, films they hold
+    show as missing, and a banner on the servers page alone would be long out of sight by then.
+    Two small reads per render. A database that can't answer (a test rendering a template on
+    its own) just means no banner -- this must never be what breaks a page.
+    """
+    from sqlalchemy.exc import SQLAlchemyError
+    from sqlmodel import Session
+
+    from app.db import get_engine
+    from app.services import media_server_service
+
+    try:
+        with Session(get_engine()) as session:
+            return {"solo": media_server_service.solo_state(session)}
+    except SQLAlchemyError:
+        return {"solo": None}
+
+
 def build_templates(base_url: str) -> Jinja2Templates:
     templates = Jinja2Templates(
-        directory=str(TEMPLATES_DIR), context_processors=[_theme_context, _scan_context]
+        directory=str(TEMPLATES_DIR),
+        context_processors=[_theme_context, _scan_context, _solo_context],
     )
     templates.env.globals["url"] = make_url_builder(base_url)
     templates.env.globals["version"] = __version__

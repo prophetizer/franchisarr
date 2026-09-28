@@ -57,12 +57,14 @@ def media_servers_page(
     request: Request, session: DbSession, user: AdminUser, saved: bool = False,
     error: str | None = None,
 ):
+    servers = [_view(s) for s in media_server_service.list_servers(session)]
     return get_templates().TemplateResponse(
         request,
         "media_servers.html",
         {
             "user": user,
-            "servers": [_view(s) for s in media_server_service.list_servers(session)],
+            "servers": servers,
+            "several": len(servers) > 1,
             "kinds": KINDS,
             "saved": saved,
             "error": error,
@@ -105,6 +107,54 @@ def add_server(
         watched_user=watched_user.strip() or None,
     )
     return RedirectResponse(_url("/media-servers?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
+
+
+def _back() -> RedirectResponse:
+    return RedirectResponse(_url("/media-servers?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
+
+
+# Declared before /media-servers/{server_id}, which would otherwise claim "restore" as an id.
+@router.post("/media-servers/restore", response_class=HTMLResponse)
+def restore_servers(request: Request, session: DbSession, user: AdminUser):
+    """Undo "Use only this server", then back to the page it was pressed on: the banner shows
+    on every page, and whoever pressed it was looking at something. The referrer goes through
+    the same check as sign-in's `next`, so it can only ever lead inside the app."""
+    from urllib.parse import urlsplit
+
+    from app.routes_auth import _safe_next
+
+    media_server_service.restore_others(session)
+    referer = urlsplit(request.headers.get("referer", ""))
+    back = referer.path + (f"?{referer.query}" if referer.query else "")
+    return RedirectResponse(_safe_next(back or None), status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/media-servers/{server_id}/toggle", response_class=HTMLResponse)
+def toggle_server(session: DbSession, user: AdminUser, server_id: int):
+    server = _get(session, server_id)
+    media_server_service.set_enabled(session, server, not server.enabled)
+    return _back()
+
+
+@router.post("/media-servers/{server_id}/only", response_class=HTMLResponse)
+def use_only_server(session: DbSession, user: AdminUser, server_id: int):
+    media_server_service.use_only(session, _get(session, server_id))
+    return _back()
+
+
+@router.post("/media-servers/{server_id}/scan", response_class=HTMLResponse)
+def scan_server(request: Request, session: DbSession, user: AdminUser, server_id: int):
+    """Scan this one server's libraries -- quicker than all of them when testing one."""
+    from app.services import scan_job, scan_state
+
+    server = _get(session, server_id)
+    if not server.enabled:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail="Switch the server on before scanning it.")
+    scan_job.run_in_background("manual", server_id=server.id)
+    return get_templates().TemplateResponse(
+        request, "partials/scan_status.html", {"user": user, "progress": scan_state.current()}
+    )
 
 
 @router.post("/media-servers/{server_id}", response_class=HTMLResponse)

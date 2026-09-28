@@ -56,14 +56,16 @@ class ScanJobResult:
 
 
 def _clients(
-    session: Session,
+    session: Session, server_id: int | None = None,
 ) -> tuple[list[scan_service.ScanSource], TmdbClient | None, FanartClient | None, list[str]]:
+    """What a scan reads from. `server_id` narrows it to that one server's libraries."""
     errors: list[str] = []
     tmdb_key = get_setting(session, SettingKey.TMDB_API_KEY)
     fanart_key = get_setting(session, SettingKey.FANART_API_KEY)
     sources = [
         scan_service.ScanSource(server, media_server_service.client_for(server))
         for server in media_server_service.enabled_servers(session)
+        if server_id is None or server.id == server_id
     ]
 
     if not sources:
@@ -107,7 +109,8 @@ def has_ever_scanned(session: Session) -> bool:
 
 
 def run(
-    session: Session, *, notify: bool = True, progress=None, force_refresh: bool = False
+    session: Session, *, notify: bool = True, progress=None, force_refresh: bool = False,
+    server_id: int | None = None,
 ) -> ScanJobResult:
     """Do a complete scan and, if anything new turned up, send the webhook.
 
@@ -116,6 +119,9 @@ def run(
     developer's library -- is precisely how someone learns to mute the channel. The settings page
     primes explicitly when a schedule is switched on, but a schedule supplied through
     SCAN_SCHEDULE_CRON never passes through that page, so the guard belongs here too.
+
+    `server_id` reads only that server's libraries; the other servers' rows are left as they
+    were, and everything after the read (Radarr/Sonarr, the diff) runs as usual.
     """
     result = ScanJobResult()
     first_run = not has_ever_scanned(session)
@@ -124,7 +130,7 @@ def run(
     # library and follow in a second job, which run_in_background starts when this one ends.
     result.enrichment_deferred = first_run
 
-    sources, tmdb, fanart, errors = _clients(session)
+    sources, tmdb, fanart, errors = _clients(session, server_id)
     if errors:
         result.errors.extend(errors)
         return result
@@ -155,14 +161,20 @@ def run(
     if progress:
         progress("Working out what's missing", 0, 0)
 
+    # A title on a server that's only switched off is not news: announcing it would mark it
+    # reported, and it would never be announced again when it really does go missing.
+    paused_films = movie_gap_service.owned_tmdb_ids(session, all_servers=True)
+    paused_shows = tv_spinoff_service.owned_show_ids(session, all_servers=True)
     movie_gaps: dict[int, tuple[str, str]] = {}
     for gap in movie_gap_service.collections_with_gaps(session):
         for movie in gap.missing:
-            movie_gaps[movie.tmdb_id] = (movie.title, gap.name)
+            if movie.tmdb_id not in paused_films:
+                movie_gaps[movie.tmdb_id] = (movie.title, gap.name)
 
     show_gaps: dict[int, tuple[str, str]] = {
         suggestion.spinoff_tmdb_id: (suggestion.spinoff_name, suggestion.relationships)
         for suggestion in tv_spinoff_service.missing_spinoffs(session)
+        if suggestion.spinoff_tmdb_id not in paused_shows
     }
 
     # Release-date news is diffed against the last scan rather than against "ever seen": a film
@@ -242,8 +254,11 @@ def run_enrichment(session: Session, *, progress=None, force_refresh: bool = Fal
     return [*movies.errors, *shows.errors]
 
 
-def run_in_background(trigger: str = "manual", *, force_refresh: bool = False) -> bool:
+def run_in_background(trigger: str = "manual", *, force_refresh: bool = False,
+                      server_id: int | None = None) -> bool:
     """Start a scan on a background thread. False means one is already running.
+
+    `server_id` scans just that server (the Media servers page's per-server Scan button).
 
     `force_refresh` ignores the cache TTL and refetches every collection and show. It exists
     because the cache hides configuration changes: adding a fanart.tv key buys nothing until the
@@ -269,7 +284,7 @@ def run_in_background(trigger: str = "manual", *, force_refresh: bool = False) -
         try:
             with DbSession(get_engine()) as session:
                 result = run(session, notify=True, progress=scan_state.update,
-                             force_refresh=force_refresh)
+                             force_refresh=force_refresh, server_id=server_id)
                 deferred = result.enrichment_deferred
                 summary = _describe(result)
                 if deferred:

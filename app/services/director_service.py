@@ -187,7 +187,7 @@ def discover(
     Credits are fetched only for films that have none recorded -- 3,400 requests once on the
     test library, then only for new arrivals. Filmographies honour the TTL like collections do.
     """
-    owned = movie_gap_service.owned_tmdb_ids(session)
+    owned = movie_gap_service.owned_tmdb_ids(session, all_servers=True)
     credited = {row.tmdb_movie_id for row in session.exec(select(MovieDirector))}
     # Films fetched and found to have no director credit are recorded with person_id 0 so they
     # are not asked about on every scan.

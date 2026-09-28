@@ -607,3 +607,14 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 @media (max-width: 767px) {
   .sort-control select { flex: 1 1 9rem; min-width: 0; }
 }
+
+/* "Showing only Jellyfin" (base.html): the restore button sits on the line when it fits. */
+.solo-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+}

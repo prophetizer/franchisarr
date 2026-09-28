@@ -57,6 +57,10 @@ class SettingKey:
     #: with, and Jellyfin/Emby accounts that aren't administrators there. Off unless an admin
     #: turns it on, because "can reach my Plex" is a much wider group than "runs this house".
     ALLOW_MEMBER_SIGNIN = "allow_member_signin"
+    #: Set by "Use only this server": the ids of the servers it switched off, so "Turn the
+    #: others back on" restores exactly those. Absent when not in use. Never restored from a
+    #: backup -- the ids are this install's own.
+    SOLO_RESTORE = "solo_restore"
 
 
 #: Values used when neither the environment nor the user has said otherwise.

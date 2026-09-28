@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.32.0] — 2026-09-27
+
+### Added
+
+- **Turn a server off and on in one click.** Each server on the Servers page has a Turn off /
+  Turn on button, instead of Edit and a checkbox.
+- **Use only this server.** Turns every other server off, remembering which ones it turned off.
+  While it's on, a banner on every page names them and offers to turn them back on, so
+  films that look missing are never a mystery. Signing in through a server it paused still works,
+  so a session that lapses mid-test can't lock you out.
+- **Scan one server.** Each server has its own Scan button, which reads only that server's
+  libraries and leaves the others as they were.
+
+### Changed
+
+- **A server that's turned off now holds nothing.** It was already skipped by scans and
+  playlists, but what it had scanned still counted as owned and still showed as "on" it, so
+  turning a server off changed nothing on the pages. Now its titles stop counting until it's
+  back on. Nothing is deleted, so turning it back on is instant. A title a server that's off
+  holds is never announced as a new gap in notifications.
+
+### Upgrading
+
+- If you have a server turned off, titles only it holds now show as missing. Turn it back on
+  under Servers if you want them counted.
+
 ## [0.31.1] — 2026-09-27
 
 ### Security

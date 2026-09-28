@@ -54,13 +54,23 @@ def missing_message(session: Session) -> str:
     return "No media server is configured yet."
 
 
+def _sign_in_servers(session: Session) -> list[MediaServer]:
+    """Servers sign-in goes through: the enabled ones, plus any that "Use only this server" has
+    paused. Pausing is for testing what one server holds, and it must not lock the owner out when
+    their session lapses mid-test -- those servers were trusted a moment ago. A server that's
+    off for any other reason (turned off by hand, or restored from a backup) stays refused."""
+    paused = set(_solo_ids(session))
+    return [s for s in list_servers(session) if s.enabled or s.id in paused]
+
+
 def plex_servers(session: Session) -> list[MediaServer]:
-    return [s for s in enabled_servers(session) if kind_of(s) == MediaServerKind.PLEX]
+    """Plex servers sign-in goes through (see _sign_in_servers)."""
+    return [s for s in _sign_in_servers(session) if kind_of(s) == MediaServerKind.PLEX]
 
 
 def password_servers(session: Session) -> list[MediaServer]:
     """Servers a person can sign in to with a username and password: Jellyfin and Emby."""
-    return [s for s in enabled_servers(session) if kind_of(s) != MediaServerKind.PLEX]
+    return [s for s in _sign_in_servers(session) if kind_of(s) != MediaServerKind.PLEX]
 
 
 def client_for(server: MediaServer) -> MediaServerClient:
@@ -112,6 +122,69 @@ def delete_server(session: Session, server_id: int) -> None:
     session.delete(server)
     session.commit()
     logger.info("Removed %s server %r and its scanned libraries", label(server.kind), server.name)
+
+
+# ------------------------------------------------------------------ switching servers off and on
+#
+# Off means off: a disabled server isn't scanned, isn't a playlist target, can't be signed in
+# through, and nothing it holds counts as owned (ownership_service). Its rows stay, so switching
+# it back on is instant. "Use only this server" is the same switch applied to all the others at
+# once, remembering which ones it turned off.
+
+
+def set_enabled(session: Session, server: MediaServer, enabled: bool) -> None:
+    server.enabled = enabled
+    session.add(server)
+    session.commit()
+    logger.info("%s server %r switched %s", label(server.kind), server.name, "on" if enabled else "off")
+
+
+def _solo_ids(session: Session) -> list[int]:
+    from app.services.settings_service import SettingKey, get_setting
+
+    raw = get_setting(session, SettingKey.SOLO_RESTORE) or ""
+    return [int(part) for part in raw.split(",") if part.strip().isdigit()]
+
+
+def use_only(session: Session, server: MediaServer) -> None:
+    """Switch every other server off, remembering which were on. Moving from one server to
+    another keeps the first record, so "turn the others back on" returns to where it began."""
+    from app.services.settings_service import SettingKey, set_setting
+
+    others_on = [s.id for s in list_servers(session) if s.enabled and s.id != server.id]
+    remembered = sorted(set(_solo_ids(session)) | set(others_on))
+    for other in list_servers(session):
+        other.enabled = other.id == server.id
+        session.add(other)
+    set_setting(session, SettingKey.SOLO_RESTORE, ",".join(map(str, remembered)) or None)
+    session.commit()
+    logger.info("Using only %s server %r", label(server.kind), server.name)
+
+
+def restore_others(session: Session) -> int:
+    """Undo "use only": switch the remembered servers back on. Returns how many."""
+    from app.services.settings_service import SettingKey, set_setting
+
+    restored = 0
+    for server_id in _solo_ids(session):
+        server = get_server(session, server_id)
+        if server is not None and not server.enabled:
+            server.enabled = True
+            session.add(server)
+            restored += 1
+    set_setting(session, SettingKey.SOLO_RESTORE, None)
+    session.commit()
+    return restored
+
+
+def solo_state(session: Session) -> dict | None:
+    """For the banner: which servers are in use and which "use only" switched off. None when
+    it isn't in use, or when everything it switched off has since been turned back on by hand."""
+    paused = [s for s in (get_server(session, i) for i in _solo_ids(session)) if s and not s.enabled]
+    if not paused:
+        return None
+    return {"on": [s.name for s in enabled_servers(session)],
+            "off": sorted((s.name for s in paused), key=str.casefold)}
 
 
 def test_connection(server: MediaServer) -> str:

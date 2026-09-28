@@ -3,6 +3,11 @@
 A film is owned once however many servers hold it: the gap views work on sets of TMDb ids and
 never counted copies. What the servers add is *where* it is and whether it has been *watched*,
 which is what this module answers -- one query per page, keyed by TMDb id.
+
+A server that is switched off holds nothing, as far as the pages are concerned: its rows stay
+in the database, so switching it back on needs no rescan, but nothing it holds counts as owned
+or appears under "on <server>" meanwhile. Scan-time steps pass `all_servers=True` instead, so the
+metadata they cache (collections, credits, franchises) covers a server that's only paused.
 """
 
 from __future__ import annotations
@@ -12,6 +17,13 @@ from dataclasses import dataclass
 from sqlmodel import Session, col, select
 
 from app.models import ItemType, LibraryItem, MediaServer
+
+
+def on_enabled_server():  # noqa: ANN201 - a SQL expression
+    """WHERE condition: the library item is on a server that's switched on."""
+    return col(LibraryItem.server_id).in_(
+        select(MediaServer.id).where(col(MediaServer.enabled) == True)  # noqa: E712 - SQL
+    )
 
 
 @dataclass(frozen=True)
@@ -35,6 +47,7 @@ def owned_details(session: Session, item_type: str = ItemType.MOVIE.value) -> di
             col(LibraryItem.item_type) == item_type,
             col(LibraryItem.tmdb_id).is_not(None),
             col(LibraryItem.needs_review) == False,  # noqa: E712 - SQL, not Python
+            col(MediaServer.enabled) == True,  # noqa: E712 - SQL, not Python
         )
     ).all()
     servers: dict[int, set[str]] = {}

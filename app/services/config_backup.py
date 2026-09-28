@@ -283,7 +283,7 @@ def _importable_settings() -> set[str]:
     from app.services.settings_service import SettingKey
 
     keys = {v for k, v in vars(SettingKey).items() if k.isupper() and isinstance(v, str)}
-    return keys - {SettingKey.PLEX_CLIENT_ID}
+    return keys - {SettingKey.PLEX_CLIENT_ID, SettingKey.SOLO_RESTORE}
 
 
 def _setting_value_ok(key: str, value: str) -> bool:
