@@ -1,9 +1,10 @@
 """Regenerate the README screenshots from a synthetic library.
 
     python scripts/screenshots.py            # writes docs/screenshots/*.jpg
+    SCREENSHOTS_OUT=/tmp/shots SCREENSHOTS_PORT=8799 python scripts/screenshots.py   # a preview
 
 The data is seeded into a throwaway database from TMDb (needs TMDB_API_KEY): a fixed set of
-well-known collections, shows and one director, with which titles the "library" owns pinned in
+well-known collections, shows and directors, with which titles the "library" owns pinned in
 this file so the gaps come out the same every run. No media server, no *arr, no account of
 anyone's -- nothing from the maintainer's library. The app is started in-process with uvicorn
 and the pages captured with Playwright at 1600px wide.
@@ -24,11 +25,14 @@ import time
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-OUT = ROOT / "docs" / "screenshots"
-PORT = 8765
+# Both overridable for a local preview: somewhere other than the committed images, on a port
+# nothing else is using.
+OUT = pathlib.Path(os.environ.get("SCREENSHOTS_OUT") or ROOT / "docs" / "screenshots")
+PORT = int(os.environ.get("SCREENSHOTS_PORT") or 8765)
 PASSWORD = "screenshots-only"
 
-# (file, path, viewport height)
+# (file, path, maximum height). Each shot is cut to the page's content up to that height, so a
+# short page doesn't end in a block of empty background.
 PAGES = [
     ("collections", "/collections", 1000),
     ("collection-detail", "/collections/8864", 1150),
@@ -66,8 +70,21 @@ SHOWS = [  # (tmdb id, owned, spin-off of -> (source id, wikidata relation))
 ]
 STAR_WARS = {"films_owned": [11, 1891, 1892, 140607], "films_missing": [1893, 1894, 1895, 12180, 330459],
              "shows_owned": [82856], "shows_missing": [114461, 92830, 83867]}
-NOLAN = 525
-NOLAN_OWNED = {155, 27205, 157336, 872585, 374720, 49026, 1124}
+# person id -> films owned. Checked against TMDb when added (2026-09-28): each id is the film
+# named, and each is in that person's directing credits. Some overlap the collections above
+# (Alien, Aliens, Jurassic Park), as they would in a real library. Scorsese and Fincher were
+# tried and dropped: their top "missing" entries are music-video compilations (the app ranks
+# those up; see the runbook), which is no advert for a README.
+DIRECTORS = {
+    525: {155, 27205, 157336, 872585, 374720, 49026, 1124},   # Christopher Nolan
+    488: {329, 330, 578, 85, 601, 857},                       # Steven Spielberg
+    578: {348, 78, 98, 286217},                               # Ridley Scott
+    2710: {679, 218, 280, 597},                               # James Cameron
+    138: {680, 500, 24, 16869},                               # Quentin Tarantino
+    137427: {329865, 335984, 438631, 273481},                 # Denis Villeneuve
+    240: {62, 694, 185, 600},                                 # Stanley Kubrick
+    108: {120, 121, 122, 254},                                # Peter Jackson
+}
 # NO_POSTER: unowned titles TMDb has no poster for yet (announced sequels, mostly) are left out of
 # the sample. The app shows them with a blank poster block, which is right in use but reads as a
 # broken image in a README screenshot. Owned titles are always kept, so the counts stay honest
@@ -163,20 +180,24 @@ def seed(db_path: str) -> None:
             if sid in STAR_WARS["shows_owned"]:
                 own(sid, sh.name, year, item_type="show")
 
-        person = tmdb.get_person(NOLAN)
-        for f in tmdb.get_directed_films(NOLAN):
-            if not f.poster_path and f.tmdb_id not in NOLAN_OWNED:
-                continue
-            s.add(DirectorFilm(person_id=NOLAN, tmdb_movie_id=f.tmdb_id, title=f.title, release_date=f.release_date,
-                               poster_path=f.poster_path, vote_average=f.vote_average, vote_count=f.vote_count,
-                               is_documentary=f.is_documentary))
-            if f.tmdb_id in NOLAN_OWNED:
-                year = int(f.release_date[:4]) if f.release_date else None
-                s.add(MovieDirector(tmdb_movie_id=f.tmdb_id, person_id=NOLAN, name=person.name,
-                                    profile_path=person.profile_path))
-                if not s.get(TmdbMovie, f.tmdb_id):
-                    s.add(TmdbMovie(tmdb_id=f.tmdb_id, title=f.title, release_year=year))
-                own(f.tmdb_id, f.title, year, watched=True)
+        for person_id, owned in DIRECTORS.items():
+            person = tmdb.get_person(person_id)
+            for f in tmdb.get_directed_films(person_id):
+                if not f.poster_path and f.tmdb_id not in owned:
+                    continue
+                s.add(DirectorFilm(person_id=person_id, tmdb_movie_id=f.tmdb_id, title=f.title,
+                                   release_date=f.release_date, poster_path=f.poster_path,
+                                   vote_average=f.vote_average, vote_count=f.vote_count,
+                                   is_documentary=f.is_documentary))
+                if f.tmdb_id in owned:
+                    year = int(f.release_date[:4]) if f.release_date else None
+                    s.add(MovieDirector(tmdb_movie_id=f.tmdb_id, person_id=person_id, name=person.name,
+                                        profile_path=person.profile_path))
+                    if not s.get(TmdbMovie, f.tmdb_id):
+                        s.add(TmdbMovie(tmdb_id=f.tmdb_id, title=f.title, release_year=year))
+                    own(f.tmdb_id, f.title, year, watched=True)
+            s.flush()
+            print("director", person.name, file=sys.stderr)
         s.commit()
 
         from app.auth.local_admin import create_local_admin
@@ -228,6 +249,10 @@ def capture(out: pathlib.Path) -> None:
             except Exception:
                 pass
             page.wait_for_timeout(800)
+            # The page's own height, plus the footer's margin, capped at the page's maximum.
+            content = page.evaluate("document.querySelector('footer').getBoundingClientRect().bottom + 24")
+            page.set_viewport_size({"width": 1600, "height": min(height, int(content))})
+            page.wait_for_timeout(200)
             page.screenshot(path=str(out / f"{name}.jpg"), type="jpeg", quality=82)
             print(name, page.title(), file=sys.stderr)
         browser.close()
