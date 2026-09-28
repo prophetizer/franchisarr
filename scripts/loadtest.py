@@ -248,7 +248,7 @@ def main() -> int:
         server_id = server.id
 
     # Swap the real clients for the fakes at the one place the job builds them.
-    def fake_clients(session):
+    def fake_clients(session, only=None):  # noqa: ARG001 - scan_job may ask for one server
         server = session.get(MediaServer, server_id)
         return [scan_service.ScanSource(server, FakeServer())], FakeTmdb(), None, []
 
