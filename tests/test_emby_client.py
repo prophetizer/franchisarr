@@ -328,3 +328,21 @@ def test_the_poster_goes_up_base64_encoded() -> None:
 
     upload = responses.calls[-1].request
     assert base64.b64decode(upload.body) == b"\xff\xd8jpeg" and upload.headers["Content-Type"] == "image/jpeg"
+
+
+@responses.activate
+@pytest.mark.parametrize("kind", [MediaServerKind.JELLYFIN, MediaServerKind.EMBY])
+def test_deleting_our_playlists_is_server_wide_and_never_touches_anyone_elses(kind) -> None:  # noqa: ANN001
+    responses.add(responses.GET, f"{URL}/Items", json={"Items": [
+        {"Id": "a", "Name": "Alien (Franchisarr)"}, {"Id": "mine", "Name": "Alien"},
+        {"Id": "b", "Name": "Star Wars (Franchisarr)"}, {"Id": "c", "Name": "Franchisarr favourites"}]})
+    responses.add(responses.DELETE, f"{URL}/Items/a")
+    responses.add(responses.DELETE, f"{URL}/Items/b")
+
+    assert _client(kind).playlists_ending(" (Franchisarr)") == ["Alien (Franchisarr)", "Star Wars (Franchisarr)"]
+    assert _client(kind).delete_playlists(" (Franchisarr)") == ["Alien (Franchisarr)", "Star Wars (Franchisarr)"]
+
+    deleted = [c.request.url.replace(URL, "") for c in responses.calls if c.request.method == "DELETE"]
+    assert deleted == ["/Items/a", "/Items/b"]
+    listing = next(c.request.url for c in responses.calls if c.request.method == "GET")
+    assert "userid" not in listing.lower(), "every user's playlists, not just the watched-as user's"

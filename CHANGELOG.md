@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.0] — 2026-09-28
+
+### Added
+
+- **A playlist on one server, or on all of them.** With more than one server, "Make a playlist"
+  on a franchise, collection or director page becomes a row of buttons: On every server, and
+  one for each server.
+- **Delete Franchisarr's playlists.** The Servers page has Delete playlists on each server and
+  Delete playlists on every server. Pressing one deletes nothing: it lists exactly which
+  playlists would go, from where, with a warning, and deletes only when you press
+  "Yes, delete N playlists". Only playlists named "… (Franchisarr)" are ever deleted, on
+  Jellyfin and Emby including copies in other users' accounts; playlists anyone made by hand
+  are never touched.
+
 ## [0.32.0] — 2026-09-27
 
 ### Added

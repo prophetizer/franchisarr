@@ -134,6 +134,12 @@ class PlexClient:
     def playlist_counts(self, title: str) -> tuple[int, int, int] | None:
         return _playlist_counts(self, title)
 
+    def playlists_ending(self, suffix: str) -> list[str]:
+        return sorted(p.title for p in self.server.playlists() if p.title.endswith(suffix))
+
+    def delete_playlists(self, suffix: str) -> list[str]:
+        return _delete_playlists(self, suffix)
+
     def test_connection(self) -> str:
         """Connect and return the server's friendly name. Used by the setup wizard's
         "Test Connection" button in Phase 2."""
@@ -277,6 +283,16 @@ def _replace_playlist(client: "PlexClient", title: str, items: list) -> None:  #
     playlist = server.createPlaylist(title, items=items[:PLAYLIST_CHUNK])
     for start in range(PLAYLIST_CHUNK, len(items), PLAYLIST_CHUNK):
         playlist.addItems(items[start:start + PLAYLIST_CHUNK])
+
+
+def _delete_playlists(client: "PlexClient", suffix: str) -> list[str]:
+    """Delete every playlist whose title ends with `suffix`; the titles deleted, sorted."""
+    gone = []
+    for playlist in client.server.playlists():
+        if playlist.title.endswith(suffix):
+            playlist.delete()
+            gone.append(playlist.title)
+    return sorted(gone)
 
 
 def _playlist_titles(client: "PlexClient") -> list[str]:

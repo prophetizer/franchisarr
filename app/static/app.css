@@ -592,6 +592,21 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 .playlist-action { margin: 0 0 var(--pico-spacing); }
 .playlist-action > button { margin-bottom: 0.25rem; width: auto; }
 .playlist-action p { margin: 0.5rem 0 0; }
+.playlist-label { display: block; margin-bottom: 0.25rem; }
+.playlist-buttons { display: flex; flex-wrap: wrap; gap: 0.25rem 0.5rem; }
+.playlist-buttons button { width: auto; margin: 0; }
+
+/* Deleting Franchisarr's playlists (Servers page): the warning, then the result. */
+.playlist-delete-slot { flex-basis: 100%; }
+.playlist-delete-slot:empty { display: none; }
+.playlist-delete { margin: 0.5rem 0; }
+.playlist-delete ul { margin-bottom: 0.5rem; }
+.playlist-delete-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.playlist-delete-buttons button { width: auto; margin: 0; }
+.playlist-delete-confirm {
+  background: var(--pico-del-color);
+  border-color: var(--pico-del-color);
+}
 
 /* The sort control: "Sort [field ▾] [↓ Most first]". The same on every list page. */
 .sort-control {

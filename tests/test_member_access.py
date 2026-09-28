@@ -68,6 +68,7 @@ ADMIN_ONLY = [
     ("post", "/directors/1/playlist"),
     ("post", "/media-servers/1/toggle"), ("post", "/media-servers/1/only"),
     ("post", "/media-servers/1/scan"), ("post", "/media-servers/restore"),
+    ("get", "/playlists/delete"), ("post", "/playlists/delete"),
 ]
 
 MEMBER_PAGES = ["/", "/collections", "/franchises", "/directors", "/upcoming", "/shows", "/activity"]

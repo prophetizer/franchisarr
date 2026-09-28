@@ -77,6 +77,7 @@ def director_detail(request: Request, session: DbSession, user: RequiredUser, pe
         request, "director_detail.html",
         {"user": user, "d": view, "multi_server": _multi_server(session),
          "can_playlist": playlist_service.available(session) and bool(view.owned),
+         "playlist_servers": playlist_service.targets(session),
          "detail_sort": detail_sort,
          "sort_ctl": sorting.control("detail", detail_sort, _url(f"/directors/{person_id}"))}
     )

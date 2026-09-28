@@ -149,6 +149,7 @@ def collection_detail(
         {"user": user, "gap": gap,
          "multi_server": len(media_server_service.list_servers(session)) > 1,
          "can_playlist": playlist_service.available(session) and bool(gap.owned),
+         "playlist_servers": playlist_service.targets(session),
          "detail_sort": detail_sort,
          "sort_ctl": sorting.control("detail", detail_sort, _url(f"/collections/{collection_id}"))}
     )

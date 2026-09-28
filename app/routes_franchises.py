@@ -59,6 +59,7 @@ def franchise_detail(request: Request, session: DbSession, user: RequiredUser, w
         request, "franchise_detail.html",
         {"user": user, "f": view, "multi_server": _multi_server(session),
          "can_playlist": playlist_service.available(session) and view.owned > 0,
+         "playlist_servers": playlist_service.targets(session),
          "detail_sort": detail_sort,
          "sort_ctl": sorting.control(
              "detail", detail_sort, f"{get_settings().base_url}/franchises/{wikidata_id}",

@@ -199,6 +199,12 @@ class EmbyLikeClient:
                                      "UserId": self.watched_user_id(), "Fields": "ChildCount"})
         return list(found.get("Items") or []) if isinstance(found, dict) else []
 
+    def _every_playlist(self) -> list[dict]:
+        """Every playlist on the server, whoever owns it: an interrupted earlier run, or a changed
+        "watched as" user, can leave one of ours that the user's own view doesn't show."""
+        found = self._get("/Items", {"IncludeItemTypes": "Playlist", "Recursive": "true"})
+        return list(found.get("Items") or []) if isinstance(found, dict) else []
+
     def _playlist_id(self, title: str) -> str | None:
         return next((p["Id"] for p in self._playlists() if p.get("Name") == title), None)
 
@@ -235,11 +241,9 @@ class EmbyLikeClient:
         """Make `title` hold exactly `items` (ids), in order, in the watched-as user's account.
         Only a playlist with this exact name is touched: it's deleted and made again."""
         user = self.watched_user_id()
-        # Every copy of this exact name, server-wide, not just the user's view: an interrupted
-        # earlier run, or a changed "watched as" user, can leave one the user's view doesn't
-        # show. Only Franchisarr names playlists "... (Franchisarr)".
-        everywhere = self._get("/Items", {"IncludeItemTypes": "Playlist", "Recursive": "true"})
-        for playlist in (everywhere.get("Items") or []) if isinstance(everywhere, dict) else []:
+        # Every copy of this exact name, server-wide. Only Franchisarr names playlists
+        # "... (Franchisarr)".
+        for playlist in self._every_playlist():
             if playlist.get("Name") == title:
                 self._send("DELETE", f"/Items/{playlist['Id']}")
         first = [str(i) for i in items[:PLAYLIST_CHUNK]]
@@ -270,6 +274,21 @@ class EmbyLikeClient:
 
     def playlist_titles(self) -> list[str]:
         return [p.get("Name", "") for p in self._playlists()]
+
+    def playlists_ending(self, suffix: str) -> list[str]:
+        return sorted(p.get("Name", "") for p in self._every_playlist()
+                      if p.get("Name", "").endswith(suffix))
+
+    def delete_playlists(self, suffix: str) -> list[str]:
+        """Delete every playlist on the server whose name ends with `suffix`, server-wide for the
+        same reason replace_playlist is. The names deleted, sorted."""
+        gone = []
+        for playlist in self._every_playlist():
+            name = playlist.get("Name", "")
+            if name.endswith(suffix):
+                self._send("DELETE", f"/Items/{playlist['Id']}")
+                gone.append(name)
+        return sorted(gone)
 
     def playlist_counts(self, title: str) -> tuple[int, int, int] | None:
         playlist_id = self._playlist_id(title)

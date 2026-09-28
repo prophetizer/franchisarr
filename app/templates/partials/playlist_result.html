@@ -9,5 +9,9 @@
   {% endif %}
 {% endfor %}
 {% if not r.servers %}
-  <p class="muted">Nothing here is in a library Franchisarr can see.</p>
+  {% if r.only %}
+    <p class="muted">None of this is on {{ r.only }}, so there's nothing to put in a playlist there.</p>
+  {% else %}
+    <p class="muted">Nothing here is in a library Franchisarr can see.</p>
+  {% endif %}
 {% endif %}

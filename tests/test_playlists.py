@@ -7,14 +7,14 @@ from datetime import date, datetime
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.auth.local_admin import create_local_admin
 from app.clients import plex_client
-from app.clients.plex_client import PlaylistEntry, _playlist_entries, _replace_playlist
+from app.clients.plex_client import PlaylistEntry, _delete_playlists, _playlist_entries, _replace_playlist
 from app.db import get_engine
 from app.models import (
-    Franchise, FranchiseMember, IncludedLibrary, ItemType, LibraryItem, MatchSource,
+    Franchise, FranchiseMember, IncludedLibrary, ItemType, LibraryItem, MatchSource, MediaServer,
 )
 from app.services import playlist_service
 from tests.conftest import seed_server
@@ -259,6 +259,121 @@ def test_the_franchise_page_offers_the_button_and_the_route_builds(client: TestC
     body = client.post(f"{BASE}/franchises/Q462/playlist").text
 
     assert "Star Wars (Franchisarr)" in body and "2 films, 1 show (1 episode)" in body
+
+
+def test_the_page_offers_every_server_and_each_one_and_builds_on_the_one_asked(
+    client: TestClient, monkeypatch
+) -> None:
+    with Session(get_engine()) as session:
+        attic = _library(session, kind="jellyfin")
+        living_room = session.exec(select(MediaServer).where(MediaServer.name == "Living room")).one().id
+    page = client.get(f"{BASE}/franchises/Q462").text
+    assert "On every server" in page and "On Living room" in page and "On Attic" in page
+    assert f'hx-vals=\'{{"server": "{attic}"}}\'' in page
+
+    built = []
+
+    class Recorder:
+        def __init__(self, server) -> None:  # noqa: ANN001
+            self.server = server
+
+        def playlist_entries(self, films, shows):  # noqa: ANN001, ANN201
+            from app.clients.media_server import PlaylistEntry as Entry
+
+            return [Entry(raw=f, aired=None) for f in films]
+
+        def replace_playlist(self, title, items):  # noqa: ANN001, ANN201
+            built.append(self.server.name)
+
+    from app.services import media_server_service
+
+    monkeypatch.setattr(media_server_service, "client_for", lambda s: Recorder(s))
+
+    client.post(f"{BASE}/franchises/Q462/playlist", data={"server": str(attic)})
+    assert built == ["Attic"], "only the server asked for"
+
+    built.clear()
+    client.post(f"{BASE}/franchises/Q462/playlist", data={"server": "all"})
+    assert sorted(built) == ["Attic", "Living room"]
+
+    assert client.post(f"{BASE}/franchises/Q462/playlist", data={"server": "999"}).status_code == 404
+    assert living_room
+
+
+def test_a_server_that_holds_none_of_it_says_so(session: Session) -> None:
+    _library(session)
+    empty = seed_server(session, "emby", name="Empty")
+
+    result = playlist_service.build(session, "Star Wars", [(ItemType.MOVIE.value, 11)], server_id=empty.id)
+
+    assert result.servers == [] and result.only == "Empty"
+
+
+# ------------------------------------------------------------------ deleting ours
+
+
+def test_plex_deletes_only_playlists_franchisarr_made() -> None:
+    ours, other = FakePlaylist("Alien (Franchisarr)"), FakePlaylist("Alien")
+    server = FakeServer({}, {}, playlists=[ours, other])
+
+    assert _delete_playlists(FakeClient(server), " (Franchisarr)") == ["Alien (Franchisarr)"]
+    assert ours.deleted and not other.deleted
+
+
+class _Shelf:
+    """A server's playlists, for the delete tests."""
+
+    def __init__(self, titles, fail=False) -> None:  # noqa: ANN001
+        self.titles, self.fail, self.deleted = list(titles), fail, []
+
+    def playlists_ending(self, suffix):  # noqa: ANN001, ANN201
+        if self.fail:
+            raise ConnectionError("down")
+        return sorted(t for t in self.titles if t.endswith(suffix))
+
+    def delete_playlists(self, suffix):  # noqa: ANN001, ANN201
+        gone = self.playlists_ending(suffix)
+        self.deleted += gone
+        self.titles = [t for t in self.titles if t not in gone]
+        return gone
+
+
+def test_deleting_asks_first_then_deletes_one_server_or_all(client: TestClient, monkeypatch) -> None:
+    with Session(get_engine()) as session:
+        attic = _library(session, kind="jellyfin")
+    shelves = {"Living room": _Shelf(["Alien (Franchisarr)", "Road trip"]),
+               "Attic": _Shelf(["Alien (Franchisarr)", "Star Wars (Franchisarr)"])}
+    from app.services import media_server_service
+
+    monkeypatch.setattr(media_server_service, "client_for", lambda s: shelves[s.name])
+
+    page = client.get(f"{BASE}/media-servers").text
+    assert f'hx-get="{BASE}/playlists/delete?server={attic}"' in page
+    assert "Delete playlists on every server" in page
+
+    warning = client.get(f"{BASE}/playlists/delete?server={attic}").text
+    assert "This deletes 2 playlists" in warning and "Star Wars (Franchisarr)" in warning
+    assert "Yes, delete 2 playlists" in warning
+    assert shelves["Attic"].deleted == [], "the warning deletes nothing"
+
+    done = client.post(f"{BASE}/playlists/delete", data={"server": str(attic)}).text
+    assert "Attic: deleted 2 playlists" in done
+    assert shelves["Living room"].deleted == [], "only the server asked for"
+
+    warning = client.get(f"{BASE}/playlists/delete?server=all").text
+    assert "This deletes 1 playlist" in warning and "Road trip" not in warning
+    client.post(f"{BASE}/playlists/delete", data={"server": "all"})
+    assert shelves["Living room"].deleted == ["Alien (Franchisarr)"], "never a playlist someone made"
+
+
+def test_an_unreachable_server_is_named_in_the_warning(client: TestClient, monkeypatch) -> None:
+    from app.services import media_server_service
+
+    monkeypatch.setattr(media_server_service, "client_for", lambda s: _Shelf([], fail=True))
+
+    warning = client.get(f"{BASE}/playlists/delete?server=all").text
+
+    assert "Living room: Couldn" in warning and "No Franchisarr playlists to delete" in warning
 
 
 # ------------------------------------------------------------------ posters

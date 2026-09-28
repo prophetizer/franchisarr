@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.32.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.33.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -213,7 +213,8 @@ only). It builds a playlist of everything you own on that page, on each of your 
 and Emby servers that holds some of it, in the order it was released: films by release date,
 and for a franchise that spans film and TV, every episode placed by its air date — so *Agents of
 S.H.I.E.L.D.* falls between the Marvel films as it was broadcast. Specials (season 0) are left
-out.
+out. With more than one server the button becomes a row — **On every server**, or **On Plex**,
+**On Jellyfin** and so on for just one.
 
 - It's called "*name* (Franchisarr)" and gets its own square poster: the franchise or
   collection backdrop across the top, and the name, "In release order" and what's in it ("13
@@ -225,6 +226,10 @@ out.
   (Servers page), which is the first administrator unless you've set one.
 - The order is release order. Nothing records story order (where *Rogue One* sits in the saga),
   so that isn't offered.
+- To clear them out, the Servers page has **Delete playlists** on each server and **Delete
+  playlists on every server**. Both first list exactly which playlists would go and ask you to
+  confirm with a button that says how many. Only playlists named "… (Franchisarr)" are ever
+  deleted; ones you made yourself are left alone.
 
 ## Calendar
 
