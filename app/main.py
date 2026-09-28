@@ -170,6 +170,18 @@ def manifest() -> Response:
     return Response(json.dumps(document), media_type="application/manifest+json")
 
 
+def _library_counts(session) -> list[tuple[str, int]]:  # noqa: ANN001
+    """(server name, libraries chosen there) for each switched-on server, in name order: what a
+    scan actually reads. It used to be one count labelled "Plex libraries", Jellyfin's and
+    Emby's included, and servers that were turned off counted too."""
+    names = {s.id: s.name for s in media_server_service.enabled_servers(session)}
+    counts: dict[int, int] = {}
+    for library in library_service.enabled_libraries(session):
+        if library.server_id in names:
+            counts[library.server_id] = counts.get(library.server_id, 0) + 1
+    return [(names[sid], counts[sid]) for sid in names if sid in counts]
+
+
 @router.get("/", response_class=HTMLResponse)
 def index(request: Request, session: DbSession, user: RequiredUser):
     from app.routes_movies import scan_prerequisites
@@ -198,7 +210,7 @@ def index(request: Request, session: DbSession, user: RequiredUser):
         "index.html",
         {
             "user": user,
-            "libraries": library_service.enabled_libraries(session),
+            "library_counts": _library_counts(session),
             "collections_with_gaps": len(gaps),
             "total_missing": sum(len(gap.missing) for gap in gaps),
             "spinoff_count": len(tv_spinoff_service.missing_spinoffs(session, user.id)),

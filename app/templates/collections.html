@@ -20,7 +20,7 @@
       <p>Run a scan to find the gaps in your library.</p>
 {% if user and user.is_admin %}      <button hx-post="{{ url('/scan') }}" hx-target="#scan-status" hx-swap="outerHTML">
         Scan my library</button>
-{% endif %}      <footer><small>This walks your Plex libraries and looks each film up on TMDb. On a few
+{% endif %}      <footer><small>This walks your libraries and looks each film up on TMDb. On a few
         thousand films it takes a handful of minutes, and runs in the background — you don't have
         to stay on this page.</small></footer>
     {% else %}

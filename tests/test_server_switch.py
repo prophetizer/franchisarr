@@ -250,3 +250,24 @@ def test_the_scan_button_scans_that_server_only(client: TestClient, monkeypatch)
     refused = client.post(f"{BASE}/media-servers/{jellyfin.id}/scan")
     assert refused.status_code == 200 and "Jellyfin is turned off" in refused.text
     assert started == [], "off: nothing to scan"
+
+
+def test_the_home_page_counts_libraries_per_server_that_is_on(client: TestClient) -> None:
+    """It said "Scanning 6 Plex libraries" when two were on Jellyfin and two on Emby, and
+    counted servers that were turned off, which a scan skips."""
+    from app.models import IncludedLibrary
+
+    with Session(get_engine()) as session:
+        for name, count in (("Plex", 2), ("Jellyfin", 2), ("Emby", 1)):
+            server = session.exec(select(MediaServer).where(MediaServer.name == name)).one()
+            for key in range(count):
+                session.add(IncludedLibrary(server_id=server.id, library_key=str(key), library_name=f"L{key}",
+                                            library_type="movie", enabled=True))
+        session.commit()
+    flat = lambda html: " ".join(html.split())  # noqa: E731
+
+    assert "Scanning 5 libraries: 1 on Emby, 2 on Jellyfin, 2 on Plex." in flat(client.get(f"{BASE}/").text)
+
+    client.post(f"{BASE}/media-servers/{_server('Plex').id}/only")
+    home = flat(client.get(f"{BASE}/").text)
+    assert "Scanning 2 libraries on Plex." in home and "Plex libraries" not in home

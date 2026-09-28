@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.2] — 2026-09-28
+
+### Fixed
+
+- **The home page no longer calls every library a Plex library.** "Scanning 6 Plex libraries"
+  counted Jellyfin's and Emby's too, and libraries on servers that were turned off. It now says
+  what a scan reads, per server: "Scanning 6 libraries: 2 on Emby, 2 on Jellyfin, 2 on Plex."
+  The home and Collections pages' other "your Plex libraries" wording now says "your libraries".
+
 ## [0.33.1] — 2026-09-28
 
 ### Fixed
