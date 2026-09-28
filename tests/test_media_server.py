@@ -177,7 +177,8 @@ def test_the_login_page_offers_the_configured_servers_sign_in(client: TestClient
     assert "Sign in with Plex" not in body
 
     _seed("emby")
-    assert "Sign in with Jellyfin or Emby" in client.get(f"{BASE}/login").text, "now a choice"
+    body = client.get(f"{BASE}/login").text
+    assert "Sign in with Jellyfin" in body and "Sign in with Emby" in body, "now a choice"
 
 
 def test_the_login_page_says_when_no_server_is_configured(client: TestClient) -> None:
@@ -186,10 +187,13 @@ def test_the_login_page_says_when_no_server_is_configured(client: TestClient) ->
 
 
 def test_two_password_servers_give_the_person_a_choice(client: TestClient) -> None:
-    _seed("jellyfin"); _seed("emby")
+    """One "Sign in with" dropdown, each server its own entry with its own form: no second
+    server picker inside the form."""
+    jellyfin, emby = _seed("jellyfin"), _seed("emby")
     body = client.get(f"{BASE}/login").text
-    assert '<select name="server_id"' in body and "Jellyfin (Jellyfin)" in body and "Emby (Emby)" in body
-    assert "Sign in with Jellyfin or Emby" in body
+    assert '<select name="method"' in body and '<select name="server_id"' not in body
+    assert f'value="server-{jellyfin}"' in body and f'value="server-{emby}"' in body
+    assert f'name="server_id" value="{jellyfin}"' in body and f'name="server_id" value="{emby}"' in body
 
 
 @responses.activate

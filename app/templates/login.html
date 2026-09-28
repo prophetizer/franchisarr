@@ -10,73 +10,106 @@
 
   {% if error %}<p role="alert" class="login-error">{{ error }}</p>{% endif %}
 
-  {% if server_login_available %}
-    <form method="post" action="{{ url('/auth/server/login') }}">
-      <input type="hidden" name="next" value="{{ next }}">
-      <h2>Sign in with {{ server_label }}</h2>
-      {% if password_servers | length > 1 %}
-        <label>Server
-          <select name="server_id" required>
-            {% for server in password_servers %}
-              <option value="{{ server.id }}">{{ server.name }} ({{ server.kind | capitalize }})</option>
-            {% endfor %}
-          </select>
-        </label>
-      {% else %}
-        <input type="hidden" name="server_id" value="{{ password_servers[0].id }}">
-      {% endif %}
-      <label>{{ server_label }} username
-        <input type="text" name="username" autocomplete="username" required autofocus>
+  {#- One "Sign in with" choice, showing only that method's form. The last choice is remembered
+      in this browser; a page answering a failed sign-in shows the method that failed instead. -#}
+  {#- Single-quoted: tojson writes double quotes, which would end a double-quoted attribute. -#}
+  <div x-data='signInChoice({{ methods | map(attribute="key") | list | tojson }}, {{ method | tojson }}, {{ method_fixed | tojson }})'>
+    {% if methods | length > 1 %}
+      <label>Sign in with
+        <select name="method" x-model="method" @change="chosen()" aria-label="Sign in with">
+          {% for m in methods %}
+            <option value="{{ m.key }}" {% if m.key == method %}selected{% endif %}>{{ m.label }}</option>
+          {% endfor %}
+        </select>
       </label>
-      <label>Password
-        <input type="password" name="password" autocomplete="current-password" required>
-      </label>
-      <button type="submit">Sign in with {{ server_label }}</button>
-      <small>Checked against your {{ server_label }} server; the password isn't stored here.</small>
-    </form>
-    {% if local_login_available %}<hr>{% endif %}
-  {% endif %}
+    {% endif %}
 
-  {% if plex_login_available %}
-    <div x-data="plexSignIn()" class="plex-signin">
-      <button type="button" @click="start()" :aria-busy="busy" :disabled="busy"
-              x-text="busy ? statusText : 'Sign in with Plex'">Sign in with Plex</button>
-      <template x-if="error">
-        <p role="alert" class="login-error" x-text="error"></p>
-      </template>
-      <small>Opens Plex in a new window. Franchisarr never sees your Plex password.</small>
-    </div>
-    {% if local_login_available %}<hr>{% endif %}
-  {% elif plex_configured %}
+    {% for m in methods if m.server %}
+      <form method="post" action="{{ url('/auth/server/login') }}" data-method="{{ m.key }}"
+            x-show="method === '{{ m.key }}'" {% if m.key != method %}x-cloak{% endif %}>
+        <input type="hidden" name="next" value="{{ next }}">
+        <input type="hidden" name="server_id" value="{{ m.server.id }}">
+        <label>{{ m.kind }} username
+          <input type="text" name="username" autocomplete="username" required {% if m.key == method %}autofocus{% endif %}>
+        </label>
+        <label>Password
+          <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button type="submit">Sign in with {{ m.kind }}</button>
+        <small>Checked against your {{ m.kind }} server{% if m.label != m.kind %}, {{ m.server.name }}{% endif %}; the password isn't stored here.</small>
+      </form>
+    {% endfor %}
+
+    {% if plex_login_available %}
+      <div x-data="plexSignIn()" class="plex-signin" data-method="plex"
+           x-show="method === 'plex'" {% if method != 'plex' %}x-cloak{% endif %}>
+        <button type="button" @click="start()" :aria-busy="busy" :disabled="busy"
+                x-text="busy ? statusText : 'Sign in with Plex'">Sign in with Plex</button>
+        <template x-if="error">
+          <p role="alert" class="login-error" x-text="error"></p>
+        </template>
+        <small>Opens Plex in a new window. Franchisarr never sees your Plex password.</small>
+      </div>
+    {% endif %}
+
+    {% if local_login_available %}
+      <form method="post" action="{{ url('/login') }}" data-method="local"
+            x-show="method === 'local'" {% if method != 'local' %}x-cloak{% endif %}>
+        <input type="hidden" name="next" value="{{ next }}">
+        <label>Username
+          <input type="text" name="username" autocomplete="username" required {% if method == 'local' %}autofocus{% endif %}>
+        </label>
+        <label>Password
+          <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button type="submit">Sign in</button>
+        <small>The account set with <code>ADMIN_USERNAME</code> and <code>ADMIN_PASSWORD</code>.</small>
+      </form>
+    {% endif %}
+  </div>
+
+  {% if plex_configured and not plex_login_available %}
     <p><small>
       Plex sign-in becomes available once this install can reach its Plex server.
     </small></p>
-  {% elif not server_login_available %}
+  {% elif not server_login_available and not plex_login_available %}
     <p><small>
       Media-server sign-in becomes available once a Plex, Jellyfin or Emby server is configured.
     </small></p>
   {% endif %}
 
-  {% if local_login_available %}
-    <form method="post" action="{{ url('/login') }}">
-      <input type="hidden" name="next" value="{{ next }}">
-      <label>Username
-        <input type="text" name="username" autocomplete="username" required{% if not server_login_available %} autofocus{% endif %}>
-      </label>
-      <label>Password
-        <input type="password" name="password" autocomplete="current-password" required>
-      </label>
-      <button type="submit">Sign in</button>
-    </form>
-  {% elif not plex_login_available and not server_login_available %}
+  {% if not methods %}
     <p role="alert" class="login-error">
       No sign-in method is configured yet. Set <code>ADMIN_USERNAME</code> and
-      <code>ADMIN_PASSWORD</code> and restart, or configure the {{ server_label }} connection.
+      <code>ADMIN_PASSWORD</code> and restart, or configure a Plex, Jellyfin or Emby server.
     </p>
   {% endif %}
 </article>
 
 <script>
+  function signInChoice(keys, initial, fixed) {
+    // Remembered per browser: a household that signs in with Jellyfin shouldn't have to pick it
+    // every time. Storage can be unavailable (private windows); then it's simply not remembered.
+    const KEY = 'franchisarr-sign-in';
+    let method = initial;
+    if (!fixed) {
+      try {
+        const saved = localStorage.getItem(KEY);
+        if (saved && keys.includes(saved)) { method = saved; }
+      } catch (err) { /* not remembered */ }
+    }
+    return {
+      method,
+      chosen() {
+        try { localStorage.setItem(KEY, this.method); } catch (err) { /* not remembered */ }
+        this.$nextTick(() => {
+          const field = this.$root.querySelector(`[data-method="${this.method}"] input:not([type=hidden])`);
+          if (field) { field.focus(); }
+        });
+      },
+    };
+  }
+
   function plexSignIn() {
     // The popup is deliberately NOT part of the Alpine component's state. Alpine makes component
     // data reactive, and reading a reactive-wrapped cross-origin Window throws a SecurityError:

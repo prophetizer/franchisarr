@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.35.0] — 2026-09-28
+
+### Changed
+
+- **The sign-in page asks how you want to sign in.** A "Sign in with" dropdown lists every way
+  in the install offers — each Emby or Jellyfin server, Plex, and the local account last — and
+  shows only that form, where it used to stack them all on one page. Several Jellyfin or Emby
+  servers are each an entry of their own, replacing the server picker inside the form. The
+  choice is remembered in the browser, and a sign-in that fails comes back on the method that
+  failed. With a single way in there's no dropdown.
+
 ## [0.34.0] — 2026-09-28
 
 ### Changed

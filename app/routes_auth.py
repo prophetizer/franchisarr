@@ -82,20 +82,42 @@ def _safe_next(raw: str | None) -> str:
     return raw
 
 
-def _login_context(session, *, next: str = "", error: str | None = None) -> dict:  # noqa: ANN001
+def _login_context(session, *, next: str = "", error: str | None = None,  # noqa: ANN001
+                   method: str | None = None) -> dict:
     """What the login page needs: which sign-in routes this install offers.
 
     Plex signs in by PIN and needs the server's identity known first; Jellyfin and Emby sign in
     with the person's own username and password on that server, so all they need is a URL.
+
+    `methods` is the "Sign in with" dropdown: every Jellyfin or Emby server and Plex, by name,
+    then the local account. `method` is the one to show first -- the one that just failed, when
+    a sign-in comes back with an error.
     """
     from app.services import media_server_service
 
     password_servers = media_server_service.password_servers(session)
+    methods = []
+    for server in password_servers:
+        label = media_server_service.label(server.kind)
+        # The kind is the name people know; the server's own name only when it adds something.
+        text = label if server.name.casefold() == label.casefold() else f"{label} ({server.name})"
+        methods.append({"key": f"server-{server.id}", "label": text, "kind": label, "server": server})
+    plex_login_available = plex_sign_in_available(session)
+    if plex_login_available:
+        methods.append({"key": "plex", "label": "Plex", "kind": "Plex", "server": None})
+    methods.sort(key=lambda m: m["label"].casefold())
+    if has_local_admin(session):
+        methods.append({"key": "local", "label": "Local account", "kind": None, "server": None})
+    keys = [m["key"] for m in methods]
     return {
+        "methods": methods,
+        "method": method if method in keys else (keys[0] if keys else None),
+        # Set when the page is answering a failed sign-in: show that method, not the remembered one.
+        "method_fixed": method in keys,
         "next": next,
         "error": error,
         "local_login_available": has_local_admin(session),
-        "plex_login_available": plex_sign_in_available(session),
+        "plex_login_available": plex_login_available,
         "plex_configured": bool(media_server_service.plex_servers(session)),
         "server_login_available": bool(password_servers),
         # One server: its name is the heading. Several: a choice, so the person picks which
@@ -136,7 +158,8 @@ def login_submit(
         # exist.
         return get_templates().TemplateResponse(
             request, "login.html",
-            _login_context(session, next=next, error="Incorrect username or password."),
+            _login_context(session, next=next, error="Incorrect username or password.",
+                           method="local"),
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
@@ -177,18 +200,21 @@ def server_login_submit(
         # The server's own message would say which was wrong; ours does not.
         return get_templates().TemplateResponse(
             request, "login.html",
-            _login_context(session, next=next, error="Incorrect username or password."),
+            _login_context(session, next=next, error="Incorrect username or password.",
+                           method=f"server-{server_id}"),
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
     except MemberSignInDisabled as exc:
         # The password was right, so this is not a failed attempt for the rate limiter.
         return get_templates().TemplateResponse(
-            request, "login.html", _login_context(session, next=next, error=str(exc)),
+            request, "login.html",
+            _login_context(session, next=next, error=str(exc), method=f"server-{server_id}"),
             status_code=status.HTTP_403_FORBIDDEN,
         )
     except (EmbyClientError, MediaServerSignInUnavailable) as exc:
         return get_templates().TemplateResponse(
-            request, "login.html", _login_context(session, next=next, error=str(exc)),
+            request, "login.html",
+            _login_context(session, next=next, error=str(exc), method=f"server-{server_id}"),
             status_code=status.HTTP_502_BAD_GATEWAY,
         )
 

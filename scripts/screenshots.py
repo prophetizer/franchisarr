@@ -293,8 +293,10 @@ def capture(out: pathlib.Path) -> None:
         page = ctx.new_page()
         page.goto(f"http://127.0.0.1:{PORT}/login")
         shoot(page, out / "login.jpg", 1300)
-        # The local-account form by its action: with a Jellyfin server on, the page has a second
-        # username field (server sign-in) first, and filling that one signs nobody in.
+        # The local account, chosen in the "Sign in with" dropdown (its form is hidden until then),
+        # and its form found by exact action: the Jellyfin form has a username field too.
+        if page.locator("select[name=method]").count():
+            page.select_option("select[name=method]", "local")
         local = page.locator("form[action='/login']")
         local.locator("input[name=username]").fill("demo")
         local.locator("input[name=password]").fill(PASSWORD)

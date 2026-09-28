@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.34.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.35.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -300,7 +300,9 @@ server are admitted, so having a Plex account isn't enough. For Jellyfin and Emb
 username and password, checked against the server itself. Who administers Franchisarr follows
 from the server: with Plex it's the server's owner, with Jellyfin and Emby it's anyone who is an
 administrator there — checked again every time they sign in, so handing the server over, or
-demoting someone on Jellyfin, takes their admin rights here with it.
+demoting someone on Jellyfin, takes their admin rights here with it. The sign-in page has a
+**Sign in with** dropdown listing each way in this install offers (Emby, Jellyfin, Plex, and the
+local account if one is set up), shows only the one you pick, and remembers it in that browser.
 
 **By default only administrators can sign in.** Being able to reach your Plex server is a much
 wider group than the people who run your house, so friends and family you share it with are
