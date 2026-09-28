@@ -293,6 +293,9 @@ class DirectorFilm(SQLModel, table=True):
     #: TMDb genre 99. Listed apart: a documentary by a feature director is rarely what someone
     #: completing that director's work is after, but sometimes exactly what they are.
     is_documentary: bool = Field(default=False)
+    #: A music-video compilation (tmdb_client.is_music_video_compilation). Folded away: with a
+    #: few dozen votes at 8+ they otherwise lead a music-video director's missing films.
+    is_music_video: bool = Field(default=False)
     #: Minutes. Not in the credits payload, so filled by a later per-film lookup; None until then
     #: -- and an unknown runtime is never treated as a short.
     runtime: int | None = Field(default=None)

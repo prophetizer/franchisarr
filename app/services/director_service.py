@@ -42,6 +42,7 @@ class DirectorTitle:
     vote_count: int | None
     is_documentary: bool = False
     runtime: int | None = None
+    is_music_video: bool = False
     #: For owned films: which servers hold it, and whether it has been watched on any.
     servers: tuple[str, ...] = ()
     watched: bool | None = None
@@ -94,6 +95,9 @@ class DirectorView:
     documentaries: list[DirectorTitle] = field(default_factory=list)
     #: Under forty minutes. Folded away unless the preference says otherwise.
     shorts: list[DirectorTitle] = field(default_factory=list)
+    #: Music-video compilations. Always folded away: they're a music-video director's back
+    #: catalogue, not the films someone completing that director is after.
+    music_videos: list[DirectorTitle] = field(default_factory=list)
     @property
     def photo(self) -> str | None:
         from app.services.artwork import profile_url
@@ -112,7 +116,7 @@ class DirectorView:
     @property
     def total(self) -> int:
         return (len(self.owned) + len(self.missing) + len(self.hidden)
-                + len(self.documentaries) + len(self.shorts))
+                + len(self.documentaries) + len(self.shorts) + len(self.music_videos))
 
     @property
     def best_rating(self) -> float:
@@ -256,7 +260,8 @@ def discover(
             session.add(DirectorFilm(person_id=pid, tmdb_movie_id=f.tmdb_id, title=f.title,
                                      release_date=f.release_date, poster_path=f.poster_path,
                                      vote_average=f.vote_average, vote_count=f.vote_count,
-                                     is_documentary=f.is_documentary, fetched_at=now))
+                                     is_documentary=f.is_documentary, is_music_video=f.is_music_video,
+                                     fetched_at=now))
         session.commit()
         refreshed += 1
 
@@ -337,7 +342,8 @@ def director_views(
         owned_by = {only: owned_by[only]} if only in owned_by else {}
     films_query = select(DirectorFilm.person_id, DirectorFilm.tmdb_movie_id, DirectorFilm.title,
                          DirectorFilm.release_date, DirectorFilm.poster_path, DirectorFilm.vote_average,
-                         DirectorFilm.vote_count, DirectorFilm.is_documentary, DirectorFilm.runtime)
+                         DirectorFilm.vote_count, DirectorFilm.is_documentary, DirectorFilm.runtime,
+                         DirectorFilm.is_music_video)
     if only is not None:
         films_query = films_query.where(col(DirectorFilm.person_id) == only)
     films_by: dict[int, list[tuple]] = {}
@@ -356,12 +362,13 @@ def director_views(
             continue
         seen: set[int] = set()
         for (_, tmdb_movie_id, title, release_date, poster_path, vote_average, vote_count,
-             is_documentary, runtime) in rows:
+             is_documentary, runtime, is_music_video) in rows:
             if tmdb_movie_id in seen:
                 continue
             seen.add(tmdb_movie_id)
             t = DirectorTitle(tmdb_movie_id, title, release_date, poster_path,
-                              vote_average, vote_count, is_documentary, runtime or None)
+                              vote_average, vote_count, is_documentary, runtime or None,
+                              bool(is_music_video))
             if t.tmdb_id in owned_ids or t.tmdb_id in owned:
                 info = details.get(t.tmdb_id)
                 view.owned.append(replace(t, servers=info.servers, watched=info.watched) if info else t)
@@ -369,6 +376,8 @@ def director_views(
                 continue
             elif not t.is_released(today):
                 view.upcoming.append(t)
+            elif t.is_music_video:
+                view.music_videos.append(t)
             elif t.is_short and not show_shorts:
                 view.shorts.append(t)
             elif t.is_documentary:
@@ -385,7 +394,7 @@ def director_views(
                                             f"{cached.release_year}-01-01" if cached and cached.release_year else None,
                                             None, None, None))
         for lst in (view.owned, view.missing, view.upcoming, view.hidden, view.documentaries,
-                    view.shorts):
+                    view.shorts, view.music_videos):
             lst.sort(key=lambda t: (t.year or 9999, t.title.casefold()))
         views.append(view)
 

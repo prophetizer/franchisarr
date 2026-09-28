@@ -31,8 +31,8 @@ tells you when it finds something new — Discord, Slack, or anything
 more) — wears your
 [theme.park](https://theme-park.dev) theme like the rest of your stack, and has a web UI and a
 CLI. Everything
-it hides — low-rated films, TV specials, shorts — is a preference, folded away rather than
-deleted.
+it hides — low-rated films, TV specials, shorts, directors' music-video collections — is folded
+away rather than deleted, and most of it is a preference.
 
 Franchisarr owes its starting idea to [Gaps](https://github.com/JasonHHouse/gaps), which has
 found missing collection films in Plex since 2019. This is that idea extended to Jellyfin and
@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.33.3`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.34.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.

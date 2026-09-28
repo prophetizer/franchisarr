@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.34.0] — 2026-09-28
+
+### Changed
+
+- **Music-video collections no longer lead a director's missing films.** A music-video
+  director's credits are full of compilations — Madonna's *The Immaculate Collection*, Michael
+  Jackson's *Video Greatest Hits: HIStory* — and with a few dozen votes at 8+ they topped
+  Scorsese's and Fincher's lists and went into the directors import list. They're now folded
+  into their own collapsed section on the director's page. They're recognised by TMDb's `video`
+  flag with Music as the only genre, which on twelve filmographies picked out exactly those
+  and nothing else (the flag alone would also catch *Grindhouse*).
+- **The README screenshots show a fuller sample library:** eight directors and eight
+  franchises, three of them across film and TV, and each shot is cut to its page instead of
+  ending in empty space.
+
+### Upgrading
+
+- The next scan re-reads every director's filmography once, so it takes a few minutes longer
+  than usual on a large library.
+
 ## [0.33.3] — 2026-09-28
 
 ### Fixed

@@ -34,6 +34,7 @@ MAX_RETRIES = 3
 
 #: TMDb's genre id for Documentary.
 DOCUMENTARY_GENRE = 99
+MUSIC_GENRE = 10402
 
 
 class TmdbError(RuntimeError):
@@ -117,6 +118,16 @@ class TmdbPerson:
     profile_path: str | None = None
 
 
+def is_music_video_compilation(credit: dict) -> bool:
+    """TMDb's `video` flag and Music as the only genre. Measured on twelve filmographies
+    (2026-09-28): it picks out exactly the Madonna, Michael Jackson, Aerosmith and Martini Ranch
+    video collections, which with 41-68 votes and an 8+ average had been topping Scorsese's and
+    Fincher's missing films. `video` alone is not enough -- it also marks Grindhouse (a
+    theatrical release with ~2,000 votes) and short-film anthologies."""
+    genres = credit.get("genre_ids")
+    return bool(credit.get("video")) and isinstance(genres, list) and genres == [MUSIC_GENRE]
+
+
 @dataclass(frozen=True)
 class TmdbDirectedFilm:
     tmdb_id: int
@@ -126,6 +137,9 @@ class TmdbDirectedFilm:
     vote_average: float | None = None
     vote_count: int | None = None
     is_documentary: bool = False
+    #: A music-video compilation ("Madonna: The Immaculate Collection"), which a music-video
+    #: director's credits are full of. See is_music_video_compilation.
+    is_music_video: bool = False
 
     @property
     def year(self) -> int | None:
@@ -311,6 +325,7 @@ class TmdbClient:
                 vote_average=_as_float(credit.get("vote_average")),
                 vote_count=_as_int(credit.get("vote_count")),
                 is_documentary=DOCUMENTARY_GENRE in genres if isinstance(genres, list) else False,
+                is_music_video=is_music_video_compilation(credit),
             ))
         return list(films.values())
 

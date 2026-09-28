@@ -305,3 +305,44 @@ def test_the_list_survives_a_director_with_rated_and_unrated_missing_films(clien
     assert "Christopher Nolan" in index and "3 missing" in index
     assert index.index("Following") < index.index("Insomnia") < index.index("Larceny"), \
         "best-rated first, the unrated one last"
+
+
+# ------------------------------------------------------------------ music-video compilations
+
+
+def test_the_compilation_rule_is_the_video_flag_and_music_alone() -> None:
+    """Measured on twelve filmographies: this catches exactly the Madonna, Michael Jackson,
+    Aerosmith and Martini Ranch collections. `video` alone would also take Grindhouse."""
+    from app.clients.tmdb_client import is_music_video_compilation as rule
+
+    assert rule({"video": True, "genre_ids": [10402]}), "Madonna: The Immaculate Collection"
+    assert not rule({"video": True, "genre_ids": [53, 28, 27]}), "Grindhouse: a real release"
+    assert not rule({"video": False, "genre_ids": [10402]}), "a music film in cinemas"
+    assert not rule({"video": True, "genre_ids": [10402, 99]}), "a concert documentary"
+    assert not rule({"video": True}), "no genres: not enough to go on"
+
+
+@responses.activate
+def test_a_music_video_compilation_is_folded_away_not_top_of_the_list(session: Session) -> None:
+    """It was: 8.4 from 68 votes put 'Michael Jackson Video Greatest Hits: HIStory' first among
+    Scorsese's missing films, and into the directors import list."""
+    _floor(session, 2)
+    _own(session, 1, "A", director=None); _own(session, 2, "B", director=None)
+    for tid in (1, 2):
+        responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/{tid}/credits",
+                      json={"crew": [{"id": NOLAN, "name": "Christopher Nolan", "job": "Director"}]})
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/person/{NOLAN}/movie_credits", json={"crew": [
+        {"id": 1, "title": "A", "job": "Director", "release_date": "2000-01-01"},
+        {"id": 9, "title": "Video Greatest Hits", "job": "Director", "release_date": "1995-07-16",
+         "video": True, "genre_ids": [10402], "vote_average": 8.4, "vote_count": 68},
+        {"id": 4, "title": "Insomnia", "job": "Director", "release_date": "2002-05-24",
+         "genre_ids": [80], "vote_average": 7.0, "vote_count": 500}]})
+    for tid, runtime in ((9, 110), (4, 118)):
+        responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/{tid}", json={"id": tid, "title": "x", "runtime": runtime})
+
+    director_service.discover(session, TmdbClient("k" * 32, max_requests_per_second=10_000), ttl=timedelta(days=7))
+    view = director_service.director_views(session, today=TODAY)[0]
+
+    assert [t.title for t in view.missing] == ["Insomnia"]
+    assert [t.title for t in view.music_videos] == ["Video Greatest Hits"]
+    assert view.best_rating == 7.0, "it no longer sets the director's best missing rating"

@@ -62,6 +62,12 @@
     <div class="collection-grid collection-grid--compact">{% for m in sort_titles(d.shorts, detail_sort or 'release') %}{{ row(m, 'hidden') }}{% endfor %}</div>
   </details>
 {% endif %}
+{% if d.music_videos %}
+  <details class="hidden-section">
+    <summary>{{ d.music_videos | length }} music-video collection{{ '' if d.music_videos | length == 1 else 's' }}</summary>
+    <div class="collection-grid collection-grid--compact">{% for m in sort_titles(d.music_videos, detail_sort or 'release') %}{{ row(m, 'hidden') }}{% endfor %}</div>
+  </details>
+{% endif %}
 {% if d.documentaries %}
   <details class="hidden-section">
     <summary>{{ d.documentaries | length }} documentar{{ 'y' if d.documentaries | length == 1 else 'ies' }}</summary>
