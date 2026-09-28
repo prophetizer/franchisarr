@@ -110,7 +110,8 @@
         {% for value, label in kinds %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
       </select>
     </label>
-    <label>Name <input type="text" name="name" required placeholder="Living room Plex"></label>
+    <label>Name <input type="text" name="name" required placeholder="Living room Plex"
+      :placeholder="'Living room ' + ({ plex: 'Plex', jellyfin: 'Jellyfin', emby: 'Emby' })[kind]"></label>
     <label>URL <input type="url" name="url" required :placeholder="kind == 'plex' ? 'http://plex:32400' : 'http://' + kind + ':8096'"></label>
     <label><span x-text="kind == 'plex' ? 'Token' : 'API key'">Token</span>
       <input type="password" name="credential" required autocomplete="off">

@@ -278,6 +278,17 @@ def plex_poll(request: Request, session: DbSession, next: Annotated[str, Form()]
     return response
 
 
+def _provider(user) -> str:  # noqa: ANN001
+    """Where a non-local account signs in: "Plex", "Jellyfin" or "Emby". It said "Plex" for
+    everyone, Jellyfin and Emby accounts included."""
+    from app.services import media_server_service
+
+    try:
+        return media_server_service.label(user.auth_provider)
+    except ValueError:
+        return "your media server"
+
+
 @router.get("/password", response_class=HTMLResponse)
 def password_form(request: Request, session: DbSession, user: CurrentUser, changed: bool = False):
     """Change the local admin password.
@@ -291,7 +302,8 @@ def password_form(request: Request, session: DbSession, user: CurrentUser, chang
     return get_templates().TemplateResponse(
         request,
         "password.html",
-        {"user": user, "changed": changed, "is_local": bool(user.local_username)},
+        {"user": user, "changed": changed, "is_local": bool(user.local_username),
+         "provider": _provider(user)},
     )
 
 
@@ -315,12 +327,13 @@ def password_change(
         return get_templates().TemplateResponse(
             request,
             "password.html",
-            {"user": user, "error": message, "is_local": bool(user.local_username)},
+            {"user": user, "error": message, "is_local": bool(user.local_username),
+             "provider": _provider(user)},
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
     if not user.local_username:
-        return fail("This account signs in with Plex, so there's no password here to change.")
+        return fail(f"This account signs in with {_provider(user)}, so there's no password here to change.")
     if authenticate_local(session, user.local_username, current_password) is None:
         return fail("That isn't your current password.")
     if len(new_password) < 8:

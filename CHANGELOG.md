@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.3] — 2026-09-28
+
+### Fixed
+
+- **Pages that said "Plex" to everyone.** Change Password told Jellyfin and Emby accounts that
+  they sign in with Plex and that their password lives at plex.tv; it now names the server
+  they actually sign in with. The backup warning in Settings said the full download holds "your
+  Plex token" when it holds every media server's credentials (and the Seerr and fanart.tv keys,
+  which it didn't mention). Adding a Jellyfin or Emby server no longer suggests naming it
+  "Living room Plex".
+
 ## [0.33.2] — 2026-09-28
 
 ### Fixed

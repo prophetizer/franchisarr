@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.33.2`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.33.3`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -420,7 +420,7 @@ Everything Franchisarr contacts, from the server:
 | **Wikidata** (`query.wikidata.org`) | During scans | Spin-offs, continuations and franchises. No account; requests carry a User-Agent naming this project, as Wikidata asks |
 | **plex.tv** | Only when someone signs in with Plex | The sign-in PIN flow, and checking the account can reach your server |
 | **fanart.tv** | Only if you set a fanart.tv key | Franchise logos |
-| **TMDb's image CDN** (`image.tmdb.org`) | Only when you make a playlist | The artwork for the playlist's poster, which Franchisarr composes and uploads to Plex. Not with `SHOW_ARTWORK=false` |
+| **TMDb's image CDN** (`image.tmdb.org`) | Only when you make a playlist | The artwork for the playlist's poster, which Franchisarr composes and uploads to your media server. Not with `SHOW_ARTWORK=false` |
 | **GitHub** (`api.github.com`) | When Settings is opened | The update banner. Sends nothing about you or your library. **Off** under Settings → Update check, or with `UPDATE_CHECK=false` |
 
 Plus whatever you point it at yourself: your media servers, Radarr, Sonarr, Seerr, a webhook or
