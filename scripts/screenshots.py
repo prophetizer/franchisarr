@@ -68,6 +68,20 @@ SHOWS = [  # (tmdb id, owned, spin-off of -> (source id, wikidata relation))
     (1434, True, None), (1433, False, (1434, "P2512")),
     (1668, True, None), (1466, False, (1668, "P2512")),                  # Friends -> Joey
 ]
+# More franchises beside Star Wars, so the Franchises page is a full grid rather than one card.
+# (Wikidata id, name, TMDb collections whose films belong, shows owned, shows missing). The
+# Wikidata ids are "media franchise" items, checked 2026-09-28; the show ids were checked on TMDb
+# (Camp Cretaceous 93741, Chaos Theory 237512, the 1966 Mission: Impossible 4357), as was the
+# Fantastic Beasts collection (435259). Films owned follow COLLECTIONS, so the counts agree.
+FRANCHISES = [
+    ("Q30739117", "Wizarding World", [1241, 435259], [], []),
+    ("Q2336369", "Jurassic Park", [328], [93741], [237512]),
+    ("Q59130", "James Bond", [645], [], []),
+    ("Q87816991", "Mission: Impossible", [87359], [], [4357]),
+    ("Q13014087", "The Matrix", [2344], [], []),
+    ("Q1078084", "Rocky", [1575], [], []),
+    ("Q1576873", "Fast & Furious", [9485], [], []),
+]
 STAR_WARS = {"films_owned": [11, 1891, 1892, 140607], "films_missing": [1893, 1894, 1895, 12180, 330459],
              "shows_owned": [82856], "shows_missing": [114461, 92830, 83867]}
 # person id -> films owned. Checked against TMDb when added (2026-09-28): each id is the film
@@ -127,8 +141,9 @@ def seed(db_path: str) -> None:
                               item_key=f"{item_type[0]}{tmdb_id}", item_type=item_type, title=title,
                               year=year, tmdb_id=tmdb_id, match_source="guid", watched=watched))
 
+        fetched = {}
         for cid, (owned_pos, watched_pos) in COLLECTIONS.items():
-            c = tmdb.get_collection(cid)
+            c = fetched[cid] = tmdb.get_collection(cid)
             s.add(TmdbCollection(tmdb_collection_id=cid, name=c.name, poster_path=c.poster_path,
                                  backdrop_path=c.backdrop_path))
             for pos, m in enumerate(c.movies):
@@ -179,6 +194,30 @@ def seed(db_path: str) -> None:
                                imdb_id=sh.imdb_id, tvdb_id=sh.tvdb_id))
             if sid in STAR_WARS["shows_owned"]:
                 own(sid, sh.name, year, item_type="show")
+
+        for qid, name, collections, shows_owned, shows_missing in FRANCHISES:
+            s.add(Franchise(wikidata_id=qid, name=name, kind="media franchise"))
+            for cid in collections:
+                c = fetched.get(cid) or tmdb.get_collection(cid)
+                owned_pos = COLLECTIONS.get(cid, ([], []))[0]
+                for pos, m in enumerate(c.movies):
+                    if not m.poster_path and pos not in owned_pos:
+                        continue
+                    year = int(m.release_date[:4]) if m.release_date else None
+                    s.add(FranchiseMember(franchise_id=qid, item_type="movie", tmdb_id=m.tmdb_id, title=m.title,
+                                          year=year, poster_path=m.poster_path))
+            for sid in shows_owned + shows_missing:
+                sh = tmdb.get_show(sid)
+                year = int(sh.first_air_date[:4]) if sh.first_air_date else None
+                s.add(FranchiseMember(franchise_id=qid, item_type="show", tmdb_id=sid, title=sh.name, year=year,
+                                      poster_path=sh.poster_path))
+                if not s.get(TmdbShow, sid):
+                    s.add(TmdbShow(tmdb_id=sid, name=sh.name, first_air_year=year, poster_path=sh.poster_path,
+                                   imdb_id=sh.imdb_id, tvdb_id=sh.tvdb_id))
+                if sid in shows_owned:
+                    own(sid, sh.name, year, item_type="show")
+            s.flush()
+            print("franchise", name, file=sys.stderr)
 
         for person_id, owned in DIRECTORS.items():
             person = tmdb.get_person(person_id)
