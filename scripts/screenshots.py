@@ -41,7 +41,7 @@ PAGES = [
     ("spinoffs", "/shows", 1000),
     ("upcoming", "/upcoming", 900),
     ("directors", "/directors", 1000),
-    ("servers", "/media-servers", 700),
+    ("servers", "/media-servers", 1000),
 ]
 
 
@@ -128,6 +128,12 @@ def seed(db_path: str) -> None:
         server = MediaServer(name="Plex", kind="plex", url="http://plex:32400",
                              credential="screenshot-only-token-xxxxxxxx", machine_identifier="demo")
         s.add(server); s.commit(); s.refresh(server)
+        # The Servers shot shows all three kinds, one turned off, so the on/off switch is in view.
+        # Neither has a library here, so nothing they "hold" changes the other screenshots.
+        s.add(MediaServer(name="Jellyfin", kind="jellyfin", url="http://jellyfin:8096",
+                          credential="screenshot-only-key-xxxxxxxxxxxxxx"))
+        s.add(MediaServer(name="Emby", kind="emby", url="http://emby:8096",
+                          credential="screenshot-only-key-yyyyyyyyyyyyyy", enabled=False))
         s.add(IncludedLibrary(server_id=server.id, library_key="1", library_name="Movies", library_type="movie"))
         s.add(IncludedLibrary(server_id=server.id, library_key="2", library_name="TV Shows", library_type="show"))
         owned_films: set[int] = set()
@@ -265,6 +271,17 @@ def serve() -> threading.Thread:
     raise SystemExit("app did not start")
 
 
+def shoot(page, path: pathlib.Path, height: int) -> None:  # noqa: ANN001 - a Playwright page
+    """Screenshot at the page's own height -- down to the footer, plus its margin -- up to
+    `height`, so a short page doesn't end in empty background and a long one is still cut."""
+    page.set_viewport_size({"width": 1600, "height": height})
+    page.wait_for_timeout(200)
+    content = page.evaluate("document.querySelector('footer').getBoundingClientRect().bottom + 24")
+    page.set_viewport_size({"width": 1600, "height": min(height, int(content))})
+    page.wait_for_timeout(200)
+    page.screenshot(path=str(path), type="jpeg", quality=82)
+
+
 def capture(out: pathlib.Path) -> None:
     from playwright.sync_api import sync_playwright
 
@@ -275,10 +292,13 @@ def capture(out: pathlib.Path) -> None:
                                   color_scheme="dark")
         page = ctx.new_page()
         page.goto(f"http://127.0.0.1:{PORT}/login")
-        page.screenshot(path=str(out / "login.jpg"), type="jpeg", quality=82)
-        page.fill("input[name=username]", "demo")
-        page.fill("input[name=password]", PASSWORD)
-        page.click("button[type=submit]")
+        shoot(page, out / "login.jpg", 1300)
+        # The local-account form by its action: with a Jellyfin server on, the page has a second
+        # username field (server sign-in) first, and filling that one signs nobody in.
+        local = page.locator("form[action='/login']")
+        local.locator("input[name=username]").fill("demo")
+        local.locator("input[name=password]").fill(PASSWORD)
+        local.locator("button[type=submit]").click()
         page.wait_for_load_state("networkidle")
         for name, path, height in PAGES:
             page.set_viewport_size({"width": 1600, "height": height})
@@ -288,11 +308,7 @@ def capture(out: pathlib.Path) -> None:
             except Exception:
                 pass
             page.wait_for_timeout(800)
-            # The page's own height, plus the footer's margin, capped at the page's maximum.
-            content = page.evaluate("document.querySelector('footer').getBoundingClientRect().bottom + 24")
-            page.set_viewport_size({"width": 1600, "height": min(height, int(content))})
-            page.wait_for_timeout(200)
-            page.screenshot(path=str(out / f"{name}.jpg"), type="jpeg", quality=82)
+            shoot(page, out / f"{name}.jpg", height)
             print(name, page.title(), file=sys.stderr)
         browser.close()
 
