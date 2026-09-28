@@ -203,7 +203,8 @@ def test_scanning_without_plex_configured_is_refused_before_starting(
 
         response = anon.post(f"{BASE}/scan")
 
-    assert response.status_code == 409
+    assert response.status_code == 200, "a 409 is dropped by htmx: the button did nothing"
+    assert "No media server is set up" in response.text and "No TMDb API key yet" in response.text
     assert scan_state.current().running is False
 
 

@@ -22,6 +22,9 @@
           collection and spin-off data.
         {% endif %}
       </p>
+      {% for text, page, link in scan_blockers %}
+        <p role="alert" class="notice-bad">{{ text }} <a href="{{ url(page) }}">{{ link }}</a>.</p>
+      {% endfor %}
       <footer>
 {% if user and user.is_admin %}        <button hx-post="{{ url('/scan') }}" hx-target="#scan-status" hx-swap="outerHTML">
           {{ 'Scan my library' if not scanned else 'Rescan my library' }}</button>

@@ -415,6 +415,9 @@ def _settings_context(session, user, **extra) -> dict:
         "current_cron": cron,
         "schedule_description": scheduler_service.describe(cron),
         "webhook_masked": _mask(get_setting(session, SettingKey.WEBHOOK_URL) or ""),
+        "tmdb_masked": _mask(get_setting(session, SettingKey.TMDB_API_KEY) or ""),
+        "fanart_masked": _mask(get_setting(session, SettingKey.FANART_API_KEY) or ""),
+        "key_note": None,
         "current_webhook_format": get_setting(session, SettingKey.WEBHOOK_FORMAT) or "generic",
         "webhook_formats": [
             (WebhookFormat.GENERIC.value, "Generic webhook (JSON)"),
@@ -446,6 +449,48 @@ def settings_page(request: Request, session: DbSession, user: AdminUser, saved: 
     return get_templates().TemplateResponse(
         request, "settings.html", _settings_context(session, user, saved=saved)
     )
+
+
+@router.post("/settings/keys", response_class=HTMLResponse)
+def settings_keys(
+    request: Request,
+    session: DbSession,
+    user: AdminUser,
+    tmdb_api_key: Annotated[str, Form()] = "",
+    fanart_api_key: Annotated[str, Form()] = "",
+    fanart_clear: Annotated[str, Form()] = "",
+):
+    """The TMDb and fanart.tv keys. Until 0.33.1 they could only come from the environment on
+    first boot, so an install started without TMDB_API_KEY had no way to add it (a Reddit
+    report). Blank keeps the saved key, as on every credential form. A new TMDb key is checked
+    before it's saved: a wrong one would otherwise show up only as a scan failing on every film."""
+    from app.clients.tmdb_client import TmdbAuthError, TmdbClient, TmdbError
+    from app.logging_config import register_secret
+    from app.services.settings_service import set_setting
+
+    note = None
+    tmdb = tmdb_api_key.strip()
+    if tmdb:
+        try:
+            TmdbClient(tmdb).validate_key()
+        except TmdbAuthError as exc:
+            return get_templates().TemplateResponse(request, "settings.html", _settings_context(
+                session, user, error=f"Not saved: {exc}"))
+        except TmdbError:
+            note = "Saved, but TMDb couldn't be reached to check the key just now."
+        register_secret(tmdb)
+        set_setting(session, SettingKey.TMDB_API_KEY, tmdb)
+    fanart = fanart_api_key.strip()
+    if fanart_clear:
+        set_setting(session, SettingKey.FANART_API_KEY, "")
+    elif fanart:
+        register_secret(fanart)
+        set_setting(session, SettingKey.FANART_API_KEY, fanart)
+    session.commit()
+    if note:
+        return get_templates().TemplateResponse(request, "settings.html", _settings_context(
+            session, user, key_note=note))
+    return RedirectResponse(_url("/settings?saved=1#keys"), status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/settings/api-key", response_class=HTMLResponse)
@@ -554,6 +599,18 @@ def save_webhook(
     return RedirectResponse(_url("/settings?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
 
 
+def scan_prerequisites(session) -> list[tuple[str, str, str]]:  # noqa: ANN001
+    """What's missing before a scan can run, as (reason, page, link text); empty when nothing."""
+    from app.services import media_server_service
+
+    missing = []
+    if not media_server_service.is_configured(session):
+        missing.append(("No media server is set up and switched on yet.", "/media-servers", "Add one under Servers"))
+    if not (get_setting(session, SettingKey.TMDB_API_KEY) or "").strip():
+        missing.append(("No TMDb API key yet.", "/settings#keys", "Add it in Settings"))
+    return missing
+
+
 @router.post("/scan", response_class=HTMLResponse)
 def trigger_scan(
     request: Request,
@@ -568,15 +625,15 @@ def trigger_scan(
     invisibly, or died with the request. It now starts a background task and hands back a panel
     that polls for progress.
     """
-    from app.services import media_server_service, scan_job, scan_state
+    from app.services import scan_job, scan_state
 
-    tmdb_key = get_setting(session, SettingKey.TMDB_API_KEY)
-
-    if not (media_server_service.is_configured(session) and tmdb_key):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="A media server and TMDb both need configuring before a scan can run.",
-        )
+    # Refused with a 200 and the reason in the panel, not a 409: htmx drops an error response,
+    # so the button did nothing and said nothing (a Reddit report, 0.33.1).
+    missing = scan_prerequisites(session)
+    if missing:
+        logger.warning("Scan not started: %s", "; ".join(text for text, _, _ in missing))
+        return get_templates().TemplateResponse(request, "partials/scan_status.html", {
+            "user": user, "progress": scan_state.current(), "refused": missing})
 
     # A second click while one is running is a no-op rather than an error: the panel it gets back
     # shows the scan already in progress, which is what the person wanted to see anyway.

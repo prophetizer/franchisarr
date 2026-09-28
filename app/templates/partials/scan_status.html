@@ -4,7 +4,15 @@
      {% if progress.running %}hx-get="{{ url('/scan/status') }}" hx-trigger="every 2s"
         hx-target="#scan-status" hx-swap="outerHTML"{% endif %}>
 
-  {% if progress.running %}
+  {% if refused %}
+    <article>
+      <header><strong>Can't scan yet</strong></header>
+      {% for text, page, link in refused %}
+        <p role="alert" class="notice-bad">{{ text }} <a href="{{ url(page) }}">{{ link }}</a>.</p>
+      {% endfor %}
+    </article>
+
+  {% elif progress.running %}
     <article aria-busy="true">
       <header><strong>Scanning…</strong></header>
       <p>

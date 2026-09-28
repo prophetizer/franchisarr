@@ -162,16 +162,38 @@ def _env_values(env: EnvSettings) -> dict[str, str]:
     return values
 
 
+#: Filled from the environment on every start while still empty. The TMDb key only: nothing
+#: works without it, so an empty one is never a choice -- first boot used to save it empty and
+#: then ignore a TMDB_API_KEY added to .env afterwards, for good (a Reddit report, 0.33.1). A
+#: schedule or webhook someone cleared in the app is a choice, and must not come back from the
+#: environment at every restart, so nothing else is refilled.
+REFILL_FROM_ENV = frozenset({SettingKey.TMDB_API_KEY})
+
+
 def seed_settings_from_env(session: Session, env: EnvSettings) -> bool:
     """Populate an empty settings table from the environment. Returns True if it seeded.
 
-    A populated table is left completely untouched -- no merging, no filling gaps.
+    A populated table is left alone except for REFILL_FROM_ENV keys that are still empty. Other
+    environment values that differ from what's saved are named in the log (never their values),
+    so "I changed it in .env and nothing happened" has an answer.
     """
+    from_env = _env_values(env)
     if is_seeded(session):
-        logger.debug("settings table already populated; skipping env bootstrap")
+        filled = [key for key in sorted(REFILL_FROM_ENV & from_env.keys())
+                  if not (get_setting(session, key) or "").strip()]
+        for key in filled:
+            set_setting(session, key, from_env[key])
+        if filled:
+            session.commit()
+            logger.info("Filled %s from the environment (it was empty)", ", ".join(filled))
+        # BASE_URL is read from the environment on every start anyway.
+        ignored = [key for key in sorted(from_env) if key not in filled and key != SettingKey.BASE_URL
+                   and (get_setting(session, key) or "") not in ("", from_env[key])]
+        if ignored:
+            logger.info("%s in the environment differ from the saved value%s; the saved one is used. "
+                        "Change it in Settings.", ", ".join(ignored), "" if len(ignored) == 1 else "s")
         return False
 
-    from_env = _env_values(env)
     for key, value in {**DEFAULTS, **from_env}.items():
         set_setting(session, key, value)
     session.commit()

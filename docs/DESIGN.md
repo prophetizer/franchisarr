@@ -153,7 +153,7 @@ franchisarr/
 
 ## 6. Setup flow (env vars + wizard, both)
 
-- **Bootstrap via env vars** (for docker-compose/Unraid-style deployment): `PLEX_URL`, `PLEX_CLIENT_ID` (for OAuth), `TMDB_API_KEY`, plus optionally `RADARR_URL`/`RADARR_API_KEY` and `SONARR_URL`/`SONARR_API_KEY` for a single default instance. These seed the DB on first boot if the tables are empty — they're a convenience, not the only path.
+- **Bootstrap via env vars** (for docker-compose/Unraid-style deployment): `PLEX_URL`, `PLEX_CLIENT_ID` (for OAuth), `TMDB_API_KEY`, plus optionally `RADARR_URL`/`RADARR_API_KEY` and `SONARR_URL`/`SONARR_API_KEY` for a single default instance. These seed the DB on first boot if the tables are empty — they're a convenience, not the only path. The one exception (0.33.1): `TMDB_API_KEY` also fills the setting at every start while it is still empty, since an install started without it otherwise had no way to get one (Settings has had TMDb/fanart key fields since the same release).
 - ~~**In-app setup wizard** on first run~~ — **dropped 2026-08-31.** Each piece it would have wrapped ended up with its own page: library selection, instance management (with Test Connection), and settings. A wizard would have been a fourth path through the same forms, and the login screen already names what is missing. Setup is: fill in `.env` or sign in, pick libraries, add an instance.
 - **Settings UI** after initial setup: add/edit/remove instances, edit the global/per-instance "hide if queued" toggle, manage users, TMDb cache TTL.
 

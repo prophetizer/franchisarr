@@ -19,6 +19,28 @@
 {% endif %}
 {% if error %}<p role="alert" class="notice-bad">{{ error }}</p>{% endif %}
 
+<article id="keys">
+  <header><strong>TMDb and fanart.tv keys</strong></header>
+  {% if key_note %}<p role="status" class="notice-warn">{{ key_note }}</p>{% endif %}
+  <form method="post" action="{{ url('/settings/keys') }}">
+    <label for="tmdb_api_key">TMDb API key
+      <small class="muted">— {{ tmdb_masked or "not set: scans can't run until it is" }}</small></label>
+    <input type="password" id="tmdb_api_key" name="tmdb_api_key" autocomplete="off"
+           placeholder="{{ 'leave blank to keep the current one' if tmdb_masked else 'paste your key' }}">
+    <small>Needed for every scan. The 32-character <em>API Key</em> (not the long Read Access Token)
+      from themoviedb.org → Settings → API. It's checked with TMDb before it's saved.</small>
+
+    <label for="fanart_api_key">fanart.tv API key <small class="muted">— optional, {{ fanart_masked or 'not set' }}</small></label>
+    <input type="password" id="fanart_api_key" name="fanart_api_key" autocomplete="off"
+           placeholder="{{ 'leave blank to keep the current one' if fanart_masked else 'paste your key' }}">
+    <small>Adds franchise logos. After adding it, <strong>Refresh everything</strong> on the home page
+      picks the logos up straight away.
+      {% if fanart_masked %}<label><input type="checkbox" name="fanart_clear" value="1"> Remove it</label>{% endif %}</small>
+
+    <button type="submit">Save keys</button>
+  </form>
+</article>
+
 <article>
   <header><strong>Import lists for Radarr and Sonarr</strong></header>
   <p>

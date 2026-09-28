@@ -246,4 +246,7 @@ def test_the_scan_button_scans_that_server_only(client: TestClient, monkeypatch)
     assert started == [{"server_id": jellyfin.id}]
 
     client.post(f"{BASE}/media-servers/{jellyfin.id}/toggle")
-    assert client.post(f"{BASE}/media-servers/{jellyfin.id}/scan").status_code == 409, "off: nothing to scan"
+    started.clear()
+    refused = client.post(f"{BASE}/media-servers/{jellyfin.id}/scan")
+    assert refused.status_code == 200 and "Jellyfin is turned off" in refused.text
+    assert started == [], "off: nothing to scan"

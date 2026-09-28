@@ -297,5 +297,7 @@ def test_the_scan_button_says_when_no_server_is_configured(client: TestClient) -
 
     response = client.post(f"{BASE}/scan")
 
-    assert response.status_code == 409
-    assert "A media server and TMDb both need configuring" in response.text
+    # A 200 with the reason in the panel: htmx drops an error response, so a 409 made the button
+    # do nothing at all (a Reddit report, 0.33.1).
+    assert response.status_code == 200
+    assert "No media server is set up" in response.text and "No TMDb API key yet" not in response.text

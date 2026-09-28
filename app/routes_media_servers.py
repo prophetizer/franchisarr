@@ -147,10 +147,18 @@ def scan_server(request: Request, session: DbSession, user: AdminUser, server_id
     """Scan this one server's libraries -- quicker than all of them when testing one."""
     from app.services import scan_job, scan_state
 
+    from app.routes_movies import scan_prerequisites
+
     server = _get(session, server_id)
+    # Reasons in the panel, not an error status: htmx would drop that and the button would
+    # do nothing at all.
+    missing = scan_prerequisites(session)
     if not server.enabled:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                            detail="Switch the server on before scanning it.")
+        missing.insert(0, (f"{server.name} is turned off.", "/media-servers", "Turn it on here"))
+    if missing:
+        logger.warning("Scan of %s not started: %s", server.name, "; ".join(t for t, _, _ in missing))
+        return get_templates().TemplateResponse(request, "partials/scan_status.html", {
+            "user": user, "progress": scan_state.current(), "refused": missing})
     scan_job.run_in_background("manual", server_id=server.id)
     return get_templates().TemplateResponse(
         request, "partials/scan_status.html", {"user": user, "progress": scan_state.current()}

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.1] — 2026-09-28
+
+### Fixed
+
+- **A scan that can't start now says why.** Without a TMDb key (or a media server), pressing Scan
+  did nothing at all: the refusal was an error response the page silently dropped, and nothing
+  was logged. The reason now appears next to the button with a link to fix it, the home page
+  says so before you press anything, and the log records it. A missing TMDb key is also logged
+  at startup.
+- **A TMDb key added to `.env` after the first start is picked up.** The first boot saved an
+  empty key and never read the environment again. `TMDB_API_KEY` now fills the setting at every
+  start while it's still empty. A key already saved is never overwritten, and the log names any
+  other `.env` value that's being ignored in favour of the saved one.
+
+### Added
+
+- **TMDb and fanart.tv keys in Settings.** Both can be added or changed in the app, as the README
+  always said. Keys are masked to the last four characters, leaving a field blank keeps the
+  saved key, and a new TMDb key is checked with TMDb before it's saved.
+
 ## [0.33.0] — 2026-09-28
 
 ### Added

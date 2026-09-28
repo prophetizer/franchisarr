@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.33.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.33.1`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -108,7 +108,9 @@ convenience for docker-compose, and they behave in one of two ways:
 
 - **Seeded once:** media servers, Radarr, Sonarr, the admin account, and the values Settings
   owns (TMDb and fanart.tv keys, schedule, notifications). Read on first boot only; after that
-  the database wins, so change them in the app.
+  the database wins, so change them in the app. The exception is `TMDB_API_KEY`: while no key
+  is saved it's read at every start, so adding it to `.env` later and restarting works. The log
+  names any other `.env` value that's being ignored.
 - **Read every start:** `BASE_URL`, `TZ`, `PUID`/`PGID`, `LOG_LEVEL`, `SESSION_COOKIE_SECURE`, `TRUSTED_PROXY_HOPS`,
   `SHOW_ARTWORK`, the `TP_*` theme variables and `UPDATE_CHECK`. Change these and restart.
 

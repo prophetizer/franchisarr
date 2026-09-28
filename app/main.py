@@ -95,6 +95,10 @@ async def lifespan(app: FastAPI):
     run_migrations()
     with Session(get_engine()) as session:
         seed_settings_from_env(session, settings)
+        if not (get_setting(session, SettingKey.TMDB_API_KEY) or "").strip():
+            # Said at startup because it's where people look when a scan "does nothing".
+            logger.warning("No TMDb API key is set, so scans can't run. Add one under Settings, "
+                           "or set TMDB_API_KEY and restart.")
         seed_local_admin_from_env(session, settings)
         seed_radarr_from_env(session, settings)
         seed_sonarr_from_env(session, settings)
@@ -168,6 +172,8 @@ def manifest() -> Response:
 
 @router.get("/", response_class=HTMLResponse)
 def index(request: Request, session: DbSession, user: RequiredUser):
+    from app.routes_movies import scan_prerequisites
+
     # The library-selection step is part of first-run setup: until something is chosen there is
     # nothing for the rest of the app to work with. Only an admin can choose, so only an admin is
     # sent there; a member sees the (empty) home page rather than a page they can't open.
@@ -202,6 +208,8 @@ def index(request: Request, session: DbSession, user: RequiredUser):
             # people land on -- it used to live only on the collections page. Progress itself
             # comes from a context processor, since several pages show it now.
             "scanned": bool(movie_gap_service.owned_tmdb_ids(session, all_servers=True)),
+            # Said before anyone presses Scan, not only after (a Reddit report, 0.33.1).
+            "scan_blockers": scan_prerequisites(session) if user.is_admin else [],
         },
     )
 
