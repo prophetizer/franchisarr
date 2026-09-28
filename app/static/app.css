@@ -633,3 +633,9 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
   border: 1px solid var(--pico-muted-border-color);
   border-radius: var(--pico-border-radius);
 }
+
+/* Search (search.html). */
+.search-form input[type="search"] { margin-bottom: var(--pico-spacing); }
+.nav-search svg { vertical-align: middle; }
+.search-status--missing { color: var(--pico-primary); }
+.search-links { margin: 0.25rem 0 0; }

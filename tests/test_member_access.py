@@ -72,7 +72,8 @@ ADMIN_ONLY = [
     ("post", "/settings/keys"),
 ]
 
-MEMBER_PAGES = ["/", "/collections", "/franchises", "/directors", "/upcoming", "/shows", "/activity"]
+MEMBER_PAGES = ["/", "/collections", "/franchises", "/directors", "/upcoming", "/shows", "/activity",
+                "/search?q=film"]
 
 
 def test_a_member_is_locked_out_while_members_are_off(client: TestClient) -> None:

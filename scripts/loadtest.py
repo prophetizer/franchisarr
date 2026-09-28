@@ -295,7 +295,7 @@ def _pages(api_key: str, cleanup: str | None) -> int:
         client.post("/login", data={"username": "demo", "password": PASSWORD})
         pages = ["/", "/collections", "/collections?filter=started", "/collections/3", "/franchises",
                  "/franchises/Q100001", "/shows", "/upcoming", "/directors", "/directors/1", "/settings",
-                 "/activity", "/libraries", "/settings/diagnostics",
+                 "/activity", "/libraries", "/settings/diagnostics", "/search?q=film 1", "/search?q=show",
                  f"/api/lists/collections.json?api_key={api_key}", f"/api/lists/shows.json?api_key={api_key}",
                  f"/api/lists/upcoming.ics?api_key={api_key}", "/api/collections/gaps", "/api/spinoffs"]
         print("\npages (first hit / second hit):")

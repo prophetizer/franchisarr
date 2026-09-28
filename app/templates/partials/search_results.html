@@ -1,0 +1,90 @@
+{# Search results, grouped. Rendered inside search.html and on its own for each keystroke. #}
+{% from "partials/tile.html" import tile %}
+
+{% macro more(group) -%}
+  {% set shown = results[group] | length %}
+  {% if results.totals[group] > shown %}
+    <p><small class="muted">{{ results.totals[group] - shown }} more — keep typing to narrow it down.</small></p>
+  {% endif %}
+{%- endmacro %}
+
+{% macro groups(group, heading) -%}
+  {% if results[group] %}
+    <section>
+      <h2>{{ heading }}</h2>
+      <div class="collection-grid collection-grid--compact">
+        {% for g in results[group] %}
+          {% call tile(g.image) %}
+            <header><a href="{{ url(g.path) }}"><strong class="film-title">{{ g.name }}</strong></a></header>
+            <p class="collection-counts muted"><span>{{ g.detail }}</span></p>
+          {% endcall %}
+        {% endfor %}
+      </div>
+      {{ more(group) }}
+    </section>
+  {% endif %}
+{%- endmacro %}
+
+{% macro titles(group, heading) -%}
+  {% if results[group] %}
+    <section>
+      <h2>{{ heading }}</h2>
+      <div class="collection-grid collection-grid--compact">
+        {% for r in results[group] %}
+          {% set film = r.item_type == 'movie' %}
+          {% call tile(r.poster, r.status if r.status in ('missing', 'upcoming') else '') %}
+            <header><strong class="film-title">{{ r.title }}</strong></header>
+            <p class="collection-counts muted"><span>
+              {{ r.year or '' }}{% if r.year %} · {% endif %}
+              {%- if r.status == 'owned' -%}
+                <span class="search-status search-status--owned">In your library{% if r.servers %} on {{ r.servers | join(', ') }}{% endif %}</span>
+              {%- elif r.status == 'in_arr' -%}
+                <span class="search-status">In {{ 'Radarr' if film else 'Sonarr' }} or requested</span>
+              {%- elif r.status == 'dismissed' -%}
+                <span class="search-status">Hidden by you</span>
+              {%- elif r.status == 'upcoming' -%}
+                <span class="search-status">Not out yet</span>
+              {%- else -%}
+                <span class="search-status search-status--missing">Missing</span>
+              {%- endif -%}
+            </span></p>
+            {% if r.links %}
+              <p class="search-links"><small>
+                {% for link in r.links[:3] %}<a href="{{ url(link.path) }}">{{ link.label }}</a>{{ ', ' if not loop.last }}{% endfor %}
+                {%- if r.links | length > 3 %} and {{ r.links | length - 3 }} more{% endif %}
+              </small></p>
+            {% endif %}
+            {% if r.can_add %}
+              <p class="card-actions">
+                {% if user and user.is_admin %}
+                  <button hx-get="{{ url(('/add/' if film else '/shows/add/') ~ r.tmdb_id) }}"
+                          hx-target="{{ '#add-dialog' if film else '#add-show-dialog' }}" hx-swap="innerHTML">Add</button>
+                {% endif %}
+                {% if r.status != 'dismissed' %}
+                  <button class="secondary outline" hx-post="{{ url('/search/dismiss/' ~ r.item_type ~ '/' ~ r.tmdb_id) }}"
+                          hx-target="closest .card-actions" hx-swap="innerHTML"
+                          title="Hide this from your own lists only">Not interested</button>
+                {% endif %}
+              </p>
+            {% endif %}
+          {% endcall %}
+        {% endfor %}
+      </div>
+      {{ more(group) }}
+    </section>
+  {% endif %}
+{%- endmacro %}
+
+{% if results.too_short %}
+  {% if results.query %}<p class="muted">Type at least two letters.</p>{% endif %}
+{% elif results.empty %}
+  <p class="muted">Nothing matches “{{ results.query }}”. Search looks through what Franchisarr has
+    found — your library and the collections, franchises, directors and spin-offs around it — not
+    all of TMDb.</p>
+{% else %}
+  {{ groups('collections', 'Collections') }}
+  {{ groups('franchises', 'Franchises') }}
+  {{ groups('directors', 'Directors') }}
+  {{ titles('films', 'Films') }}
+  {{ titles('shows', 'Shows') }}
+{% endif %}

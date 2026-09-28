@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Search — Franchisarr{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>Search</h1>
+  <p>Collections, franchises, directors, films and shows Franchisarr knows about.</p>
+</hgroup>
+
+{# A plain GET form, so Enter works without JavaScript; htmx refreshes the results as you type
+   and keeps the address in step, so a reload or a shared link shows the same search. #}
+<form role="search" method="get" action="{{ url('/search') }}" class="search-form">
+  <input type="search" name="q" value="{{ q }}" aria-label="Search" autocomplete="off" autofocus
+         placeholder="A film, show, collection, franchise or director"
+         onfocus="this.setSelectionRange(this.value.length, this.value.length)"
+         hx-get="{{ url('/search') }}" hx-trigger="input changed delay:300ms, search"
+         hx-target="#search-results" hx-swap="innerHTML" hx-replace-url="true">
+</form>
+
+<div id="search-results" aria-live="polite">{% include "partials/search_results.html" %}</div>
+<div id="add-dialog"></div>
+<div id="add-show-dialog"></div>
+{% endblock %}

@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.35.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.36.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -207,6 +207,17 @@ In February 2026 the Overseerr and Jellyseerr teams
 projects' features — and Overseerr's own repository was archived. All three speak the same
 `/api/v1`, so an older instance keeps working: pick which one you run when you add it, and only
 the label changes.
+
+## Search
+
+The magnifying glass in the top bar opens a search over everything Franchisarr knows: the
+collections and franchises you own part of, directors with a page, and every film and show it
+has come across — in your library, in a collection, a franchise, a director's filmography or a
+spin-off list. Results appear as you type and are grouped by kind. Each film or show says
+whether you have it (and on which server), whether Radarr or Sonarr already has it, or whether
+it's missing or not out yet, and links to the pages it belongs to; missing ones have **Add** and
+**Not interested**. Case, accents and punctuation don't matter: *spiderman* finds *Spider-Man*
+and *amelie* finds *Amélie*. It searches what's already here, not all of TMDb.
 
 ## Playlists
 

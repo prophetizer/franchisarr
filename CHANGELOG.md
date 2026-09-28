@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.36.0] — 2026-09-28
+
+### Added
+
+- **Search.** A magnifying glass in the top bar opens a search over everything Franchisarr
+  knows: collections and franchises you own part of, directors with a page, and every film and
+  show it has met — in the library, a collection, a franchise, a director's filmography or a
+  spin-off list. Results update as you type (the address follows, so a reload or a shared link
+  keeps the search) and are grouped by kind. Each title says whether it's in your library and
+  on which server, already in Radarr/Sonarr or requested, hidden by you, not out yet, or
+  missing, and links to the pages it belongs to; missing ones have Add (administrators) and Not
+  interested. Matching ignores case, accents and punctuation. It's local — no TMDb request per
+  keystroke — and at 20,000 films answers in about a second.
+
 ## [0.35.0] — 2026-09-28
 
 ### Changed
