@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.43.0] — 2026-09-29
+
+### Added
+
+- **Playlist sync works both ways.** A title added to a synced playlist on any server is added
+  on the others at the next sync, after the title it followed; one removed on any server comes
+  off the others. The original's order wins. A title a server can't hold is never read as
+  removed there, and titles only one server can hold (a home video, a library Franchisarr doesn't
+  scan) stay where they are.
+- **Renames follow**: renaming a synced playlist on any server renames it on the others.
+- **Link them** on a copy that's blocked by a same-named playlist: that playlist becomes the copy
+  and the two lists are merged, so titles from either end up in both.
+- **Add** beside a title that couldn't be copied: a film Radarr doesn't have, or an episode's show
+  Sonarr doesn't have, opens the usual add dialog. The page also lists what the original's own
+  server is missing from the others.
+
+### Changed
+
+- Deleting a copy on its server now stops copying there (that server is unticked for the
+  playlist) instead of the copy being made again at the next sync. Deleting the original still
+  deletes its copies.
+- A copy is edited in place rather than deleted and recreated, so it keeps its id and poster.
+- A Plex smart playlist stays one-way: its contents follow its rules.
+
+### Upgrading
+
+- Nothing changes on your playlists by upgrading. The first sync after it treats each synced
+  playlist's original as it stands, as the one-way sync did (so edits made to a copy since the
+  last sync are replaced one last time); from the sync after that, edits on any server count.
+
 ## [0.42.0] — 2026-09-29
 
 ### Added

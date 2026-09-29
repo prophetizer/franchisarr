@@ -182,6 +182,11 @@ class PlexClient:
         for start in range(0, len(items), PLAYLIST_CHUNK):
             playlist.addItems(items[start:start + PLAYLIST_CHUNK])
 
+    def rename_playlist(self, playlist_id: str, title: str) -> None:
+        from urllib.parse import quote
+
+        self.server.query(f"/playlists/{int(playlist_id)}?title={quote(title)}", method=self.server._session.put)
+
     def move_playlist_entry(self, playlist_id: str, entry_id: str, index: int, after: str | None) -> None:
         """Plex places an entry after another one; with none, first."""
         key = f"/playlists/{int(playlist_id)}/items/{int(entry_id)}/move"

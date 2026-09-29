@@ -30,7 +30,6 @@ library Franchisarr doesn't scan can't be matched anywhere, and is reported as s
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import threading
@@ -290,10 +289,6 @@ def exclude(session: Session, server_id: int, playlist_id: str, title: str) -> N
 # ------------------------------------------------------------------ syncing
 
 
-def _fingerprint(title: str, keys: list[str]) -> str:
-    return hashlib.sha1(("\n".join([title, *keys])).encode()).hexdigest()
-
-
 class _Run:
     """What one sync run looks up once and reuses: clients, listings and library maps."""
 
@@ -408,24 +403,184 @@ def _adopt_all(work: _Run) -> None:
     session.commit()
 
 
-def _sync_one(work: _Run, sync: PlaylistSync, defaults: set[int] | None = None) -> None:
+# ------------------------------------------------------------------ two-way (0.43.0)
+#
+# Every synced playlist is its source plus its copies, and each run merges them: whatever was
+# added on any of them since the last sync goes onto the others, and whatever was removed from
+# one comes off the others. "Since the last sync" is what each held after it (`seen`), compared
+# with what it holds now, applied to the list as it was then (`merged`) -- a three-way merge, so
+# a title one server can't hold is never read as removed there. The source decides the order.
+# Titles are tokens that mean the same on every server: see PlaylistSync.merged.
+
+
+def merge(before: list[str], sides: list[tuple[list[str] | None, list[str]]],
+          order: list[str] | None = None) -> list[str]:
+    """The merged list: `before` less what any side removed, plus what any side added -- each
+    placed after the title it followed there -- then the titles `order` holds put in its order.
+    A side is (what it held after the last sync, or None for "unchanged since", what it holds
+    now). The same title added on two sides goes in once."""
+    from collections import Counter
+
+    removed: Counter = Counter()
+    for seen, now in sides:
+        if seen is not None:
+            removed |= Counter(seen) - Counter(now)
+    merged: list[str] = []
+    for token in before:
+        if removed[token] > 0:
+            removed[token] -= 1
+        else:
+            merged.append(token)
+    for seen, now in sides:
+        if seen is None:
+            continue
+        had, count = Counter(seen), Counter()
+        for i, token in enumerate(now):
+            count[token] += 1
+            if count[token] <= had[token] or merged.count(token) >= count[token]:
+                continue
+            at = 0
+            for previous in reversed(now[:i]):
+                if previous in merged:
+                    at = len(merged) - merged[::-1].index(previous)
+                    break
+            merged.insert(at, token)
+    if order:
+        # The slots the source's titles occupy, refilled in the source's order.
+        available = Counter(order)
+        slots = []
+        for i, token in enumerate(merged):
+            if available[token] > 0:
+                available[token] -= 1
+                slots.append(i)
+        taking = Counter(merged[i] for i in slots)
+        in_order = []
+        for token in order:
+            if taking[token] > 0:
+                taking[token] -= 1
+                in_order.append(token)
+        for i, token in zip(slots, in_order):
+            merged[i] = token
+    return merged
+
+
+def _tokens(work: _Run, server_id: int, refs: list) -> tuple[list[str], dict[str, str]]:  # noqa: ANN001
+    """A playlist's entries as tokens, and a title for each."""
+    tokens, titles = [], {}
+    for ref in refs:
+        ids = work.source_ids(server_id, ref) if ref.item_type in ("movie", "episode") else None
+        if ids is not None and ref.item_type == "movie":
+            token = f"m:{ids[1]}"
+        elif ids is not None:
+            token = f"e:{ids[1]}:{ref.season}:{ref.episode}"
+        else:
+            token = f"r:{server_id}:{ref.key}"
+        tokens.append(token)
+        titles.setdefault(token, ref.title or ref.key)
+    return tokens, titles
+
+
+def _place(work: _Run, server_id: int, tokens: list[str], titles: dict[str, str]
+           ) -> tuple[list[tuple[str, object]], list[str], list[dict]]:
+    """What `tokens` are on this server, in order: (key, raw) to write, the tokens that made it,
+    and a note for each that didn't -- with a TMDb id when it's something Radarr or Sonarr could
+    add."""
+    name = work.servers[server_id].name
+    plan: list[tuple[str, str, object]] = []          # (token, "film"/"episode", detail)
+    missing: list[dict] = []
+    for token in tokens:
+        kind, _, rest = token.partition(":")
+        title = titles.get(token, token)
+        if kind == "m":
+            key = work.target_key(server_id, "movie", int(rest))
+            if key is None:
+                missing.append({"title": title, "why": f"not on {name}", "movie": int(rest)})
+            else:
+                plan.append((token, "film", key))
+        elif kind == "e":
+            show, season, number = (int(x) for x in rest.split(":"))
+            key = work.target_key(server_id, "show", show)
+            if key is None:
+                missing.append({"title": title, "why": f"its show isn't on {name}", "show": show})
+            else:
+                plan.append((token, "episode", (key, season, number)))
+        else:
+            home, _, key = rest.partition(":")
+            if int(home) == server_id:
+                plan.append((token, "film", key))
+            else:
+                missing.append({"title": title, "why": "not in a library Franchisarr scans"})
+    films = work.films(server_id, [detail for _, how, detail in plan if how == "film"])
+    wanted, placed = [], []
+    for token, how, detail in plan:
+        if how == "film":
+            raw = films.get(detail)
+            if raw is None and token.startswith("r:"):
+                # Only its own server holds it (a home video, a library we don't scan), so it's
+                # already in this playlist: keep its place even if it can't be looked up again.
+                # edit_in_place never needs to add it, so it needs no raw.
+                wanted.append((detail, None))
+                placed.append(token)
+                continue
+            if raw is None:
+                missing.append({"title": titles.get(token, token), "why": f"no longer on {name}"})
+                continue
+            wanted.append((detail, raw))
+        else:
+            key, season, number = detail
+            entry = work.episodes(server_id, key).get((season, number))
+            if entry is None:
+                missing.append({"title": titles.get(token, token), "why": f"episode not on {name}"})
+                continue
+            wanted.append((entry.key or "", entry.raw))
+        placed.append(token)
+    return wanted, placed, missing
+
+
+def _json(value) -> str | None:  # noqa: ANN001
+    return json.dumps(value) if value else None
+
+
+def _loads(raw: str | None) -> list | None:
+    return None if raw is None else json.loads(raw)
+
+
+def _sync_one(work: _Run, sync: PlaylistSync, defaults: set[int] | None = None) -> None:  # noqa: C901
+    from app.clients.media_server import edit_in_place
+
     session = work.session
     copies = {c.target_server_id: c for c in session.exec(
         select(PlaylistCopy).where(col(PlaylistCopy.sync_id) == sync.id)).all()}
     if sync.source_server_id not in work.servers:
         return          # its home server is turned off: leave everything as it is
+    source_id = sync.source_server_id
     try:
-        source_listing = work.listing(sync.source_server_id)
+        source_listing = work.listing(source_id)
     except Exception as exc:  # noqa: BLE001
-        _error(f"{sync.title}: {work.servers[sync.source_server_id].name} couldn't be reached ({type(exc).__name__})")
+        _error(f"{sync.title}: {work.servers[source_id].name} couldn't be reached ({type(exc).__name__})")
         return
     info = next((p for p in source_listing if p.id == sync.source_playlist_id), None)
     if info is None:
         _source_gone(work, sync, copies)
         return
-    sync.title = info.title
-    refs = work.client(sync.source_server_id).playlist_items(info.id)
-    poster: bytes | None | bool = False      # fetched once, only if a copy is being written
+
+    # A copy someone deleted: stop copying there (michael, 0.43.0). Only a copy that exists by
+    # id can be deleted; one never made, or taken away for having nothing to hold, has no id.
+    for server_id, copy in list(copies.items()):
+        if server_id not in work.servers or not copy.target_playlist_id:
+            continue
+        try:
+            listing = work.listing(server_id)
+        except Exception:  # noqa: BLE001 -- unreachable says nothing about a deletion
+            continue
+        if all(p.id != copy.target_playlist_id for p in listing):
+            logger.info("The copy of %r on %s was deleted there; not copying there any more",
+                        sync.title, work.servers[server_id].name)
+            others = set(work.servers) - {source_id}
+            keep = allowed(sync, defaults)
+            sync.targets = json.dumps(sorted((others if keep is None else keep) - {server_id}))
+            session.delete(copy)
+            del copies[server_id]
 
     to = allowed(sync, defaults)
     # A server unticked for this playlist: delete the copy sync made there (michael, 0.41.0).
@@ -440,56 +595,121 @@ def _sync_one(work: _Run, sync: PlaylistSync, defaults: set[int] | None = None) 
             except Exception as exc:  # noqa: BLE001
                 _error(f"{info.title}: couldn't remove the copy on {work.servers[server_id].name} ({type(exc).__name__})")
 
+    # Who's taking part this time: the source, and each copy that exists and can be read.
+    members: dict[int, PlaylistCopy] = {}
+    for server_id, copy in copies.items():
+        if server_id in work.servers and copy.target_playlist_id and copy.status != "blocked":
+            try:
+                work.listing(server_id)
+                members[server_id] = copy
+            except Exception:  # noqa: BLE001 -- reported below when it's written to
+                pass
+
+    # A rename anywhere follows by id: the source's first, else a copy's (michael, 0.43.0).
+    titles_now = {source_id: info.title}
+    for server_id, copy in members.items():
+        found = next((p for p in work.listing(server_id) if p.id == copy.target_playlist_id), None)
+        if found is not None:
+            titles_now[server_id] = found.title
+    renamed = [t for sid, t in titles_now.items() if t != sync.title]
+    title = info.title if info.title != sync.title else (renamed[0] if renamed else sync.title)
+
+    # Read everyone, merge.
+    source_refs = work.client(source_id).playlist_items(info.id)
+    source_now, titles = _tokens(work, source_id, source_refs)
+    before = _loads(sync.merged)
+    two_way = not info.smart            # a smart playlist's contents follow its rules: one-way
+    sides: list[tuple[list[str] | None, list[str]]] = [(_loads(sync.source_seen) if before is not None else None,
+                                                        source_now)]
+    now_by_server: dict[int, list[str]] = {}
+    for server_id, copy in members.items():
+        try:
+            refs = work.client(server_id).playlist_items(copy.target_playlist_id)
+        except Exception as exc:  # noqa: BLE001
+            _error(f"{title} → {work.servers[server_id].name}: {type(exc).__name__}")
+            continue
+        tokens, more = _tokens(work, server_id, refs)
+        for token, name in more.items():
+            titles.setdefault(token, name)
+        now_by_server[server_id] = tokens
+        sides.append((_loads(copy.seen), tokens))
+    if before is None or not two_way:
+        # The first sync since 0.43.0, or a smart source: the source as it stands, as the
+        # one-way sync did -- so upgrading changes nobody's playlist. (Linking sets `merged`.)
+        merged = list(source_now)
+    else:
+        merged = merge(before, sides, source_now)
+
+    # Write the source back if the merge changed it.
+    try:
+        if two_way:
+            wanted, placed, missing = _place(work, source_id, merged, titles)
+            if edit_in_place(work.client(source_id), info.id, wanted):
+                _bump("updated")
+        else:
+            placed, missing = source_now, []
+        if title != info.title:
+            work.client(source_id).rename_playlist(info.id, title)
+        sync.source_seen = json.dumps(placed)
+        sync.source_unmatched = len(missing)
+        sync.source_unmatched_titles = _json(missing[:UNMATCHED_KEEP])
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Writing %r back to %s failed", title, work.servers[source_id].name)
+        _error(f"{title} on {work.servers[source_id].name}: {type(exc).__name__}")
+
+    poster: bytes | None | bool = False      # fetched once, only if a copy is made
     for server_id in work.servers:
-        if server_id == sync.source_server_id or (to is not None and server_id not in to):
+        if server_id == source_id or (to is not None and server_id not in to):
             continue
         copy = copies.get(server_id) or PlaylistCopy(sync_id=sync.id, target_server_id=server_id)
         session.add(copy)
         target_name = work.servers[server_id].name
         try:
             listing = work.listing(server_id)
-            if any(p.title == info.title and p.id != copy.target_playlist_id for p in listing):
-                copy.status, copy.message = "blocked", f"{target_name} already has a playlist called “{info.title}” that sync didn't make."
+            client = work.client(server_id)
+            exists = copy.target_playlist_id is not None and any(p.id == copy.target_playlist_id for p in listing)
+            if not exists and any(p.title == title for p in listing):
+                copy.status, copy.message = "blocked", f"{target_name} already has a playlist called “{title}” that sync didn't make."
                 _bump("blocked")
                 continue
-            raws, keys, missing = _resolve(work, sync.source_server_id, server_id, refs, target_name)
-            copy.matched, copy.unmatched = len(raws), len(missing)
-            copy.unmatched_titles = json.dumps(missing[:UNMATCHED_KEEP]) if missing else None
-            exists = copy.target_playlist_id is not None and any(p.id == copy.target_playlist_id for p in listing)
-            if not raws:
+            wanted, placed, missing = _place(work, server_id, merged, titles)
+            copy.matched, copy.unmatched = len(placed), len(missing)
+            copy.unmatched_titles = _json(missing[:UNMATCHED_KEEP])
+            if not wanted:
                 if exists:
-                    work.client(server_id).delete_playlist_id(copy.target_playlist_id)
+                    client.delete_playlist_id(copy.target_playlist_id)
                     listing[:] = [p for p in listing if p.id != copy.target_playlist_id]
-                copy.target_playlist_id, copy.fingerprint = None, None
+                copy.target_playlist_id, copy.seen = None, None
                 copy.status, copy.message = "empty", f"None of its titles are on {target_name}."
                 continue
-            fingerprint = _fingerprint(info.title, keys)
-            if exists and copy.fingerprint == fingerprint:
-                copy.status, copy.message = "ok", None
-                _bump("unchanged")
-                continue
-            client = work.client(server_id)
             if exists:
-                client.delete_playlist_id(copy.target_playlist_id)
-                listing[:] = [p for p in listing if p.id != copy.target_playlist_id]
-            new_id = client.create_playlist(info.title, raws)
-            listing.append(replace(info, id=new_id))
-            _bump("updated" if exists else "created")
-            copy.target_playlist_id, copy.fingerprint = new_id, fingerprint
+                changed = edit_in_place(client, copy.target_playlist_id, wanted)
+                if titles_now.get(server_id, title) != title:
+                    client.rename_playlist(copy.target_playlist_id, title)
+                    changed = True
+                _bump("updated" if changed else "unchanged")
+            else:
+                new_id = client.create_playlist(title, [raw for _, raw in wanted])
+                listing.append(replace(info, id=new_id, title=title, smart=False))
+                copy.target_playlist_id = new_id
+                _bump("created")
+                if poster is False:
+                    poster = _poster(work, source_id, info.id)
+                if poster:
+                    try:
+                        client.set_playlist_poster_id(new_id, poster)
+                    except Exception:  # noqa: BLE001 -- a copy without the poster is still a copy
+                        logger.warning("Couldn't copy the poster of %r to %s", title, target_name, exc_info=True)
+            copy.seen = json.dumps(placed)
             copy.status, copy.message = "ok", None
-            if poster is False:
-                poster = _poster(work, sync.source_server_id, info.id)
-            if poster:
-                try:
-                    client.set_playlist_poster_id(new_id, poster)
-                except Exception:  # noqa: BLE001 -- a copy without the poster is still a copy
-                    logger.warning("Couldn't copy the poster of %r to %s", info.title, target_name, exc_info=True)
         except Exception as exc:  # noqa: BLE001
-            logger.exception("Syncing %r to %s failed", info.title, target_name)
+            logger.exception("Syncing %r to %s failed", title, target_name)
             copy.status, copy.message = "error", f"{target_name} refused or couldn't be reached ({type(exc).__name__})."
-            _error(f"{info.title} → {target_name}: {type(exc).__name__}")
+            _error(f"{title} → {target_name}: {type(exc).__name__}")
         finally:
             copy.synced_at = datetime.now(timezone.utc)
+    sync.title = title
+    sync.merged = json.dumps(merged)
     sync.last_synced_at = datetime.now(timezone.utc)
 
 
@@ -501,45 +721,32 @@ def _poster(work: _Run, server_id: int, playlist_id: str) -> bytes | None:
         return None
 
 
-def _resolve(work: _Run, source_id: int, target_id: int, refs: list, target_name: str
-             ) -> tuple[list, list[str], list[str]]:
-    """The target's items for `refs`, in order: (raw items, their keys, titles not matched)."""
-    missing: list[str] = []
-    plan: list[tuple[str, object]] = []      # ("film", key) or ("episode", (show_key, season, episode))
-    for ref in refs:
-        if ref.item_type == "other":
-            missing.append(f"{ref.title} (not a film or episode)")
-            continue
-        ids = work.source_ids(source_id, ref)
-        if ids is None:
-            missing.append(f"{ref.title} (not in a library Franchisarr scans)")
-            continue
-        kind, tmdb_id = ids
-        key = work.target_key(target_id, kind, tmdb_id)
-        if key is None:
-            missing.append(f"{ref.title} (not on {target_name})")
-            continue
-        plan.append(("film", key) if ref.item_type == "movie" else ("episode", (key, ref.season, ref.episode, ref.title)))
+def link(session: Session, copy_id: int) -> str | None:
+    """"Link them" on a blocked copy: take the same-named playlist on that server as the copy,
+    and merge the two lists at the next sync -- titles from either end up in both (michael,
+    0.43.0). Returns an error to show, or None."""
+    from app.services import media_server_service
 
-    films = work.films(target_id, [k for kind, k in plan if kind == "film"])
-    raws, keys = [], []
-    for kind, value in plan:
-        if kind == "film":
-            raw = films.get(value)
-            if raw is None:
-                missing.append(f"{value} (no longer on {target_name})")
-                continue
-            raws.append(raw)
-            keys.append(value)
-        else:
-            show_key, season, number, title = value
-            entry = work.episodes(target_id, show_key).get((season, number))
-            if entry is None:
-                missing.append(f"{title} (episode not on {target_name})")
-                continue
-            raws.append(entry.raw)
-            keys.append(entry.key or "")
-    return raws, keys, missing
+    copy = session.get(PlaylistCopy, copy_id)
+    sync = session.get(PlaylistSync, copy.sync_id) if copy else None
+    if copy is None or sync is None or copy.status != "blocked":
+        return "That copy isn't blocked any more."
+    server = session.get(MediaServer, copy.target_server_id)
+    listing = media_server_service.client_for(server).list_playlists()
+    found = [p for p in listing if p.title == sync.title and p.id != copy.target_playlist_id]
+    if not found:
+        return f"{server.name} has no playlist called “{sync.title}” now."
+    if found[0].smart:
+        return f"“{sync.title}” on {server.name} is a smart playlist: its contents follow its rules, so it can't be linked."
+    copy.target_playlist_id, copy.seen = found[0].id, "[]"
+    copy.status, copy.message = "ok", "Linked — the two lists are merged at the next sync."
+    if sync.merged is None:
+        sync.merged, sync.source_seen = "[]", "[]"   # so the source's own titles count as its own
+    session.add(copy)
+    session.add(sync)
+    session.commit()
+    logger.info("Linked %r on %s to its sync", sync.title, server.name)
+    return None
 
 
 def _source_gone(work: _Run, sync: PlaylistSync, copies: dict[int, PlaylistCopy]) -> None:
@@ -709,7 +916,8 @@ def summary(session: Session) -> Summary:
     return Summary(
         syncing=len(enabled_ids), kept=len(kept_ids),
         last=session.exec(select(PlaylistSyncRun).order_by(col(PlaylistSyncRun.id).desc())).first(),
-        missing=sum(c.unmatched for c in copies if c.status == "ok"),
+        missing=sum(c.unmatched for c in copies if c.status == "ok")
+        + sum(s.source_unmatched for s in session.exec(select(PlaylistSync).where(col(PlaylistSync.enabled) == True)).all()),  # noqa: E712
         blocked=sum(1 for c in copies if c.status == "blocked"),
         problems=sum(1 for c in copies if c.status == "error") + kept_errors,
     )

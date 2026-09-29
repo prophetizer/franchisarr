@@ -673,9 +673,13 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 .playlist-bulk fieldset label { display: block; }
 
 /* Playlists page (playlist sync). */
-.sync-meta { display: flex; flex-direction: column; gap: 0.25rem; }
+/* It shrinks and wraps: .film-meta doesn't, and a long "blocked" message ran off a phone. */
+.sync-meta { display: flex; flex-direction: column; gap: 0.25rem; flex: 1 1 16rem; min-width: 0; }
 .sync-copy--blocked, .sync-copy--error { color: var(--pico-del-color); }
 .sync-copy details { margin: 0; }
+.sync-copy button, .sync-missing button { width: auto; margin: 0 0 0 0.5rem; padding: 0.1rem 0.6rem; font-size: 0.8rem; }
+.sync-missing { margin: 0.25rem 0 0; }
+.sync-missing li { list-style: none; margin-bottom: 0.25rem; }
 .sync-now button { width: auto; margin-right: 0.75rem; }
 
 /* Playlists page (0.42.0): status line, schedule and tabs above every tab. */

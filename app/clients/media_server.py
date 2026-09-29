@@ -199,15 +199,18 @@ def _edit_once(client, playlist_id: str, wanted: list[tuple[str, object]]) -> bo
         return False
     if not getattr(client, "can_move_playlist_entries", True):
         # Keep what's already in order at the front; remove everything after it, then add the
-        # rest in order. Adding a new film at the end -- the usual case -- removes nothing.
+        # rest in order. Adding a new film at the end -- the usual case -- removes nothing. A
+        # title with no raw (one that can't be looked up again) can't be put back, so if the
+        # tail holds one, only what's unwanted comes off and what's new goes on the end.
         same = 0
         while same < min(len(current), len(want_keys)) and current[same][1] == want_keys[same]:
             same += 1
-        if current[same:]:
-            client.remove_playlist_entries(playlist_id, [entry_id for entry_id, _ in current[same:]])
-        if wanted[same:]:
-            client.append_to_playlist(playlist_id, [raw for _, raw in wanted[same:]])
-        return True
+        if all(raw is not None for _, raw in wanted[same:]):
+            if current[same:]:
+                client.remove_playlist_entries(playlist_id, [entry_id for entry_id, _ in current[same:]])
+            if wanted[same:]:
+                client.append_to_playlist(playlist_id, [raw for _, raw in wanted[same:]])
+            return True
     needed: dict[str, int] = {}
     for key in want_keys:
         needed[key] = needed.get(key, 0) + 1
@@ -228,7 +231,7 @@ def _edit_once(client, playlist_id: str, wanted: list[tuple[str, object]]) -> bo
     for key, raw in wanted:
         if have.get(key, 0) > 0:
             have[key] -= 1
-        else:
+        elif raw is not None:
             add.append(raw)
     if add:
         client.append_to_playlist(playlist_id, add)
@@ -236,6 +239,8 @@ def _edit_once(client, playlist_id: str, wanted: list[tuple[str, object]]) -> bo
     # then walk the wanted order, moving whatever is out of place to where it belongs. Emby 4.10
     # sometimes lists an addition a moment late (measured 2026-09-29: two runs in five), and
     # ordering a list that's missing it leaves it at the end -- so wait until it's there.
+    if not getattr(client, "can_move_playlist_entries", True):
+        return True            # the tail couldn't be rewritten (see above): the order stays
     entries = [(ref.entry_id, ref.key) for ref in client.playlist_items(playlist_id)]
     for _ in range(SETTLE_TRIES):
         if len(entries) >= len(keep) + len(add):

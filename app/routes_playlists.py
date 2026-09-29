@@ -127,9 +127,29 @@ def playlists_page(request: Request, session: DbSession, user: AdminUser):
     from app.services import media_server_service, playlist_sync
 
     servers = media_server_service.enabled_servers(session)
+    from app.services.movie_gap_service import radarr_known_ids
+    from app.services.tv_spinoff_service import sonarr_known_ids
+
     return _page(request, session, user, "playlists.html", "sync",
                  servers=playlist_sync.page(session), several=len(servers) > 1, all_servers=servers,
-                 defaults=playlist_sync.default_targets(session), sync_all=playlist_sync.sync_all(session))
+                 defaults=playlist_sync.default_targets(session), sync_all=playlist_sync.sync_all(session),
+                 radarr_ids=radarr_known_ids(session), sonarr_ids=sonarr_known_ids(session))
+
+
+@router.post("/playlists/copies/{copy_id}/link")
+def link_copy(request: Request, session: DbSession, user: AdminUser, copy_id: int):
+    """"Link them" on a blocked copy (htmx): link it, start a sync, and reload the page."""
+    from fastapi.responses import Response
+
+    from app.services import playlist_sync
+
+    problem = playlist_sync.link(session, copy_id)
+    if problem is None:
+        playlist_sync.run_in_background("linked")
+    back = _back("sync", problem, saved=problem is None)
+    if request.headers.get("HX-Request") == "true":
+        return Response(status_code=200, headers={"HX-Redirect": back.headers["location"]})
+    return back
 
 
 @router.post("/playlists/save")

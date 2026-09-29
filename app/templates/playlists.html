@@ -1,8 +1,35 @@
 {% extends "playlists_base.html" %}
 
 {% block tab_content %}
-<p>Tick the playlists to copy from their server to your others. A copy has the same name and, when the
-  playlist has its own poster, the same poster; edits to a copy are replaced at the next sync.</p>
+{#- What couldn't be copied, with Add for a film or show Radarr or Sonarr doesn't have yet
+    (0.43.0). Entries before 0.43.0 are plain strings. Buttons, not a form: this sits inside the
+    checklist's form. -#}
+{% macro missing_list(count, raw, label) %}
+  {% if count and raw %}
+    <details><summary>{{ count }} {{ label }}</summary>
+      <ul class="sync-missing">
+        {% for t in raw | fromjson %}
+          {% if t is mapping %}
+            <li>{{ t.title }} <small class="muted">({{ t.why }})</small>
+              {% if t.movie and t.movie not in radarr_ids %}
+                <button type="button" class="secondary outline" hx-get="{{ url('/add/' ~ t.movie) }}"
+                        hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
+              {% elif t.show and t.show not in sonarr_ids %}
+                <button type="button" class="secondary outline" hx-get="{{ url('/shows/add/' ~ t.show) }}"
+                        hx-target="#add-show-dialog" hx-swap="innerHTML">Add show</button>
+              {% endif %}</li>
+          {% else %}
+            <li>{{ t }}</li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+    </details>
+  {% endif %}
+{% endmacro %}
+<p>Tick the playlists to keep in step across your servers. It works both ways: a title added to or
+  removed from the playlist on any server is added to or removed from it on the others at the next
+  sync; a rename on any of them renames the rest, and the order follows the original. A copy starts
+  with the same name and, when the playlist has its own poster, the same poster.</p>
 
 {% if not several %}
   <p class="notice-warn">Syncing needs a second media server that's switched on.
@@ -42,7 +69,7 @@
             <li class="film-row" data-title="{{ row.title | lower }}" x-show="!q || $el.dataset.title.includes(q.toLowerCase())">
               {% if row.copy_of %}
                 <span class="film-title">{{ row.title }}
-                  <small class="muted">copy of “{{ row.copy_of[0] }}” from {{ row.copy_of[1] }}</small></span>
+                  <small class="muted">synced with “{{ row.copy_of[0] }}” on {{ row.copy_of[1] }}</small></span>
               {% else %}
                 {% set own = row.targets() %}
                 <input type="hidden" name="row" value="{{ k }}">
@@ -72,18 +99,22 @@
                 {% if row.syncing %}
                   <span class="film-meta sync-meta">
                     {% if not row.copies %}<small class="muted">Copies are made at the next sync.</small>{% endif %}
+                    {% if row.sync.source_unmatched %}
+                      <small class="sync-copy">← {{ entry.server.name }}:
+                        {{ missing_list(row.sync.source_unmatched, row.sync.source_unmatched_titles,
+                                        ("title" if row.sync.source_unmatched == 1 else "titles") ~ " from the others not here") }}</small>
+                    {% endif %}
                     {% for name, copy in row.copies %}
                       <small class="sync-copy sync-copy--{{ copy.status }}">
                         → {{ name }}:
-                        {% if copy.status == 'ok' %}{{ copy.matched }} of {{ copy.matched + copy.unmatched }} titles
+                        {% if copy.status == 'ok' %}{{ copy.matched }} of {{ copy.matched + copy.unmatched }} titles{% if copy.message %} · {{ copy.message }}{% endif %}
                         {%- elif copy.status == 'blocked' %}blocked — {{ copy.message }}
+                          <button type="button" class="secondary outline" hx-post="{{ url('/playlists/copies/' ~ copy.id ~ '/link') }}"
+                                  hx-confirm="Link them? Titles from both lists end up in both, and they're kept in step from then on."
+                                  title="Treat that playlist as the copy and merge the two lists">Link them</button>
                         {%- elif copy.status == 'empty' %}{{ copy.message }}
                         {%- else %}{{ copy.message or 'not synced yet' }}{% endif %}
-                        {% if copy.unmatched and copy.unmatched_titles %}
-                          <details><summary>{{ copy.unmatched }} not copied</summary>
-                            <ul>{% for t in copy.unmatched_titles | fromjson %}<li>{{ t }}</li>{% endfor %}</ul>
-                          </details>
-                        {% endif %}
+                        {{ missing_list(copy.unmatched, copy.unmatched_titles, "not copied") }}
                       </small>
                     {% endfor %}
                   </span>
@@ -95,11 +126,15 @@
       {% endif %}
     </section>
   {% endfor %}
-  <p><small class="muted">Unticking a server deletes the copy sync made there; unticking a playlist
+  <p><small class="muted">Unticking a server deletes the copy sync made there, and deleting a copy on
+    its server unticks that server; deleting the original deletes its copies. Unticking a playlist
     stops syncing it and leaves its copies as ordinary playlists. A playlist of the same name that
-    sync didn't make is never touched. Music and photo playlists, and Franchisarr's own (see
+    sync didn't make is never touched unless you link it. A Plex smart playlist follows its rules, so
+    it's copied as it stands, one way. Music and photo playlists, and Franchisarr's own (see
     <a href="{{ url('/playlists/franchisarr') }}">Franchisarr's</a>), aren't listed.</small></p>
   <button type="submit" class="sync-save">Save and sync</button>
 </form>
+<div id="add-dialog"></div>
+<div id="add-show-dialog"></div>
 {% endif %}
 {% endblock %}

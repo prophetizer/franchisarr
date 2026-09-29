@@ -308,6 +308,14 @@ class EmbyLikeClient:
             chunk = ",".join(str(i) for i in items[start:start + PLAYLIST_CHUNK])
             self._send("POST", f"/Playlists/{playlist_id}/Items", params={"Ids": chunk, "UserId": user})
 
+    def rename_playlist(self, playlist_id: str, title: str) -> None:
+        """Both take the item back whole with the new name (/Items/{id}); Jellyfin 12.1 refuses
+        its own /Playlists/{id} update with an API key (measured 2026-09-29)."""
+        item = self._get(f"/Users/{self.watched_user_id()}/Items/{playlist_id}")
+        if not isinstance(item, dict):
+            raise EmbyClientError(f"{self.label} didn't return the playlist")
+        self._send("POST", f"/Items/{playlist_id}", json={**item, "Name": title})
+
     def move_playlist_entry(self, playlist_id: str, entry_id: str, index: int, after: str | None) -> None:
         """Jellyfin and Emby place an entry at an index."""
         self._send("POST", f"/Playlists/{playlist_id}/Items/{entry_id}/Move/{int(index)}")

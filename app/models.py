@@ -708,9 +708,18 @@ class PlaylistSync(SQLModel, table=True):
     #: Made by "sync every playlist" rather than by someone pressing Sync; turning that switch
     #: off removes these (their copies stay).
     auto: bool = Field(default=False)
-    #: JSON list of the servers that get a copy. None: every other server that's on, including
-    #: ones added later (michael's call, 0.41.0).
+    #: JSON list of the servers that get a copy. None: the default servers (every other one
+    #: that's on unless the page narrows it), including ones added later (0.41.0, 0.42.0).
     targets: str | None = Field(default=None)
+    #: Two-way sync (0.43.0): the merged list after the last sync, as tokens ("m:<tmdb>" a
+    #: film, "e:<show tmdb>:<season>:<episode>" an episode, "r:<server>:<key>" anything only
+    #: its own server can hold). None until the first two-way sync.
+    merged: str | None = Field(default=None)
+    #: What the source itself held after the last sync (tokens), to tell its edits from ours.
+    source_seen: str | None = Field(default=None)
+    #: Titles on the merged list the source's server doesn't have, like a copy's.
+    source_unmatched: int = Field(default=0)
+    source_unmatched_titles: str | None = Field(default=None)
 
 
 class PlaylistSyncRun(SQLModel, table=True):
@@ -803,6 +812,10 @@ class PlaylistCopy(SQLModel, table=True):
     message: str | None = Field(default=None)
     matched: int = Field(default=0)
     unmatched: int = Field(default=0)
-    #: JSON list of the titles that couldn't be matched, the first few dozen.
+    #: JSON list of the titles that couldn't be matched, the first few dozen: {"title", "why"}
+    #: and "movie" or "show" with a TMDb id when one could be added (0.43.0; plain strings before).
     unmatched_titles: str | None = Field(default=None)
+    #: What this copy held after the last sync (tokens, as PlaylistSync.merged), so an edit
+    #: made on it can be told apart; None for one made before 0.43.0 ("no edits since").
+    seen: str | None = Field(default=None)
     synced_at: datetime | None = Field(default=None)
