@@ -55,11 +55,6 @@
                         title="Turn every other server off until you turn them back on">Use only this</button>
               </form>
             {% endif %}
-            {% if server.enabled %}
-              <button class="secondary outline" title="Delete the playlists Franchisarr made on this server"
-                      hx-get="{{ url('/playlists/delete?server=' ~ server.id) }}"
-                      hx-target="#playlists-{{ server.id }}" hx-swap="innerHTML">Delete playlists</button>
-            {% endif %}
             <button type="button" class="secondary outline" @click="editing = !editing">Edit</button>
             <form method="post" action="{{ url('/media-servers/' ~ server.id ~ '/delete') }}" class="nav-form"
                   onsubmit="return confirm('Remove {{ server.name | e }} and everything scanned from it?')">
@@ -68,7 +63,6 @@
           {% endif %}
         </span>
         <span id="test-result-{{ server.id }}" class="test-result"></span>
-        <div id="playlists-{{ server.id }}" class="playlist-delete-slot"></div>
         {% if user.is_admin %}
           <form method="post" action="{{ url('/media-servers/' ~ server.id) }}" x-show="editing" x-cloak class="server-edit">
             <label>Name <input type="text" name="name" value="{{ server.name }}" required></label>
@@ -89,13 +83,26 @@
       </li>
     {% endfor %}
   </ul>
-  {% if user.is_admin and servers | selectattr('enabled') | list | length > 1 %}
-    <p class="playlist-delete-all">
-      <button class="secondary outline" hx-get="{{ url('/playlists/delete?server=all') }}"
-              hx-target="#playlists-all" hx-swap="innerHTML"
-              title="Delete the playlists Franchisarr made, on every server that's on">Delete playlists on every server</button>
-    </p>
-    <div id="playlists-all" class="playlist-delete-slot"></div>
+  {% set on = servers | selectattr('enabled') | list %}
+  {% if user.is_admin and on %}
+    <article id="bulk" class="bulk-actions">
+      <header><strong>Playlists: bulk actions</strong></header>
+      <label>On
+        <select id="bulk-server" name="server">
+          {% if on | length > 1 %}<option value="all">every server</option>{% endif %}
+          {% for s in on %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <div class="bulk-buttons">
+        <button hx-get="{{ url('/playlists/add-all') }}" hx-include="#bulk-server"
+                hx-target="#bulk-panel" hx-swap="innerHTML">Add playlists…</button>
+        <button class="secondary outline" hx-get="{{ url('/playlists/delete?scope=ours') }}" hx-include="#bulk-server"
+                hx-target="#bulk-panel" hx-swap="innerHTML">Delete Franchisarr's playlists…</button>
+        <button class="secondary outline" hx-get="{{ url('/playlists/delete?scope=all') }}" hx-include="#bulk-server"
+                hx-target="#bulk-panel" hx-swap="innerHTML">Delete all playlists…</button>
+      </div>
+      <div id="bulk-panel">{% if bulk.running or bulk.finished_at %}{% with form = false %}{% include "partials/playlist_bulk.html" %}{% endwith %}{% endif %}</div>
+    </article>
   {% endif %}
 {% else %}
   <p class="muted">No media server configured yet.</p>

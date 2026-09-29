@@ -17,7 +17,7 @@ from app.auth.dependencies import AdminUser, DbSession
 from app.clients.media_server import MediaServerError, MediaServerKind
 from app.config import get_settings
 from app.logging_config import mask_secret
-from app.services import media_server_service
+from app.services import media_server_service, playlist_bulk
 from app.templating import get_templates
 
 logger = logging.getLogger(__name__)
@@ -65,6 +65,7 @@ def media_servers_page(
             "user": user,
             "servers": servers,
             "several": len(servers) > 1,
+            "bulk": playlist_bulk.current(),
             "kinds": KINDS,
             "saved": saved,
             "error": error,

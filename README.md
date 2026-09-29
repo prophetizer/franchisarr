@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.36.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.37.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -239,10 +239,17 @@ out. With more than one server the button becomes a row — **On every server**,
   (Servers page), which is the first administrator unless you've set one.
 - The order is release order. Nothing records story order (where *Rogue One* sits in the saga),
   so that isn't offered.
-- To clear them out, the Servers page has **Delete playlists** on each server and **Delete
-  playlists on every server**. Both first list exactly which playlists would go and ask you to
-  confirm with a button that says how many. Only playlists named "… (Franchisarr)" are ever
-  deleted; ones you made yourself are left alone.
+- **Bulk actions** on the Servers page work on one server or every server at once:
+  - **Add playlists** makes one for every franchise, collection and/or director you tick, in
+    the background with progress and a Stop button. A set with fewer than two titles on a server
+    is skipped there, and an existing playlist is rebuilt.
+  - **Delete Franchisarr's playlists** removes only playlists named "… (Franchisarr)".
+  - **Delete all playlists** removes every playlist in the account Franchisarr uses (on Plex
+    the token's owner; on Jellyfin and Emby the *watched as* user), including ones made by
+    hand, and needs **DELETE** typed. Jellyfin and Emby don't say who owns a playlist, so one
+    shared with that account may be listed too.
+
+  Both deletes list exactly what would go before anything is deleted.
 
 ## Calendar
 

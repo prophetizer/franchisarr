@@ -59,6 +59,8 @@ class PlaylistResult:
     unsupported: int = 0
     #: The one server this was built on, when it was asked for one; None for every server.
     only: str | None = None
+    #: Servers left out because they held fewer than `min_items` of the titles.
+    skipped: int = 0
 
     @property
     def made_any(self) -> bool:
@@ -117,7 +119,8 @@ def order_entries(entries: list) -> list:  # noqa: ANN001 - PlaylistEntry
 
 
 def build(session: Session, name: str, refs: list[tuple[str, int]],
-          art: PosterArt | None = None, *, server_id: int | None = None) -> PlaylistResult:
+          art: PosterArt | None = None, *, server_id: int | None = None,
+          min_items: int = 1) -> PlaylistResult:
     """Build (or rebuild) the playlist for `name` from the owned (item_type, tmdb_id) pairs,
     and give it a poster made from `art`. On every server that holds some of them, or only on
     `server_id`."""
@@ -133,6 +136,10 @@ def build(session: Session, name: str, refs: list[tuple[str, int]],
             continue
         server = session.get(MediaServer, held_by)
         if server is None or not server.enabled:
+            continue
+        if len(items) < min_items:
+            # Bulk add: a playlist of one film isn't worth making (michael's call, 0.37.0).
+            result.skipped += 1
             continue
         outcome = ServerResult(server=server.name)
         result.servers.append(outcome)
@@ -229,16 +236,19 @@ def _chosen(session: Session, server_id: int | None) -> list[MediaServer]:
     return [s for s in targets(session) if server_id is None or s.id == server_id]
 
 
-def ours(session: Session, server_id: int | None = None) -> list[ServerPlaylists]:
+def ours(session: Session, server_id: int | None = None, *, everything: bool = False) -> list[ServerPlaylists]:
     """What deleting would remove, for the confirmation: every playlist named
-    "... (Franchisarr)", on one server or all of them. Nothing else is ever listed."""
+    "... (Franchisarr)", on one server or all of them -- or, with `everything`, every playlist in
+    the account Franchisarr uses there (the Plex token's owner, the Jellyfin/Emby "watched as"
+    user), the ones people made themselves included. Nobody else's are ever listed."""
     from app.services import media_server_service
 
     found = []
     for server in _chosen(session, server_id):
         entry = ServerPlaylists(server=server.name)
         try:
-            entry.titles = media_server_service.client_for(server).playlists_ending(SUFFIX)
+            client = media_server_service.client_for(server)
+            entry.titles = sorted(client.playlist_titles()) if everything else client.playlists_ending(SUFFIX)
         except Exception as exc:  # noqa: BLE001 -- shown in the confirmation, logged in full
             logger.exception("Couldn't list playlists on %s", server.name)
             entry.error = f"Couldn't be reached ({type(exc).__name__})."
@@ -246,17 +256,21 @@ def ours(session: Session, server_id: int | None = None) -> list[ServerPlaylists
     return found
 
 
-def delete_ours(session: Session, server_id: int | None = None) -> list[ServerPlaylists]:
+def delete_ours(session: Session, server_id: int | None = None, *, everything: bool = False) -> list[ServerPlaylists]:
     """Delete every Franchisarr playlist on one server or all of them; what went, per server.
-    Only names ending " (Franchisarr)" -- a playlist anyone made by hand is never touched."""
+    Only names ending " (Franchisarr)" -- a playlist anyone made by hand is never touched --
+    unless `everything`, which deletes every playlist in the account Franchisarr uses there and
+    only that account's (see `ours`)."""
     from app.services import media_server_service
 
     done = []
     for server in _chosen(session, server_id):
         entry = ServerPlaylists(server=server.name)
         try:
-            entry.titles = media_server_service.client_for(server).delete_playlists(SUFFIX)
-            logger.info("Deleted %d Franchisarr playlist(s) on %s", len(entry.titles), server.name)
+            client = media_server_service.client_for(server)
+            entry.titles = client.delete_all_playlists() if everything else client.delete_playlists(SUFFIX)
+            logger.info("Deleted %d %splaylist(s) on %s", len(entry.titles),
+                        "" if everything else "Franchisarr ", server.name)
         except Exception as exc:  # noqa: BLE001 -- reported to the admin, logged in full
             logger.exception("Couldn't delete playlists on %s", server.name)
             entry.error = f"The server refused or couldn't be reached ({type(exc).__name__})."

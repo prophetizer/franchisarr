@@ -69,6 +69,8 @@ ADMIN_ONLY = [
     ("post", "/media-servers/1/toggle"), ("post", "/media-servers/1/only"),
     ("post", "/media-servers/1/scan"), ("post", "/media-servers/restore"),
     ("get", "/playlists/delete"), ("post", "/playlists/delete"),
+    ("get", "/playlists/add-all"), ("post", "/playlists/add-all"),
+    ("get", "/playlists/add-all/status"), ("post", "/playlists/add-all/stop"),
     ("post", "/settings/keys"),
 ]
 

@@ -1,0 +1,54 @@
+{# Bulk "Add playlists": the form (`form`), or the job's progress, which polls itself while it
+   runs -- the `every 2s` trigger is dropped from the response once it's finished, which is what
+   ends the polling. #}
+{% if form and not bulk.running %}
+  <article class="playlist-delete playlist-bulk">
+    <header><strong>Add playlists on {{ where }}</strong></header>
+    <form hx-post="{{ url('/playlists/add-all') }}" hx-target="closest .playlist-bulk" hx-swap="outerHTML">
+      <input type="hidden" name="server" value="{{ server }}">
+      <fieldset>
+        <legend>Make a playlist for every…</legend>
+        <label><input type="checkbox" name="kinds" value="franchises"> franchise ({{ counts.franchises }})</label>
+        <label><input type="checkbox" name="kinds" value="collections"> collection ({{ counts.collections }})</label>
+        <label><input type="checkbox" name="kinds" value="directors"> director ({{ counts.directors }})</label>
+      </fieldset>
+      <p><small class="muted">One playlist per set on each server, in release order with its own poster.
+        A set with fewer than two titles on a server is skipped there, and one that already has a
+        playlist gets it rebuilt. Hundreds take a while: it runs in the background, and you can
+        leave this page.</small></p>
+      {% if error %}<p role="alert" class="notice-bad">{{ error }}</p>{% endif %}
+      <div class="playlist-delete-buttons">
+        <button type="submit" hx-disabled-elt="this">Make playlists</button>
+        <button type="button" class="secondary outline" onclick="this.closest('.playlist-bulk').remove()">Cancel</button>
+      </div>
+    </form>
+  </article>
+{% else %}
+  <article class="playlist-delete playlist-bulk"
+           {% if bulk.running %}hx-get="{{ url('/playlists/add-all/status') }}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+    {% if bulk.running %}
+      <header><strong>Making playlists on {{ bulk.where }}…</strong></header>
+      {% if not bulk.total %}
+        <progress></progress>
+        <p><small>Working out which playlists to make…</small></p>
+      {% else %}
+      <progress value="{{ bulk.done }}" max="{{ bulk.total }}"></progress>
+      <p><small>{{ bulk.done }} of {{ bulk.total }}{% if bulk.current %} — now: {{ bulk.current }}{% endif %}.
+        {{ bulk.made }} made, {{ bulk.skipped }} skipped{% if bulk.failed %}, {{ bulk.failed }} failed{% endif %}.
+        Runs in the background; you can leave this page.</small></p>
+      {% endif %}
+      {% if bulk.stopping %}
+        <p class="muted">Stopping after this one…</p>
+      {% else %}
+        <button class="secondary outline" hx-post="{{ url('/playlists/add-all/stop') }}"
+                hx-target="closest .playlist-bulk" hx-swap="outerHTML">Stop</button>
+      {% endif %}
+    {% elif bulk.finished_at %}
+      <header><strong>Playlists on {{ bulk.where }}{{ ' — stopped' if bulk.stopping else '' }}</strong></header>
+      <p role="status" class="notice-good">{{ bulk.made }} playlist{{ '' if bulk.made == 1 else 's' }} made{% if bulk.skipped %},
+        {{ bulk.skipped }} skipped (fewer than two titles on that server){% endif %}{% if bulk.failed %},
+        {{ bulk.failed }} failed{% endif %}.</p>
+      {% for e in bulk.errors %}<p role="alert" class="notice-bad"><small>{{ e }}</small></p>{% endfor %}
+    {% endif %}
+  </article>
+{% endif %}

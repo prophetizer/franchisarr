@@ -140,6 +140,10 @@ class PlexClient:
     def delete_playlists(self, suffix: str) -> list[str]:
         return _delete_playlists(self, suffix)
 
+    def delete_all_playlists(self) -> list[str]:
+        """Every playlist of the token's owner -- theirs alone; Plex keeps each user's apart."""
+        return _delete_playlists(self, "")
+
     def test_connection(self) -> str:
         """Connect and return the server's friendly name. Used by the setup wizard's
         "Test Connection" button in Phase 2."""

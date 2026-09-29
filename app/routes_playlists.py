@@ -8,6 +8,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Form, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse
+from sqlmodel import select
 
 from app.auth.dependencies import AdminUser, DbSession
 from app.models import ItemType
@@ -78,25 +79,109 @@ def director_playlist(request: Request, session: DbSession, user: AdminUser, per
                                                    server_id=_server_id(session, server)))
 
 
-# ---------------------------------------------------------------------- deleting ours
+# ---------------------------------------------------------------------- bulk actions
+#
+# The Servers page's "Bulk actions": add playlists for every franchise/collection/director,
+# delete Franchisarr's, or delete every playlist in the account Franchisarr uses -- each on one
+# server or all of them. Deleting always shows what would go first; deleting *every* playlist
+# (people's own included) also needs DELETE typed, checked here and not only in the page.
+
+
+def _where(session, server_id: int | None) -> str:  # noqa: ANN001
+    if server_id is None:
+        return "every server"
+    from app.models import MediaServer
+
+    return session.get(MediaServer, server_id).name
+
+
+def _scope(raw: str) -> bool:
+    """True for "every playlist", False for Franchisarr's only."""
+    if raw not in ("ours", "all"):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such scope.")
+    return raw == "all"
 
 
 @router.get("/playlists/delete", response_class=HTMLResponse)
 def confirm_delete(request: Request, session: DbSession, user: AdminUser,
-                   server: Annotated[str, Query()] = "all"):
+                   server: Annotated[str, Query()] = "all", scope: Annotated[str, Query()] = "ours"):
     """The warning before anything is deleted: exactly which playlists would go, from where,
     and a button that says how many. Nothing is deleted by this request."""
+    everything = _scope(scope)
     server_id = _server_id(session, server)
-    found = playlist_service.ours(session, server_id)
+    found = playlist_service.ours(session, server_id, everything=everything)
+    return _delete_panel(request, session, found, server_id, everything, confirm=True)
+
+
+def _delete_panel(request, session, found, server_id, everything, *, confirm, error=None):  # noqa: ANN001, ANN202
+    from app.models import MediaServer
+
+    kinds = dict(session.exec(select(MediaServer.name, MediaServer.kind)).all())
     return get_templates().TemplateResponse(request, "partials/playlist_delete.html", {
-        "confirm": True, "found": found, "server": "all" if server_id is None else str(server_id),
-        "total": sum(len(f.titles) for f in found),
+        "confirm": confirm, "found": found, "total": sum(len(f.titles) for f in found),
+        "server": "all" if server_id is None else str(server_id), "scope": "all" if everything else "ours",
+        "everything": everything, "error": error,
+        # Jellyfin/Emby can't say who owns a playlist, so shared ones may be listed (0.37.0).
+        "shared_caveat": everything and any(kinds.get(f.server) != "plex" for f in found if f.titles),
     })
 
 
 @router.post("/playlists/delete", response_class=HTMLResponse)
-def delete_playlists(request: Request, session: DbSession, user: AdminUser, server: Server = "all"):
-    done = playlist_service.delete_ours(session, _server_id(session, server))
-    return get_templates().TemplateResponse(request, "partials/playlist_delete.html", {
-        "confirm": False, "found": done, "total": sum(len(d.titles) for d in done),
+def delete_playlists(request: Request, session: DbSession, user: AdminUser, server: Server = "all",
+                     scope: Annotated[str, Form()] = "ours", confirm: Annotated[str, Form()] = ""):
+    everything = _scope(scope)
+    server_id = _server_id(session, server)
+    if everything and confirm.strip() != "DELETE":
+        # The page won't enable the button without it; this is for anything else that posts.
+        found = playlist_service.ours(session, server_id, everything=True)
+        return _delete_panel(request, session, found, server_id, True, confirm=True,
+                             error="Type DELETE to confirm.")
+    done = playlist_service.delete_ours(session, server_id, everything=everything)
+    return _delete_panel(request, session, done, server_id, everything, confirm=False)
+
+
+@router.get("/playlists/add-all", response_class=HTMLResponse)
+def add_all_form(request: Request, session: DbSession, user: AdminUser, server: Annotated[str, Query()] = "all"):
+    from app.services import playlist_bulk
+
+    server_id = _server_id(session, server)
+    return get_templates().TemplateResponse(request, "partials/playlist_bulk.html", {
+        "form": True, "counts": playlist_bulk.counts(session), "bulk": playlist_bulk.current(),
+        "server": "all" if server_id is None else str(server_id), "where": _where(session, server_id),
     })
+
+
+@router.post("/playlists/add-all", response_class=HTMLResponse)
+def add_all(request: Request, session: DbSession, user: AdminUser, server: Server = "all",
+            kinds: Annotated[list[str], Form()] = []):  # noqa: B006 - FastAPI reads the default
+    from app.services import playlist_bulk
+
+    chosen = [k for k in kinds if k in playlist_bulk.KINDS]
+    server_id = _server_id(session, server)
+    if not chosen:
+        return get_templates().TemplateResponse(request, "partials/playlist_bulk.html", {
+            "form": True, "counts": playlist_bulk.counts(session), "bulk": playlist_bulk.current(),
+            "server": server, "where": _where(session, server_id), "error": "Pick at least one kind.",
+        })
+    playlist_bulk.run_in_background(chosen, server_id, _where(session, server_id))
+    return _bulk_status(request)
+
+
+def _bulk_status(request: Request) -> HTMLResponse:
+    from app.services import playlist_bulk
+
+    return get_templates().TemplateResponse(request, "partials/playlist_bulk.html",
+                                            {"form": False, "bulk": playlist_bulk.current()})
+
+
+@router.get("/playlists/add-all/status", response_class=HTMLResponse)
+def add_all_status(request: Request, user: AdminUser):
+    return _bulk_status(request)
+
+
+@router.post("/playlists/add-all/stop", response_class=HTMLResponse)
+def add_all_stop(request: Request, user: AdminUser):
+    from app.services import playlist_bulk
+
+    playlist_bulk.stop()
+    return _bulk_status(request)

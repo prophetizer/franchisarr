@@ -1,35 +1,54 @@
-{# Deleting Franchisarr's playlists, in two steps. `confirm`: the warning, listing exactly what
-   would go, with a button that says how many -- nothing has been deleted yet. Otherwise: what
-   was deleted. Only playlists named "... (Franchisarr)" ever appear here. #}
+{# Deleting playlists, in two steps. `confirm`: the warning, listing exactly what would go, with a
+   button that says how many -- nothing has been deleted yet. Otherwise: what was deleted.
+   `everything` is every playlist in the account Franchisarr uses (people's own included), and
+   needs DELETE typed; otherwise only playlists named "... (Franchisarr)" are ever listed. #}
 <article class="playlist-delete">
   {% if confirm %}
+    <header><strong>{{ 'Delete all playlists' if everything else "Delete Franchisarr's playlists" }}</strong></header>
     {% for f in found if f.error %}
       <p role="alert" class="notice-bad">{{ f.server }}: {{ f.error }}</p>
     {% endfor %}
     {% if total == 0 %}
-      <p class="muted">No Franchisarr playlists to delete{% if found | length == 1 %} on {{ found[0].server }}{% endif %}.</p>
+      <p class="muted">No {{ '' if everything else 'Franchisarr ' }}playlists to delete{% if found | length == 1 %} on {{ found[0].server }}{% endif %}.</p>
       <button type="button" class="secondary outline" onclick="this.closest('.playlist-delete').remove()">Close</button>
     {% else %}
       <p role="alert" class="notice-bad">
         <strong>This deletes {{ total }} playlist{{ '' if total == 1 else 's' }}</strong>
-        from {% if found | length == 1 %}{{ found[0].server }}{% else %}{{ found | selectattr('titles') | map(attribute='server') | join(', ') }}{% endif %}.
-        They can't be brought back from here; make one again with “Make a playlist” on its page.
+        from {% if found | length == 1 %}{{ found[0].server }}{% else %}{{ found | selectattr('titles') | map(attribute='server') | join(', ') }}{% endif %}{% if everything %} —
+        every playlist in the account Franchisarr uses there, <strong>including ones you made yourself</strong>{% endif %}.
+        They can't be brought back from here.
       </p>
+      {% if shared_caveat %}
+        <p class="notice-warn"><small>Jellyfin and Emby don't say who owns a playlist, so a playlist someone
+          else shared with that account may be in this list. Check it before you delete.</small></p>
+      {% endif %}
       {% for f in found if f.titles %}
-        <details {% if found | length == 1 %}open{% endif %}>
+        <details {% if found | length == 1 or everything %}open{% endif %}>
           <summary>{{ f.server }}: {{ f.titles | length }}</summary>
           <ul>{% for t in f.titles %}<li>{{ t }}</li>{% endfor %}</ul>
         </details>
       {% endfor %}
-      <p><small class="muted">Only playlists Franchisarr made (named “… (Franchisarr)”) are deleted.
-        Playlists you made yourself are left alone.</small></p>
-      <div class="playlist-delete-buttons">
-        <button type="button" class="playlist-delete-confirm"
-                hx-post="{{ url('/playlists/delete') }}" hx-vals='{"server": "{{ server }}"}'
-                hx-target="closest .playlist-delete" hx-swap="outerHTML" hx-disabled-elt="this">
-          Yes, delete {{ total }} playlist{{ '' if total == 1 else 's' }}</button>
-        <button type="button" class="secondary outline" onclick="this.closest('.playlist-delete').remove()">Cancel</button>
-      </div>
+      {% if not everything %}
+        <p><small class="muted">Only playlists Franchisarr made (named “… (Franchisarr)”) are deleted.
+          Playlists you made yourself are left alone.</small></p>
+      {% endif %}
+      {% if error %}<p role="alert" class="notice-bad">{{ error }}</p>{% endif %}
+      <form hx-post="{{ url('/playlists/delete') }}" hx-target="closest .playlist-delete" hx-swap="outerHTML"
+            x-data="{ typed: '' }">
+        <input type="hidden" name="server" value="{{ server }}">
+        <input type="hidden" name="scope" value="{{ scope }}">
+        {% if everything %}
+          <label>Type <strong>DELETE</strong> to confirm
+            <input type="text" name="confirm" x-model="typed" autocomplete="off" spellcheck="false">
+          </label>
+        {% endif %}
+        <div class="playlist-delete-buttons">
+          <button type="submit" class="playlist-delete-confirm" hx-disabled-elt="this"
+                  {% if everything %}:disabled="typed !== 'DELETE'" disabled{% endif %}>
+            Yes, delete {{ total }} playlist{{ '' if total == 1 else 's' }}</button>
+          <button type="button" class="secondary outline" onclick="this.closest('.playlist-delete').remove()">Cancel</button>
+        </div>
+      </form>
     {% endif %}
   {% else %}
     {% for f in found %}

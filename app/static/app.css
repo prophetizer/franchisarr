@@ -597,8 +597,6 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 .playlist-buttons button { width: auto; margin: 0; }
 
 /* Deleting Franchisarr's playlists (Servers page): the warning, then the result. */
-.playlist-delete-slot { flex-basis: 100%; }
-.playlist-delete-slot:empty { display: none; }
 .playlist-delete { margin: 0.5rem 0; }
 .playlist-delete ul { margin-bottom: 0.5rem; }
 .playlist-delete-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; }
@@ -639,3 +637,9 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 .nav-search svg { vertical-align: middle; }
 .search-status--missing { color: var(--pico-primary); }
 .search-links { margin: 0.25rem 0 0; }
+
+/* Servers page: playlist bulk actions. */
+.bulk-actions select { width: auto; }
+.bulk-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
+.bulk-buttons button { width: auto; margin: 0; }
+.playlist-bulk fieldset label { display: block; }

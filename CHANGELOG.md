@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.37.0] — 2026-09-28
+
+### Added
+
+- **Playlist bulk actions** on the Servers page, each on one server or every server:
+  - **Add playlists** for every franchise, collection and/or director (ticked, with how many
+    each would make). It runs in the background with a progress bar and a Stop button, and
+    skips a set with fewer than two titles on a server. An existing playlist is rebuilt.
+  - **Delete Franchisarr's playlists**, as before.
+  - **Delete all playlists** in the account Franchisarr uses — the Plex token's owner, or the
+    Jellyfin/Emby *watched as* user — including ones made by hand. It lists every playlist first
+    and needs DELETE typed (checked by the server, not only the page). Jellyfin 12 doesn't say
+    who owns a playlist, so on Jellyfin and Emby a playlist shared with that account may be
+    included, and the warning says so.
+
+### Changed
+
+- The per-server **Delete playlists** buttons moved into Bulk actions.
+
 ## [0.36.0] — 2026-09-28
 
 ### Added

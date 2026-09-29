@@ -290,6 +290,18 @@ class EmbyLikeClient:
                 gone.append(name)
         return sorted(gone)
 
+    def delete_all_playlists(self) -> list[str]:
+        """Every playlist the watched-as user sees (`_playlists` is that user's view, unlike the
+        server-wide listing replace_playlist and delete_playlists use). Jellyfin 12 says nothing
+        about who owns a playlist -- no owner field, and /Playlists/{id} answers 400 -- so one
+        shared with this user can't be told from their own and is included; the confirmation
+        says so, and lists every title first (michael's call, 0.37.0)."""
+        gone = []
+        for playlist in self._playlists():
+            self._send("DELETE", f"/Items/{playlist['Id']}")
+            gone.append(playlist.get("Name", ""))
+        return sorted(gone)
+
     def playlist_counts(self, title: str) -> tuple[int, int, int] | None:
         playlist_id = self._playlist_id(title)
         if playlist_id is None:

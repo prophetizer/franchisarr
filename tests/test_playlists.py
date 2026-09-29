@@ -337,6 +337,12 @@ class _Shelf:
         self.titles = [t for t in self.titles if t not in gone]
         return gone
 
+    def playlist_titles(self):  # noqa: ANN201
+        return list(self.titles)
+
+    def delete_all_playlists(self):  # noqa: ANN201
+        return self.delete_playlists("")
+
 
 def test_deleting_asks_first_then_deletes_one_server_or_all(client: TestClient, monkeypatch) -> None:
     with Session(get_engine()) as session:
@@ -348,8 +354,11 @@ def test_deleting_asks_first_then_deletes_one_server_or_all(client: TestClient, 
     monkeypatch.setattr(media_server_service, "client_for", lambda s: shelves[s.name])
 
     page = client.get(f"{BASE}/media-servers").text
-    assert f'hx-get="{BASE}/playlists/delete?server={attic}"' in page
-    assert "Delete playlists on every server" in page
+    assert 'id="bulk"' in page
+    assert "Add playlists…" in page and "Delete all playlists…" in page and "s playlists…" in page
+    assert f'hx-get="{BASE}/playlists/delete?scope=ours"' in page and 'hx-include="#bulk-server"' in page
+    assert f'<option value="{attic}">Attic</option>' in page and '<option value="all">every server</option>' in page
+    assert "Delete playlists</button>" not in page, "the per-server buttons moved into Bulk actions"
 
     warning = client.get(f"{BASE}/playlists/delete?server={attic}").text
     assert "This deletes 2 playlists" in warning and "Star Wars (Franchisarr)" in warning
@@ -374,6 +383,112 @@ def test_an_unreachable_server_is_named_in_the_warning(client: TestClient, monke
     warning = client.get(f"{BASE}/playlists/delete?server=all").text
 
     assert "Living room: Couldn" in warning and "No Franchisarr playlists to delete" in warning
+
+
+def test_deleting_every_playlist_needs_delete_typed_and_lists_peoples_own(client: TestClient, monkeypatch) -> None:
+    with Session(get_engine()) as session:
+        attic = _library(session, kind="jellyfin")
+    shelves = {"Living room": _Shelf(["Alien (Franchisarr)", "Road trip"]), "Attic": _Shelf(["Mine"])}
+    from app.services import media_server_service
+
+    monkeypatch.setattr(media_server_service, "client_for", lambda s: shelves[s.name])
+
+    warning = client.get(f"{BASE}/playlists/delete?server=all&scope=all").text
+    assert "This deletes 3 playlists" in warning and "Road trip" in warning and "Mine" in warning
+    assert "including ones you made yourself" in warning and 'name="confirm"' in warning
+    assert "may be in this list" in warning, "Jellyfin can't say who owns a playlist"
+
+    refused = client.post(f"{BASE}/playlists/delete", data={"server": "all", "scope": "all", "confirm": "yes"}).text
+    assert "Type DELETE to confirm." in refused and shelves["Living room"].deleted == []
+
+    client.post(f"{BASE}/playlists/delete", data={"server": str(attic), "scope": "all", "confirm": "DELETE"})
+    assert shelves["Attic"].deleted == ["Mine"] and shelves["Living room"].deleted == [], "only the server asked"
+
+
+def test_plex_alone_gets_no_shared_playlist_caveat(client: TestClient, monkeypatch) -> None:
+    from app.services import media_server_service
+
+    monkeypatch.setattr(media_server_service, "client_for", lambda s: _Shelf(["Road trip"]))
+
+    warning = client.get(f"{BASE}/playlists/delete?server=all&scope=all").text
+
+    assert "Road trip" in warning and "may be in this list" not in warning
+
+
+def test_a_set_too_small_for_a_server_is_skipped_there(session: Session, monkeypatch) -> None:
+    _library(session)
+    from app.services import media_server_service
+
+    monkeypatch.setattr(media_server_service, "client_for", lambda s: _AsPlexClient(FakeServer({}, {})))
+
+    result = playlist_service.build(session, "Just one", [(ItemType.MOVIE.value, 11)], min_items=2)
+
+    assert result.servers == [] and result.skipped == 1
+
+
+def test_bulk_add_builds_every_set_and_tallies(session: Session, monkeypatch) -> None:
+    from app.services import playlist_bulk
+
+    made = []
+
+    def fake_build(session, name, refs, art=None, *, server_id=None, min_items=1):  # noqa: ANN001, ANN202
+        made.append((name, server_id, min_items))
+        result = playlist_service.PlaylistResult(title=name)
+        if name == "Tiny":
+            result.skipped = 1
+        elif name == "Broken":
+            result.servers.append(playlist_service.ServerResult(server="Plex", error="refused"))
+        else:
+            result.servers.append(playlist_service.ServerResult(server="Plex"))
+        return result
+
+    monkeypatch.setattr(playlist_service, "build", fake_build)
+    monkeypatch.setattr(playlist_bulk, "sets", lambda s, kinds: [
+        playlist_bulk.PlaylistSet("franchises", n, [("movie", 1), ("movie", 2)]) for n in ("Alien", "Tiny", "Broken")])
+
+    playlist_bulk._set(running=True, stopping=False, made=0, skipped=0, failed=0, errors=())
+    playlist_bulk.run(session, ["franchises"], 7, "Plex")
+    state = playlist_bulk.current()
+
+    assert [m[0] for m in made] == ["Alien", "Tiny", "Broken"] and {m[1:] for m in made} == {(7, 2)}
+    assert (state.made, state.skipped, state.failed, state.done, state.total) == (1, 1, 1, 3, 3)
+    assert state.errors == ("Broken on Plex: refused",)
+
+
+def test_stop_ends_a_bulk_add_between_playlists(session: Session, monkeypatch) -> None:
+    from app.services import playlist_bulk
+
+    made = []
+
+    def fake_build(session, name, refs, art=None, **kw):  # noqa: ANN001, ANN202
+        made.append(name)
+        playlist_bulk.stop()   # the person presses Stop while the first is being made
+        return playlist_service.PlaylistResult(title=name, servers=[playlist_service.ServerResult(server="Plex")])
+
+    monkeypatch.setattr(playlist_service, "build", fake_build)
+    monkeypatch.setattr(playlist_bulk, "sets", lambda s, kinds: [
+        playlist_bulk.PlaylistSet("collections", n, [("movie", 1), ("movie", 2)]) for n in ("A", "B", "C")])
+
+    playlist_bulk._set(running=True, stopping=False, made=0, skipped=0, failed=0, errors=())
+    playlist_bulk.run(session, ["collections"], None, "every server")
+
+    assert made == ["A"] and playlist_bulk.current().made == 1
+    playlist_bulk._set(running=False, stopping=False)
+
+
+def test_the_add_form_offers_each_kind_with_its_count_and_starts_the_job(client: TestClient, monkeypatch) -> None:
+    from app.services import playlist_bulk
+
+    monkeypatch.setattr(playlist_bulk, "counts", lambda s: {"franchises": 207, "collections": 409, "directors": 148})
+    started = []
+    monkeypatch.setattr(playlist_bulk, "run_in_background", lambda kinds, server_id, where: started.append((kinds, server_id, where)) or True)
+
+    form = client.get(f"{BASE}/playlists/add-all?server=all").text
+    assert "franchise (207)" in form and "collection (409)" in form and "director (148)" in form
+
+    assert "Pick at least one kind" in client.post(f"{BASE}/playlists/add-all", data={"server": "all"}).text
+    client.post(f"{BASE}/playlists/add-all", data={"server": "all", "kinds": ["franchises", "directors", "bogus"]})
+    assert started == [(["franchises", "directors"], None, "every server")]
 
 
 # ------------------------------------------------------------------ posters
