@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.39.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.40.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -208,9 +208,17 @@ projects' features — and Overseerr's own repository was archived. All three sp
 `/api/v1`, so an older instance keeps working: pick which one you run when you add it, and only
 the label changes.
 
+## Getting around
+
+The top bar has three menus: **Browse** (Franchises, Collections, Spin-offs, Upcoming,
+Directors), **Manage** for administrators (Servers, Libraries, Instances, Playlists, Users,
+Settings, Activity), and one under your name (Preferences, Password, light/dark, Sign out), with
+search at the far right. The menu holding the page you're on is highlighted. On a phone it's a
+single ☰ button.
+
 ## Search
 
-The magnifying glass in the top bar opens a search over everything Franchisarr knows: the
+The magnifying glass at the right of the top bar (or pressing **/**) opens a search over everything Franchisarr knows: the
 collections and franchises you own part of, directors with a page, and every film and show it
 has come across — in your library, in a collection, a franchise, a director's filmography or a
 spin-off list. Results appear as you type and are grouped by kind. Each film or show says

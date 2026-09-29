@@ -104,31 +104,58 @@ input[type="submit"] {
   row-gap: 0.25rem;
 }
 
-/* On a phone the nav stops being flex at all. Plain block flow with inline-block links is the
-   one layout every engine wraps the same way -- the flex-wrap version was verified in Chromium
-   and still scrolled sideways on an iPhone. The brand sits on its own line, links start flush
-   left, and the rows are tighter than Pico's default so three of them are not a third of the
-   screen. */
+/* The menu (0.40.0): Browse / Manage / your name dropdowns and search on a computer; on a phone
+   just the brand, search and a ☰ that opens a panel with every section laid out. The phone bar
+   holds three things, so it never needs to wrap: the old eleven-link bar scrolled sideways on
+   an iPhone even with flex-wrap, and needed plain block flow to stay inside the screen. */
+.nav-phone, .nav-panel { display: none; }
+/* Pico draws a nav dropdown's summary like a <select>; here it's a link in the bar, like the
+   others were. */
+.app-nav details.dropdown > summary:not([role]) {
+  background: none;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--pico-primary);
+}
+.app-nav details.dropdown[open] > summary:not([role]),
+.app-nav details.dropdown > summary:not([role]):hover { border-color: var(--pico-muted-border-color); }
+.app-nav details.dropdown > summary + ul.nav-end { left: auto; right: 0; }
+.app-nav details.dropdown.nav-here > summary,
+.app-nav .nav-search.nav-here { color: var(--pico-primary); font-weight: 600; }
+.app-nav details.dropdown [aria-current="page"],
+.nav-panel [aria-current="page"] { color: var(--pico-primary); font-weight: 600; }
+.nav-menu-button {
+  background: none;
+  border: none;
+  color: var(--pico-dropdown-color);
+  margin: 0;
+  padding: 0;
+  text-align: start;
+  width: 100%;
+}
+.nav-menu-button:hover, .nav-menu-button:focus { background: none; color: var(--pico-primary); }
+/* The sign-out form's and the theme toggle's own padding rules are more specific than the class
+   above; inside a menu these are menu entries, flush with the links. */
+.nav-panel li .nav-menu-button,
+.app-nav details.dropdown li .nav-menu-button,
+.nav-panel .nav-form .nav-menu-button,
+.app-nav details.dropdown .nav-form .nav-menu-button { padding: 0; }
+.app-nav details.dropdown .nav-form { display: block; }
+
 @media (max-width: 767px) {
-  .app-nav,
-  .app-nav ul {
+  .nav-desktop { display: none; }
+  .nav-phone { display: list-item; }
+  .app-nav { flex-wrap: nowrap; align-items: center; }
+  .app-nav ul:last-of-type { flex-wrap: nowrap; margin-right: 0; }
+  .nav-panel:not([hidden]) {
     display: block;
-    max-width: 100%;
+    border-top: 1px solid var(--pico-muted-border-color);
+    padding: 0.5rem 0 0.25rem;
   }
-  .app-nav ul:first-of-type,
-  .app-nav ul:last-of-type {
-    margin-left: 0;
-    margin-right: 0;
-  }
-  .app-nav li {
-    display: inline-block;
-    padding: 0.15rem var(--pico-nav-link-spacing-horizontal) 0.15rem 0;
-    vertical-align: middle;
-  }
-  .app-nav .nav-form,
-  .app-nav .theme-toggle {
-    vertical-align: middle;
-  }
+  .nav-panel ul { list-style: none; margin: 0 0 0.5rem; padding: 0; }
+  .nav-panel li { display: inline-block; list-style: none; margin: 0 1rem 0.35rem 0; padding: 0; }
+  .nav-panel-heading { color: var(--pico-muted-color); font-size: 0.8rem; margin: 0.25rem 0; text-transform: uppercase; }
+  .nav-panel .nav-menu-button { color: var(--pico-primary); width: auto; }
 }
 
 /* Pico gives any aria-busy element a spinner -- and white-space: nowrap, which is right for a

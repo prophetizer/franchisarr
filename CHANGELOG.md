@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.40.0] — 2026-09-28
+
+### Changed
+
+- **A menu instead of one long line of links.** The top bar is now **Browse ▾** (Franchises,
+  Collections, Spin-offs, Upcoming, Directors), **Manage ▾** for administrators (Servers,
+  Libraries, Instances, Playlists, Users, Settings, Activity — Playlists and Users were missing
+  from the bar before), a menu under your name (Preferences, Password, light/dark, Sign out;
+  Activity for household members), and search at the far right. Menus open on click or tap,
+  one at a time, and close on a click elsewhere or Esc; the one holding the page you're on is
+  highlighted. On a phone the bar is the logo, search and a ☰ that lays every section out.
+  Pressing **/** anywhere outside a text box goes to Search.
+
 ## [0.39.0] — 2026-09-28
 
 ### Added

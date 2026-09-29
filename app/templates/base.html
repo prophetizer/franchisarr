@@ -45,6 +45,28 @@
   </head>
   <body>
     <header class="container">
+      {#- The menu (0.40.0, michael's answers): Browse and Manage dropdowns and one under your
+          name, search at the far right; a ☰ panel on a phone. Both are drawn from these lists,
+          so they can't disagree. Each item is (path, label). -#}
+      {% if user %}
+        {% set browse = [('/franchises', 'Franchises'), ('/collections', 'Collections'), ('/shows', 'Spin-offs'),
+                         ('/upcoming', 'Upcoming'), ('/directors', 'Directors')] %}
+        {% set manage = [('/media-servers', 'Servers'), ('/libraries', 'Libraries'), ('/instances', 'Instances'),
+                         ('/playlists', 'Playlists'), ('/users', 'Users'), ('/settings', 'Settings'),
+                         ('/activity', 'Activity')] if user.is_admin else [] %}
+        {% set mine = ([('/preferences', 'Preferences')] if user.is_admin else [])
+                      + [('/password', 'Password')]
+                      + ([] if user.is_admin else [('/activity', 'Activity')]) %}
+        {% set here = request.url.path if request else '' %}
+        {%- macro is_here(path) -%}{{ 'true' if here == url(path) or here.startswith(url(path) ~ '/') else '' }}{%- endmacro %}
+        {%- macro section_here(items) -%}{% for path, _ in items if is_here(path) %}true{% endfor %}{%- endmacro %}
+        {%- macro links(items) -%}
+          {% for path, label in items %}
+            <li><a href="{{ url(path) }}"{% if is_here(path) %} aria-current="page"{% endif %}>{{ label }}</a></li>
+          {% endfor %}
+        {%- endmacro %}
+        {% set who = user.external_username or user.local_username %}
+      {% endif %}
       <nav class="app-nav">
         <ul>
           <li><a class="app-brand" href="{{ url('/') }}">{% include "partials/logo.html" %}<span class="app-brand-text"><span class="app-brand-name">Franchisarr</span><span class="app-brand-tagline">The films and shows missing from the sets you already own.</span></span></a></li>
@@ -52,38 +74,65 @@
         <ul>
           {% block nav %}{% endblock %}
           {% if user %}
-            <li><a href="{{ url('/franchises') }}">Franchises</a></li>
-            <li><a href="{{ url('/collections') }}">Collections</a></li>
-            <li><a href="{{ url('/shows') }}">Spin-offs</a></li>
-            <li><a href="{{ url('/upcoming') }}">Upcoming</a></li>
-            <li><a href="{{ url('/directors') }}">Directors</a></li>
-            <li><a href="{{ url('/search') }}" class="nav-search" aria-label="Search" title="Search">
-              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><line x1="15.5" y1="15.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            </a></li>
-            {% if user.is_admin %}<li><a href="{{ url('/libraries') }}">Libraries</a></li>{% endif %}
-            <li><a href="{{ url('/activity') }}">Activity</a></li>
-            {% if user.is_admin %}
-              <li><a href="{{ url('/media-servers') }}">Servers</a></li>
-              <li><a href="{{ url('/instances') }}">Instances</a></li>
-              <li><a href="{{ url('/settings') }}">Settings</a></li>
+            <li class="nav-desktop">
+              <details class="dropdown{% if section_here(browse) %} nav-here{% endif %}">
+                <summary>Browse</summary>
+                <ul>{{ links(browse) }}</ul>
+              </details>
+            </li>
+            {% if manage %}
+              <li class="nav-desktop">
+                <details class="dropdown{% if section_here(manage) %} nav-here{% endif %}">
+                  <summary>Manage</summary>
+                  <ul class="nav-end">{{ links(manage) }}</ul>
+                </details>
+              </li>
             {% endif %}
-            <li>
-              <small>{{ user.external_username or user.local_username }}</small>
+            <li class="nav-desktop">
+              <details class="dropdown{% if section_here(mine) %} nav-here{% endif %}">
+                <summary>{{ who }}</summary>
+                <ul class="nav-end">
+                  {{ links(mine) }}
+                  <li><button type="button" class="nav-menu-button theme-toggle" onclick="franchisarrToggleTheme()"
+                              title="Switch between light and dark">
+                    <span class="theme-toggle-dark">☾ Dark mode</span><span class="theme-toggle-light">☀ Light mode</span></button></li>
+                  <li><form method="post" action="{{ url('/logout') }}" class="nav-form">
+                    <button type="submit" class="nav-menu-button">Sign out</button></form></li>
+                </ul>
+              </details>
             </li>
             <li>
-              <button type="button" class="secondary outline theme-toggle"
-                      onclick="franchisarrToggleTheme()" title="Switch between light and dark">
-                <span class="theme-toggle-dark">☾</span><span class="theme-toggle-light">☀</span>
-              </button>
+              <a href="{{ url('/search') }}" class="nav-search{% if is_here('/search') %} nav-here{% endif %}"
+                 aria-label="Search (press /)" title="Search (press /)">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><line x1="15.5" y1="15.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </a>
             </li>
-            <li>
-              <form method="post" action="{{ url('/logout') }}" class="nav-form">
-                <button type="submit" class="secondary outline">Sign out</button>
-              </form>
+            <li class="nav-phone">
+              <button type="button" class="secondary outline nav-toggle" aria-expanded="false" aria-controls="nav-panel"
+                      aria-label="Menu" onclick="franchisarrToggleMenu(this)">☰</button>
             </li>
           {% endif %}
         </ul>
       </nav>
+      {% if user %}
+        {#- The phone menu: every section laid out, opened by ☰. Hidden on a computer. -#}
+        <div id="nav-panel" class="nav-panel" hidden>
+          <p class="nav-panel-heading">Browse</p>
+          <ul>{{ links(browse) }}</ul>
+          {% if manage %}
+            <p class="nav-panel-heading">Manage</p>
+            <ul>{{ links(manage) }}</ul>
+          {% endif %}
+          <p class="nav-panel-heading">{{ who }}</p>
+          <ul>
+            {{ links(mine) }}
+            <li><button type="button" class="nav-menu-button theme-toggle" onclick="franchisarrToggleTheme()">
+              <span class="theme-toggle-dark">☾ Dark mode</span><span class="theme-toggle-light">☀ Light mode</span></button></li>
+            <li><form method="post" action="{{ url('/logout') }}" class="nav-form">
+              <button type="submit" class="nav-menu-button">Sign out</button></form></li>
+          </ul>
+        </div>
+      {% endif %}
     </header>
 
     <main class="container">
@@ -108,6 +157,42 @@
       <small>Franchisarr {{ version }}</small>
     </footer>
     <script>
+      // The menu's dropdowns are <details>: they open on click, tap or Enter by themselves. This
+      // adds what <details> doesn't do: one open at a time, and closing on a click elsewhere or
+      // Esc. And "/" anywhere outside a text field goes to Search (on Search, it focuses the box).
+      (function () {
+        var menus = function () { return document.querySelectorAll('.app-nav details.dropdown'); };
+        document.addEventListener('toggle', function (event) {
+          var opened = event.target;
+          if (!opened.matches || !opened.matches('.app-nav details.dropdown') || !opened.open) { return; }
+          menus().forEach(function (d) { if (d !== opened) { d.open = false; } });
+        }, true);
+        document.addEventListener('click', function (event) {
+          menus().forEach(function (d) { if (d.open && !d.contains(event.target)) { d.open = false; } });
+        });
+        document.addEventListener('keydown', function (event) {
+          if (event.key === 'Escape') {
+            menus().forEach(function (d) {
+              if (d.open) { d.open = false; var s = d.querySelector('summary'); if (s) { s.focus(); } }
+            });
+            return;
+          }
+          var t = event.target;
+          var typing = t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+          if (event.key !== '/' || typing || event.ctrlKey || event.metaKey || event.altKey) { return; }
+          var box = document.querySelector('form[role=search] input[name=q]');
+          event.preventDefault();
+          if (box) { box.focus(); box.select(); } else { window.location.href = {{ url('/search') | tojson }}; }
+        });
+      })();
+
+      function franchisarrToggleMenu(button) {
+        var panel = document.getElementById('nav-panel');
+        var open = panel.hasAttribute('hidden');
+        if (open) { panel.removeAttribute('hidden'); } else { panel.setAttribute('hidden', ''); }
+        button.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+
       function franchisarrToggleTheme() {
         var root = document.documentElement;
         var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
