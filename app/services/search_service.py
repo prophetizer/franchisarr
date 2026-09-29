@@ -174,21 +174,35 @@ def search(session: Session, query: str, user_id: int | None, *, today: date | N
         FranchiseMember.title, FranchiseMember.year, FranchiseMember.poster_path,
     )).all()
     franchise_counts: dict[str, list[int]] = {}
-    # The card's picture, as the Franchises page chooses it: the collection poster of an owned
-    # film, else any member's own poster.
+    # The card's picture, as the Franchises page chooses it (franchise_service._pick_art, 0.46.1):
+    # the poster of the collection that is the franchise -- same name, or most of its owned
+    # films -- else a member's own poster. Never just the first collection found: the MCU is
+    # not the Iron Man Collection.
+    from app.services.franchise_service import _same_name
+
     film_collection = dict(session.exec(
         select(TmdbMovie.tmdb_id, TmdbMovie.collection_id).where(col(TmdbMovie.collection_id).is_not(None))).all())
-    franchise_posters: dict[str, str] = {}
+    held: dict[str, dict[int, int]] = {}
+    owned_film_count: dict[str, int] = {}
     member_posters: dict[str, str] = {}
     for qid, item_type, tmdb_id, _title, _year, poster in franchise_rows:
         is_film = item_type == ItemType.MOVIE.value
         owned = tmdb_id in (owned_films if is_film else owned_shows)
         counts = franchise_counts.setdefault(qid, [0, 0])
         counts[0 if owned else 1] += 1
-        if owned and is_film and qid not in franchise_posters and collection_posters.get(film_collection.get(tmdb_id)):
-            franchise_posters[qid] = collection_posters[film_collection[tmdb_id]]
+        if owned and is_film:
+            owned_film_count[qid] = owned_film_count.get(qid, 0) + 1
+            if (cid := film_collection.get(tmdb_id)) is not None and collection_posters.get(cid):
+                held.setdefault(qid, {})[cid] = held.setdefault(qid, {}).get(cid, 0) + 1
         if poster and qid not in member_posters:
             member_posters[qid] = poster
+    franchise_posters: dict[str, str] = {}
+    for qid, by_collection in held.items():
+        named = next((cid for cid in by_collection if _same_name(collection_names.get(cid, ""), franchise_names.get(qid, ""))), None)
+        biggest = max(by_collection, key=by_collection.get)
+        chosen = named if named is not None else (biggest if by_collection[biggest] * 2 > owned_film_count[qid] else None)
+        if chosen is not None:
+            franchise_posters[qid] = collection_posters[chosen]
     franchises = [
         GroupResult("franchise", name, f"/franchises/{qid}",
                     f"{franchise_counts.get(qid, [0, 0])[0]} owned, {franchise_counts.get(qid, [0, 0])[1]} missing",

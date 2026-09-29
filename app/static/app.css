@@ -971,3 +971,16 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
   width: 2.9rem;
 }
 .set-thumb img { display: block; height: 100%; object-fit: cover; width: 100%; }
+
+/* A franchise no one collection stands for gets four of its films' posters as its poster
+   (0.46.1): a 2x2 grid in the poster's own 2:3 box. */
+.poster-mosaic {
+  aspect-ratio: 2 / 3;
+  border-radius: var(--pico-border-radius);
+  display: grid;
+  gap: 2px;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  overflow: hidden;
+}
+.poster-mosaic img { aspect-ratio: auto; border-radius: 0; display: block; height: 100%; min-height: 0; object-fit: cover; width: 100%; }

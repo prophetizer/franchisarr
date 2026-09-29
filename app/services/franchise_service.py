@@ -14,16 +14,17 @@ under the franchise, which is the only way to learn about Deep Space Nine from o
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 
 from sqlmodel import Session, col, delete, select
 
-from app.clients.tmdb_client import TmdbClient, TmdbError
+from app.clients.tmdb_client import TmdbAuthError, TmdbClient, TmdbError
 from app.clients.wikidata_client import FranchiseGroup, FranchiseTitle, WikidataClient
 from app.models import (
-    DismissedItem, Franchise, FranchiseMember, ItemType, LibraryItem, TmdbCollectionMovie,
+    DirectorFilm, DismissedItem, Franchise, FranchiseMember, ItemType, LibraryItem, TmdbCollectionMovie,
     TmdbMovie, TmdbShow, utcnow,
 )
 from app.services import cross_media_service, movie_gap_service, tv_spinoff_service
@@ -74,7 +75,9 @@ class FranchiseView:
     #: TV films, specials and shorts on the roster, folded away unless the preference says
     #: otherwise. Never counted as missing.
     specials: list[Title] = field(default_factory=list)
-    #: A poster for the card and a logo for the heading, borrowed from any owned collection.
+    #: A poster for the card and a logo for the heading, borrowed from the collection that *is*
+    #: this franchise -- same name, or most of its films (see _pick_art, 0.46.1). None when no
+    #: collection is, and the card shows `mosaic` instead.
     poster_path: str | None = None
     backdrop_path: str | None = None
     logo_url: str | None = None
@@ -107,6 +110,22 @@ class FranchiseView:
         from app.services.artwork import SMALL_CARD_SIZE, poster_url
 
         return poster_url(self.poster_path, SMALL_CARD_SIZE)
+
+    @property
+    def mosaic(self) -> list[str]:
+        """Four owned titles' posters, spread across the run, for a franchise no one collection
+        stands for (the MCU is not the Iron Man Collection). Empty when it has a poster of its
+        own, or fewer than four titles with posters."""
+        if self.poster_path:
+            return []
+        from app.services.artwork import SMALL_CARD_SIZE, poster_url
+
+        titles = sorted((t for t in self.owned_films + self.owned_shows if t.poster_path),
+                        key=lambda t: (t.year or 9999, t.title.casefold()))
+        if len(titles) < 4:
+            return []
+        picks = [titles[round(i * (len(titles) - 1) / 3)] for i in range(4)]
+        return [poster_url(t.poster_path, SMALL_CARD_SIZE) for t in picks]
 
     @property
     def backdrop(self) -> str | None:
@@ -172,6 +191,7 @@ def discover(
     session.exec(delete(FranchiseMember))
     session.exec(delete(Franchise))
     session.flush()
+    lookups = _PosterLookups(tmdb)
 
     now = utcnow()
     for index, group in enumerate(kept, start=1):
@@ -195,27 +215,72 @@ def discover(
                     lib.title if lib else f"TMDb {tmdb_id}")
 
         for key, t in roster.items():
-            session.add(_member_for(session, t, known.get(key), library_titles.get(key), tmdb))
+            session.add(_member_for(session, t, known.get(key), library_titles.get(key), lookups))
     session.commit()
     logger.info("Franchises: %d kept of %d found", len(kept), len(groups))
     return len(kept)
 
 
+class _PosterLookups:
+    """TMDb asked once per title per refresh, whichever franchises it's in; and not again after
+    a rejected key (see CLAUDE.md on dead keys)."""
+
+    def __init__(self, tmdb: TmdbClient | None) -> None:
+        self.tmdb = tmdb
+        self.done: dict[tuple[str, int], tuple[str | None, int | None, str]] = {}
+        #: The show details fetched, for the show cache.
+        self.shows: dict[int, object] = {}
+
+    def details(self, item_type: str, tmdb_id: int) -> tuple[str | None, int | None, str] | None:
+        """(title, year, poster path -- "" for none) from TMDb, or None if it couldn't say."""
+        key = (item_type, tmdb_id)
+        if key in self.done:
+            return self.done[key]
+        if self.tmdb is None:
+            return None
+        try:
+            if item_type == ItemType.MOVIE.value:
+                d = self.tmdb.get_movie(tmdb_id)
+                found = (d.title, d.year, d.poster_path or "")
+            else:
+                d = self.tmdb.get_show(tmdb_id)
+                self.shows[tmdb_id] = d
+                found = (d.name, d.year, d.poster_path or "")
+        except TmdbAuthError:
+            logger.warning("TMDb rejected the key; franchise posters stop here")
+            self.tmdb = None
+            return None
+        except TmdbError as exc:
+            logger.debug("No TMDb details for %s %s: %s", item_type, tmdb_id, exc)
+            return None
+        self.done[key] = found
+        return found
+
+
 def _member_for(
     session: Session, t: FranchiseTitle, previous: FranchiseMember | None,
-    lib: LibraryItem | None, tmdb: TmdbClient | None,
+    lib: LibraryItem | None, lookups: _PosterLookups,
 ) -> FranchiseMember:
+    """A roster row with a title, year and poster. poster_path "" means TMDb was asked and has
+    none; None means nobody has asked yet -- an owned title that isn't in any collection or
+    director's films had no poster until 0.46.1 (the MCU's Incredible Hulk), so it's asked now."""
     if previous is not None:
+        poster = previous.poster_path
+        if poster is None:
+            poster = _cached_poster(session, t.item_type, t.tmdb_id)
+        if poster is None and (found := lookups.details(t.item_type, t.tmdb_id)) is not None:
+            poster = found[2]
         return FranchiseMember(franchise_id=t.franchise_id, item_type=t.item_type,
                               tmdb_id=t.tmdb_id, title=previous.title, year=previous.year,
-                              poster_path=previous.poster_path, kind=t.kind or previous.kind)
+                              poster_path=poster, kind=t.kind or previous.kind)
     title, year, poster = t.name, None, None
     if lib is not None:
-        # Owned: the library already knows the title and year, and the collection or show
-        # cache usually has a poster. TMDb is not asked -- on the test library that was 1,100
-        # requests for things the app already knew.
+        # Owned: the library already knows the title and year, and the collection, director or
+        # show cache usually has a poster; TMDb is asked only when none does.
         title, year = lib.title, lib.year
         poster = _cached_poster(session, t.item_type, t.tmdb_id)
+        if poster is None and (found := lookups.details(t.item_type, t.tmdb_id)) is not None:
+            poster = found[2]
         return FranchiseMember(franchise_id=t.franchise_id, item_type=t.item_type,
                               tmdb_id=t.tmdb_id, title=title, year=year, poster_path=poster,
                               kind=t.kind)
@@ -223,19 +288,12 @@ def _member_for(
         cached = session.get(TmdbMovie, t.tmdb_id)
         if cached is not None:
             title, year = cached.title, cached.release_year
-    if tmdb is not None and (poster is None or year is None):
-        try:
-            if t.item_type == ItemType.MOVIE.value:
-                d = tmdb.get_movie(t.tmdb_id)
-                title, year, poster = d.title or title, d.year or year, d.poster_path
-            else:
-                d = tmdb.get_show(t.tmdb_id)
-                title, year, poster = d.name or title, d.year or year, d.poster_path
-                # Into the show cache too: that is where a TVDB id lives, and Sonarr's import
-                # list needs one for every show it is handed.
-                tv_spinoff_service.cache_show(session, d)
-        except TmdbError as exc:
-            logger.debug("No TMDb details for %s %s: %s", t.item_type, t.tmdb_id, exc)
+    if (found := lookups.details(t.item_type, t.tmdb_id)) is not None:
+        title, year, poster = found[0] or title, found[1] or year, found[2]
+        if t.item_type == ItemType.SHOW.value and t.tmdb_id in lookups.shows:
+            # Into the show cache too: that is where a TVDB id lives, and Sonarr's import
+            # list needs one for every show it is handed.
+            tv_spinoff_service.cache_show(session, lookups.shows.pop(t.tmdb_id))
     return FranchiseMember(franchise_id=t.franchise_id, item_type=t.item_type,
                           tmdb_id=t.tmdb_id, title=title, year=year, poster_path=poster,
                           kind=t.kind)
@@ -249,6 +307,9 @@ def _cached_poster(session: Session, item_type: str, tmdb_id: int) -> str | None
             .where(col(TmdbCollectionMovie.poster_path).is_not(None))
             .limit(1)
         ).first()
+        if row is None:
+            row = session.exec(select(DirectorFilm.poster_path).where(
+                col(DirectorFilm.tmdb_movie_id) == tmdb_id, col(DirectorFilm.poster_path).is_not(None)).limit(1)).first()
         return row
     show = session.get(TmdbShow, tmdb_id)
     return show.poster_path if show else None
@@ -355,14 +416,17 @@ def franchise_views(
 
         # Collections the owned films belong to: their gaps and upcoming films, and artwork.
         seen_gaps: set[int] = set()
+        held: dict[int, int] = {}
+        for fid in film_ids:
+            if (g := gap_by_film.get(fid)) is not None:
+                held[g.collection_id] = held.get(g.collection_id, 0) + 1
+        candidates = []
         for fid in sorted(film_ids):
             gap = gap_by_film.get(fid)
             if gap is None or gap.collection_id in seen_gaps:
                 continue
             seen_gaps.add(gap.collection_id)
-            if view.poster_path is None:
-                view.poster_path, view.backdrop_path, view.logo_url = (
-                    gap.poster_path, gap.backdrop_path, gap.logo)
+            candidates.append((gap, held.get(gap.collection_id, 0)))
             for mm in gap.missing:
                 add_missing(_from_missing(mm, "collection", gap.name))
             for mm in gap.upcoming:
@@ -403,10 +467,39 @@ def franchise_views(
         for lst in (view.owned_films, view.owned_shows, view.missing_films,
                     view.missing_shows, view.upcoming_films, view.specials):
             lst.sort(key=lambda t: (t.year or 9999, t.title.casefold()))
+        _pick_art(view, candidates, len(film_ids))
         views.append(view)
 
     views.sort(key=lambda v: (-v.owned, v.name.casefold()))
     return views
+
+
+_NAME_NOISE = re.compile(r"^the |\b(collection|franchise|film series|series|saga|universe)\b|[^a-z0-9]+")
+
+
+def _same_name(a: str, b: str) -> bool:
+    """"Star Wars" and "Star Wars Collection", "Alien franchise" and "Alien Collection"."""
+    def norm(name: str) -> str:
+        return _NAME_NOISE.sub("", name.casefold())
+    return bool(norm(a)) and norm(a) == norm(b)
+
+
+def _pick_art(view: FranchiseView, candidates: list, owned_films: int) -> None:  # noqa: ANN001
+    """Borrow a collection's artwork only when that collection is the franchise (michael,
+    0.46.1: the MCU's page read "Iron Man" because the Iron Man Collection came first). The
+    logo, which names it, needs the same name; the poster and backdrop also go with a collection
+    holding most of the franchise's films. Otherwise: no logo, the mosaic for a poster, and the
+    backdrop of the biggest collection -- a picture, not a claim."""
+    if not candidates:
+        return
+    named = next((gap for gap, _ in candidates if _same_name(gap.name, view.name)), None)
+    biggest, count = max(candidates, key=lambda pair: pair[1])
+    if named is not None:
+        view.poster_path, view.backdrop_path, view.logo_url = named.poster_path, named.backdrop_path, named.logo
+    elif count * 2 > owned_films:
+        view.poster_path, view.backdrop_path = biggest.poster_path, biggest.backdrop_path
+    else:
+        view.backdrop_path = biggest.backdrop_path
 
 
 def _from_missing(mm: MissingMovie, via: str, collection_name: str) -> Title:

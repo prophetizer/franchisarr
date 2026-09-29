@@ -26,6 +26,10 @@
           <a href="{{ url('/franchises/' ~ f.wikidata_id) }}" class="collection-poster">
             <img src="{{ f.small_poster }}" alt="" loading="lazy" decoding="async" width="92" height="138">
           </a>
+        {% elif f.mosaic %}
+          <a href="{{ url('/franchises/' ~ f.wikidata_id) }}" class="collection-poster poster-mosaic" aria-hidden="true" tabindex="-1">
+            {% for src in f.mosaic %}<img src="{{ src }}" alt="" loading="lazy" decoding="async">{% endfor %}
+          </a>
         {% else %}
           <div class="collection-poster collection-poster--empty" aria-hidden="true"></div>
         {% endif %}

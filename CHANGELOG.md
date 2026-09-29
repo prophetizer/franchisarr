@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.46.1] — 2026-09-29
+
+### Fixed
+
+- **A franchise wore the wrong collection's artwork.** The Marvel Cinematic Universe's page read
+  "Iron Man", logo and poster, because it borrowed from whichever collection came first. A
+  franchise now takes a collection's logo only when the collection has its name (Star Wars → Star
+  Wars Collection), and its poster only then or when the collection holds most of its films.
+  Otherwise the page is headed with the franchise's own name and its poster is a 2×2 mosaic of its
+  films. Search's franchise cards follow the same rule.
+- **Owned titles in no collection had no poster** on franchise pages and in the release strip
+  (The Incredible Hulk, the Marvel One-Shots). The next scan looks each one up on TMDb, once.
+- The release strip counted what's coming in its total ("54 of 56") where the banner didn't
+  ("54 of 55"); it now says "54 of 55, 1 coming".
+
+### Upgrading
+
+- The missing posters appear after the next scan.
+
 ## [0.46.0] — 2026-09-29
 
 ### Changed

@@ -42,6 +42,10 @@
   <div class="collection-heading-inner">
     {% if f.poster %}
       <img class="collection-heading-poster" src="{{ f.poster }}" alt="" decoding="async" width="342" height="513">
+    {% elif f.mosaic %}
+      <div class="collection-heading-poster poster-mosaic" aria-hidden="true">
+        {% for src in f.mosaic %}<img src="{{ src }}" alt="" decoding="async">{% endfor %}
+      </div>
     {% endif %}
     <hgroup>
       {% if f.logo_image %}

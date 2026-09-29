@@ -3,9 +3,11 @@
    inside itself, never the page. #}
 {% if timeline | length > 1 %}
   {% set have = timeline | selectattr('status', 'equalto', 'owned') | list | length %}
+  {#- Out of what's released, like the banner ("54 of 55"); what's coming is counted apart. -#}
+  {% set coming = timeline | selectattr('status', 'equalto', 'upcoming') | list | length %}
   <section class="timeline" aria-label="In release order">
     <p class="timeline-heading"><strong>In release order</strong>
-      <small class="muted">{{ have }} of {{ timeline | length }} — dimmed ones you don't have{% if user and user.is_admin %}; pick one to add it{% endif %}</small></p>
+      <small class="muted">{{ have }} of {{ timeline | length - coming }}{% if coming %}, {{ coming }} coming{% endif %} — dimmed ones you don't have{% if user and user.is_admin %}; pick one to add it{% endif %}</small></p>
     <ol class="timeline-strip">
       {% for s in timeline %}
         {% set label = s.title ~ (' (' ~ s.year ~ ')' if s.year else '') ~ (' — you have it' if s.status == 'owned' else (' — not out yet' if s.status == 'upcoming' else ' — missing')) %}

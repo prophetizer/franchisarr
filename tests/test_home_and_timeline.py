@@ -172,6 +172,17 @@ def test_the_collection_page_has_the_strip_with_add_on_the_missing_one(client: T
     assert page.index('class="timeline"') < page.index("<h2>Missing"), "above the grids"
 
 
+def test_the_strips_count_matches_the_banner_with_whats_coming_apart(client: TestClient) -> None:
+    with Session(get_engine()) as session:
+        session.add(TmdbCollectionMovie(collection_id=8091, tmdb_movie_id=999, title="Alien: Next",
+                                        release_date="2099-01-01", release_year=2099, position=9))
+        session.commit()
+
+    page = client.get(f"{BASE}/collections/8091").text
+
+    assert "2 of 3, 1 coming" in page.split('class="timeline-heading"', 1)[1][:300]
+
+
 def test_the_franchise_page_has_the_strip_too(client: TestClient) -> None:
     page = client.get(f"{BASE}/franchises/Q16").text
 

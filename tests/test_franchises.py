@@ -340,8 +340,12 @@ def test_a_zero_ttl_forces_a_rebuild(session: Session) -> None:
 
 
 @responses.activate
-def test_owned_titles_do_not_cost_a_tmdb_request(session: Session) -> None:
-    _own_film(session, 1, "Dr. No"); _own_film(session, 2, "Goldfinger"); session.commit()
+def test_owned_titles_with_a_cached_poster_do_not_cost_a_tmdb_request(session: Session) -> None:
+    _own_film(session, 1, "Dr. No"); _own_film(session, 2, "Goldfinger")
+    session.add(TmdbCollection(tmdb_collection_id=645, name="James Bond Collection"))
+    for tid in (1, 2):
+        session.add(TmdbCollectionMovie(collection_id=645, tmdb_movie_id=tid, title=str(tid), poster_path=f"/{tid}.jpg"))
+    session.commit()
     responses.add(responses.GET, SPARQL_ENDPOINT, json=_sparql(
         _membership_row(1, "P8345", "Q59130", "James Bond", "media franchise"),
         _membership_row(2, "P8345", "Q59130", "James Bond", "media franchise")))
@@ -357,6 +361,30 @@ def test_owned_titles_do_not_cost_a_tmdb_request(session: Session) -> None:
 
     tmdb_calls = [c for c in responses.calls if "themoviedb" in c.request.url]
     assert len(tmdb_calls) == 1, "only the unowned title needed TMDb"
+
+
+@responses.activate
+def test_an_owned_title_nothing_has_a_poster_for_is_looked_up_once(session: Session) -> None:
+    """The MCU's Incredible Hulk: owned, in no collection, so no poster anywhere (0.46.1)."""
+    _own_film(session, 1724, "The Incredible Hulk"); _own_film(session, 1726, "Iron Man"); session.commit()
+    for _ in range(2):
+        responses.add(responses.GET, SPARQL_ENDPOINT, json=_sparql(
+            _membership_row(1724, "P8345", "Q642878", "Marvel Cinematic Universe", "media franchise"),
+            _membership_row(1726, "P8345", "Q642878", "Marvel Cinematic Universe", "media franchise")))
+        responses.add(responses.GET, SPARQL_ENDPOINT, json=_sparql())
+        responses.add(responses.GET, SPARQL_ENDPOINT, json=_sparql(
+            _member_row("Qa", "The Incredible Hulk", "film", film=1724), _member_row("Qb", "Iron Man", "film", film=1726)))
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/1724",
+                  json={"id": 1724, "title": "The Incredible Hulk", "poster_path": "/hulk.jpg"})
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/movie/1726", json={"id": 1726, "title": "Iron Man"})
+
+    for _ in range(2):
+        franchise_service.discover(session, WikidataClient(max_requests_per_second=10_000),
+                                   TmdbClient("k" * 32, max_requests_per_second=10_000))
+
+    posters = {m.tmdb_id: m.poster_path for m in session.exec(select(FranchiseMember)).all()}
+    assert posters == {1724: "/hulk.jpg", 1726: ""}, '"" is TMDb saying it has none'
+    assert len([c for c in responses.calls if "themoviedb" in c.request.url]) == 2, "once each, not every scan"
 
 
 
@@ -382,3 +410,43 @@ def test_tv_films_and_shorts_fold_away_unless_the_preference_says_otherwise(sess
     view = franchise_service.franchise_views(session)[0]
     assert {t.title for t in view.missing_films} == {"Return of the Jedi", "The Star Wars Holiday Special"}
     assert view.specials == []
+
+
+def _mcu(session: Session, collection_name: str, films: int = 5) -> None:
+    """A franchise of `films` owned films, three of them in one collection called `collection_name`."""
+    session.add(TmdbCollection(tmdb_collection_id=131292, name=collection_name, poster_path="/coll.jpg",
+                               backdrop_path="/back.jpg"))
+    session.add(Franchise(wikidata_id="Q642878", name="Marvel Cinematic Universe", kind="media franchise"))
+    for n in range(films):
+        tid = 100 + n
+        in_collection = n < 3
+        _own_film(session, tid, f"Film {n}", 131292 if in_collection else None)
+        if in_collection:
+            session.add(TmdbCollectionMovie(collection_id=131292, tmdb_movie_id=tid, title=f"Film {n}",
+                                            release_year=2008 + n, position=n))
+        session.add(FranchiseMember(franchise_id="Q642878", item_type="movie", tmdb_id=tid, title=f"Film {n}",
+                                    year=2008 + n, poster_path=f"/f{n}.jpg"))
+    session.commit()
+
+
+def test_a_franchise_no_collection_stands_for_gets_a_mosaic_not_its_first_collections_art(session: Session) -> None:
+    """The MCU read "Iron Man": the Iron Man Collection happened to come first (0.46.1)."""
+    _mcu(session, "Iron Man Collection", films=7)
+
+    view = franchise_service.franchise_view(session, "Q642878")
+
+    assert view.poster_path is None and view.logo_url is None, "no borrowed name on it"
+    assert view.backdrop_path == "/back.jpg", "a picture from its biggest collection is fine"
+    assert len(view.mosaic) == 4 and view.mosaic[0].endswith("/f0.jpg") and view.mosaic[-1].endswith("/f6.jpg")
+
+
+def test_a_collection_with_the_franchises_name_or_most_of_it_lends_its_art(session: Session) -> None:
+    _mcu(session, "Marvel Cinematic Universe Collection", films=7)
+    view = franchise_service.franchise_view(session, "Q642878")
+    assert view.poster_path == "/coll.jpg" and view.mosaic == []
+
+
+def test_a_collection_holding_most_of_the_franchise_lends_poster_and_backdrop_but_not_its_name(session: Session) -> None:
+    _mcu(session, "Harry Potter Collection", films=4)          # 3 of 4: most of it
+    view = franchise_service.franchise_view(session, "Q642878")
+    assert view.poster_path == "/coll.jpg" and view.logo_url is None
