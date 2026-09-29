@@ -1,0 +1,24 @@
+{# Playlist sync's state: a Sync now button, the running sync's progress (polling itself while
+   it runs; the `every 2s` trigger is dropped once it's done), and the last result. #}
+<div id="sync-status"
+     {% if sync.running %}hx-get="{{ url('/playlists/sync/status') }}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  {% if sync.running %}
+    <article>
+      <header><strong>Syncing playlists…</strong></header>
+      {% if sync.total %}<progress value="{{ sync.done }}" max="{{ sync.total }}"></progress>{% else %}<progress></progress>{% endif %}
+      <p><small>{{ sync.done }} of {{ sync.total }}{% if sync.current %} — now: {{ sync.current }}{% endif %}.</small></p>
+    </article>
+  {% else %}
+    <p class="sync-now">
+      <button hx-post="{{ url('/playlists/sync/run') }}" hx-target="#sync-status" hx-swap="outerHTML"
+              hx-disabled-elt="this">Sync now</button>
+      {% if sync.finished_at %}
+        <small class="muted">Last sync ({{ sync.trigger }}): {{ sync.created }} created, {{ sync.updated }} updated,
+          {{ sync.unchanged }} unchanged{% if sync.deleted %}, {{ sync.deleted }} deleted{% endif %}{% if sync.blocked %},
+          {{ sync.blocked }} blocked{% endif %}{% if sync.failed %}, <span class="notice-bad">{{ sync.failed }} failed</span>{% endif %}.
+          Reload to see each playlist's result.</small>
+      {% endif %}
+    </p>
+    {% for e in sync.errors %}<p role="alert" class="notice-bad"><small>{{ e }}</small></p>{% endfor %}
+  {% endif %}
+</div>

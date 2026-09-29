@@ -101,6 +101,7 @@
         <button class="secondary outline" hx-get="{{ url('/playlists/delete?scope=all') }}" hx-include="#bulk-server"
                 hx-target="#bulk-panel" hx-swap="innerHTML">Delete all playlists…</button>
       </div>
+      <p><small><a href="{{ url('/playlists') }}">Playlist sync →</a> copy chosen playlists from one server to the others.</small></p>
       <div id="bulk-panel">{% if bulk.running or bulk.finished_at %}{% with form = false %}{% include "partials/playlist_bulk.html" %}{% endwith %}{% endif %}</div>
     </article>
   {% endif %}

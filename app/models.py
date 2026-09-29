@@ -686,3 +686,46 @@ class ActivityLogEntry(SQLModel, table=True):
     #: Where the add went: "radarr", "sonarr" or "seerr". Null on rows from before 0.20.0,
     #: which were all *arr adds and are read by item type.
     target: str | None = Field(default=None)
+
+
+class PlaylistSync(SQLModel, table=True):
+    """A playlist someone chose to sync: copied from its home server to every other server
+    that's switched on, at each sync (app/services/playlist_sync.py). Tracked by the playlist's
+    id on its server, so a rename follows it."""
+
+    __tablename__ = "playlist_syncs"
+    __table_args__ = (UniqueConstraint("source_server_id", "source_playlist_id", name="uq_playlist_sync_source"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    source_server_id: int = Field(foreign_key="media_servers.id", ondelete="CASCADE", index=True)
+    source_playlist_id: str
+    #: The source's name when last seen, for the page when the source can't be reached.
+    title: str
+    created_at: datetime = Field(default_factory=utcnow)
+    last_synced_at: datetime | None = Field(default=None)
+
+
+class PlaylistCopy(SQLModel, table=True):
+    """One synced playlist's copy on one other server. The copy's own id is what lets sync
+    replace or delete it and never touch a playlist it didn't make."""
+
+    __tablename__ = "playlist_copies"
+    __table_args__ = (UniqueConstraint("sync_id", "target_server_id", name="uq_playlist_copy_target"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    sync_id: int = Field(foreign_key="playlist_syncs.id", ondelete="CASCADE", index=True)
+    target_server_id: int = Field(foreign_key="media_servers.id", ondelete="CASCADE", index=True)
+    #: None until a copy has been made (or after one was removed for having nothing to hold).
+    target_playlist_id: str | None = Field(default=None)
+    #: What the copy was last built from: title and the target's item ids, in order. Unchanged
+    #: means nothing to do.
+    fingerprint: str | None = Field(default=None)
+    #: "ok", "blocked" (a playlist of that name that sync didn't make), "empty" (none of its
+    #: titles are on this server) or "error".
+    status: str = Field(default="ok")
+    message: str | None = Field(default=None)
+    matched: int = Field(default=0)
+    unmatched: int = Field(default=0)
+    #: JSON list of the titles that couldn't be matched, the first few dozen.
+    unmatched_titles: str | None = Field(default=None)
+    synced_at: datetime | None = Field(default=None)

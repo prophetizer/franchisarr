@@ -346,3 +346,52 @@ def test_deleting_our_playlists_is_server_wide_and_never_touches_anyone_elses(ki
     assert deleted == ["/Items/a", "/Items/b"]
     listing = next(c.request.url for c in responses.calls if c.request.method == "GET")
     assert "userid" not in listing.lower(), "every user's playlists, not just the watched-as user's"
+
+
+# ------------------------------------------------------------------ playlist sync
+
+
+@responses.activate
+def test_sync_reads_a_playlists_films_and_episodes_in_order() -> None:
+    _user_lookup()
+    responses.add(responses.GET, f"{URL}/Items", json={"Items": [
+        {"Id": "p1", "Name": "Road trip", "MediaType": "Video", "ChildCount": 3},
+        {"Id": "p2", "Name": "Workout", "MediaType": "Audio", "ChildCount": 9}]})
+    responses.add(responses.GET, f"{URL}/Playlists/p1/Items", json={"Items": [
+        {"Id": "m1", "Type": "Movie", "Name": "Alien"},
+        {"Id": "e1", "Type": "Episode", "SeriesId": "s1", "SeriesName": "Breaking Bad",
+         "ParentIndexNumber": 2, "IndexNumber": 3},
+        {"Id": "a1", "Type": "Audio", "Name": "A song"}]})
+    client = _client(MediaServerKind.JELLYFIN)
+
+    listing = client.list_playlists()
+    items = client.playlist_items("p1")
+
+    assert [(p.id, p.title, p.video, p.count) for p in listing] == [("p1", "Road trip", True, 3), ("p2", "Workout", False, 9)]
+    assert [(i.item_type, i.key, i.show_key, i.season, i.episode) for i in items] == [
+        ("movie", "m1", None, 0, 0), ("episode", "e1", "s1", 2, 3), ("other", "a1", None, 0, 0)]
+    assert items[1].title == "Breaking Bad S02E03"
+
+
+@responses.activate
+def test_a_copy_is_created_without_touching_a_same_named_playlist() -> None:
+    """replace_playlist deletes every playlist of its name server-wide -- fine for
+    "(Franchisarr)" names, ruinous for a person's "Road trip". Sync creates by id instead."""
+    _user_lookup()
+    responses.add(responses.GET, f"{URL}/Items", json={"Items": [{"Id": "mine", "Name": "Road trip"}]})
+    responses.add(responses.POST, f"{URL}/Playlists", json={"Id": "copy1"})
+
+    new_id = _client(MediaServerKind.JELLYFIN).create_playlist("Road trip", ["a", "b"])
+
+    assert new_id == "copy1"
+    assert not any(c.request.method == "DELETE" for c in responses.calls)
+
+
+@responses.activate
+def test_deleting_a_copy_that_is_already_gone_is_not_an_error() -> None:
+    _user_lookup()
+    responses.add(responses.GET, f"{URL}/Items", json={"Items": []})
+
+    _client(MediaServerKind.EMBY).delete_playlist_id("gone")
+
+    assert not any(c.request.method == "DELETE" for c in responses.calls)

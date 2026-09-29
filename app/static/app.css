@@ -643,3 +643,9 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 .bulk-buttons { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
 .bulk-buttons button { width: auto; margin: 0; }
 .playlist-bulk fieldset label { display: block; }
+
+/* Playlists page (playlist sync). */
+.sync-meta { display: flex; flex-direction: column; gap: 0.25rem; }
+.sync-copy--blocked, .sync-copy--error { color: var(--pico-del-color); }
+.sync-copy details { margin: 0; }
+.sync-now button { width: auto; margin-right: 0.75rem; }

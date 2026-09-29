@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.38.0] — 2026-09-28
+
+### Added
+
+- **Playlist sync.** A new Playlists page (linked from Servers and Settings) lists every
+  playlist on each server with a Sync switch. A synced playlist is copied from its home server
+  to every other server that's on — after each scan, and on Sync now — matched title by title
+  through TMDb (films by their own id, episodes by show, season and episode). Titles another
+  server doesn't have are left out and listed with the reason. Copies take the same name and the
+  source's own poster; edits to a copy are overwritten at the next sync, deleting the source
+  deletes its copies (only ones sync made), and a same-named playlist sync didn't make is never
+  touched — that copy shows as blocked. Plex smart playlists are copied as they stand at each
+  sync. It uses the accounts Franchisarr already uses, leaves out Franchisarr's own and
+  music/photo playlists, and notifies only when a sync fails.
+
+### Upgrading
+
+- Migration 0026 adds two tables for playlist sync. Nothing syncs until you switch a playlist on.
+
 ## [0.37.0] — 2026-09-28
 
 ### Added

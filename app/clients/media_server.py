@@ -115,3 +115,32 @@ class PlaylistEntry:
     show_key: str | None = None
     season: int = 0
     episode: int = 0
+    #: The item's own key on its server (a Plex ratingKey, a Jellyfin/Emby id), for matching
+    #: a playlist's titles across servers (playlist_sync).
+    key: str | None = None
+
+
+@dataclass(frozen=True)
+class PlaylistInfo:
+    """A playlist as a server lists it, for playlist sync."""
+
+    id: str
+    title: str
+    #: A Plex smart playlist: its contents follow rules, and a copy holds what it held at sync.
+    smart: bool = False
+    #: Films and episodes. Music and photo playlists aren't synced.
+    video: bool = True
+    count: int = 0
+
+
+@dataclass(frozen=True)
+class PlaylistItemRef:
+    """One entry of a playlist being synced, in the terms the other servers can be asked for:
+    a film by its own key, an episode by its show's key and its season and number."""
+
+    item_type: str            # "movie", "episode" or "other"
+    key: str
+    title: str = ""
+    show_key: str | None = None
+    season: int = 0
+    episode: int = 0

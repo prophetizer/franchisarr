@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Playlists — Franchisarr{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ul><li><a href="{{ url('/media-servers') }}">← Servers</a></li></ul>
+</nav>
+<hgroup>
+  <h1>Playlists</h1>
+  <p>Sync a playlist from its server to your other servers. The copy has the same name and, when
+    the playlist has its own poster, the same poster.</p>
+</hgroup>
+
+{% if error %}<p role="alert" class="notice-bad">{{ error }}</p>{% endif %}
+
+{% if not several %}
+  <p class="notice-warn">Syncing needs a second media server that's switched on.
+    <a href="{{ url('/media-servers') }}">Servers</a></p>
+{% endif %}
+
+{% include "partials/sync_status.html" %}
+
+<p><small class="muted">
+  Syncs run after every scan, and with Sync now. A synced playlist is copied to every other server
+  that's on, and matched title by title: a film or episode that server doesn't have is left out
+  and listed here. Edits to a copy are overwritten at the next sync; deleting the playlist
+  deletes its copies. A playlist of the same name that sync didn't make is never touched.
+  Franchisarr's own “… (Franchisarr)” playlists aren't listed: Make a playlist builds those on each
+  server already. Uses the account Franchisarr uses on each server.
+</small></p>
+
+{% for entry in servers %}
+  <section>
+    <h2>{{ entry.server.name }}</h2>
+    {% if entry.error %}
+      <p role="alert" class="notice-bad">{{ entry.error }}</p>
+    {% elif not entry.rows %}
+      <p class="muted">No playlists to sync here.</p>
+    {% else %}
+      <ul class="film-list">
+        {% for row in entry.rows %}
+          <li class="film-row">
+            <span class="film-title">{{ row.title }}
+              <small class="muted">{{ row.count }} item{{ '' if row.count == 1 else 's' }}{% if row.smart %} · smart playlist, copied as it stands{% endif %}</small>
+            </span>
+            <span class="film-meta sync-meta">
+              {% if row.copy_of %}
+                <small class="muted">Copy of “{{ row.copy_of[0] }}” from {{ row.copy_of[1] }}</small>
+              {% elif row.sync %}
+                {% if not row.copies %}<small class="muted">Syncing — copies are made at the next sync.</small>{% endif %}
+                {% for name, copy in row.copies %}
+                  <small class="sync-copy sync-copy--{{ copy.status }}">
+                    → {{ name }}:
+                    {% if copy.status == 'ok' %}{{ copy.matched }} of {{ copy.matched + copy.unmatched }} titles
+                    {%- elif copy.status == 'blocked' %}blocked — {{ copy.message }}
+                    {%- elif copy.status == 'empty' %}{{ copy.message }}
+                    {%- else %}{{ copy.message or 'not synced yet' }}{% endif %}
+                    {% if copy.unmatched and copy.unmatched_titles %}
+                      <details><summary>{{ copy.unmatched }} not copied</summary>
+                        <ul>{% for t in copy.unmatched_titles | fromjson %}<li>{{ t }}</li>{% endfor %}</ul>
+                      </details>
+                    {% endif %}
+                  </small>
+                {% endfor %}
+              {% endif %}
+            </span>
+            <span class="film-actions">
+              {% if row.sync %}
+                <form method="post" action="{{ url('/playlists/sync/' ~ row.sync.id ~ '/off') }}" class="nav-form"
+                      title="Stop syncing. The copies stay, as ordinary playlists.">
+                  <button type="submit" class="secondary outline">Stop syncing</button>
+                </form>
+              {% elif not row.copy_of and several %}
+                <form method="post" action="{{ url('/playlists/sync/on') }}" class="nav-form">
+                  <input type="hidden" name="server_id" value="{{ entry.server.id }}">
+                  <input type="hidden" name="playlist_id" value="{{ row.id }}">
+                  <input type="hidden" name="title" value="{{ row.title }}">
+                  <button type="submit" class="outline">Sync</button>
+                </form>
+              {% endif %}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </section>
+{% endfor %}
+{% endblock %}

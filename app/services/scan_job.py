@@ -291,6 +291,14 @@ def run_in_background(trigger: str = "manual", *, force_refresh: bool = False,
                     summary += (" Directors, spin-offs and franchises are being worked out now"
                                 " -- a few minutes more, in the background.")
                 scan_state.finish(summary, result.errors)
+            # Right after a scan is when each server's library is freshest, so it's when
+            # playlist titles match best across servers (0.38.0). A no-op when nothing syncs.
+            try:
+                from app.services import playlist_sync
+
+                playlist_sync.run_in_background("after scan")
+            except Exception:  # noqa: BLE001 -- a sync that can't start must not fail the scan
+                logger.exception("Couldn't start the playlist sync after the scan")
         except Exception as exc:  # noqa: BLE001
             # Anything escaping here would leave the state stuck on "running" forever, and the
             # button would never come back.

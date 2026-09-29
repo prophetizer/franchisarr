@@ -491,6 +491,45 @@ def test_the_add_form_offers_each_kind_with_its_count_and_starts_the_job(client:
     assert started == [(["franchises", "directors"], None, "every server")]
 
 
+def test_plex_lists_and_reads_playlists_for_sync(monkeypatch) -> None:
+    from app.clients.plex_client import PlexClient
+
+    class Playlist:
+        def __init__(self, key, title, smart=False, kind="video", items=()):  # noqa: ANN001
+            self.__dict__.update(ratingKey=key, title=title, smart=smart, playlistType=kind, leafCount=len(items))
+            self._items = list(items)
+
+        def items(self):  # noqa: ANN201
+            return self._items
+
+    class Film(FakeItem):
+        TYPE = "movie"
+
+    class Episode(FakeItem):
+        TYPE = "episode"
+
+    episode = Episode(9, season=2, index=3)
+    episode.__dict__.update(grandparentRatingKey=77, grandparentTitle="Breaking Bad")
+    road = Playlist(5, "Road trip", smart=True, items=[Film(1), episode])
+
+    class Server:
+        def playlists(self):  # noqa: ANN201
+            return [road, Playlist(6, "Workout", kind="audio")]
+
+        def fetchItem(self, key):  # noqa: ANN001, ANN201, N802
+            return road
+
+    client = PlexClient.__new__(PlexClient)
+    monkeypatch.setattr(PlexClient, "server", property(lambda self: Server()), raising=False)
+
+    listing = client.list_playlists()
+    items = client.playlist_items("5")
+
+    assert [(p.id, p.smart, p.video, p.count) for p in listing] == [("5", True, True, 2), ("6", False, False, 0)]
+    assert [(i.item_type, i.key, i.show_key, i.season, i.episode) for i in items] == [
+        ("movie", "1", None, 0, 0), ("episode", "9", "77", 2, 3)]
+
+
 # ------------------------------------------------------------------ posters
 
 

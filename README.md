@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.37.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.38.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -250,6 +250,24 @@ out. With more than one server the button becomes a row — **On every server**,
     shared with that account may be listed too.
 
   Both deletes list exactly what would go before anything is deleted.
+
+### Playlist sync
+
+**Servers → Playlist sync** (also linked from Settings) lists the playlists on each server with a
+**Sync** switch. A synced playlist is copied from its server to every other server that's on,
+after each scan and whenever you press **Sync now**:
+
+- Titles are matched by TMDb id — a film by its own, an episode by its show plus season and
+  episode number. One the other server doesn't have is left out, and the page lists what wasn't
+  copied and why.
+- The copy has the same name and, if the playlist has its own poster, the same poster. Edits to
+  a copy are overwritten at the next sync; deleting the playlist deletes its copies. A Plex smart
+  playlist is copied as what it holds at each sync.
+- A playlist of the same name that sync didn't make is never touched; that copy shows as
+  blocked. Stopping a sync leaves its copies as ordinary playlists.
+- It uses the same accounts as everything else here (the Plex token's owner, the Jellyfin/Emby
+  *watched as* user). Franchisarr's own playlists and music or photo playlists aren't listed.
+  A sync that fails sends a notification, if you've set one up.
 
 ## Calendar
 

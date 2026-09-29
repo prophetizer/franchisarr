@@ -25,6 +25,7 @@ from dataclasses import dataclass, field
 import plexapi
 from plexapi.exceptions import BadRequest, NotFound, Unauthorized
 from plexapi.server import PlexServer
+import requests
 from requests.exceptions import RequestException
 
 from app.clients.media_server import (
@@ -36,6 +37,8 @@ from app.clients.media_server import (
     MediaServerKind,
     MediaShow,
     PlaylistEntry,
+    PlaylistInfo,
+    PlaylistItemRef,
 )
 from app.clients.plex_guid import ExternalIds, extract_external_ids, unknown_schemes
 from app.logging_config import register_secret
@@ -139,6 +142,61 @@ class PlexClient:
 
     def delete_playlists(self, suffix: str) -> list[str]:
         return _delete_playlists(self, suffix)
+
+    # ---------------------------------------------------------------- playlist sync
+
+    def list_playlists(self) -> list[PlaylistInfo]:
+        """The token owner's playlists."""
+        return [PlaylistInfo(id=str(_attr(p, "ratingKey", "")), title=_attr(p, "title", ""),
+                             smart=bool(_attr(p, "smart", False)),
+                             video=_attr(p, "playlistType", "video") == "video",
+                             count=int(_attr(p, "leafCount", 0) or 0))
+                for p in self.server.playlists()]
+
+    def playlist_items(self, playlist_id: str) -> list[PlaylistItemRef]:
+        """What the playlist holds now, in order -- a smart playlist's current contents too."""
+        refs = []
+        for item in self.server.fetchItem(int(playlist_id)).items():
+            kind = getattr(item, "TYPE", "")
+            key = str(_attr(item, "ratingKey", ""))
+            if kind == "movie":
+                refs.append(PlaylistItemRef("movie", key, _attr(item, "title", "")))
+            elif kind == "episode":
+                season, number = int(_attr(item, "parentIndex", 0) or 0), int(_attr(item, "index", 0) or 0)
+                refs.append(PlaylistItemRef(
+                    "episode", key, f"{_attr(item, 'grandparentTitle', '')} S{season:02d}E{number:02d}",
+                    show_key=str(_attr(item, "grandparentRatingKey", "")), season=season, episode=number))
+            else:
+                refs.append(PlaylistItemRef("other", key, _attr(item, "title", "")))
+        return refs
+
+    def create_playlist(self, title: str, items: list) -> str:  # noqa: ANN001 - plexapi objects
+        """A new playlist of `items`, in order; its id. Never touches another playlist."""
+        playlist = self.server.createPlaylist(title, items=items[:PLAYLIST_CHUNK])
+        for start in range(PLAYLIST_CHUNK, len(items), PLAYLIST_CHUNK):
+            playlist.addItems(items[start:start + PLAYLIST_CHUNK])
+        return str(_attr(playlist, "ratingKey", ""))
+
+    def delete_playlist_id(self, playlist_id: str) -> None:
+        from plexapi.exceptions import NotFound
+
+        try:
+            self.server.fetchItem(int(playlist_id)).delete()
+        except NotFound:
+            pass
+
+    def playlist_poster(self, playlist_id: str) -> bytes | None:
+        """The playlist's own poster, if someone set one; None for Plex's automatic mosaic.
+        plexapi doesn't parse a playlist's `thumb`, so it's read off the raw XML."""
+        playlist = self.server.fetchItem(int(playlist_id))
+        thumb = getattr(playlist, "_data", None) is not None and playlist._data.attrib.get("thumb")
+        if not thumb:
+            return None
+        response = requests.get(self.server.url(thumb, includeToken=True), timeout=30)
+        return response.content if response.ok and response.content else None
+
+    def set_playlist_poster_id(self, playlist_id: str, image: bytes) -> bool:
+        return _upload_poster(self.server.fetchItem(int(playlist_id)), image)
 
     def delete_all_playlists(self) -> list[str]:
         """Every playlist of the token's owner -- theirs alone; Plex keeps each user's apart."""
@@ -257,7 +315,7 @@ def _playlist_entries(client: "PlexClient", films: list[str], shows: list[str]) 
     for start in range(0, len(films), PLAYLIST_CHUNK):
         keys = ",".join(films[start:start + PLAYLIST_CHUNK])
         for raw in server.fetchItems(f"/library/metadata/{keys}"):
-            entries.append(PlaylistEntry(raw=raw, aired=_aired(raw)))
+            entries.append(PlaylistEntry(raw=raw, aired=_aired(raw), key=str(_attr(raw, "ratingKey", ""))))
     for show_key in shows:
         try:
             show = server.fetchItem(int(show_key))
@@ -273,7 +331,8 @@ def _playlist_entries(client: "PlexClient", films: list[str], shows: list[str]) 
             aired = _aired(raw) or previous   # an undated episode stays after the one before it
             previous = aired or previous
             entries.append(PlaylistEntry(raw=raw, aired=aired, show_key=str(show_key),
-                                         season=season, episode=int(_attr(raw, "index", 0) or 0)))
+                                         season=season, episode=int(_attr(raw, "index", 0) or 0),
+                                         key=str(_attr(raw, "ratingKey", ""))))
     return entries
 
 
@@ -321,12 +380,19 @@ def _set_playlist_poster(client: "PlexClient", title: str, image: bytes) -> bool
 
     for playlist in client.server.playlists():
         if playlist.title == title:
-            with tempfile.NamedTemporaryFile(suffix=".jpg") as handle:
-                handle.write(image)
-                handle.flush()
-                playlist.uploadPoster(filepath=handle.name)
-            return True
+            return _upload_poster(playlist, image)
     return False
+
+
+def _upload_poster(playlist, image: bytes) -> bool:  # noqa: ANN001 - a plexapi Playlist
+    """plexapi uploads from a file path, hence the temporary file."""
+    import tempfile
+
+    with tempfile.NamedTemporaryFile(suffix=".jpg") as handle:
+        handle.write(image)
+        handle.flush()
+        playlist.uploadPoster(filepath=handle.name)
+    return True
 
 
 def _disable_plexapi_autoreload() -> None:

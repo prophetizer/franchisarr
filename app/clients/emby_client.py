@@ -25,6 +25,8 @@ from app import __version__
 
 from app.clients.media_server import (
     PlaylistEntry,
+    PlaylistInfo,
+    PlaylistItemRef,
     MediaLibrary,
     MediaLibraryNotFoundError,
     MediaMovie,
@@ -217,7 +219,7 @@ class EmbyLikeClient:
             batch = self._get("/Items", {"Ids": ",".join(films[start:start + PLAYLIST_CHUNK]),
                                          "Fields": "PremiereDate,ProductionYear", "UserId": user})
             for item in batch.get("Items") or []:
-                entries.append(PlaylistEntry(raw=item["Id"], aired=_premiere(item)))
+                entries.append(PlaylistEntry(raw=item["Id"], aired=_premiere(item), key=item["Id"]))
         for show_id in shows:
             try:
                 episodes = self._get(f"/Shows/{show_id}/Episodes", {"UserId": user, "Fields": "PremiereDate"})
@@ -233,7 +235,7 @@ class EmbyLikeClient:
                     continue     # specials: not part of the run
                 aired = _premiere(item) or previous
                 previous = aired or previous
-                entries.append(PlaylistEntry(raw=item["Id"], aired=aired, show_key=str(show_id),
+                entries.append(PlaylistEntry(raw=item["Id"], aired=aired, show_key=str(show_id), key=item["Id"],
                                              season=season, episode=int(item.get("IndexNumber") or 0)))
         return entries
 
@@ -246,6 +248,13 @@ class EmbyLikeClient:
         for playlist in self._every_playlist():
             if playlist.get("Name") == title:
                 self._send("DELETE", f"/Items/{playlist['Id']}")
+        self.create_playlist(title, items)
+
+    def create_playlist(self, title: str, items: list) -> str:  # noqa: ANN001 - item ids
+        """A new playlist of `items` (ids), in order, in the watched-as user's account; its id.
+        Never touches another playlist, same-named ones included."""
+        user = self.watched_user_id()
+        before = {p.get("Id") for p in self._playlists()}
         first = [str(i) for i in items[:PLAYLIST_CHUNK]]
         if self.kind == MediaServerKind.JELLYFIN:
             created = self._send("POST", "/Playlists", json={
@@ -253,12 +262,61 @@ class EmbyLikeClient:
         else:
             created = self._send("POST", "/Playlists", params={
                 "Name": title, "Ids": ",".join(first), "UserId": user, "MediaType": "Video"})
-        playlist_id = (created or {}).get("Id") or self._playlist_id(title)
+        # If the server doesn't answer with the id, the new one is the playlist that wasn't
+        # there before -- not whichever happens to share the name.
+        playlist_id = (created or {}).get("Id") or next(
+            (p["Id"] for p in self._playlists() if p.get("Id") not in before and p.get("Name") == title), None)
         if not playlist_id:
             raise EmbyClientError(f"{self.label} didn't say which playlist it made")
         for start in range(PLAYLIST_CHUNK, len(items), PLAYLIST_CHUNK):
             chunk = ",".join(str(i) for i in items[start:start + PLAYLIST_CHUNK])
             self._send("POST", f"/Playlists/{playlist_id}/Items", params={"Ids": chunk, "UserId": user})
+        return str(playlist_id)
+
+    # ---------------------------------------------------------------- playlist sync
+
+    def list_playlists(self) -> list[PlaylistInfo]:
+        """The watched-as user's playlists."""
+        return [PlaylistInfo(id=str(p["Id"]), title=p.get("Name", ""),
+                             video=(p.get("MediaType") or "Video") not in ("Audio", "Photo"),
+                             count=int(p.get("ChildCount") or 0))
+                for p in self._playlists() if p.get("Id")]
+
+    def playlist_items(self, playlist_id: str) -> list[PlaylistItemRef]:
+        found = self._get(f"/Playlists/{playlist_id}/Items", {"UserId": self.watched_user_id()})
+        refs = []
+        for row in (found.get("Items") or []) if isinstance(found, dict) else []:
+            kind, key = row.get("Type"), str(row.get("Id", ""))
+            if kind == "Movie":
+                refs.append(PlaylistItemRef("movie", key, row.get("Name", "")))
+            elif kind == "Episode":
+                season, number = int(row.get("ParentIndexNumber") or 0), int(row.get("IndexNumber") or 0)
+                refs.append(PlaylistItemRef("episode", key, f"{row.get('SeriesName', '')} S{season:02d}E{number:02d}",
+                                            show_key=str(row.get("SeriesId") or ""), season=season, episode=number))
+            else:
+                refs.append(PlaylistItemRef("other", key, row.get("Name", "")))
+        return refs
+
+    def delete_playlist_id(self, playlist_id: str) -> None:
+        """Delete it if it's still there; one someone already removed is no error. (_send maps a
+        404 to a plain client error, so ask first rather than catch it.)"""
+        if any(str(p.get("Id")) == str(playlist_id) for p in self._playlists()):
+            self._send("DELETE", f"/Items/{playlist_id}")
+
+    def playlist_poster(self, playlist_id: str) -> bytes | None:
+        """The playlist's primary image, if it has one."""
+        try:
+            response = self._session.get(f"{self._base}/Items/{playlist_id}/Images/Primary", timeout=self._timeout)
+        except requests.RequestException:
+            return None
+        return response.content if response.status_code == 200 and response.content else None
+
+    def set_playlist_poster_id(self, playlist_id: str, image: bytes) -> bool:
+        import base64
+
+        self._send("POST", f"/Items/{playlist_id}/Images/Primary", data=base64.b64encode(image),
+                   headers={"Content-Type": "image/jpeg"})
+        return True
 
     def set_playlist_poster(self, title: str, image: bytes) -> bool:
         """Upload `image` (JPEG) as the playlist's primary image. Both servers take the image

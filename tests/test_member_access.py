@@ -71,6 +71,8 @@ ADMIN_ONLY = [
     ("get", "/playlists/delete"), ("post", "/playlists/delete"),
     ("get", "/playlists/add-all"), ("post", "/playlists/add-all"),
     ("get", "/playlists/add-all/status"), ("post", "/playlists/add-all/stop"),
+    ("get", "/playlists"), ("post", "/playlists/sync/on"), ("post", "/playlists/sync/1/off"),
+    ("post", "/playlists/sync/run"), ("get", "/playlists/sync/status"),
     ("post", "/settings/keys"),
 ]
 

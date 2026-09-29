@@ -185,3 +185,69 @@ def add_all_stop(request: Request, user: AdminUser):
 
     playlist_bulk.stop()
     return _bulk_status(request)
+
+
+# ---------------------------------------------------------------------- playlist sync
+
+
+@router.get("/playlists", response_class=HTMLResponse)
+def playlists_page(request: Request, session: DbSession, user: AdminUser, error: str | None = None):
+    from app.services import media_server_service, playlist_sync
+
+    return get_templates().TemplateResponse(request, "playlists.html", {
+        "user": user, "servers": playlist_sync.page(session), "sync": playlist_sync.current(),
+        "several": len(media_server_service.enabled_servers(session)) > 1, "error": error,
+    })
+
+
+def _back_to_playlists(error: str | None = None):  # noqa: ANN202
+    from urllib.parse import quote
+
+    from fastapi.responses import RedirectResponse
+
+    from app.config import get_settings
+
+    target = f"{get_settings().base_url}/playlists" + (f"?error={quote(error)}" if error else "")
+    return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/playlists/sync/on")
+def sync_on(session: DbSession, user: AdminUser, server_id: Annotated[int, Form()],
+            playlist_id: Annotated[str, Form()], title: Annotated[str, Form()] = ""):
+    from app.services import playlist_sync
+
+    if not any(s.id == server_id for s in playlist_service.targets(session)):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such server, or it's turned off.")
+    try:
+        playlist_sync.enable(session, server_id, playlist_id.strip(), title.strip()[:300] or playlist_id)
+    except ValueError as exc:
+        return _back_to_playlists(str(exc))
+    return _back_to_playlists()
+
+
+@router.post("/playlists/sync/{sync_id}/off")
+def sync_off(session: DbSession, user: AdminUser, sync_id: int):
+    from app.services import playlist_sync
+
+    playlist_sync.disable(session, sync_id)
+    return _back_to_playlists()
+
+
+def _sync_status(request: Request, user) -> HTMLResponse:  # noqa: ANN001
+    from app.services import playlist_sync
+
+    return get_templates().TemplateResponse(request, "partials/sync_status.html",
+                                            {"user": user, "sync": playlist_sync.current()})
+
+
+@router.post("/playlists/sync/run", response_class=HTMLResponse)
+def sync_now(request: Request, user: AdminUser):
+    from app.services import playlist_sync
+
+    playlist_sync.run_in_background("manual")
+    return _sync_status(request, user)
+
+
+@router.get("/playlists/sync/status", response_class=HTMLResponse)
+def sync_status(request: Request, user: AdminUser):
+    return _sync_status(request, user)

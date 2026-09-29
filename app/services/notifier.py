@@ -289,3 +289,41 @@ def send(url: str, report: ScanReport, webhook_format: str, *, timeout: int = DE
 
     logger.info("Notified: %s", report.summary())
     return True
+
+
+def send_message(url: str, title: str, lines: list[str], webhook_format: str, *,
+                 timeout: int = DEFAULT_TIMEOUT) -> bool:
+    """A plain message -- a heading and a few lines -- in whichever format the webhook takes.
+    For things that aren't a scan's findings (a playlist sync that failed, 0.38.0). Never
+    raises, for the same reason `send` doesn't."""
+    if not url:
+        return False
+    shown = lines[:MAX_LISTED] + ([f"…and {len(lines) - MAX_LISTED} more"] if len(lines) > MAX_LISTED else [])
+    body = "\n".join(f"- {line}" for line in shown)
+    try:
+        if webhook_format == WebhookFormat.APPRISE.value:
+            import apprise
+
+            client = apprise.Apprise()
+            for part in apprise_urls(url):
+                client.add(part)
+            return bool(len(client)) and bool(client.notify(title=title, body=body,
+                                                            body_format=apprise.NotifyFormat.MARKDOWN))
+        if webhook_format == WebhookFormat.APPRISE_API.value:
+            payload = {"title": title, "body": body, "format": "markdown"}
+        elif webhook_format == WebhookFormat.DISCORD.value:
+            payload = {"username": "Franchisarr", "content": title[:DISCORD_CONTENT_LIMIT],
+                       "embeds": [{"title": title[:256], "color": DISCORD_COLOUR, "description": body[:4000]}]}
+        elif webhook_format == WebhookFormat.SLACK.value:
+            payload = {"text": title, "blocks": [{"type": "section", "text": {"type": "mrkdwn",
+                                                                              "text": f"*{title}*\n{body}"}}]}
+        else:
+            payload = {"event": "franchisarr.message", "title": title, "lines": lines}
+        response = requests.post(url, json=payload, timeout=timeout)
+    except Exception as exc:  # noqa: BLE001 -- a notification must never fail its caller
+        logger.warning("Could not deliver the notification: %s", type(exc).__name__)
+        return False
+    if response.status_code >= 400:
+        logger.warning("Notification rejected with %s", response.status_code)
+        return False
+    return True
