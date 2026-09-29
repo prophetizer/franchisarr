@@ -197,7 +197,28 @@ def playlists_page(request: Request, session: DbSession, user: AdminUser, error:
     return get_templates().TemplateResponse(request, "playlists.html", {
         "user": user, "servers": playlist_sync.page(session), "sync": playlist_sync.current(),
         "several": len(media_server_service.enabled_servers(session)) > 1, "error": error,
+        "sync_all": playlist_sync.sync_all(session), "keep_franchisarr": playlist_sync.keep_franchisarr(session),
     })
+
+
+@router.post("/playlists/switches")
+def sync_switches(session: DbSession, user: AdminUser, every: Annotated[str, Form()] = "",
+                  franchisarr: Annotated[str, Form()] = ""):
+    from app.services import playlist_sync
+
+    playlist_sync.set_switches(session, every=bool(every), franchisarr=bool(franchisarr))
+    return _back_to_playlists()
+
+
+@router.post("/playlists/sync/exclude")
+def sync_exclude(session: DbSession, user: AdminUser, server_id: Annotated[int, Form()],
+                 playlist_id: Annotated[str, Form()], title: Annotated[str, Form()] = ""):
+    from app.services import playlist_sync
+
+    if not any(s.id == server_id for s in playlist_service.targets(session)):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such server, or it's turned off.")
+    playlist_sync.exclude(session, server_id, playlist_id.strip(), title.strip()[:300] or playlist_id)
+    return _back_to_playlists()
 
 
 def _back_to_playlists(error: str | None = None):  # noqa: ANN202

@@ -703,6 +703,25 @@ class PlaylistSync(SQLModel, table=True):
     title: str
     created_at: datetime = Field(default_factory=utcnow)
     last_synced_at: datetime | None = Field(default=None)
+    #: False: switched off while "sync every playlist" is on -- kept so it stays off.
+    enabled: bool = Field(default=True)
+    #: Made by "sync every playlist" rather than by someone pressing Sync; turning that switch
+    #: off removes these (their copies stay).
+    auto: bool = Field(default=False)
+
+
+class FranchisarrPlaylistPresence(SQLModel, table=True):
+    """Which servers a "... (Franchisarr)" playlist was on at the last sync, for "keep
+    Franchisarr's playlists on every server": gone from a server it was on means someone deleted
+    it there, and it goes everywhere; a server that couldn't be reached says nothing."""
+
+    __tablename__ = "franchisarr_playlist_presence"
+
+    id: int | None = Field(default=None, primary_key=True)
+    title: str = Field(index=True, unique=True)
+    #: JSON list of media server ids.
+    server_ids: str = Field(default="[]")
+    updated_at: datetime = Field(default_factory=utcnow)
 
 
 class PlaylistCopy(SQLModel, table=True):

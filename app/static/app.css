@@ -649,3 +649,6 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 .sync-copy--blocked, .sync-copy--error { color: var(--pico-del-color); }
 .sync-copy details { margin: 0; }
 .sync-now button { width: auto; margin-right: 0.75rem; }
+.sync-switches { margin-bottom: var(--pico-spacing); }
+.sync-switches label { margin-bottom: 0.5rem; }
+.sync-switches button { width: auto; }

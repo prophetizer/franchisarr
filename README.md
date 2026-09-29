@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.38.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.39.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -266,8 +266,17 @@ after each scan and whenever you press **Sync now**:
 - A playlist of the same name that sync didn't make is never touched; that copy shows as
   blocked. Stopping a sync leaves its copies as ordinary playlists.
 - It uses the same accounts as everything else here (the Plex token's owner, the Jellyfin/Emby
-  *watched as* user). Franchisarr's own playlists and music or photo playlists aren't listed.
-  A sync that fails sends a notification, if you've set one up.
+  *watched as* user). Music and photo playlists aren't synced. A sync that fails sends a
+  notification, if you've set one up.
+
+Two switches at the top of the page:
+
+- **Sync every playlist** — every video playlist on every server syncs, including ones made
+  later; any one can still be switched off with **Don't sync**.
+- **Keep Franchisarr's playlists on every server** — a "… (Franchisarr)" playlist on one server
+  is built on the others from *their own* libraries (so each is complete for its server, rather
+  than a copy trimmed to what both hold), and deleting it on any server deletes it everywhere.
+  A server that can't be reached is never taken for a deletion.
 
 ## Calendar
 

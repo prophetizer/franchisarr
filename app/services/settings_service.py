@@ -61,6 +61,11 @@ class SettingKey:
     #: others back on" restores exactly those. Absent when not in use. Never restored from a
     #: backup -- the ids are this install's own.
     SOLO_RESTORE = "solo_restore"
+    #: Playlist sync: every video playlist syncs, new ones too, except those switched off.
+    PLAYLIST_SYNC_ALL = "playlist_sync_all"
+    #: Playlist sync: a "... (Franchisarr)" playlist on one server is built on the others from
+    #: their own libraries, and deleting it on one deletes it everywhere.
+    PLAYLIST_SYNC_FRANCHISARR = "playlist_sync_franchisarr"
 
 
 #: Values used when neither the environment nor the user has said otherwise.
@@ -81,6 +86,8 @@ DEFAULTS: dict[str, str] = {
     SettingKey.UPDATE_RELEASES_URL: "",
     SettingKey.UPDATE_CHECK: "true",
     SettingKey.ALLOW_MEMBER_SIGNIN: "false",
+    SettingKey.PLAYLIST_SYNC_ALL: "false",
+    SettingKey.PLAYLIST_SYNC_FRANCHISARR: "false",
 }
 
 #: Theming moved to environment variables in 0.2.0 (TP_THEME and friends), so a homelab can set

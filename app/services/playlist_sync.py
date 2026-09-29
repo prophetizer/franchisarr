@@ -15,6 +15,12 @@ Decided with michael (0.38.0):
 - Runs after each scan (when library matching is freshest) and on "Sync now"; notifies only on
   failure.
 
+Two switches added after (0.39.0, michael): "sync every playlist" makes every eligible playlist a
+source, new ones too, while any can still be switched off (a row with enabled=False remembers
+that); and "keep Franchisarr's playlists on every server" builds a "(Franchisarr)" playlist on
+the servers that lack it from their own libraries -- so each is complete for its server, not a
+trimmed mirror -- and deletes it everywhere once it's deleted on a server it was on.
+
 Titles are matched across servers by TMDb id through the library rows each scan keeps: a film
 by its own id, an episode by its show's id plus season and episode number. A title in a
 library Franchisarr doesn't scan can't be matched anywhere, and is reported as such.
@@ -31,7 +37,7 @@ from datetime import datetime, timezone
 
 from sqlmodel import Session, col, select
 
-from app.models import ItemType, LibraryItem, MediaServer, PlaylistCopy, PlaylistSync
+from app.models import FranchisarrPlaylistPresence, LibraryItem, MediaServer, PlaylistCopy, PlaylistSync
 from app.services.playlist_service import SUFFIX
 
 logger = logging.getLogger(__name__)
@@ -102,6 +108,16 @@ class PlaylistRow:
     copies: list[tuple[str, PlaylistCopy]] = field(default_factory=list)   # (server name, copy)
     #: Set when this playlist is itself a copy that sync made: (source title, source server).
     copy_of: tuple[str, str] | None = None
+    #: "Sync every playlist" is on and this one has no row yet: it syncs at the next run.
+    pending: bool = False
+
+    @property
+    def syncing(self) -> bool:
+        return self.sync is not None and self.sync.enabled
+
+    @property
+    def excluded(self) -> bool:
+        return self.sync is not None and not self.sync.enabled
 
 
 @dataclass
@@ -109,6 +125,35 @@ class ServerPlaylists:
     server: MediaServer
     rows: list[PlaylistRow] = field(default_factory=list)
     error: str | None = None
+    #: How many "(Franchisarr)" playlists it has, for the keep-them-everywhere summary.
+    franchisarr: int = 0
+
+
+def sync_all(session: Session) -> bool:
+    from app.services.settings_service import SettingKey, get_bool_setting
+
+    return get_bool_setting(session, SettingKey.PLAYLIST_SYNC_ALL, False)
+
+
+def keep_franchisarr(session: Session) -> bool:
+    from app.services.settings_service import SettingKey, get_bool_setting
+
+    return get_bool_setting(session, SettingKey.PLAYLIST_SYNC_FRANCHISARR, False)
+
+
+def set_switches(session: Session, *, every: bool, franchisarr: bool) -> None:
+    """Save the two switches. Turning "sync every playlist" off drops what it added and the
+    switch-offs it was remembering; their copies stay, as with Stop syncing."""
+    from sqlmodel import delete as sql_delete
+
+    from app.services.settings_service import SettingKey, set_setting
+
+    if sync_all(session) and not every:
+        session.exec(sql_delete(PlaylistSync).where(
+            (col(PlaylistSync.auto) == True) | (col(PlaylistSync.enabled) == False)))  # noqa: E712
+    set_setting(session, SettingKey.PLAYLIST_SYNC_ALL, "true" if every else "false")
+    set_setting(session, SettingKey.PLAYLIST_SYNC_FRANCHISARR, "true" if franchisarr else "false")
+    session.commit()
 
 
 def page(session: Session) -> list[ServerPlaylists]:
@@ -126,6 +171,7 @@ def page(session: Session) -> list[ServerPlaylists]:
         if copy.target_playlist_id:
             copy_index[(copy.target_server_id, copy.target_playlist_id)] = copy
     sync_by_id = {s.id: s for s in syncs.values()}
+    every = sync_all(session)
 
     found = []
     for server in servers:
@@ -137,6 +183,7 @@ def page(session: Session) -> list[ServerPlaylists]:
             entry.error = f"Couldn't be reached ({type(exc).__name__})."
             found.append(entry)
             continue
+        entry.franchisarr = sum(1 for i in listing if i.video and i.title.endswith(SUFFIX))
         for info in sorted((i for i in listing if eligible(i)), key=lambda i: i.title.casefold()):
             row = PlaylistRow(info.id, info.title, info.count, info.smart)
             copy = copy_index.get((server.id, info.id))
@@ -147,6 +194,8 @@ def page(session: Session) -> list[ServerPlaylists]:
                 row.sync = syncs.get((server.id, info.id))
                 if row.sync is not None:
                     row.copies = [(names.get(c.target_server_id, "?"), c) for c in by_sync.get(row.sync.id, [])]
+                else:
+                    row.pending = every
             entry.rows.append(row)
         found.append(entry)
     return found
@@ -158,6 +207,10 @@ def enable(session: Session, server_id: int, playlist_id: str, title: str) -> Pl
     existing = session.exec(select(PlaylistSync).where(
         col(PlaylistSync.source_server_id) == server_id, col(PlaylistSync.source_playlist_id) == playlist_id)).first()
     if existing is not None:
+        if not existing.enabled:
+            existing.enabled = True
+            session.add(existing)
+            session.commit()
         return existing
     if session.exec(select(PlaylistCopy.id).where(
             col(PlaylistCopy.target_server_id) == server_id, col(PlaylistCopy.target_playlist_id) == playlist_id)).first():
@@ -171,12 +224,31 @@ def enable(session: Session, server_id: int, playlist_id: str, title: str) -> Pl
 
 
 def disable(session: Session, sync_id: int) -> None:
-    """Stop syncing. The copies stay, as ordinary playlists nobody syncs any more."""
+    """Stop syncing. The copies stay, as ordinary playlists nobody syncs any more. While "sync
+    every playlist" is on the row is kept, switched off, or the next run would adopt it again."""
     sync = session.get(PlaylistSync, sync_id)
-    if sync is not None:
+    if sync is None:
+        return
+    if sync_all(session):
+        sync.enabled = False
+        session.add(sync)
+    else:
         session.delete(sync)
-        session.commit()
-        logger.info("Playlist sync off for %r", sync.title)
+    session.commit()
+    logger.info("Playlist sync off for %r", sync.title)
+
+
+def exclude(session: Session, server_id: int, playlist_id: str, title: str) -> None:
+    """"Don't sync" for a playlist "sync every playlist" hasn't adopted yet."""
+    existing = session.exec(select(PlaylistSync).where(
+        col(PlaylistSync.source_server_id) == server_id, col(PlaylistSync.source_playlist_id) == playlist_id)).first()
+    if existing is None:
+        session.add(PlaylistSync(source_server_id=server_id, source_playlist_id=playlist_id, title=title,
+                                 enabled=False))
+    else:
+        existing.enabled = False
+        session.add(existing)
+    session.commit()
 
 
 # ------------------------------------------------------------------ syncing
@@ -249,9 +321,12 @@ class _Run:
 
 def run(session: Session) -> SyncProgress:
     """Sync every playlist that's switched on. Progress and totals go to `current()`."""
-    syncs = session.exec(select(PlaylistSync).order_by(col(PlaylistSync.title))).all()
-    _set(total=len(syncs))
     work = _Run(session)
+    if sync_all(session):
+        _adopt_all(work)
+    syncs = session.exec(select(PlaylistSync).where(col(PlaylistSync.enabled) == True)  # noqa: E712
+                         .order_by(col(PlaylistSync.title))).all()
+    _set(total=len(syncs))
     for index, sync in enumerate(syncs, start=1):
         _set(current=sync.title, done=index - 1)
         try:
@@ -261,7 +336,91 @@ def run(session: Session) -> SyncProgress:
             _error(f"{sync.title}: {type(exc).__name__}")
         session.commit()
     _set(done=len(syncs), current="")
+    if keep_franchisarr(session):
+        _set(current="Franchisarr's playlists")
+        try:
+            _franchisarr(work)
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Keeping Franchisarr's playlists in step failed")
+            _error(f"Franchisarr's playlists: {type(exc).__name__}")
+        _set(current="")
     return current()
+
+
+def _adopt_all(work: _Run) -> None:
+    """"Sync every playlist": each eligible playlist without a row becomes a source. Copies sync
+    made are never adopted -- that would copy them back."""
+    session = work.session
+    known = {(r.source_server_id, r.source_playlist_id) for r in session.exec(select(PlaylistSync)).all()}
+    copies = {(c.target_server_id, c.target_playlist_id) for c in session.exec(select(PlaylistCopy)).all()
+              if c.target_playlist_id}
+    for server_id in work.servers:
+        try:
+            listing = work.listing(server_id)
+        except Exception:  # noqa: BLE001 -- reported when its playlists are synced
+            continue
+        for info in listing:
+            if eligible(info) and (server_id, info.id) not in known and (server_id, info.id) not in copies:
+                session.add(PlaylistSync(source_server_id=server_id, source_playlist_id=info.id, title=info.title,
+                                         auto=True))
+    session.commit()
+
+
+def _franchisarr(work: _Run) -> None:
+    """Keep each "(Franchisarr)" playlist on every server that's on: build it where it's missing
+    from that server's own library (as Make a playlist would), and delete it everywhere once it's
+    gone from a server it was on. A server that can't be reached takes no part either way."""
+    from app.services import playlist_bulk, playlist_service
+
+    session = work.session
+    reachable: dict[int, list] = {}
+    for server_id, server in work.servers.items():
+        try:
+            reachable[server_id] = work.listing(server_id)
+        except Exception as exc:  # noqa: BLE001
+            _error(f"Franchisarr's playlists: {server.name} couldn't be reached ({type(exc).__name__})")
+    present: dict[str, set[int]] = {}
+    ids: dict[tuple[str, int], list[str]] = {}
+    for server_id, listing in reachable.items():
+        for p in listing:
+            if p.video and p.title.endswith(SUFFIX):
+                present.setdefault(p.title, set()).add(server_id)
+                ids.setdefault((p.title, server_id), []).append(p.id)
+    records = {r.title: r for r in session.exec(select(FranchisarrPlaylistPresence)).all()}
+    sets_by_name = None
+    for title in sorted(set(present) | set(records)):
+        now = set(present.get(title, set()))
+        record = records.get(title)
+        before = set(json.loads(record.server_ids)) if record else set()
+        if {s for s in before if s in reachable} - now:
+            # Deleted on a server it was on: delete it everywhere.
+            for server_id in now:
+                for playlist_id in ids.get((title, server_id), []):
+                    work.client(server_id).delete_playlist_id(playlist_id)
+                    _bump("deleted")
+            if record is not None:
+                session.delete(record)
+            continue
+        missing = [s for s in reachable if s not in now]
+        if missing and now:
+            if sets_by_name is None:
+                sets_by_name = {s.name: s for s in reversed(playlist_bulk.sets(session, playlist_bulk.KINDS))}
+            item = sets_by_name.get(title[: -len(SUFFIX)])
+            for server_id in missing if item is not None else []:
+                result = playlist_service.build(session, item.name, item.refs, item.art, server_id=server_id,
+                                                min_items=playlist_bulk.MIN_ITEMS)
+                if any(s.error is None for s in result.servers):
+                    now.add(server_id)
+                    _bump("created")
+                for s in result.servers:
+                    if s.error:
+                        _error(f"{title} on {s.server}: {s.error}")
+        record = record or FranchisarrPlaylistPresence(title=title)
+        unreachable_before = {s for s in before if s not in reachable}
+        record.server_ids = json.dumps(sorted(now | unreachable_before))
+        record.updated_at = datetime.now(timezone.utc)
+        session.add(record)
+    session.commit()
 
 
 def _sync_one(work: _Run, sync: PlaylistSync) -> None:
@@ -412,7 +571,8 @@ def run_in_background(trigger: str) -> bool:
     from app.db import get_engine
 
     with Session(get_engine()) as session:
-        if session.exec(select(PlaylistSync.id).limit(1)).first() is None:
+        if (session.exec(select(PlaylistSync.id).limit(1)).first() is None
+                and not sync_all(session) and not keep_franchisarr(session)):
             return False
     with _lock:
         if _state.running:

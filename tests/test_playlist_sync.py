@@ -283,3 +283,132 @@ def test_a_plain_message_goes_out_in_the_webhooks_format() -> None:
         discord, generic = (json.loads(c.request.body) for c in rsps.calls)
     assert discord["embeds"][0]["title"] == "Sync had 1 problem" and "A → B: Error" in discord["embeds"][0]["description"]
     assert generic == {"event": "franchisarr.message", "title": "Sync had 1 problem", "lines": ["A → B: Error"]}
+
+
+# ------------------------------------------------------------------ sync every playlist
+
+
+def _switches(session: Session, *, every: bool = False, franchisarr: bool = False) -> None:
+    playlist_sync.set_switches(session, every=every, franchisarr=franchisarr)
+
+
+def test_sync_every_playlist_adopts_new_ones_but_never_the_copies(session: Session, servers) -> None:
+    plex, jelly, fakes = servers
+    _road_trip(fakes)
+    _switches(session, every=True)
+
+    playlist_sync.run(session)
+    assert [t for t, _ in fakes["Jellyfin"].created] == ["Road trip"]
+
+    fakes["Plex"].add("pl9", "Date night", [_film("p11", "Alien")])       # made later
+    playlist_sync.run(session)
+
+    session.expire_all()
+    sources = {(s.source_server_id, s.title) for s in session.exec(select(PlaylistSync)).all()}
+    assert sources == {(plex.id, "Road trip"), (plex.id, "Date night")}, "Jellyfin's copies aren't adopted"
+    assert fakes["Plex"].created == [], "nothing copied back"
+
+
+def test_a_playlist_switched_off_stays_off_while_every_playlist_syncs(session: Session, servers) -> None:
+    plex, _, fakes = servers
+    _road_trip(fakes)
+    fakes["Plex"].add("pl9", "Date night", [_film("p11", "Alien")])
+    _switches(session, every=True)
+    playlist_sync.exclude(session, plex.id, "pl9", "Date night")      # "Don't sync" before it's adopted
+
+    playlist_sync.run(session)
+    road = session.exec(select(PlaylistSync).where(PlaylistSync.title == "Road trip")).one()
+    playlist_sync.disable(session, road.id)                            # "Stop syncing" afterwards
+    playlist_sync.run(session)
+
+    session.expire_all()
+    assert {(s.title, s.enabled) for s in session.exec(select(PlaylistSync)).all()} == {
+        ("Road trip", False), ("Date night", False)}
+    assert [t for t, _ in fakes["Jellyfin"].created] == ["Road trip"], "Date night never synced"
+
+
+def test_turning_every_playlist_off_keeps_the_ones_picked_by_hand(session: Session, servers) -> None:
+    plex, _, fakes = servers
+    _road_trip(fakes)
+    fakes["Plex"].add("pl9", "Date night", [_film("p11", "Alien")])
+    playlist_sync.enable(session, plex.id, "pl1", "Road trip")          # picked by hand
+    _switches(session, every=True)
+    playlist_sync.run(session)
+
+    _switches(session, every=False)
+
+    session.expire_all()
+    assert [s.title for s in session.exec(select(PlaylistSync)).all()] == ["Road trip"]
+
+
+# ------------------------------------------------------------------ Franchisarr's on every server
+
+
+@pytest.fixture
+def franchisarr_builds(monkeypatch):
+    from app.services import playlist_bulk, playlist_service
+
+    built = []
+
+    def fake_build(session, name, refs, art=None, *, server_id=None, min_items=1):  # noqa: ANN001, ANN202
+        built.append((name, server_id))
+        return playlist_service.PlaylistResult(title=name, servers=[playlist_service.ServerResult(server=str(server_id))])
+
+    monkeypatch.setattr(playlist_service, "build", fake_build)
+    monkeypatch.setattr(playlist_bulk, "sets", lambda s, kinds: [
+        playlist_bulk.PlaylistSet("franchises", "Star Wars", [("movie", 1), ("movie", 2)])])
+    return built
+
+
+def test_a_franchisarr_playlist_is_built_where_missing_from_that_servers_library(
+        session: Session, servers, franchisarr_builds) -> None:
+    plex, jelly, fakes = servers
+    fakes["Plex"].add("sw", "Star Wars (Franchisarr)", [])
+    _switches(session, franchisarr=True)
+
+    state = playlist_sync.run(session)
+
+    assert franchisarr_builds == [("Star Wars", jelly.id)], "built from Jellyfin's own library, not copied"
+    assert state.created == 1
+
+
+def test_deleting_a_franchisarr_playlist_on_one_server_deletes_it_everywhere(
+        session: Session, servers, franchisarr_builds) -> None:
+    plex, jelly, fakes = servers
+    fakes["Plex"].add("sw", "Star Wars (Franchisarr)", [])
+    fakes["Jellyfin"].add("jsw", "Star Wars (Franchisarr)", [])
+    _switches(session, franchisarr=True)
+    playlist_sync.run(session)                       # both have it: remembered on both
+
+    del fakes["Plex"].playlists["sw"]                 # someone deletes it on Plex
+    state = playlist_sync.run(session)
+
+    assert fakes["Jellyfin"].deleted == ["jsw"] and state.deleted == 1
+    assert franchisarr_builds == [], "not rebuilt on Plex"
+
+
+def test_an_unreachable_server_is_never_taken_for_a_deletion(session: Session, servers, franchisarr_builds) -> None:
+    plex, jelly, fakes = servers
+    fakes["Plex"].add("sw", "Star Wars (Franchisarr)", [])
+    fakes["Jellyfin"].add("jsw", "Star Wars (Franchisarr)", [])
+    _switches(session, franchisarr=True)
+    playlist_sync.run(session)
+
+    fakes["Plex"].down = True
+    playlist_sync.run(session)
+
+    assert fakes["Jellyfin"].deleted == [], "Plex being down says nothing about Star Wars"
+    fakes["Plex"].down = False
+    playlist_sync.run(session)
+    assert fakes["Jellyfin"].deleted == [] and franchisarr_builds == []
+
+
+def test_the_switches_save_and_the_page_shows_them(client: TestClient) -> None:
+    page = client.get(f"{BASE}/playlists").text
+    assert 'name="every"' in page and 'name="franchisarr"' in page and "Don&#39;t sync" not in page
+
+    assert client.post(f"{BASE}/playlists/switches", data={"every": "1", "franchisarr": "1"}).status_code == 303
+
+    page = client.get(f"{BASE}/playlists").text
+    assert 'name="every" value="1" checked' in page and "Franchisarr's playlists now:" in page
+    assert "Don't sync" in page and "Syncs at the next sync" in page, "Road trip is pending under sync-all"

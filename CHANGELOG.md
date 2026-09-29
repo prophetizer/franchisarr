@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.39.0] — 2026-09-28
+
+### Added
+
+- **Sync every playlist.** A switch on the Playlists page makes every video playlist on every
+  server sync, including ones made later. Any one can still be switched off (Don't sync / Stop
+  syncing), and it stays off. Turning the switch off stops what it started and leaves playlists
+  you picked by hand syncing; copies stay as ordinary playlists.
+- **Keep Franchisarr's playlists on every server.** A second switch: a "… (Franchisarr)"
+  playlist on one server is built on the others from their own libraries — each complete for
+  its server, not a copy trimmed to the titles both hold — and deleting it on any server
+  deletes it everywhere. Sync remembers which servers each was on, so a server that can't be
+  reached is never taken for a deletion.
+
+### Upgrading
+
+- Migration 0027. Both switches start off.
+
 ## [0.38.0] — 2026-09-28
 
 ### Added
