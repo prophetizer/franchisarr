@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.44.0] — 2026-09-29
+
+### Added
+
+- **How complete each set is, at a glance**: a thin progress bar under the counts on every
+  collection, franchise and director card. (Sort by **Completeness** to put the nearly-finished
+  ones first.)
+
+### Changed
+
+- **The playlist control moved into the page's banner** on franchise, collection and director
+  pages: one **Make a playlist** menu instead of a row of buttons, and once Franchisarr is keeping
+  one, "✓ Playlist kept on …" beside a **Refresh playlist** button.
+- **Quieter tiles**: titles you own no longer repeat why they're in a franchise ("Wikidata files
+  it under …"); **Not part of this collection** moved behind a ⋯ on each missing film; card
+  titles are underlined only when pointed at.
+- **Collections toolbar**: sort, the started-watching filter and the rating floor sit on one row,
+  with **Rescan my library** beside the heading. The rating floor's explanation is its tooltip.
+- The **Playlists** link in the top bar lines up with the menus beside it.
+
 ## [0.43.0] — 2026-09-29
 
 ### Added

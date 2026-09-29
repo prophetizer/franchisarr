@@ -1,17 +1,24 @@
 {% extends "base.html" %}
+{% from "partials/completeness.html" import completeness %}
 {% block title %}Collections — Franchisarr{% endblock %}
 
 {% block content %}
 {#- Rendered on load so a scan already running (started elsewhere, or by the scheduler) shows up
     and starts polling without anyone pressing anything. -#}
 {% include "partials/scan_status.html" %}
-<hgroup>
-  <h1>Collections with gaps</h1>
-  <p>
-    {{ '{:,}'.format(pager.total) }} collection{{ '' if pager.total == 1 else 's' }} you own part of,
-    missing {{ total_missing }} film{{ '' if total_missing == 1 else 's' }}.
-  </p>
-</hgroup>
+<div class="page-heading">
+  <hgroup>
+    <h1>Collections with gaps</h1>
+    <p>
+      {{ '{:,}'.format(pager.total) }} collection{{ '' if pager.total == 1 else 's' }} you own part of,
+      missing {{ total_missing }} film{{ '' if total_missing == 1 else 's' }}.
+    </p>
+  </hgroup>
+  {% if gaps and user and user.is_admin %}
+    <button class="secondary outline" hx-post="{{ url('/scan') }}" hx-target="#scan-status"
+            hx-swap="outerHTML">Rescan my library</button>
+  {% endif %}
+</div>
 
 {% if not gaps %}
   <article>
@@ -40,8 +47,11 @@
       </p>
     {% endif %}
     {% if user and user.is_admin %}
-    <form method="post" action="{{ url('/collections/rating-filter') }}" class="gap-filter">
-      <label for="min_rating">Hide films rated below</label>
+    {#- One row with the sort (0.44.0): the explanation moved into the title, and only what the
+        floor actually hid is said out loud. -#}
+    <form method="post" action="{{ url('/collections/rating-filter') }}" class="gap-filter"
+          title="0 is off. Films with under 10 votes are never hidden.">
+      <label for="min_rating">Hide below ★</label>
       <input type="number" id="min_rating" name="min_rating" min="0" max="10" step="0.1"
              value="{{ '%g' | format(min_rating) }}" inputmode="decimal">
       <button type="submit" class="secondary">Apply</button>
@@ -50,12 +60,8 @@
           each collection's page shows which.</small>
       {% elif min_rating %}
         <small class="muted">Nothing hidden at {{ '%g' | format(min_rating) }}.</small>
-      {% else %}
-        <small class="muted">0 is off. Films with under 10 votes are never hidden.</small>
       {% endif %}
     </form>
-    <button class="secondary outline" hx-post="{{ url('/scan') }}" hx-target="#scan-status"
-            hx-swap="outerHTML">Rescan my library</button>
     {% endif %}
   </div>
   <div class="collection-grid collection-grid--compact">
@@ -81,6 +87,7 @@
             <span class="count-upcoming">{{ gap.upcoming | length }} coming soon</span>
           {% endif %}
         </p>
+        {{ completeness(gap.owned | length, gap.missing | length) }}
         <ul class="missing-preview">
           {% for movie in gap.missing[:3] %}
             <li>{{ movie.title }}{% if movie.release_year %} <small class="muted">({{ movie.release_year }})</small>{% endif %}

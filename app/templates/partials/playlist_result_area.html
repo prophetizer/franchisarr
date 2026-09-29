@@ -1,0 +1,5 @@
+{# Where the banner's playlist control reports (partials/playlist_button.html). #}
+{% if can_playlist and user and user.is_admin %}
+  <small id="playlist-busy" class="htmx-indicator muted">Building — a big franchise takes a few seconds…</small>
+  <div id="playlist-result"></div>
+{% endif %}

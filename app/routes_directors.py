@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.auth.dependencies import AdminUser, DbSession, RequiredUser
 from app.config import get_settings
-from app.services import director_service, playlist_service
+from app.services import director_service, franchisarr_playlists, playlist_service
 from app.templating import get_templates
 
 router = APIRouter()
@@ -78,6 +78,7 @@ def director_detail(request: Request, session: DbSession, user: RequiredUser, pe
         {"user": user, "d": view, "multi_server": _multi_server(session),
          "can_playlist": playlist_service.available(session) and bool(view.owned),
          "playlist_servers": playlist_service.targets(session),
+         "playlist_kept": franchisarr_playlists.kept_on(session, "directors", str(person_id)),
          "detail_sort": detail_sort,
          "sort_ctl": sorting.control("detail", detail_sort, _url(f"/directors/{person_id}"))}
     )

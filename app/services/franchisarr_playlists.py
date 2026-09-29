@@ -131,6 +131,16 @@ def count(session: Session) -> int:
     return len(session.exec(select(FranchisarrPlaylist.id).where(col(FranchisarrPlaylist.removed_at).is_(None))).all())
 
 
+def kept_on(session: Session, kind: str, ref: str) -> list[str]:
+    """The servers a page's playlist is kept on, by name, for its banner: none if it isn't kept."""
+    entry = entry_for(session, kind, ref)
+    if entry is None:
+        return []
+    names = {s.id: s.name for s in session.exec(select(MediaServer)).all() if s.enabled}
+    return sorted((names[c.server_id] for c in _copies(session, entry).values()
+                   if c.server_playlist_id and c.server_id in names), key=str.casefold)
+
+
 def entry_for(session: Session, kind: str, ref: str) -> FranchisarrPlaylist | None:
     return session.exec(select(FranchisarrPlaylist).where(
         col(FranchisarrPlaylist.kind) == kind, col(FranchisarrPlaylist.ref) == str(ref),

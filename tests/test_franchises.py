@@ -217,12 +217,13 @@ def test_the_index_and_detail_pages_render(client: TestClient) -> None:
     index = client.get(f"{BASE}/franchises").text
     assert "Star Trek" in index and "2 owned" in index and "1 missing" in index
     assert f'href="{BASE}/franchises/{TREK}"' in index
+    assert '<progress class="completeness" value="2" max="3"' in index, "how complete, at a glance (0.44.0)"
 
     detail = client.get(f"{BASE}/franchises/{TREK}").text
     assert "You have 2 of 3" in detail
     assert "Deep Space Nine" in detail
     assert f'hx-get="{BASE}/shows/add/580"' in detail, "a show routes to the Sonarr dialog"
-    assert "Wikidata files it under Star Trek" in detail
+    assert detail.count("Wikidata files it under Star Trek") == 1, "on the missing tile, not the owned ones"
 
     assert client.get(f"{BASE}/franchises/Q0").status_code == 404
 

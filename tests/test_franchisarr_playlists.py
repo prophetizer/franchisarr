@@ -443,9 +443,14 @@ def client(app_factory, monkeypatch):
 def test_the_franchise_button_builds_and_the_tab_lists_it(client: TestClient) -> None:
     page = client.get(f"{BASE}/franchises/Q462").text
     assert f'hx-post="{BASE}/franchises/Q462/playlist"' in page and "On every server" in page
+    assert "Make a playlist" in page and "Playlist kept on" not in page
 
     body = client.post(f"{BASE}/franchises/Q462/playlist", data={"server": "all"}).text
     assert TITLE in body and "kept current after every scan" in body
+
+    page = client.get(f"{BASE}/franchises/Q462").text
+    assert "✓ Playlist kept on Attic, Living room" in page and "Refresh playlist" in page, "in the banner (0.44.0)"
+    assert page.index('class="heading-actions"') < page.index('id="playlist-result"'), "the result goes below it"
 
     tab = client.get(f"{BASE}/playlists/franchisarr").text
     assert "<h1>Playlists</h1>" in tab and 'aria-current="page">Franchisarr' in tab

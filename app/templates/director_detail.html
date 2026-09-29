@@ -30,10 +30,11 @@
       <h1>{{ d.name }}</h1>
       <p>You have {{ d.owned | length }} of {{ d.total }} film{{ '' if d.total == 1 else 's' }} they directed.</p>
     </hgroup>
+    {% with playlist_url = url('/directors/' ~ d.person_id ~ '/playlist') %}{% include "partials/playlist_button.html" %}{% endwith %}
   </div>
 </div>
 
-{% with playlist_url = url('/directors/' ~ d.person_id ~ '/playlist') %}{% include "partials/playlist_button.html" %}{% endwith %}
+{% include "partials/playlist_result_area.html" %}
 <div class="gap-controls">{% include "partials/sort_control.html" %}</div>
 
 {% if d.pending %}

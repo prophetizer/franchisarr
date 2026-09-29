@@ -7,7 +7,7 @@
       {% call tile(movie.poster, 'missing') %}
         <header><strong class="film-title">{{ movie.title }}</strong> {% include "partials/rating.html" %}</header>
         <p class="collection-counts muted"><span>{{ movie.release_year or '' }}</span></p>
-        <p class="card-actions">
+        <div class="card-actions">
           {% if user and user.is_admin %}
           <button hx-get="{{ url('/add/' ~ movie.tmdb_id) }}"
                   hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
@@ -21,13 +21,18 @@
                   title="Hide this film from your own lists only">Not interested</button>
 
           {% if user and user.is_admin %}
-          <button class="secondary outline"
-                  hx-post="{{ url('/collections/' ~ gap.collection_id ~ '/exclude/' ~ movie.tmdb_id) }}"
-                  hx-target="#missing-list" hx-swap="innerHTML"
-                  title="TMDb lists this as part of the collection, but it isn't really — hides it for everyone">
-            Not part of this collection</button>
+          {#- Rarely needed, so behind ⋯ rather than a third button on every tile (0.44.0). -#}
+          <details class="dropdown more-actions">
+            <summary aria-label="More actions" title="More">⋯</summary>
+            <ul>
+              <li><a href="#" hx-post="{{ url('/collections/' ~ gap.collection_id ~ '/exclude/' ~ movie.tmdb_id) }}"
+                     hx-target="#missing-list" hx-swap="innerHTML"
+                     title="TMDb lists this as part of the collection, but it isn't really — hides it for everyone">
+                Not part of this collection</a></li>
+            </ul>
+          </details>
           {% endif %}
-        </p>
+        </div>
       {% endcall %}
     {% endfor %}
   </div>

@@ -1,0 +1,8 @@
+{# How complete a set is, as a thin bar under a card's counts (0.44.0). #}
+{% macro completeness(owned, missing) -%}
+  {% if owned + missing %}
+    <progress class="completeness" value="{{ owned }}" max="{{ owned + missing }}"
+              aria-label="{{ owned }} of {{ owned + missing }} owned"
+              title="{{ owned }} of {{ owned + missing }} owned ({{ (owned * 100 / (owned + missing)) | round | int }}%)"></progress>
+  {% endif %}
+{%- endmacro %}

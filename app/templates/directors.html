@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/completeness.html" import completeness %}
 {% block title %}Directors — Franchisarr{% endblock %}
 
 {% block content %}
@@ -49,6 +50,7 @@
             {% if d.upcoming %}<span class="count-upcoming">{{ d.upcoming | length }} coming</span>{% endif %}
           {% endif %}
         </p>
+        {% if not d.pending %}{{ completeness(d.owned | length, d.missing | length) }}{% endif %}
         {% if d.missing %}
           <ul class="missing-preview">
             {% for movie in d.top_missing[:3] %}

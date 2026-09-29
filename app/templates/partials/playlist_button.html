@@ -1,30 +1,33 @@
-{# "Make a playlist" for a detail page. `playlist_url` is the POST route; admins only, and
-   only when a server can take one and something here is owned (`can_playlist`). With more than
-   one server there's a button for every server at once and one per server. #}
+{# The playlist control in a detail page's banner (0.44.0): one "Playlist" menu -- on every
+   server, or on one -- and whether Franchisarr is keeping one for this page already
+   (`playlist_kept`, server names). `playlist_url` is the POST route. Admins only, and only when
+   a server can take one and something here is owned (`can_playlist`). The result goes in
+   #playlist-result, below the banner. #}
 {% if can_playlist and user and user.is_admin %}
-  <div class="playlist-action">
+  <div class="heading-actions">
     {% if playlist_servers | length > 1 %}
-      <span class="playlist-label">Make a playlist</span>
-      <span class="playlist-buttons">
-        <button class="secondary outline" hx-post="{{ playlist_url }}" hx-vals='{"server": "all"}'
-                hx-target="#playlist-result" hx-swap="innerHTML" hx-disabled-elt="this"
-                hx-indicator="#playlist-busy"
-                title="On every server that holds any of this: everything you own here, in the order it came out">
-          On every server</button>
-        {% for s in playlist_servers %}
-          <button class="secondary outline" hx-post="{{ playlist_url }}" hx-vals='{"server": "{{ s.id }}"}'
-                  hx-target="#playlist-result" hx-swap="innerHTML" hx-disabled-elt="this"
-                  hx-indicator="#playlist-busy" title="Only on {{ s.name }}">
-            On {{ s.name }}</button>
-        {% endfor %}
-      </span>
+      <details class="dropdown playlist-menu">
+        <summary role="button" class="secondary outline">{{ 'Refresh playlist' if playlist_kept else 'Make a playlist' }}</summary>
+        <ul dir="rtl">
+          <li><a href="#" dir="ltr" hx-post="{{ playlist_url }}" hx-vals='{"server": "all"}'
+                 hx-target="#playlist-result" hx-swap="innerHTML" hx-indicator="#playlist-busy"
+                 onclick="this.closest('details').open = false"
+                 title="On every server that holds any of this: everything you own here, in the order it came out">On every server</a></li>
+          {% for s in playlist_servers %}
+            <li><a href="#" dir="ltr" hx-post="{{ playlist_url }}" hx-vals='{"server": "{{ s.id }}"}'
+                   hx-target="#playlist-result" hx-swap="innerHTML" hx-indicator="#playlist-busy"
+                   onclick="this.closest('details').open = false" title="Only on {{ s.name }}">On {{ s.name }}</a></li>
+          {% endfor %}
+        </ul>
+      </details>
     {% else %}
       <button class="secondary outline" hx-post="{{ playlist_url }}" hx-target="#playlist-result"
               hx-swap="innerHTML" hx-disabled-elt="this" hx-indicator="#playlist-busy"
               title="Everything you own here, films and episodes, in the order it came out">
-        Make a playlist</button>
+        {{ 'Refresh playlist' if playlist_kept else 'Make a playlist' }}</button>
     {% endif %}
-    <small id="playlist-busy" class="htmx-indicator muted">Building — a big franchise takes a few seconds…</small>
-    <div id="playlist-result"></div>
+    {% if playlist_kept %}
+      <small class="playlist-kept">✓ Playlist kept on {{ playlist_kept | join(', ') }}</small>
+    {% endif %}
   </div>
 {% endif %}

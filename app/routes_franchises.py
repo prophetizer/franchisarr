@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import HTMLResponse
 
 from app.auth.dependencies import DbSession, RequiredUser
-from app.services import franchise_service, playlist_service
+from app.services import franchise_service, franchisarr_playlists, playlist_service
 from app.templating import get_templates
 
 router = APIRouter()
@@ -60,6 +60,7 @@ def franchise_detail(request: Request, session: DbSession, user: RequiredUser, w
         {"user": user, "f": view, "multi_server": _multi_server(session),
          "can_playlist": playlist_service.available(session) and view.owned > 0,
          "playlist_servers": playlist_service.targets(session),
+         "playlist_kept": franchisarr_playlists.kept_on(session, "franchises", wikidata_id),
          "detail_sort": detail_sort,
          "sort_ctl": sorting.control(
              "detail", detail_sort, f"{get_settings().base_url}/franchises/{wikidata_id}",

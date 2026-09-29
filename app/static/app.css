@@ -120,6 +120,9 @@ input[type="submit"] {
 .app-nav details.dropdown[open] > summary:not([role]),
 .app-nav details.dropdown > summary:not([role]):hover { border-color: var(--pico-muted-border-color); }
 .app-nav details.dropdown > summary + ul.nav-end { left: auto; right: 0; }
+/* A plain link in the bar (Playlists) sized like the dropdowns' summaries beside it: Pico gives
+   nav links 15px text and a -8px margin, which sat it 2px low and a size smaller (0.44.0). */
+.app-nav a.nav-link { font-size: 1rem; line-height: 1.5; margin: -1px 0 0; padding: 0.375rem 0.5rem; }
 .app-nav details.dropdown.nav-here > summary,
 .app-nav .nav-link.nav-here,
 .app-nav .nav-search.nav-here { color: var(--pico-primary); font-weight: 600; }
@@ -472,7 +475,6 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
   isolation: isolate;
   margin-bottom: var(--pico-block-spacing-vertical);
   min-height: 14rem;
-  overflow: hidden;
   padding: var(--pico-spacing);
   position: relative;
 }
@@ -485,6 +487,9 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
   position: absolute;
   width: 100%;
   z-index: -2;
+  /* Rounded here rather than clipped by the band (overflow: hidden) -- that clipped the
+     banner's Playlist menu too (0.44.0). */
+  border-radius: inherit;
 }
 
 .collection-heading.has-backdrop::after {
@@ -494,11 +499,29 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
     color-mix(in srgb, var(--pico-background-color) 82%, transparent) 45%,
     color-mix(in srgb, var(--pico-background-color) 35%, transparent) 100%
   );
+  border-radius: inherit;
   content: "";
   inset: 0;
   position: absolute;
   z-index: -1;
 }
+
+/* The banner's playlist control (0.44.0), bottom right; its menu opens right-aligned. */
+.heading-actions {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-left: auto;
+  padding-bottom: var(--pico-typography-spacing-vertical);
+}
+.heading-actions details.dropdown { margin: 0; }
+.heading-actions summary[role="button"], .heading-actions > button { width: auto; margin: 0; white-space: nowrap; }
+.playlist-kept { color: var(--pico-muted-color); }
+#playlist-busy { display: block; }
+
+/* How complete a set is, on every card (0.44.0): Pico's own progress bar, made thin. */
+progress.completeness { height: 0.35rem; margin: 0 0 0.5rem; }
 
 .collection-heading-inner {
   align-items: end;
@@ -566,6 +589,10 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 .gap-filter input[type="number"] { margin-bottom: 0; width: 5.5em; }
 .gap-filter button { margin-bottom: 0; width: auto; }
 .gap-controls > button { margin-bottom: 0; margin-left: auto; width: auto; }
+/* A page's heading with its one page-wide action beside it (Collections' Rescan, 0.44.0). */
+.page-heading { align-items: flex-start; display: flex; flex-wrap: wrap; gap: var(--pico-spacing); }
+.page-heading hgroup { flex: 1 1 20rem; }
+.page-heading > button { margin: 0 0 var(--pico-spacing); width: auto; }
 
 .film-row.hidden .film-poster { opacity: 0.55; }
 .hidden-section summary { color: var(--pico-muted-color); cursor: pointer; }
@@ -585,6 +612,7 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
   .collection-heading-inner { display: block; }
   .collection-heading-poster { margin-bottom: var(--pico-spacing); width: 6rem; flex-basis: 6rem; }
   .collection-heading.has-backdrop { min-height: 0; }
+  .heading-actions { align-items: flex-start; padding-bottom: 0; }
   .collection-logo { max-height: 4rem; }
 }
 
@@ -729,3 +757,22 @@ nav.tabs a[aria-current="page"] {
 .sync-targets label { margin: 0; font-size: 0.875rem; }
 .sync-select-all { font-size: 0.875rem; margin-bottom: 0.5rem; }
 .bulk-on select { width: auto; }
+
+/* Quieter cards (0.44.0): a card's title is a link without an underline until it's pointed at,
+   and a rare action waits behind ⋯. */
+.collection-card header a { text-decoration: none; }
+.collection-card header a:hover, .collection-card header a:focus-visible { text-decoration: underline; }
+details.dropdown.more-actions { display: inline-block; margin: 0; vertical-align: middle; }
+details.dropdown.more-actions > summary:not([role]) {
+  background: none;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--pico-muted-color);
+  height: auto;
+  line-height: 1;
+  padding: 0.5rem 0.6rem;
+  width: auto;
+}
+details.dropdown.more-actions > summary:not([role]):hover { border-color: var(--pico-muted-border-color); }
+details.dropdown.more-actions > summary::after { display: none; }
+details.dropdown.more-actions > ul { left: auto; right: 0; min-width: 14rem; }

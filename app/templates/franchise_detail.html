@@ -9,12 +9,16 @@
       <small class="muted">{{ 'film' if t.item_type == 'movie' else 'TV' }}</small>
       {% if css == 'owned' %}{% with entry=t %}{% include "partials/owned_mark.html" %}{% endwith %}{% endif %}
     </header>
+    {#- Why it's in this franchise matters for what you'd add, not for what you have: owned
+        tiles leave it out (0.44.0) -- "Wikidata files it under Star Wars" on every one was noise. -#}
+    {% if css != 'owned' %}
     <p class="collection-counts muted"><span>
       {% if t.release_date and css == 'upcoming' %}expected {{ t.release_date }} · {% endif %}
       {% if t.via == 'collection' %}in the {{ t.note }}
       {% elif t.via == 'franchise' %}{{ t.note }}
       {% else %}{{ t.note }}{% endif %}
     </span></p>
+    {% endif %}
     {% if css != 'owned' and user and user.is_admin %}
       <p class="card-actions">
         {% if t.item_type == 'movie' %}
@@ -51,10 +55,11 @@
         {{ f.owned_shows | length }} show{{ '' if f.owned_shows | length == 1 else 's' }}.
       </p>
     </hgroup>
+    {% with playlist_url = url('/franchises/' ~ f.wikidata_id ~ '/playlist') %}{% include "partials/playlist_button.html" %}{% endwith %}
   </div>
 </div>
 
-{% with playlist_url = url('/franchises/' ~ f.wikidata_id ~ '/playlist') %}{% include "partials/playlist_button.html" %}{% endwith %}
+{% include "partials/playlist_result_area.html" %}
 <div class="gap-controls">{% include "partials/sort_control.html" %}</div>
 
 {% if f.missing_films %}

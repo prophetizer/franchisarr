@@ -30,10 +30,11 @@
       {% endif %}
       <p>{{ gap.owned | length }} of {{ gap.total }} in your library{% if gap.watched_count %}, {{ gap.watched_count }} watched{% endif %}.</p>
     </hgroup>
+    {% with playlist_url = url('/collections/' ~ gap.collection_id ~ '/playlist') %}{% include "partials/playlist_button.html" %}{% endwith %}
   </div>
 </div>
 
-{% with playlist_url = url('/collections/' ~ gap.collection_id ~ '/playlist') %}{% include "partials/playlist_button.html" %}{% endwith %}
+{% include "partials/playlist_result_area.html" %}
 <div class="gap-controls">{% include "partials/sort_control.html" %}</div>
 
 {% if gap.missing %}

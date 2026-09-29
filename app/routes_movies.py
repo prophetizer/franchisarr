@@ -140,7 +140,7 @@ def collection_detail(
     sort: str | None = None, dir: str | None = None,  # noqa: A002
 ):
     gap = _gap_or_404(session, user, collection_id)
-    from app.services import media_server_service, playlist_service, sorting
+    from app.services import franchisarr_playlists, media_server_service, playlist_service, sorting
 
     detail_sort = sorting.resolve(session, user.id, "detail", sort, dir)
 
@@ -150,6 +150,7 @@ def collection_detail(
          "multi_server": len(media_server_service.list_servers(session)) > 1,
          "can_playlist": playlist_service.available(session) and bool(gap.owned),
          "playlist_servers": playlist_service.targets(session),
+         "playlist_kept": franchisarr_playlists.kept_on(session, "collections", str(collection_id)),
          "detail_sort": detail_sort,
          "sort_ctl": sorting.control("detail", detail_sort, _url(f"/collections/{collection_id}"))}
     )
