@@ -429,3 +429,9 @@ def test_a_backup_cant_restore_a_broken_sync_schedule() -> None:
 
     assert _setting_value_ok(SettingKey.PLAYLIST_SYNC_CRON, "0 */6 * * *")
     assert not _setting_value_ok(SettingKey.PLAYLIST_SYNC_CRON, "every tuesday")
+
+
+def test_the_sync_schedule_is_described_as_a_sync_not_a_scan() -> None:
+    assert scheduler_service.describe("0 */6 * * *", "sync").startswith("Next scheduled sync:")
+    assert scheduler_service.describe("", "sync").startswith("No sync schedule")
+    assert scheduler_service.describe("0 */6 * * *").startswith("Next scheduled scan:")

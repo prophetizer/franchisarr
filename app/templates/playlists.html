@@ -22,8 +22,8 @@
   <form method="post" action="{{ url('/playlists/schedule') }}">
     <label for="sync-cron">Sync schedule (cron)</label>
     <input type="text" id="sync-cron" name="cron" value="{{ cron }}" placeholder="0 */6 * * *" autocomplete="off">
-    <small>{{ cron_description }}{% if next_run %} Next: {{ next_run.strftime('%a %d %b, %H:%M') }}.{% endif %}
-      Leave empty for none. A sync also runs after every scan, and with Sync now.</small>
+    <small>{{ cron_description }} Leave empty for none. A sync also runs after every scan, and with
+      Sync now.</small>
     <button type="submit" class="secondary">Save schedule</button>
   </form>
   <form method="post" action="{{ url('/playlists/switches') }}" class="sync-switches">

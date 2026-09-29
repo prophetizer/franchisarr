@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.1] — 2026-09-29
+
+### Fixed
+
+- The Sync page described its schedule as "Next scheduled scan"; it now says "Next scheduled
+  sync", and "No sync schedule" when none is set.
+
 ## [0.41.0] — 2026-09-29
 
 ### Added

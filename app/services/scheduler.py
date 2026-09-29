@@ -55,13 +55,16 @@ def validate_cron(expression: str) -> CronTrigger | None:
         ) from exc
 
 
-def describe(expression: str) -> str:
-    """A human-readable note about when this will next run, for the settings page."""
+def describe(expression: str, what: str = "scan") -> str:
+    """A human-readable note about when this will next run. `what` is "scan" (Settings) or
+    "sync" (the playlist Sync page)."""
     try:
         trigger = validate_cron(expression)
     except InvalidSchedule as exc:
         return str(exc)
     if trigger is None:
+        if what == "sync":
+            return "No sync schedule — playlists sync after each scan and when you press Sync now."
         return "No scheduled scans — Franchisarr will only scan when you ask it to."
 
     from datetime import datetime
@@ -70,7 +73,7 @@ def describe(expression: str) -> str:
     next_run = trigger.get_next_fire_time(None, datetime.now().astimezone())
     if next_run is None:
         return "That schedule will never fire."
-    return f"Next scheduled scan: {next_run.strftime('%Y-%m-%d %H:%M %Z')} (this server's time)"
+    return f"Next scheduled {what}: {next_run.strftime('%Y-%m-%d %H:%M %Z')} (this server's time)"
 
 
 def _run_scan() -> None:
@@ -109,11 +112,6 @@ def apply_playlist_sync_schedule(expression: str) -> str | None:
                       max_instances=1, coalesce=True, misfire_grace_time=3600)
     logger.info("Scheduled playlist syncs enabled: %s", expression.strip())
     return expression.strip()
-
-
-def next_playlist_sync_time():
-    job = get_scheduler().get_job(SYNC_JOB_ID)
-    return job.next_run_time if job else None
 
 
 def get_scheduler() -> BackgroundScheduler:

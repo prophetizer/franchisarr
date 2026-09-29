@@ -212,8 +212,7 @@ def playlists_page(request: Request, session: DbSession, user: AdminUser, error:
 
     cron = get_setting(session, SettingKey.PLAYLIST_SYNC_CRON) or ""
     return get_templates().TemplateResponse(request, "playlists.html", {
-        "saved": saved, "cron": cron, "cron_description": scheduler_service.describe(cron),
-        "next_run": scheduler_service.next_playlist_sync_time(),
+        "saved": saved, "cron": cron, "cron_description": scheduler_service.describe(cron, "sync"),
         "user": user, "servers": playlist_sync.page(session), "sync": playlist_sync.current(),
         "several": len(media_server_service.enabled_servers(session)) > 1, "error": error,
         "sync_all": playlist_sync.sync_all(session), "keep_franchisarr": playlist_sync.keep_franchisarr(session),
