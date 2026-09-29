@@ -1,30 +1,27 @@
 {% extends "playlists_base.html" %}
+{% from "partials/sync_chips.html" import chip %}
 
 {% block tab_content %}
 {#- What couldn't be copied, with Add for a film or show Radarr or Sonarr doesn't have yet
     (0.43.0). Entries before 0.43.0 are plain strings. Buttons, not a form: this sits inside the
     checklist's form. -#}
-{% macro missing_list(count, raw, label) %}
-  {% if count and raw %}
-    <details><summary>{{ count }} {{ label }}</summary>
-      <ul class="sync-missing">
-        {% for t in raw | fromjson %}
-          {% if t is mapping %}
-            <li>{{ t.title }} <small class="muted">({{ t.why }})</small>
-              {% if t.movie and t.movie not in radarr_ids %}
-                <button type="button" class="secondary outline" hx-get="{{ url('/add/' ~ t.movie) }}"
-                        hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
-              {% elif t.show and t.show not in sonarr_ids %}
-                <button type="button" class="secondary outline" hx-get="{{ url('/shows/add/' ~ t.show) }}"
-                        hx-target="#add-show-dialog" hx-swap="innerHTML">Add show</button>
-              {% endif %}</li>
-          {% else %}
-            <li>{{ t }}</li>
-          {% endif %}
-        {% endfor %}
-      </ul>
-    </details>
-  {% endif %}
+{% macro missing_items(raw) %}
+  <ul class="sync-missing">
+    {% for t in raw | fromjson %}
+      {% if t is mapping %}
+        <li>{{ t.title }} <small class="muted">({{ t.why }})</small>
+          {% if t.movie and t.movie not in radarr_ids %}
+            <button type="button" class="secondary outline" hx-get="{{ url('/add/' ~ t.movie) }}"
+                    hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
+          {% elif t.show and t.show not in sonarr_ids %}
+            <button type="button" class="secondary outline" hx-get="{{ url('/shows/add/' ~ t.show) }}"
+                    hx-target="#add-show-dialog" hx-swap="innerHTML">Add show</button>
+          {% endif %}</li>
+      {% else %}
+        <li>{{ t }}</li>
+      {% endif %}
+    {% endfor %}
+  </ul>
 {% endmacro %}
 <p>Tick the playlists to keep in step across your servers. It works both ways: a title added to or
   removed from the playlist on any server is added to or removed from it on the others at the next
@@ -35,7 +32,15 @@
   <p class="notice-warn">Syncing needs a second media server that's switched on.
     <a href="{{ url('/media-servers') }}">Servers</a></p>
 {% else %}
-<form method="post" action="{{ url('/playlists/save') }}" class="sync-checklist" x-data="{ q: '' }">
+{#- Per row, for the filter chips: data-state is "syncing", "not" or "copy"; data-problem marks a
+    blocked or failed copy, or titles that couldn't be copied. -#}
+{% set counts = namespace(syncing=0, not_=0, problems=0) %}
+{% for entry in servers %}{% for row in entry.rows %}
+  {% if row.copy_of or row.syncing %}{% set counts.syncing = counts.syncing + 1 %}{% else %}{% set counts.not_ = counts.not_ + 1 %}{% endif %}
+  {% if row.problem %}{% set counts.problems = counts.problems + 1 %}{% endif %}
+{% endfor %}{% endfor %}
+<form method="post" action="{{ url('/playlists/save') }}" class="sync-checklist" autocomplete="off"
+      x-data="syncChecklist()" @change="count()">
   <fieldset class="sync-defaults">
     <legend>Copy to, unless a playlist says otherwise</legend>
     {% for s in all_servers %}
@@ -47,10 +52,32 @@
       Tick new playlists automatically</label>
   </fieldset>
 
-  <input type="search" x-model="q" placeholder="Filter playlists" aria-label="Filter playlists" autocomplete="off">
+  <div class="sync-filter">
+    <input type="search" x-model="q" placeholder="Filter playlists" aria-label="Filter playlists" autocomplete="off">
+    <div class="sync-filter-chips" role="toolbar" aria-label="Show">
+      {% for key, label, n in [('all', 'All', none), ('syncing', 'Syncing', counts.syncing), ('not', 'Not syncing', counts.not_), ('problems', 'Problems', counts.problems)] %}
+        <button type="button" class="sync-filter-chip" :aria-pressed="chip === '{{ key }}'" @click="chip = '{{ key }}'"
+                aria-pressed="{{ 'true' if key == 'all' else 'false' }}">{{ label }}{% if n is not none %} <small>{{ n }}</small>{% endif %}</button>
+      {% endfor %}
+    </div>
+  </div>
+
   {% for entry in servers %}
-    <section>
-      <h2>{{ entry.server.name }}</h2>
+    {% set sources = entry.rows | rejectattr('copy_of') | list %}
+    {% set here_syncing = entry.rows | selectattr('syncing') | list | length %}
+    {% set here_problems = entry.rows | selectattr('problem') | list | length %}
+    {#- Every server starts closed (michael, 0.46.0); a filter opens the ones with matches and
+        closes them again when it's cleared. -#}
+    <details class="sync-group sync-server"
+             x-effect="if (filtering) { $el.open = matches($el) > 0 } else if (wasFiltering) { $el.open = false }">
+      <summary>
+        <strong>{{ entry.server.name }}</strong>
+        <small class="muted">
+          {% if entry.error %}<span class="notice-bad">couldn't be reached</span>
+          {% else %}{{ entry.rows | length }} playlist{{ '' if entry.rows | length == 1 else 's' }}{% if here_syncing %} · {{ here_syncing }} syncing{% endif %}{% if here_problems %} · <span class="notice-bad">{{ here_problems }} with a problem</span>{% endif %}{% endif %}
+          <span x-show="filtering" x-cloak x-text="' · ' + matches($el.closest('details')) + ' shown'"></span>
+        </small>
+      </summary>
       {% if entry.error %}
         <p role="alert" class="notice-bad">{{ entry.error }}</p>
       {% elif not entry.rows %}
@@ -58,15 +85,16 @@
       {% else %}
         {% set others = all_servers | rejectattr('id', 'equalto', entry.server.id) | list %}
         {% set by_default = others if defaults is none else others | selectattr('id', 'in', defaults) | list %}
-        {% if entry.rows | rejectattr('copy_of') | list %}
-          <label class="sync-select-all"><input type="checkbox"
-            onclick="this.closest('section').querySelectorAll('input[name=on]').forEach(function (c) { c.checked = this.checked; }, this)">
-            Tick every playlist on {{ entry.server.name }}</label>
+        {% if sources %}
+          <label class="sync-select-all"><input type="checkbox" @click="tickShown($event.target)">
+            Tick every playlist shown on {{ entry.server.name }}</label>
         {% endif %}
         <ul class="film-list">
           {% for row in entry.rows %}
             {% set k = entry.server.id ~ '|' ~ row.id %}
-            <li class="film-row" data-title="{{ row.title | lower }}" x-show="!q || $el.dataset.title.includes(q.toLowerCase())">
+            <li class="film-row" data-title="{{ row.title | lower }}"
+                data-state="{{ 'copy' if row.copy_of else ('syncing' if row.syncing else 'not') }}"
+                data-problem="{{ '1' if row.problem else '' }}" x-show="shows($el)">
               {% if row.copy_of %}
                 <span class="film-title">{{ row.title }}
                   <small class="muted">synced with “{{ row.copy_of[0] }}” on {{ row.copy_of[1] }}</small></span>
@@ -82,10 +110,11 @@
                   <small class="muted">{{ row.count }} item{{ '' if row.count == 1 else 's' }}{% if row.smart %} · smart, copied as it stands{% endif %}</small>
                 </span>
                 <span class="sync-targets" x-data='{ custom: {{ "true" if own is not none else "false" }} }'>
-                  <input type="hidden" name="custom|{{ k }}" value="1" :disabled="!custom" {% if own is none %}disabled{% endif %}>
+                  <input type="hidden" name="custom|{{ k }}" value="1" :disabled="!custom" {% if own is none %}disabled{% endif %}
+                         data-initial="{{ 'on' if own is not none else 'off' }}">
                   <small class="muted" x-show="!custom" {% if own is not none %}x-cloak{% endif %}>
                     → {{ by_default | map(attribute='name') | join(', ') if by_default else 'nowhere' }} (default)
-                    <a href="#" class="sync-change" @click.prevent="custom = true">change</a></small>
+                    <a href="#" class="sync-change" @click.prevent="custom = true; $nextTick(() => count())">change</a></small>
                   <span class="sync-own" x-show="custom" {% if own is none %}x-cloak{% endif %}>
                     <small class="muted">copy to</small>
                     {% for other in others %}
@@ -93,29 +122,38 @@
                                     {% if own is none %}disabled{% endif %}
                                     {% if (own is none and other in by_default) or (own is not none and other.id in own) %}checked{% endif %}> {{ other.name }}</label>
                     {% endfor %}
-                    <a href="#" class="sync-change" @click.prevent="custom = false">use default</a>
+                    <a href="#" class="sync-change" @click.prevent="custom = false; $nextTick(() => count())">use default</a>
                   </span>
                 </span>
                 {% if row.syncing %}
-                  <span class="film-meta sync-meta">
-                    {% if not row.copies %}<small class="muted">Copies are made at the next sync.</small>{% endif %}
+                  <span class="sync-chips">
+                    {% if not row.copies %}{{ chip('pending', '… copies at the next sync') }}{% endif %}
                     {% if row.sync.source_unmatched %}
-                      <small class="sync-copy">← {{ entry.server.name }}:
-                        {{ missing_list(row.sync.source_unmatched, row.sync.source_unmatched_titles,
-                                        ("title" if row.sync.source_unmatched == 1 else "titles") ~ " from the others not here") }}</small>
+                      {% call chip('warn', '← here: ' ~ row.sync.source_unmatched ~ ' missing', 'Titles from the other servers that ' ~ entry.server.name ~ ' doesn\'t have') %}
+                        {{ missing_items(row.sync.source_unmatched_titles) if row.sync.source_unmatched_titles else '' }}
+                      {% endcall %}
                     {% endif %}
                     {% for name, copy in row.copies %}
-                      <small class="sync-copy sync-copy--{{ copy.status }}">
-                        → {{ name }}:
-                        {% if copy.status == 'ok' %}{{ copy.matched }} of {{ copy.matched + copy.unmatched }} titles{% if copy.message %} · {{ copy.message }}{% endif %}
-                        {%- elif copy.status == 'blocked' %}blocked — {{ copy.message }}
+                      {% if copy.status == 'ok' %}
+                        {% call chip('warn' if copy.unmatched else 'ok', ('✓ ' if not copy.unmatched else '') ~ name ~ ' ' ~ copy.matched ~ '/' ~ (copy.matched + copy.unmatched),
+                                     copy.message or (copy.unmatched ~ ' not copied' if copy.unmatched else 'All copied')) %}
+                          {% if copy.message %}<p>{{ copy.message }}</p>{% endif %}
+                          {{ missing_items(copy.unmatched_titles) if copy.unmatched and copy.unmatched_titles else '' }}
+                        {% endcall %}
+                      {% elif copy.status == 'blocked' %}
+                        {% call chip('error', '⚠ ' ~ name ~ ' blocked') %}
+                          <p>{{ copy.message }}</p>
                           <button type="button" class="secondary outline" hx-post="{{ url('/playlists/copies/' ~ copy.id ~ '/link') }}"
                                   hx-confirm="Link them? Titles from both lists end up in both, and they're kept in step from then on."
                                   title="Treat that playlist as the copy and merge the two lists">Link them</button>
-                        {%- elif copy.status == 'empty' %}{{ copy.message }}
-                        {%- else %}{{ copy.message or 'not synced yet' }}{% endif %}
-                        {{ missing_list(copy.unmatched, copy.unmatched_titles, "not copied") }}
-                      </small>
+                        {% endcall %}
+                      {% elif copy.status == 'empty' %}
+                        {% call chip('small', '– ' ~ name ~ ' none') %}{{ copy.message }}{% endcall %}
+                      {% elif copy.status == 'error' %}
+                        {% call chip('error', '✕ ' ~ name) %}{{ copy.message }}{% endcall %}
+                      {% else %}
+                        {{ chip('pending', '… ' ~ name, 'Not synced yet') }}
+                      {% endif %}
                     {% endfor %}
                   </span>
                 {% endif %}
@@ -123,8 +161,9 @@
             </li>
           {% endfor %}
         </ul>
+        <p class="muted sync-none-shown" x-show="filtering && !matches($el.closest('details'))" x-cloak><small>Nothing here matches.</small></p>
       {% endif %}
-    </section>
+    </details>
   {% endfor %}
   <p><small class="muted">Unticking a server deletes the copy sync made there, and deleting a copy on
     its server unticks that server; deleting the original deletes its copies. Unticking a playlist
@@ -132,9 +171,59 @@
     sync didn't make is never touched unless you link it. A Plex smart playlist follows its rules, so
     it's copied as it stands, one way. Music and photo playlists, and Franchisarr's own (see
     <a href="{{ url('/playlists/franchisarr') }}">Franchisarr's</a>), aren't listed.</small></p>
-  <button type="submit" class="sync-save">Save and sync</button>
+  <button type="submit" class="sync-save" x-show="!changes">Save and sync</button>
+  {#- In view at the bottom of the screen once anything's changed (0.46.0): the list is long and
+      the button is at the end of it. -#}
+  <div class="sync-savebar" x-show="changes" x-cloak>
+    <span x-text="changes + (changes === 1 ? ' change' : ' changes') + ' not saved'"></span>
+    <button type="button" class="secondary outline" @click="location.href = location.pathname">Undo</button>
+    <button type="submit">Save and sync</button>
+  </div>
 </form>
 <div id="add-dialog"></div>
 <div id="add-show-dialog"></div>
+<script>
+  // The checklist's filter, chips and unsaved-change count (0.46.0).
+  function syncChecklist() {
+    return {
+      q: '', chip: 'all', changes: 0, wasFiltering: false,
+      get filtering() {
+        const on = this.q.trim() !== '' || this.chip !== 'all';
+        if (on) { this.wasFiltering = true; }
+        return on;
+      },
+      shows(li) {
+        const d = li.dataset, q = this.q.trim().toLowerCase();
+        if (q && !d.title.includes(q)) { return false; }
+        if (this.chip === 'syncing') { return d.state === 'syncing' || d.state === 'copy'; }
+        if (this.chip === 'not') { return d.state === 'not'; }
+        if (this.chip === 'problems') { return d.problem === '1'; }
+        return true;
+      },
+      matches(section) {
+        return section ? [...section.querySelectorAll('li.film-row')].filter((li) => this.shows(li)).length : 0;
+      },
+      tickShown(box) {
+        box.closest('details').querySelectorAll('li.film-row').forEach((li) => {
+          const on = li.querySelector('input[name=on]');
+          if (on && this.shows(li)) { on.checked = box.checked; }
+        });
+        this.count();
+      },
+      count() {
+        const root = this.$root;
+        let n = 0;
+        root.querySelectorAll('input[type=checkbox]:not(:disabled)').forEach((c) => {
+          if (c.closest('.sync-select-all')) { return; }
+          if (c.checked !== c.defaultChecked) { n += 1; }
+        });
+        root.querySelectorAll('input[data-initial]').forEach((h) => {
+          if ((h.disabled ? 'off' : 'on') !== h.dataset.initial) { n += 1; }
+        });
+        this.changes = n;
+      },
+    };
+  }
+</script>
 {% endif %}
 {% endblock %}

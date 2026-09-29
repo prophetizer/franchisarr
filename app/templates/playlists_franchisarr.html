@@ -1,4 +1,5 @@
 {% extends "playlists_base.html" %}
+{% from "partials/sync_chips.html" import chip %}
 
 {% block tab_content %}
 <p>The playlists Franchisarr makes from a franchise, collection or director page, in release order.
@@ -39,29 +40,46 @@
   <p class="muted">None yet. Use the playlist button on a franchise, collection or director page, or
     Add many above.</p>
 {% else %}
-  <ul class="film-list franchisarr-set">
-    {% for v in entries %}
-      <li class="film-row">
-        <span class="film-title"><a href="{{ url(v.path) }}">{{ v.entry.name }}</a>
-          <small class="muted">{{ v.label }}{% if v.custom %} · its own servers{% endif %}</small></span>
-        <span class="film-meta sync-meta">
-          {% for name, copy in v.copies %}
-            <small class="sync-copy sync-copy--{{ copy.status if copy else 'pending' }}">
-              {{ name }}:
-              {% if copy is none %}made at the next sync
-              {%- elif copy.status == 'ok' and copy.server_playlist_id %}{{ copy.items }} item{{ '' if copy.items == 1 else 's' }}{% if copy.refreshed_at %}, checked {{ copy.refreshed_at | ago }}{% endif %}
-              {%- elif copy.status == 'ok' %}made at the next sync
-              {%- else %}{{ copy.message }}{% endif %}
-            </small>
+  {#- One collapsed group per kind (0.46.0): Add many can make hundreds. -#}
+  {% for kind, heading in [('franchises', 'Franchises'), ('collections', 'Collections'), ('directors', 'Directors')] %}
+    {% set group = entries | selectattr('entry.kind', 'equalto', kind) | list %}
+    {% if group %}
+      {% set troubled = group | selectattr('troubled') | list | length %}
+      <details class="sync-group">
+        <summary><strong>{{ heading }}</strong>
+          <small class="muted">{{ group | length }} playlist{{ '' if group | length == 1 else 's' }}{% if troubled %} ·
+            <span class="notice-bad">{{ troubled }} with a problem</span>{% endif %}</small></summary>
+        <ul class="film-list franchisarr-set">
+          {% for v in group %}
+            <li class="film-row">
+              <a href="{{ url(v.path) }}" class="set-thumb" aria-hidden="true" tabindex="-1">
+                {% if v.poster %}<img src="{{ v.poster }}" alt="" loading="lazy" decoding="async" width="46" height="69">{% endif %}
+              </a>
+              <span class="film-title"><a href="{{ url(v.path) }}">{{ v.entry.name }}</a>
+                {% if v.custom %}<small class="muted">its own servers</small>{% endif %}</span>
+              <span class="sync-chips">
+                {% for name, copy in v.copies %}
+                  {% if copy is none or (copy.status == 'ok' and not copy.server_playlist_id) %}
+                    {{ chip('pending', '… ' ~ name, 'Made at the next sync') }}
+                  {% elif copy.status == 'ok' %}
+                    {{ chip('ok', '✓ ' ~ name ~ ' ' ~ copy.items, copy.items ~ ' item' ~ ('' if copy.items == 1 else 's') ~ (', checked ' ~ (copy.refreshed_at | ago) if copy.refreshed_at else '')) }}
+                  {% elif copy.status == 'small' %}
+                    {% call chip('small', '– ' ~ name) %}{{ copy.message }}{% endcall %}
+                  {% else %}
+                    {% call chip('error', '✕ ' ~ name) %}{{ copy.message }}{% endcall %}
+                  {% endif %}
+                {% endfor %}
+              </span>
+              <form method="post" action="{{ url('/playlists/franchisarr/' ~ v.entry.id ~ '/remove') }}" class="nav-form"
+                    onsubmit="return confirm({{ ('Delete “' ~ v.entry.name ~ ' (Franchisarr)” on every server?') | tojson | forceescape }})">
+                <button type="submit" class="secondary outline">Remove</button>
+              </form>
+            </li>
           {% endfor %}
-        </span>
-        <form method="post" action="{{ url('/playlists/franchisarr/' ~ v.entry.id ~ '/remove') }}" class="nav-form"
-              onsubmit="return confirm({{ ('Delete “' ~ v.entry.name ~ ' (Franchisarr)” on every server?') | tojson | forceescape }})">
-          <button type="submit" class="secondary outline">Remove</button>
-        </form>
-      </li>
-    {% endfor %}
-  </ul>
+        </ul>
+      </details>
+    {% endif %}
+  {% endfor %}
 {% endif %}
 {% endif %}
 {% endblock %}

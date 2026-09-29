@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.46.0] — 2026-09-29
+
+### Changed
+
+- **Playlists → Your playlists**: each server's playlists are a collapsible section, closed to
+  start, with a count of playlists, how many sync and how many have a problem in its heading.
+- **Filter chips** — All, Syncing, Not syncing, Problems — beside the text filter; a filter opens
+  the sections with matches and closes them again when cleared. "Tick every playlist" ticks the
+  ones shown.
+- **Status chips** replace the lines under each synced playlist: one per server (✓ Attic 18/20,
+  ⚠ Attic blocked, ✕ for an error), opening in place for the details, the missing titles with Add,
+  and Link them.
+- A **save bar** stays at the bottom of the screen once anything has changed, counting the
+  changes, with Save and sync and Undo.
+- **Playlists → Franchisarr's** is grouped into collapsible Franchises, Collections and Directors
+  sections, each playlist with a thumbnail and a chip per server.
+
 ## [0.45.0] — 2026-09-29
 
 ### Added

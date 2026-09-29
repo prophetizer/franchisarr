@@ -891,3 +891,83 @@ button.timeline-poster:hover, button.timeline-poster:focus-visible { outline: 2p
 .home-grid--compact > article { font-size: 0.9rem; padding: calc(var(--pico-spacing) * 0.75); }
 .home-grid--compact > article > footer { padding-top: 0.5rem; }
 .home-grid--compact [role="button"] { font-size: 0.85rem; padding: 0.35rem 0.75rem; }
+
+/* Playlists tabs, 0.46.0: collapsible groups (a server's playlists, a kind of Franchisarr's),
+   filter chips, per-server status chips, and a save bar that stays in view. */
+.sync-group {
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+  margin-bottom: var(--pico-spacing);
+  padding: 0.5rem 1rem;
+}
+.sync-group > summary { padding: 0.35rem 0; }
+.sync-group > summary small { margin-left: 0.5rem; }
+.sync-group[open] > summary { border-bottom: 1px solid var(--pico-muted-border-color); margin-bottom: 0.75rem; }
+.sync-filter { align-items: center; display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; margin-bottom: var(--pico-spacing); }
+.sync-filter input[type="search"] { flex: 1 1 16rem; margin: 0; }
+.sync-filter-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.sync-filter-chip {
+  background: none;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 999px;
+  color: var(--pico-muted-color);
+  font-size: 0.85rem;
+  margin: 0;
+  padding: 0.25rem 0.8rem;
+  width: auto;
+}
+.sync-filter-chip[aria-pressed="true"] {
+  background: var(--pico-primary-background);
+  border-color: var(--pico-primary-background);
+  color: var(--pico-primary-inverse);
+}
+.sync-filter-chip small { opacity: 0.8; }
+.sync-chips { align-items: flex-start; display: flex; flex: 1 1 16rem; flex-wrap: wrap; gap: 0.3rem; min-width: 0; }
+.sync-chip {
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 999px;
+  display: inline-block;
+  font-size: 0.78rem;
+  margin: 0;
+  padding: 0.1rem 0.6rem;
+}
+details.sync-chip { margin-bottom: 0; }
+details.sync-chip > summary { cursor: pointer; line-height: 1.5; list-style: none; margin: 0; padding: 0; }
+.sync-chip { line-height: 1.5; }
+details.sync-chip > summary::-webkit-details-marker { display: none; }
+details.sync-chip > summary::after { display: none; }
+details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 100%; }
+.sync-chip-body { font-size: 0.85rem; padding: 0.4rem 0.2rem; }
+.sync-chip-body p { margin-bottom: 0.4rem; }
+.sync-chip--ok { color: var(--pico-ins-color); }
+.sync-chip--warn { color: var(--pico-primary); }
+.sync-chip--error { border-color: var(--pico-del-color); color: var(--pico-del-color); }
+.sync-chip--pending, .sync-chip--small { color: var(--pico-muted-color); }
+.sync-chip-body, .sync-chip-body button { color: var(--pico-color); }
+.sync-savebar {
+  align-items: center;
+  background: var(--pico-card-background-color);
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+  bottom: 0.5rem;
+  box-shadow: var(--pico-card-box-shadow);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-top: var(--pico-spacing);
+  padding: 0.6rem 1rem;
+  position: sticky;
+  z-index: 5;
+}
+.sync-savebar span { flex: 1 1 auto; }
+.sync-savebar button { margin: 0; width: auto; }
+.set-thumb {
+  aspect-ratio: 2 / 3;
+  background: var(--pico-card-sectioning-background-color);
+  border-radius: var(--pico-border-radius);
+  display: block;
+  flex: 0 0 2.9rem;
+  overflow: hidden;
+  width: 2.9rem;
+}
+.set-thumb img { display: block; height: 100%; object-fit: cover; width: 100%; }

@@ -454,7 +454,8 @@ def test_the_franchise_button_builds_and_the_tab_lists_it(client: TestClient) ->
 
     tab = client.get(f"{BASE}/playlists/franchisarr").text
     assert "<h1>Playlists</h1>" in tab and 'aria-current="page">Franchisarr' in tab
-    assert f'href="{BASE}/franchises/Q462">Star Wars</a>' in tab and "Living room:" in tab and "2 items" in tab
+    assert f'href="{BASE}/franchises/Q462">Star Wars</a>' in tab and "✓ Living room 2" in tab and "2 items" in tab
+    assert '<details class="sync-group">' in tab and "<strong>Franchises</strong>" in tab, "grouped by kind, closed"
     assert "1 Franchisarr playlist kept current" in tab
 
 

@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.45.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.46.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -270,7 +270,8 @@ syncs run — always after every scan and on **Sync now**, and optionally every 
 12 hours, daily, or on a cron schedule of your own.
 
 - **Your playlists** — keep your own playlists in step between servers, both ways (below).
-- **Franchisarr's** — every playlist Franchisarr keeps, with what it holds on each server and a
+- **Franchisarr's** — every playlist Franchisarr keeps, in collapsible Franchises / Collections /
+  Directors groups with a thumbnail and a chip per server for what it holds there, and a
   **Remove** button (deletes it everywhere). **Put them on** chooses the servers they go on;
   unticking one deletes them there. **Add many at once** makes one for every franchise,
   collection and/or director you tick, on one server or all, in the background with progress
@@ -285,8 +286,12 @@ syncs run — always after every scan and on **Sync now**, and optionally every 
 
 ### Playlist sync
 
-**Your playlists** is a checklist of the playlists on each server (with a filter, and a tick for
-every playlist on a server): tick the ones to keep in step across your servers. At the top,
+**Your playlists** is a checklist of the playlists on each server, one collapsible section per
+server (closed to start: they can be long). A text filter and **All / Syncing / Not syncing /
+Problems** chips narrow it, opening the sections with matches; each synced playlist shows a chip
+per server (✓ Attic 18/20, ⚠ blocked) that opens to say more. Tick the ones to keep in step across
+your servers; once anything has changed, a bar at the bottom of the screen counts the changes
+and offers **Save and sync** or **Undo**. At the top,
 **Copy to** sets which servers get copies — every other one by default, which also takes in
 servers you add later; any playlist can have its own with **change**. **Tick new playlists
 automatically** syncs playlists made later too; untick any one to leave it out. **Save and sync**

@@ -1,0 +1,15 @@
+{# Status chips for the Playlists tabs (0.46.0): one compact chip per server. A chip with more to
+   say opens in place to say it; one without is a plain label. #}
+{% macro chip(status, text, title='') -%}
+  {% if caller is defined %}
+    {% set body = caller() %}
+  {% endif %}
+  {% if body and body | trim %}
+    <details class="sync-chip sync-chip--{{ status }}">
+      <summary title="{{ title }}">{{ text }}</summary>
+      <div class="sync-chip-body">{{ body }}</div>
+    </details>
+  {% else %}
+    <span class="sync-chip sync-chip--{{ status }}" title="{{ title }}">{{ text }}</span>
+  {% endif %}
+{%- endmacro %}

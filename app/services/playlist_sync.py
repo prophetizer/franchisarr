@@ -164,6 +164,14 @@ class PlaylistRow:
     def targets(self) -> set[int] | None:
         return targets_of(self.sync) if self.sync is not None else None
 
+    @property
+    def problem(self) -> bool:
+        """For the Problems chip (0.46.0): a copy blocked or failing, or titles left out anywhere."""
+        if not self.syncing:
+            return False
+        return bool(self.sync.source_unmatched) or any(
+            copy.status in ("blocked", "error") or (copy.status == "ok" and copy.unmatched) for _, copy in self.copies)
+
 
 @dataclass
 class ServerPlaylists:

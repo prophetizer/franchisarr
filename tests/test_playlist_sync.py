@@ -658,6 +658,10 @@ def test_the_page_offers_add_for_whats_missing_and_link_for_a_blocked_copy(clien
     page = client.get(f"{BASE}/playlists").text
     assert f'hx-get="{BASE}/add/14"' in page and 'id="add-dialog"' in page, "Add for a film Radarr doesn't have"
     assert f'hx-post="{BASE}/playlists/copies/{copy_id}/link"' in page and "Link them" in page
+    # 0.46.0: each server a closed section, a Problems chip that finds this one, status chips.
+    assert page.count('<details class="sync-group sync-server"') == 2 and "sync-server\"\n             open" not in page
+    assert 'data-problem="1"' in page and "Problems <small>1</small>" in page
+    assert "⚠ Jellyfin blocked" in page and "← here: 1 missing" in page and 'class="sync-savebar"' in page
 
     client.fakes["Jellyfin"].add("mine", "Road trip", [])  # type: ignore[attr-defined]
     linked = client.post(f"{BASE}/playlists/copies/{copy_id}/link", headers={"HX-Request": "true"})

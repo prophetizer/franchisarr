@@ -101,6 +101,37 @@ class EntryView:
     #: (server name, copy or None) for each server it belongs on, and any it's still on.
     copies: list[tuple[str, FranchisarrPlaylistCopy | None]]
     custom: bool
+    #: A small poster (a director's photo) for the tab's list (0.46.0).
+    poster: str | None = None
+
+    @property
+    def troubled(self) -> bool:
+        return any(copy is not None and copy.status == "error" for _, copy in self.copies)
+
+
+def _posters(session: Session, entries: list[FranchisarrPlaylist]) -> dict[tuple[str, str], str | None]:
+    """A thumbnail per entry from what's stored, three queries in all: a collection's own
+    poster, a franchise's earliest member with one, a director's photo."""
+    from app.models import FranchiseMember, MovieDirector, TmdbCollection
+    from app.services.artwork import SMALL_CARD_SIZE, poster_url, profile_url
+
+    refs = {kind: [e.ref for e in entries if e.kind == kind] for kind in KIND_LABELS}
+    found: dict[tuple[str, str], str | None] = {}
+    collections = [int(r) for r in refs["collections"] if r.isdigit()]
+    for cid, path in session.exec(select(TmdbCollection.tmdb_collection_id, TmdbCollection.poster_path)
+                                  .where(col(TmdbCollection.tmdb_collection_id).in_(collections))).all():
+        found[("collections", str(cid))] = poster_url(path, SMALL_CARD_SIZE)
+    for fid, path in session.exec(select(FranchiseMember.franchise_id, FranchiseMember.poster_path)
+                                  .where(col(FranchiseMember.franchise_id).in_(refs["franchises"]),
+                                         col(FranchiseMember.poster_path).is_not(None))
+                                  .order_by(col(FranchiseMember.year))).all():
+        found.setdefault(("franchises", fid), poster_url(path, SMALL_CARD_SIZE))
+    people = [int(r) for r in refs["directors"] if r.isdigit()]
+    for pid, path in session.exec(select(MovieDirector.person_id, MovieDirector.profile_path)
+                                  .where(col(MovieDirector.person_id).in_(people))).all():
+        if path:
+            found.setdefault(("directors", str(pid)), profile_url(path))
+    return found
 
 
 def page(session: Session) -> list[EntryView]:
@@ -115,15 +146,18 @@ def page(session: Session) -> list[EntryView]:
     for copy in session.exec(select(FranchisarrPlaylistCopy)).all():
         copies.setdefault(copy.playlist_id, {})[copy.server_id] = copy
     views = []
-    for entry in session.exec(select(FranchisarrPlaylist).where(col(FranchisarrPlaylist.removed_at).is_(None))
-                              .order_by(col(FranchisarrPlaylist.name))).all():
+    entries = session.exec(select(FranchisarrPlaylist).where(col(FranchisarrPlaylist.removed_at).is_(None))
+                           .order_by(col(FranchisarrPlaylist.name))).all()
+    posters = _posters(session, entries)
+    for entry in entries:
         mine = copies.get(entry.id, {})
         wanted = servers_of(session, entry, enabled, defaults)
         shown = sorted(wanted | {s for s, c in mine.items() if c.server_playlist_id and s in enabled},
                        key=lambda s: names.get(s, "").casefold())
         views.append(EntryView(entry, KIND_LABELS.get(entry.kind, entry.kind),
                                KIND_PATHS.get(entry.kind, "/") + entry.ref,
-                               [(names.get(s, "?"), mine.get(s)) for s in shown], entry.servers is not None))
+                               [(names.get(s, "?"), mine.get(s)) for s in shown], entry.servers is not None,
+                               posters.get((entry.kind, entry.ref))))
     return views
 
 
