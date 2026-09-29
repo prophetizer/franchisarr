@@ -1,0 +1,29 @@
+{# The set in release order (0.45.0): owned in colour, missing and upcoming dimmed. A missing one
+   opens the add dialog for an admin; the grids below keep every other action. Scrolls sideways
+   inside itself, never the page. #}
+{% if timeline | length > 1 %}
+  {% set have = timeline | selectattr('status', 'equalto', 'owned') | list | length %}
+  <section class="timeline" aria-label="In release order">
+    <p class="timeline-heading"><strong>In release order</strong>
+      <small class="muted">{{ have }} of {{ timeline | length }} — dimmed ones you don't have{% if user and user.is_admin %}; pick one to add it{% endif %}</small></p>
+    <ol class="timeline-strip">
+      {% for s in timeline %}
+        {% set label = s.title ~ (' (' ~ s.year ~ ')' if s.year else '') ~ (' — you have it' if s.status == 'owned' else (' — not out yet' if s.status == 'upcoming' else ' — missing')) %}
+        <li class="timeline-step timeline-step--{{ s.status }}">
+          {% if s.status != 'owned' and user and user.is_admin %}
+            <button type="button" class="timeline-poster" title="{{ label }}" aria-label="Add {{ s.title }}"
+                    hx-get="{{ url(('/add/' if s.item_type == 'movie' else '/shows/add/') ~ s.tmdb_id) }}"
+                    hx-target="{{ '#add-dialog' if s.item_type == 'movie' else '#add-show-dialog' }}" hx-swap="innerHTML">
+          {% else %}
+            <span class="timeline-poster" title="{{ label }}">
+          {% endif %}
+            {% if s.poster %}<img src="{{ s.poster }}" alt="{{ s.title }}" loading="lazy" decoding="async" width="92" height="138">
+            {% else %}<span class="timeline-placeholder">{{ s.title }}</span>{% endif %}
+            {% if s.status == 'owned' %}<span class="timeline-tick" aria-hidden="true">✓</span>{% endif %}
+          {% if s.status != 'owned' and user and user.is_admin %}</button>{% else %}</span>{% endif %}
+          <span class="timeline-year">{{ s.year or '—' }}{% if s.status == 'upcoming' %} · soon{% endif %}</span>
+        </li>
+      {% endfor %}
+    </ol>
+  </section>
+{% endif %}

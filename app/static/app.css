@@ -776,3 +776,118 @@ details.dropdown.more-actions > summary:not([role]) {
 details.dropdown.more-actions > summary:not([role]):hover { border-color: var(--pico-muted-border-color); }
 details.dropdown.more-actions > summary::after { display: none; }
 details.dropdown.more-actions > ul { left: auto; right: 0; min-width: 14rem; }
+
+/* The release-order strip on a franchise or collection page (0.45.0). It scrolls sideways inside
+   itself; min-width: 0 is what stops a long strip widening the page on a phone. */
+.timeline { margin-bottom: var(--pico-block-spacing-vertical); min-width: 0; }
+.timeline-heading { margin-bottom: 0.5rem; }
+.timeline-heading small { margin-left: 0.5rem; }
+.timeline-strip {
+  display: flex;
+  gap: 0.6rem;
+  list-style: none;
+  margin: 0;
+  overflow-x: auto;
+  padding: 0 0 0.6rem;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+.timeline-step {
+  display: flex;
+  flex: 0 0 5.25rem;
+  flex-direction: column;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  scroll-snap-align: start;
+}
+.timeline-poster {
+  aspect-ratio: 2 / 3;
+  background: var(--pico-card-sectioning-background-color);
+  border: none;
+  border-radius: var(--pico-border-radius);
+  display: block;
+  margin: 0;
+  overflow: hidden;
+  padding: 0;
+  position: relative;
+  width: 100%;
+}
+.timeline-poster img { display: block; height: 100%; object-fit: cover; width: 100%; }
+.timeline-placeholder {
+  align-items: center;
+  color: var(--pico-muted-color);
+  display: flex;
+  font-size: 0.7rem;
+  height: 100%;
+  justify-content: center;
+  padding: 0.3rem;
+  text-align: center;
+}
+.timeline-step--missing .timeline-poster img, .timeline-step--upcoming .timeline-poster img {
+  filter: grayscale(1);
+  opacity: 0.4;
+}
+.timeline-step--missing .timeline-poster, .timeline-step--upcoming .timeline-poster {
+  outline: 1px dashed var(--pico-muted-border-color);
+  outline-offset: -1px;
+}
+button.timeline-poster { cursor: pointer; }
+button.timeline-poster:hover img, button.timeline-poster:focus-visible img { filter: none; opacity: 0.85; }
+button.timeline-poster:hover, button.timeline-poster:focus-visible { outline: 2px solid var(--pico-primary); }
+.timeline-tick {
+  background: var(--pico-primary-background);
+  border-radius: 999px;
+  bottom: 0.25rem;
+  color: var(--pico-primary-inverse);
+  font-size: 0.7rem;
+  line-height: 1;
+  padding: 0.2rem 0.3rem;
+  position: absolute;
+  right: 0.25rem;
+}
+.timeline-year { color: var(--pico-muted-color); font-size: 0.75rem; text-align: center; }
+.timeline-step--owned .timeline-year { color: var(--pico-color); }
+
+/* Home page poster rows (0.45.0): a row of cards that scrolls sideways inside itself. */
+.poster-row { margin-bottom: var(--pico-block-spacing-vertical); min-width: 0; }
+.poster-row-heading { align-items: baseline; display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; justify-content: space-between; }
+.poster-row-heading h2 { font-size: 1.25rem; margin-bottom: 0.5rem; }
+.poster-row-heading h2 small { font-size: 0.8rem; font-weight: 400; margin-left: 0.5rem; }
+.poster-row-cards {
+  display: flex;
+  gap: 0.9rem;
+  list-style: none;
+  margin: 0;
+  overflow-x: auto;
+  padding: 0 0 0.6rem;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+.poster-row-cards > li {
+  display: flex;
+  flex: 0 0 8.5rem;
+  flex-direction: column;
+  gap: 0.15rem;
+  list-style: none;
+  margin: 0;
+  scroll-snap-align: start;
+}
+.poster-row-card {
+  aspect-ratio: 2 / 3;
+  background: var(--pico-card-sectioning-background-color);
+  border-radius: var(--pico-border-radius);
+  display: block;
+  margin-bottom: 0.3rem;
+  overflow: hidden;
+}
+.poster-row-card img { display: block; height: 100%; object-fit: cover; transition: transform 0.15s; width: 100%; }
+.poster-row-card:hover img, .poster-row-card:focus-visible img { transform: scale(1.04); }
+.poster-row-title { font-size: 0.85rem; font-weight: 600; line-height: 1.25; }
+.poster-row-cards small { font-size: 0.75rem; line-height: 1.3; }
+
+/* The count cards under the rows: still there, smaller. */
+.home-grid--compact > article { font-size: 0.9rem; padding: calc(var(--pico-spacing) * 0.75); }
+.home-grid--compact > article > footer { padding-top: 0.5rem; }
+.home-grid--compact [role="button"] { font-size: 0.85rem; padding: 0.35rem 0.75rem; }

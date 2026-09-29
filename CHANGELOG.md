@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.45.0] — 2026-09-29
+
+### Added
+
+- **The set in release order**, at the top of every franchise and collection page: a strip of
+  posters with what you own in colour and what you don't dimmed, so the holes in the run show at a
+  glance. Picking a dimmed one opens the add dialog.
+- **Poster rows on the home page**: the collections closest to complete, films coming in the next
+  90 days in franchises you own, and titles just added to your library from sets you're
+  collecting. The summary cards are still there, smaller, below them.
+
+### Upgrading
+
+- "Just added" starts empty and fills as scans find new titles: when earlier ones arrived was
+  never recorded (migration 0031 adds the date). A fresh install's first scan doesn't count
+  either — that's the whole library, not what's new.
+
 ## [0.44.0] — 2026-09-29
 
 ### Added

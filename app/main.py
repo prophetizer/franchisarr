@@ -197,7 +197,7 @@ def index(request: Request, session: DbSession, user: RequiredUser):
 
     from datetime import date
 
-    from app.services import movie_gap_service, tv_spinoff_service, upcoming_service
+    from app.services import home_service, movie_gap_service, tv_spinoff_service, upcoming_service
 
     gaps = movie_gap_service.collections_with_gaps(session, user.id)
     today = date.today()
@@ -212,6 +212,15 @@ def index(request: Request, session: DbSession, user: RequiredUser):
         {
             "user": user,
             "library_counts": _library_counts(session),
+            # The poster rows (0.45.0), from what this page reads anyway.
+            "rows": [
+                ("Closest to complete", "Collections you're nearly done with.",
+                 home_service.closest_to_complete(gaps), "/collections?sort=complete&dir=desc", "All collections"),
+                ("Coming in the next 90 days", "Announced films in franchises you own.",
+                 home_service.coming_soon(upcoming, today), "/upcoming", "Everything coming"),
+                ("Just added", "New in your library, from sets you're collecting.",
+                 home_service.just_added(session), None, None),
+            ],
             "collections_with_gaps": len(gaps),
             "total_missing": sum(len(gap.missing) for gap in gaps),
             "spinoff_count": len(tv_spinoff_service.missing_spinoffs(session, user.id)),

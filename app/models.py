@@ -406,6 +406,9 @@ class LibraryItem(SQLModel, table=True):
     watched: bool | None = Field(default=None)
 
     last_seen_at: datetime = Field(default_factory=utcnow, index=True)
+    #: When a scan first found it, for the home page's "Just added" (0.45.0). None for rows from
+    #: before that, whose arrival nobody recorded.
+    first_seen_at: datetime | None = Field(default_factory=utcnow, index=True)
     updated_at: datetime = Field(default_factory=utcnow)
 
 

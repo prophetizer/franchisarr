@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.44.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.45.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -215,6 +215,15 @@ Directors); for administrators **Playlists** (one page with tabs) and
 **Manage** (Servers, Libraries, Instances, Users, Settings, Activity); and one under your name (Preferences, Password, light/dark, Sign out), with
 search at the far right. The menu holding the page you're on is highlighted. On a phone it's a
 single ☰ button.
+
+The home page leads with rows of posters: the collections you're **closest to completing**,
+films in franchises you own **coming in the next 90 days**, and titles **just added** to your
+library from sets you're collecting (counted from 0.45.0 on — nobody recorded when earlier ones
+arrived). The summary cards for each section sit below them.
+
+Franchise and collection pages open with the whole set **in release order** — a strip of
+posters, the ones you have in colour and the ones you don't dimmed, so the holes in the run show
+at a glance. Pick a dimmed one to add it; the lists below have everything else.
 
 ## Search
 

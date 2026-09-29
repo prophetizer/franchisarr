@@ -10,6 +10,28 @@
       and starts polling without anyone pressing anything. -#}
   {% include "partials/scan_status.html" %}
 
+  {#- Poster rows first (0.45.0); a row with nothing in it isn't shown. -#}
+  {% for heading, note, cards, more, more_label in rows if cards %}
+    <section class="poster-row" aria-label="{{ heading }}">
+      <div class="poster-row-heading">
+        <h2>{{ heading }} <small class="muted">{{ note }}</small></h2>
+        {% if more %}<a href="{{ url(more) }}">{{ more_label }} →</a>{% endif %}
+      </div>
+      <ul class="poster-row-cards">
+        {% for c in cards %}
+          <li>
+            <a href="{{ url(c.path) }}" class="poster-row-card" title="{{ c.title }}">
+              {% if c.poster %}<img src="{{ c.poster }}" alt="" loading="lazy" decoding="async" width="185" height="278">
+              {% else %}<span class="timeline-placeholder">{{ c.title }}</span>{% endif %}
+            </a>
+            <span class="poster-row-title">{{ c.title }}</span>
+            <small class="muted">{{ c.detail }}</small>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endfor %}
+
   {% if not progress.running %}
     <article>
       <header><strong>{{ 'Scan your library' if not scanned else 'Up to date?' }}</strong></header>
@@ -46,7 +68,7 @@
     </article>
   {% endif %}
 
-  <div class="home-grid">
+  <div class="home-grid home-grid--compact">
   <article>
     <header><strong>Franchises</strong></header>
     <p>Everything you own, grouped the way you think of it — films and TV together — with what's
