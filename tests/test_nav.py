@@ -45,7 +45,8 @@ def test_an_admin_gets_browse_manage_and_their_own_menu(client: TestClient) -> N
     page = client.get(f"{BASE}/collections").text
 
     assert _menu(page, "Browse") == ["Franchises", "Collections", "Spin-offs", "Upcoming", "Directors"]
-    assert _menu(page, "Manage") == ["Servers", "Libraries", "Instances", "Playlists", "Users", "Settings", "Activity"]
+    assert _menu(page, "Playlists") == ["Sync", "Add playlists", "Delete playlists", "History"]
+    assert _menu(page, "Manage") == ["Servers", "Libraries", "Instances", "Users", "Settings", "Activity"]
     assert _menu(page, "admin") == ["Preferences", "Password"]
     assert "Sign out" in page and "theme-toggle" in page
     nav = page.split('<nav class="app-nav">', 1)[1].split("</nav>", 1)[0]
@@ -91,3 +92,10 @@ def test_the_sign_in_page_has_no_menu(client: TestClient) -> None:
     page = client.get(f"{BASE}/login").text
 
     assert "<summary>Browse</summary>" not in page and 'id="nav-panel"' not in page
+
+
+def test_only_the_playlist_page_youre_on_is_marked(client: TestClient) -> None:
+    """/playlists is the Sync page and the start of the other playlist pages' paths."""
+    page = client.get(f"{BASE}/playlists/history").text
+    block = page.split("<summary>Playlists</summary>", 1)[1].split("</details>", 1)[0]
+    assert block.count('aria-current="page"') == 1 and f'href="{BASE}/playlists/history" aria-current' in block

@@ -20,6 +20,8 @@ from app.services import playlist_service
 from tests.conftest import seed_server
 
 BASE = "/franchisarr"
+#: The panels answer htmx; opened directly they're the Add/Delete pages.
+HX = {"HX-Request": "true"}
 PASSWORD = "correct horse battery staple"
 
 
@@ -353,14 +355,13 @@ def test_deleting_asks_first_then_deletes_one_server_or_all(client: TestClient, 
 
     monkeypatch.setattr(media_server_service, "client_for", lambda s: shelves[s.name])
 
-    page = client.get(f"{BASE}/media-servers").text
-    assert 'id="bulk"' in page
-    assert "Add playlists…" in page and "Delete all playlists…" in page and "s playlists…" in page
+    page = client.get(f"{BASE}/playlists/delete").text          # the Delete page, from the menu
+    assert "<h1>Delete playlists</h1>" in page and "Delete all playlists…" in page
     assert f'hx-get="{BASE}/playlists/delete?scope=ours"' in page and 'hx-include="#bulk-server"' in page
     assert f'<option value="{attic}">Attic</option>' in page and '<option value="all">every server</option>' in page
-    assert "Delete playlists</button>" not in page, "the per-server buttons moved into Bulk actions"
+    assert 'id="bulk"' not in client.get(f"{BASE}/media-servers").text, "moved off the Servers page"
 
-    warning = client.get(f"{BASE}/playlists/delete?server={attic}").text
+    warning = client.get(f"{BASE}/playlists/delete?server={attic}", headers=HX).text
     assert "This deletes 2 playlists" in warning and "Star Wars (Franchisarr)" in warning
     assert "Yes, delete 2 playlists" in warning
     assert shelves["Attic"].deleted == [], "the warning deletes nothing"
@@ -369,7 +370,7 @@ def test_deleting_asks_first_then_deletes_one_server_or_all(client: TestClient, 
     assert "Attic: deleted 2 playlists" in done
     assert shelves["Living room"].deleted == [], "only the server asked for"
 
-    warning = client.get(f"{BASE}/playlists/delete?server=all").text
+    warning = client.get(f"{BASE}/playlists/delete?server=all", headers=HX).text
     assert "This deletes 1 playlist" in warning and "Road trip" not in warning
     client.post(f"{BASE}/playlists/delete", data={"server": "all"})
     assert shelves["Living room"].deleted == ["Alien (Franchisarr)"], "never a playlist someone made"
@@ -380,7 +381,7 @@ def test_an_unreachable_server_is_named_in_the_warning(client: TestClient, monke
 
     monkeypatch.setattr(media_server_service, "client_for", lambda s: _Shelf([], fail=True))
 
-    warning = client.get(f"{BASE}/playlists/delete?server=all").text
+    warning = client.get(f"{BASE}/playlists/delete?server=all", headers=HX).text
 
     assert "Living room: Couldn" in warning and "No Franchisarr playlists to delete" in warning
 
@@ -393,7 +394,7 @@ def test_deleting_every_playlist_needs_delete_typed_and_lists_peoples_own(client
 
     monkeypatch.setattr(media_server_service, "client_for", lambda s: shelves[s.name])
 
-    warning = client.get(f"{BASE}/playlists/delete?server=all&scope=all").text
+    warning = client.get(f"{BASE}/playlists/delete?server=all&scope=all", headers=HX).text
     assert "This deletes 3 playlists" in warning and "Road trip" in warning and "Mine" in warning
     assert "including ones you made yourself" in warning and 'name="confirm"' in warning
     assert "may be in this list" in warning, "Jellyfin can't say who owns a playlist"
@@ -410,7 +411,7 @@ def test_plex_alone_gets_no_shared_playlist_caveat(client: TestClient, monkeypat
 
     monkeypatch.setattr(media_server_service, "client_for", lambda s: _Shelf(["Road trip"]))
 
-    warning = client.get(f"{BASE}/playlists/delete?server=all&scope=all").text
+    warning = client.get(f"{BASE}/playlists/delete?server=all&scope=all", headers=HX).text
 
     assert "Road trip" in warning and "may be in this list" not in warning
 
@@ -483,7 +484,7 @@ def test_the_add_form_offers_each_kind_with_its_count_and_starts_the_job(client:
     started = []
     monkeypatch.setattr(playlist_bulk, "run_in_background", lambda kinds, server_id, where: started.append((kinds, server_id, where)) or True)
 
-    form = client.get(f"{BASE}/playlists/add-all?server=all").text
+    form = client.get(f"{BASE}/playlists/add-all?server=all", headers=HX).text
     assert "franchise (207)" in form and "collection (409)" in form and "director (148)" in form
 
     assert "Pick at least one kind" in client.post(f"{BASE}/playlists/add-all", data={"server": "all"}).text

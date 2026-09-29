@@ -66,6 +66,9 @@ class SettingKey:
     #: Playlist sync: a "... (Franchisarr)" playlist on one server is built on the others from
     #: their own libraries, and deleting it on one deletes it everywhere.
     PLAYLIST_SYNC_FRANCHISARR = "playlist_sync_franchisarr"
+    #: Playlist sync's own schedule (cron, like the scan's); empty for none. Syncs also follow
+    #: every scan.
+    PLAYLIST_SYNC_CRON = "playlist_sync_cron"
 
 
 #: Values used when neither the environment nor the user has said otherwise.
@@ -88,6 +91,7 @@ DEFAULTS: dict[str, str] = {
     SettingKey.ALLOW_MEMBER_SIGNIN: "false",
     SettingKey.PLAYLIST_SYNC_ALL: "false",
     SettingKey.PLAYLIST_SYNC_FRANCHISARR: "false",
+    SettingKey.PLAYLIST_SYNC_CRON: "",
 }
 
 #: Theming moved to environment variables in 0.2.0 (TP_THEME and friends), so a homelab can set

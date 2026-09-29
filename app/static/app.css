@@ -679,3 +679,14 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 .sync-switches { margin-bottom: var(--pico-spacing); }
 .sync-switches label { margin-bottom: 0.5rem; }
 .sync-switches button { width: auto; }
+
+/* Playlist sync page: the checklist. */
+.sync-checklist input[type="search"] { margin-bottom: var(--pico-spacing); }
+.sync-pick { flex: 1 1 18rem; min-width: 0; }
+.sync-pick label { display: inline; margin: 0 0.75rem 0 0; }
+.sync-pick input { margin: 0 0.5rem 0 0; }
+.sync-targets { display: flex; flex-wrap: wrap; gap: 0.25rem 0.75rem; align-items: baseline; }
+.sync-targets label { margin: 0; font-size: 0.875rem; }
+.sync-select-all { font-size: 0.875rem; margin-bottom: 0.5rem; }
+.sync-settings { margin-bottom: var(--pico-spacing); }
+.bulk-on select { width: auto; }

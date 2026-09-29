@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.40.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.41.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -210,9 +210,9 @@ the label changes.
 
 ## Getting around
 
-The top bar has three menus: **Browse** (Franchises, Collections, Spin-offs, Upcoming,
-Directors), **Manage** for administrators (Servers, Libraries, Instances, Playlists, Users,
-Settings, Activity), and one under your name (Preferences, Password, light/dark, Sign out), with
+The top bar has its menus: **Browse** (Franchises, Collections, Spin-offs, Upcoming,
+Directors); for administrators **Playlists** (Sync, Add playlists, Delete playlists, History) and
+**Manage** (Servers, Libraries, Instances, Users, Settings, Activity); and one under your name (Preferences, Password, light/dark, Sign out), with
 search at the far right. The menu holding the page you're on is highlighted. On a phone it's a
 single ☰ button.
 
@@ -247,7 +247,7 @@ out. With more than one server the button becomes a row — **On every server**,
   (Servers page), which is the first administrator unless you've set one.
 - The order is release order. Nothing records story order (where *Rogue One* sits in the saga),
   so that isn't offered.
-- **Bulk actions** on the Servers page work on one server or every server at once:
+- **Playlists → Add playlists / Delete playlists** work on one server or every server at once:
   - **Add playlists** makes one for every franchise, collection and/or director you tick, in
     the background with progress and a Stop button. A set with fewer than two titles on a server
     is skipped there, and an existing playlist is rebuilt.
@@ -261,9 +261,15 @@ out. With more than one server the button becomes a row — **On every server**,
 
 ### Playlist sync
 
-**Servers → Playlist sync** (also linked from Settings) lists the playlists on each server with a
-**Sync** switch. A synced playlist is copied from its server to every other server that's on,
-after each scan and whenever you press **Sync now**:
+**Playlists → Sync** is a checklist of the playlists on each server (with a filter, and a tick
+for every playlist on a server): tick the ones to copy, and for each, which servers get a copy —
+all of them by default, which also takes in servers you add later. **Save and sync** applies it
+straight away. Syncs also run after every scan, on their own schedule (a cron expression, like
+scans, under **Schedule and switches**), and with **Sync now**; **Playlists → History** lists the
+last 30.
+
+- Unticking a server deletes the copy sync made there; unticking a playlist stops syncing it and
+  leaves its copies as ordinary playlists.
 
 - Titles are matched by TMDb id — a film by its own, an episode by its show plus season and
   episode number. One the other server doesn't have is left out, and the page lists what wasn't
@@ -277,10 +283,10 @@ after each scan and whenever you press **Sync now**:
   *watched as* user). Music and photo playlists aren't synced. A sync that fails sends a
   notification, if you've set one up.
 
-Two switches at the top of the page:
+Two switches under **Schedule and switches**:
 
 - **Sync every playlist** — every video playlist on every server syncs, including ones made
-  later; any one can still be switched off with **Don't sync**.
+  later; untick any one in the checklist to leave it out.
 - **Keep Franchisarr's playlists on every server** — a "… (Franchisarr)" playlist on one server
   is built on the others from *their own* libraries (so each is complete for its server, rather
   than a copy trimmed to what both hold), and deleting it on any server deletes it everywhere.

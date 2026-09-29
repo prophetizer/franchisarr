@@ -33,6 +33,7 @@ from app.services.settings_service import SettingKey, get_setting
 logger = logging.getLogger(__name__)
 
 JOB_ID = "franchisarr-scan"
+SYNC_JOB_ID = "franchisarr-playlist-sync"
 
 _scheduler: BackgroundScheduler | None = None
 
@@ -81,6 +82,38 @@ def _run_scan() -> None:
     """
     if not scan_job.run_in_background("scheduled"):
         logger.info("Skipping the scheduled scan: one is already running")
+
+
+def _run_playlist_sync() -> None:
+    """Playlist sync's own schedule (0.41.0). Same single guard as Sync now and after-scan."""
+    from app.services import playlist_sync
+
+    if not playlist_sync.run_in_background("schedule"):
+        logger.info("Skipping the scheduled playlist sync: one is running, or nothing syncs")
+
+
+def apply_playlist_sync_schedule(expression: str) -> str | None:
+    """Install, replace or remove the playlist sync job. Returns the active expression, or None."""
+    scheduler = get_scheduler()
+    try:
+        trigger = validate_cron(expression)
+    except InvalidSchedule as exc:
+        logger.error("Ignoring the configured playlist sync schedule: %s", exc)
+        trigger = None
+    if trigger is None:
+        if scheduler.get_job(SYNC_JOB_ID):
+            scheduler.remove_job(SYNC_JOB_ID)
+            logger.info("Scheduled playlist syncs disabled")
+        return None
+    scheduler.add_job(_run_playlist_sync, trigger=trigger, id=SYNC_JOB_ID, replace_existing=True,
+                      max_instances=1, coalesce=True, misfire_grace_time=3600)
+    logger.info("Scheduled playlist syncs enabled: %s", expression.strip())
+    return expression.strip()
+
+
+def next_playlist_sync_time():
+    job = get_scheduler().get_job(SYNC_JOB_ID)
+    return job.next_run_time if job else None
 
 
 def get_scheduler() -> BackgroundScheduler:
@@ -132,6 +165,7 @@ def start(session: Session) -> None:
     if not scheduler.running:
         scheduler.start()
     apply_schedule(get_setting(session, SettingKey.SCAN_SCHEDULE_CRON) or "")
+    apply_playlist_sync_schedule(get_setting(session, SettingKey.PLAYLIST_SYNC_CRON) or "")
 
 
 def shutdown() -> None:

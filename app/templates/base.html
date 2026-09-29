@@ -52,13 +52,16 @@
         {% set browse = [('/franchises', 'Franchises'), ('/collections', 'Collections'), ('/shows', 'Spin-offs'),
                          ('/upcoming', 'Upcoming'), ('/directors', 'Directors')] %}
         {% set manage = [('/media-servers', 'Servers'), ('/libraries', 'Libraries'), ('/instances', 'Instances'),
-                         ('/playlists', 'Playlists'), ('/users', 'Users'), ('/settings', 'Settings'),
-                         ('/activity', 'Activity')] if user.is_admin else [] %}
+                         ('/users', 'Users'), ('/settings', 'Settings'), ('/activity', 'Activity')] if user.is_admin else [] %}
+        {% set playlists = [('/playlists', 'Sync'), ('/playlists/add-all', 'Add playlists'),
+                            ('/playlists/delete', 'Delete playlists'), ('/playlists/history', 'History')]
+                           if user.is_admin else [] %}
         {% set mine = ([('/preferences', 'Preferences')] if user.is_admin else [])
                       + [('/password', 'Password')]
                       + ([] if user.is_admin else [('/activity', 'Activity')]) %}
         {% set here = request.url.path if request else '' %}
-        {%- macro is_here(path) -%}{{ 'true' if here == url(path) or here.startswith(url(path) ~ '/') else '' }}{%- endmacro %}
+        {#- '/playlists' is the Sync page, and the start of the others' paths: it's only "here" exactly. -#}
+        {%- macro is_here(path) -%}{{ 'true' if here == url(path) or (path != '/playlists' and here.startswith(url(path) ~ '/')) else '' }}{%- endmacro %}
         {%- macro section_here(items) -%}{% for path, _ in items if is_here(path) %}true{% endfor %}{%- endmacro %}
         {%- macro links(items) -%}
           {% for path, label in items %}
@@ -80,6 +83,14 @@
                 <ul>{{ links(browse) }}</ul>
               </details>
             </li>
+            {% if playlists %}
+              <li class="nav-desktop">
+                <details class="dropdown{% if section_here(playlists) %} nav-here{% endif %}">
+                  <summary>Playlists</summary>
+                  <ul>{{ links(playlists) }}</ul>
+                </details>
+              </li>
+            {% endif %}
             {% if manage %}
               <li class="nav-desktop">
                 <details class="dropdown{% if section_here(manage) %} nav-here{% endif %}">
@@ -119,6 +130,10 @@
         <div id="nav-panel" class="nav-panel" hidden>
           <p class="nav-panel-heading">Browse</p>
           <ul>{{ links(browse) }}</ul>
+          {% if playlists %}
+            <p class="nav-panel-heading">Playlists</p>
+            <ul>{{ links(playlists) }}</ul>
+          {% endif %}
           {% if manage %}
             <p class="nav-panel-heading">Manage</p>
             <ul>{{ links(manage) }}</ul>

@@ -37,7 +37,9 @@ from datetime import datetime, timezone
 
 from sqlmodel import Session, col, select
 
-from app.models import FranchisarrPlaylistPresence, LibraryItem, MediaServer, PlaylistCopy, PlaylistSync
+from app.models import (
+    FranchisarrPlaylistPresence, LibraryItem, MediaServer, PlaylistCopy, PlaylistSync, PlaylistSyncRun,
+)
 from app.services.playlist_service import SUFFIX
 
 logger = logging.getLogger(__name__)
@@ -98,6 +100,11 @@ def _error(message: str) -> None:
 # ------------------------------------------------------------------ choosing what syncs
 
 
+def targets_of(sync: PlaylistSync) -> set[int] | None:
+    """The servers a synced playlist copies to; None for every other server that's on."""
+    return None if sync.targets is None else {int(i) for i in json.loads(sync.targets)}
+
+
 @dataclass
 class PlaylistRow:
     id: str
@@ -118,6 +125,14 @@ class PlaylistRow:
     @property
     def excluded(self) -> bool:
         return self.sync is not None and not self.sync.enabled
+
+    @property
+    def ticked(self) -> bool:
+        """Ticked in the checklist: syncing, or about to be under "sync every playlist"."""
+        return self.syncing or self.pending
+
+    def targets(self) -> set[int] | None:
+        return targets_of(self.sync) if self.sync is not None else None
 
 
 @dataclass
@@ -442,8 +457,21 @@ def _sync_one(work: _Run, sync: PlaylistSync) -> None:
     refs = work.client(sync.source_server_id).playlist_items(info.id)
     poster: bytes | None | bool = False      # fetched once, only if a copy is being written
 
+    allowed = targets_of(sync)
+    # A server unticked for this playlist: delete the copy sync made there (michael, 0.41.0).
+    for server_id, old in list(copies.items()):
+        if allowed is not None and server_id not in allowed and server_id in work.servers:
+            try:
+                if old.target_playlist_id:
+                    work.client(server_id).delete_playlist_id(old.target_playlist_id)
+                    _bump("deleted")
+                session.delete(old)
+                del copies[server_id]
+            except Exception as exc:  # noqa: BLE001
+                _error(f"{info.title}: couldn't remove the copy on {work.servers[server_id].name} ({type(exc).__name__})")
+
     for server_id in work.servers:
-        if server_id == sync.source_server_id:
+        if server_id == sync.source_server_id or (allowed is not None and server_id not in allowed):
             continue
         copy = copies.get(server_id) or PlaylistCopy(sync_id=sync.id, target_server_id=server_id)
         session.add(copy)
@@ -589,6 +617,10 @@ def run_in_background(trigger: str) -> bool:
         finally:
             _set(running=False, finished_at=datetime.now(timezone.utc), current="")
             state = current()
+            try:
+                _record(state)
+            except Exception:  # noqa: BLE001 -- history is a convenience
+                logger.exception("Couldn't record the playlist sync in its history")
             logger.info("Playlist sync (%s): %d created, %d updated, %d unchanged, %d deleted, %d blocked, %d failed",
                         trigger, state.created, state.updated, state.unchanged, state.deleted, state.blocked, state.failed)
             if state.failed:
@@ -596,6 +628,63 @@ def run_in_background(trigger: str) -> bool:
 
     threading.Thread(target=_work, name="franchisarr-playlist-sync", daemon=True).start()
     return True
+
+
+HISTORY_KEEP = 30
+
+
+def _record(state: SyncProgress, session: Session | None = None) -> None:
+    """Add this run to the History page, keeping the last HISTORY_KEEP."""
+    from sqlmodel import delete as sql_delete
+
+    from app.db import get_engine
+
+    with (session if session is not None else Session(get_engine())) as db:
+        db.add(PlaylistSyncRun(trigger=state.trigger, started_at=state.started_at or datetime.now(timezone.utc),
+                               finished_at=state.finished_at or datetime.now(timezone.utc),
+                               created=state.created, updated=state.updated, unchanged=state.unchanged,
+                               deleted=state.deleted, blocked=state.blocked, failed=state.failed,
+                               errors=json.dumps(list(state.errors)) if state.errors else None))
+        db.commit()
+        keep = db.exec(select(PlaylistSyncRun.id).order_by(col(PlaylistSyncRun.id).desc()).limit(HISTORY_KEEP)).all()
+        db.exec(sql_delete(PlaylistSyncRun).where(col(PlaylistSyncRun.id).not_in(keep)))
+        db.commit()
+
+
+def history(session: Session) -> list[PlaylistSyncRun]:
+    return list(session.exec(select(PlaylistSyncRun).order_by(col(PlaylistSyncRun.id).desc())).all())
+
+
+def save_checklist(session: Session, rows: dict[tuple[int, str], str], ticked: set[tuple[int, str]],
+                   targets: dict[tuple[int, str], set[int]]) -> None:
+    """Apply the Sync page's checklist. `rows` is every playlist it showed (key -> title);
+    `ticked` the ones ticked; `targets` the servers ticked for each. A playlist ticked with every
+    other server ticked copies to "all" -- new servers included -- rather than to a fixed list;
+    one ticked with no server ticked isn't synced."""
+    from app.services import media_server_service
+
+    enabled = {s.id for s in media_server_service.enabled_servers(session)}
+    for key, title in rows.items():
+        server_id, playlist_id = key
+        chosen = targets.get(key, set())
+        others = enabled - {server_id}
+        row = session.exec(select(PlaylistSync).where(
+            col(PlaylistSync.source_server_id) == server_id, col(PlaylistSync.source_playlist_id) == playlist_id)).first()
+        if key in ticked and chosen & others:
+            sync = row if row is not None else enable(session, server_id, playlist_id, title)
+            sync.enabled = True
+            if chosen >= others:
+                sync.targets = None
+            else:
+                # Keep servers that are off but were ticked: turning one back on shouldn't drop it.
+                kept_off = {s for s in (targets_of(sync) or set()) if s not in enabled}
+                sync.targets = json.dumps(sorted(chosen & others | kept_off))
+            session.add(sync)
+        elif row is not None and row.enabled:
+            disable(session, row.id)
+        elif row is None and sync_all(session):
+            exclude(session, server_id, playlist_id, title)
+    session.commit()
 
 
 def _notify(state: SyncProgress, session: Session | None = None) -> None:

@@ -292,7 +292,7 @@ def _setting_value_ok(key: str, value: str) -> bool:
 
     if key == SettingKey.WEBHOOK_FORMAT:
         return value in {f.value for f in WebhookFormat}
-    if key == SettingKey.SCAN_SCHEDULE_CRON:
+    if key in (SettingKey.SCAN_SCHEDULE_CRON, SettingKey.PLAYLIST_SYNC_CRON):
         from app.services.scheduler import InvalidSchedule, validate_cron
 
         try:

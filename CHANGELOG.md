@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.41.0] — 2026-09-29
+
+### Added
+
+- **A Playlists menu:** Sync, Add playlists, Delete playlists and History, all in one place. Bulk
+  add and delete moved there from the Servers page, and Playlists moved out of Manage.
+- **A sync checklist.** The Sync page lists every playlist on every server with a checkbox, a
+  filter and a tick-all per server; Save and sync applies the choice and syncs at once.
+- **Choose which servers get each copy.** Every synced playlist has a box per other server,
+  all ticked by default — which also includes servers added later. Unticking one deletes the
+  copy sync made there.
+- **A sync schedule** of its own, a cron expression like the scan schedule's, alongside syncing
+  after every scan and Sync now.
+- **Sync history:** the last 30 syncs, what started each, and what it created, updated,
+  deleted, blocked or failed.
+
+### Upgrading
+
+- Migration 0028. Playlists already syncing keep copying to every other server; no schedule is
+  set until you add one.
+
 ## [0.40.0] — 2026-09-28
 
 ### Changed

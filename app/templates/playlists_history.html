@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Sync history — Franchisarr{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>Sync history</h1>
+  <p>{% if runs %}The last {{ runs | length }} playlist sync{{ '' if runs | length == 1 else 's' }}; up to 30 are kept.{% else %}Each playlist sync is listed here; up to 30 are kept.{% endif %}</p>
+</hgroup>
+{% if not runs %}
+  <p class="muted">No syncs yet.</p>
+{% else %}
+  <div class="overflow-auto">
+    <table class="striped">
+      <thead><tr><th>Finished</th><th>Started by</th><th>Created</th><th>Updated</th><th>Unchanged</th>
+        <th>Deleted</th><th>Blocked</th><th>Failed</th></tr></thead>
+      <tbody>
+        {% for run in runs %}
+          <tr>
+            <td>{{ run.finished_at.strftime('%a %d %b %H:%M') }}</td>
+            <td>{{ run.trigger }}</td>
+            <td>{{ run.created }}</td><td>{{ run.updated }}</td><td>{{ run.unchanged }}</td>
+            <td>{{ run.deleted }}</td><td>{{ run.blocked }}</td>
+            <td>{% if run.failed %}<span class="notice-bad">{{ run.failed }}</span>
+                  {% if run.errors %}<details><summary>why</summary><ul>{% for e in run.errors | fromjson %}<li>{{ e }}</li>{% endfor %}</ul></details>{% endif %}
+                {% else %}0{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}

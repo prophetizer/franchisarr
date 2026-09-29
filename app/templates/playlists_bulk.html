@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Add playlists' if kind == 'add' else 'Delete playlists' }} — Franchisarr{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>{{ 'Add playlists' if kind == 'add' else 'Delete playlists' }}</h1>
+  {% if kind == 'add' %}
+    <p>Make a playlist for every franchise, collection or director, on one server or all of them.</p>
+  {% else %}
+    <p>Delete Franchisarr's playlists, or every playlist in the account Franchisarr uses. You'll see
+      exactly what would go before anything is deleted.</p>
+  {% endif %}
+</hgroup>
+
+{% if not servers %}
+  <p class="muted">No media server is switched on.</p>
+{% else %}
+  <label class="bulk-on">On
+    <select id="bulk-server" name="server"
+            {% if kind == 'add' %}hx-get="{{ url('/playlists/add-all') }}" hx-trigger="change" hx-target="#bulk-panel" hx-swap="innerHTML"{% endif %}>
+      {% if servers | length > 1 %}<option value="all">every server</option>{% endif %}
+      {% for s in servers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+    </select>
+  </label>
+  {% if kind == 'delete' %}
+    <div class="bulk-buttons">
+      <button class="secondary outline" hx-get="{{ url('/playlists/delete?scope=ours') }}" hx-include="#bulk-server"
+              hx-target="#bulk-panel" hx-swap="innerHTML">Delete Franchisarr's playlists…</button>
+      <button class="secondary outline" hx-get="{{ url('/playlists/delete?scope=all') }}" hx-include="#bulk-server"
+              hx-target="#bulk-panel" hx-swap="innerHTML">Delete all playlists…</button>
+    </div>
+    <div id="bulk-panel"></div>
+  {% else %}
+    <div id="bulk-panel" hx-get="{{ url('/playlists/add-all') }}" hx-include="#bulk-server" hx-trigger="load"
+         hx-swap="innerHTML">{% if bulk.running %}{% with form = false %}{% include "partials/playlist_bulk.html" %}{% endwith %}{% endif %}</div>
+  {% endif %}
+{% endif %}
+{% endblock %}

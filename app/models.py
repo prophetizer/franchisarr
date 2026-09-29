@@ -708,6 +708,29 @@ class PlaylistSync(SQLModel, table=True):
     #: Made by "sync every playlist" rather than by someone pressing Sync; turning that switch
     #: off removes these (their copies stay).
     auto: bool = Field(default=False)
+    #: JSON list of the servers that get a copy. None: every other server that's on, including
+    #: ones added later (michael's call, 0.41.0).
+    targets: str | None = Field(default=None)
+
+
+class PlaylistSyncRun(SQLModel, table=True):
+    """One sync, for the History page. The last 30 are kept."""
+
+    __tablename__ = "playlist_sync_runs"
+
+    id: int | None = Field(default=None, primary_key=True)
+    #: "schedule", "after scan", "Sync now" or "saved".
+    trigger: str
+    started_at: datetime
+    finished_at: datetime
+    created: int = Field(default=0)
+    updated: int = Field(default=0)
+    unchanged: int = Field(default=0)
+    deleted: int = Field(default=0)
+    blocked: int = Field(default=0)
+    failed: int = Field(default=0)
+    #: JSON list of the first few error messages.
+    errors: str | None = Field(default=None)
 
 
 class FranchisarrPlaylistPresence(SQLModel, table=True):

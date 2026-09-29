@@ -87,6 +87,13 @@ def director_playlist(request: Request, session: DbSession, user: AdminUser, per
 # (people's own included) also needs DELETE typed, checked here and not only in the page.
 
 
+def _bulk_page(request: Request, session, user, kind: str) -> HTMLResponse:  # noqa: ANN001
+    from app.services import playlist_bulk
+
+    return get_templates().TemplateResponse(request, "playlists_bulk.html", {
+        "user": user, "kind": kind, "servers": playlist_service.targets(session), "bulk": playlist_bulk.current()})
+
+
 def _where(session, server_id: int | None) -> str:  # noqa: ANN001
     if server_id is None:
         return "every server"
@@ -106,7 +113,10 @@ def _scope(raw: str) -> bool:
 def confirm_delete(request: Request, session: DbSession, user: AdminUser,
                    server: Annotated[str, Query()] = "all", scope: Annotated[str, Query()] = "ours"):
     """The warning before anything is deleted: exactly which playlists would go, from where,
-    and a button that says how many. Nothing is deleted by this request."""
+    and a button that says how many. Nothing is deleted by this request. Opened from the
+    Playlists menu (not htmx), it's the page with the server choice and the two buttons."""
+    if request.headers.get("HX-Request") != "true":
+        return _bulk_page(request, session, user, "delete")
     everything = _scope(scope)
     server_id = _server_id(session, server)
     found = playlist_service.ours(session, server_id, everything=everything)
@@ -144,6 +154,9 @@ def delete_playlists(request: Request, session: DbSession, user: AdminUser, serv
 def add_all_form(request: Request, session: DbSession, user: AdminUser, server: Annotated[str, Query()] = "all"):
     from app.services import playlist_bulk
 
+    if request.headers.get("HX-Request") != "true":
+        # From the Playlists menu: the page, with the server choice and the form inside it.
+        return _bulk_page(request, session, user, "add")
     server_id = _server_id(session, server)
     return get_templates().TemplateResponse(request, "partials/playlist_bulk.html", {
         "form": True, "counts": playlist_bulk.counts(session), "bulk": playlist_bulk.current(),
@@ -191,10 +204,16 @@ def add_all_stop(request: Request, user: AdminUser):
 
 
 @router.get("/playlists", response_class=HTMLResponse)
-def playlists_page(request: Request, session: DbSession, user: AdminUser, error: str | None = None):
+def playlists_page(request: Request, session: DbSession, user: AdminUser, error: str | None = None,
+                   saved: bool = False):
     from app.services import media_server_service, playlist_sync
+    from app.services import scheduler as scheduler_service
+    from app.services.settings_service import SettingKey, get_setting
 
+    cron = get_setting(session, SettingKey.PLAYLIST_SYNC_CRON) or ""
     return get_templates().TemplateResponse(request, "playlists.html", {
+        "saved": saved, "cron": cron, "cron_description": scheduler_service.describe(cron),
+        "next_run": scheduler_service.next_playlist_sync_time(),
         "user": user, "servers": playlist_sync.page(session), "sync": playlist_sync.current(),
         "several": len(media_server_service.enabled_servers(session)) > 1, "error": error,
         "sync_all": playlist_sync.sync_all(session), "keep_franchisarr": playlist_sync.keep_franchisarr(session),
@@ -210,48 +229,64 @@ def sync_switches(session: DbSession, user: AdminUser, every: Annotated[str, For
     return _back_to_playlists()
 
 
-@router.post("/playlists/sync/exclude")
-def sync_exclude(session: DbSession, user: AdminUser, server_id: Annotated[int, Form()],
-                 playlist_id: Annotated[str, Form()], title: Annotated[str, Form()] = ""):
-    from app.services import playlist_sync
-
-    if not any(s.id == server_id for s in playlist_service.targets(session)):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such server, or it's turned off.")
-    playlist_sync.exclude(session, server_id, playlist_id.strip(), title.strip()[:300] or playlist_id)
-    return _back_to_playlists()
-
-
-def _back_to_playlists(error: str | None = None):  # noqa: ANN202
+def _back_to_playlists(error: str | None = None, *, saved: bool = False):  # noqa: ANN202
     from urllib.parse import quote
 
     from fastapi.responses import RedirectResponse
 
     from app.config import get_settings
 
-    target = f"{get_settings().base_url}/playlists" + (f"?error={quote(error)}" if error else "")
-    return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)
+    query = f"?error={quote(error)}" if error else ("?saved=1" if saved else "")
+    return RedirectResponse(f"{get_settings().base_url}/playlists{query}", status_code=status.HTTP_303_SEE_OTHER)
 
 
-@router.post("/playlists/sync/on")
-def sync_on(session: DbSession, user: AdminUser, server_id: Annotated[int, Form()],
-            playlist_id: Annotated[str, Form()], title: Annotated[str, Form()] = ""):
+@router.post("/playlists/save")
+async def sync_save(request: Request, session: DbSession, user: AdminUser):
+    """The checklist. Field names carry the playlist ("server_id|playlist_id"): `row` for every
+    playlist shown, `title|...` its name, `on` for ticked ones, `target|...` the servers ticked
+    for it. Saving starts a sync, so the choice takes effect now."""
     from app.services import playlist_sync
 
-    if not any(s.id == server_id for s in playlist_service.targets(session)):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such server, or it's turned off.")
+    form = await request.form()
+    enabled = {s.id for s in playlist_service.targets(session)}
+
+    def key(raw: str) -> tuple[int, str] | None:
+        server, _, playlist = raw.partition("|")
+        return (int(server), playlist) if server.isdigit() and playlist and int(server) in enabled else None
+
+    rows = {k: str(form.get(f"title|{raw}", ""))[:300] or k[1]
+            for raw in form.getlist("row") if (k := key(str(raw))) is not None}
+    ticked = {k for raw in form.getlist("on") if (k := key(str(raw))) in rows}
+    targets = {k: {int(t) for t in form.getlist(f"target|{k[0]}|{k[1]}") if str(t).isdigit()} for k in rows}
     try:
-        playlist_sync.enable(session, server_id, playlist_id.strip(), title.strip()[:300] or playlist_id)
+        playlist_sync.save_checklist(session, rows, ticked, targets)
     except ValueError as exc:
         return _back_to_playlists(str(exc))
-    return _back_to_playlists()
+    playlist_sync.run_in_background("saved")
+    return _back_to_playlists(saved=True)
 
 
-@router.post("/playlists/sync/{sync_id}/off")
-def sync_off(session: DbSession, user: AdminUser, sync_id: int):
+@router.post("/playlists/schedule")
+def sync_schedule(session: DbSession, user: AdminUser, cron: Annotated[str, Form()] = ""):
+    from app.services import scheduler as scheduler_service
+    from app.services.settings_service import SettingKey, set_setting
+
+    try:
+        scheduler_service.validate_cron(cron)
+    except scheduler_service.InvalidSchedule as exc:
+        return _back_to_playlists(str(exc))
+    set_setting(session, SettingKey.PLAYLIST_SYNC_CRON, cron.strip())
+    session.commit()
+    scheduler_service.apply_playlist_sync_schedule(cron)
+    return _back_to_playlists(saved=True)
+
+
+@router.get("/playlists/history", response_class=HTMLResponse)
+def sync_history(request: Request, session: DbSession, user: AdminUser):
     from app.services import playlist_sync
 
-    playlist_sync.disable(session, sync_id)
-    return _back_to_playlists()
+    return get_templates().TemplateResponse(request, "playlists_history.html",
+                                            {"user": user, "runs": playlist_sync.history(session)})
 
 
 def _sync_status(request: Request, user) -> HTMLResponse:  # noqa: ANN001

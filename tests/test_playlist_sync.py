@@ -252,22 +252,68 @@ def client(app_factory, monkeypatch):
         yield test_client
 
 
-def test_the_playlists_page_turns_sync_on_and_off(client: TestClient) -> None:
-    assert f'href="{BASE}/playlists"' in client.get(f"{BASE}/media-servers").text
+def test_the_checklist_saves_what_is_ticked_and_to_where(client: TestClient, monkeypatch) -> None:
+    started = []
+    monkeypatch.setattr(playlist_sync, "run_in_background", lambda trigger: started.append(trigger) or True)
     page = client.get(f"{BASE}/playlists").text
-    assert "Road trip" in page and f'action="{BASE}/playlists/sync/on"' in page and "Sync now" in page
+    assert 'name="on" value="1|pl1"' in page and 'name="target|1|pl1" value="2"' in page and "Save and sync" in page
 
-    with Session(get_engine()) as session:
-        plex_id = session.exec(select(PlaylistSync.id)).first() or None
-    response = client.post(f"{BASE}/playlists/sync/on", data={"server_id": "1", "playlist_id": "pl1", "title": "Road trip"})
-    assert response.status_code == 303 and plex_id is None
+    # Ticked, with its one other server ticked: copies go to "all", new servers included.
+    response = client.post(f"{BASE}/playlists/save", data={
+        "row": "1|pl1", "title|1|pl1": "Road trip", "on": "1|pl1", "target|1|pl1": "2"})
+    assert response.status_code == 303 and started == ["saved"], "saving starts a sync"
     with Session(get_engine()) as session:
         sync = session.exec(select(PlaylistSync)).one()
-    assert "Stop syncing" in client.get(f"{BASE}/playlists").text
+    assert sync.enabled and sync.targets is None
+    assert "Save and sync" in client.get(f"{BASE}/playlists").text
 
-    client.post(f"{BASE}/playlists/sync/{sync.id}/off")
+    # Unticked: no longer synced.
+    client.post(f"{BASE}/playlists/save", data={"row": "1|pl1", "title|1|pl1": "Road trip"})
     with Session(get_engine()) as session:
         assert session.exec(select(PlaylistSync)).all() == []
+
+
+def test_the_schedule_is_saved_and_applied(client: TestClient, monkeypatch) -> None:
+    from app.services import scheduler as scheduler_service
+
+    applied = []
+    monkeypatch.setattr(scheduler_service, "apply_playlist_sync_schedule", lambda cron: applied.append(cron))
+
+    assert client.post(f"{BASE}/playlists/schedule", data={"cron": "0 */6 * * *"}).status_code == 303
+    assert applied == ["0 */6 * * *"] and 'value="0 */6 * * *"' in client.get(f"{BASE}/playlists").text
+    bad = client.post(f"{BASE}/playlists/schedule", data={"cron": "nonsense"})
+    assert "error=" in bad.headers["location"] and applied == ["0 */6 * * *"]
+
+
+def test_history_keeps_the_last_thirty(session: Session, servers) -> None:
+    for n in range(35):
+        playlist_sync._record(playlist_sync.SyncProgress(trigger=f"run {n}", created=n), session)
+
+    runs = playlist_sync.history(session)
+
+    assert len(runs) == 30 and runs[0].trigger == "run 34" and runs[-1].trigger == "run 5"
+
+
+def test_unticking_a_server_deletes_the_copy_there_and_only_there(session: Session, servers) -> None:
+    plex, jelly, fakes = servers
+    emby = seed_server(session, "emby", name="Emby")
+    session.add(LibraryItem(server_id=emby.id, library_key="1", item_key="e11", item_type="movie",
+                            title="Alien", tmdb_id=11, match_source=MatchSource.GUID.value))
+    session.commit()
+    fakes["Emby"] = FakeServer({"e11": "Alien"}, {})
+    _road_trip(fakes)
+    playlist_sync.enable(session, plex.id, "pl1", "Road trip")
+    playlist_sync.run(session)
+    jelly_copy = next(c for c in session.exec(select(PlaylistCopy)).all() if c.target_server_id == jelly.id)
+    made_on_jellyfin = jelly_copy.target_playlist_id
+
+    playlist_sync.save_checklist(session, {(plex.id, "pl1"): "Road trip"}, {(plex.id, "pl1")},
+                                 {(plex.id, "pl1"): {emby.id}})
+    playlist_sync.run(session)
+
+    assert fakes["Jellyfin"].deleted == [made_on_jellyfin] and fakes["Emby"].deleted == []
+    session.expire_all()
+    assert [c.target_server_id for c in session.exec(select(PlaylistCopy)).all()] == [emby.id]
 
 
 def test_a_plain_message_goes_out_in_the_webhooks_format() -> None:
@@ -405,10 +451,10 @@ def test_an_unreachable_server_is_never_taken_for_a_deletion(session: Session, s
 
 def test_the_switches_save_and_the_page_shows_them(client: TestClient) -> None:
     page = client.get(f"{BASE}/playlists").text
-    assert 'name="every"' in page and 'name="franchisarr"' in page and "Don&#39;t sync" not in page
+    assert 'name="every"' in page and 'name="franchisarr"' in page
 
     assert client.post(f"{BASE}/playlists/switches", data={"every": "1", "franchisarr": "1"}).status_code == 303
 
     page = client.get(f"{BASE}/playlists").text
     assert 'name="every" value="1" checked' in page and "Franchisarr's playlists now:" in page
-    assert "Don't sync" in page and "Syncs at the next sync" in page, "Road trip is pending under sync-all"
+    assert 'name="on" value="1|pl1" checked' in page, "under sync-all, Road trip starts ticked"

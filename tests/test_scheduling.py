@@ -410,3 +410,22 @@ def test_the_enrichment_job_runs_both_halves_and_stops_on_a_dead_key(session: Se
     errors = scan_job.run_enrichment(session)
     assert calls == ["movies"], "the TV half is not attempted with a key TMDb just rejected"
     assert errors == ["TMDb rejected that API key."]
+
+
+def test_playlist_sync_has_its_own_scheduled_job() -> None:
+    scheduler_service.shutdown()
+    try:
+        assert scheduler_service.apply_playlist_sync_schedule("0 */6 * * *") == "0 */6 * * *"
+        assert scheduler_service.get_scheduler().get_job(scheduler_service.SYNC_JOB_ID) is not None
+        assert scheduler_service.get_scheduler().get_job(scheduler_service.JOB_ID) is None, "separate from scans"
+        assert scheduler_service.apply_playlist_sync_schedule("") is None
+        assert scheduler_service.get_scheduler().get_job(scheduler_service.SYNC_JOB_ID) is None
+    finally:
+        scheduler_service.shutdown()
+
+
+def test_a_backup_cant_restore_a_broken_sync_schedule() -> None:
+    from app.services.config_backup import _setting_value_ok
+
+    assert _setting_value_ok(SettingKey.PLAYLIST_SYNC_CRON, "0 */6 * * *")
+    assert not _setting_value_ok(SettingKey.PLAYLIST_SYNC_CRON, "every tuesday")
