@@ -289,31 +289,33 @@ def test_jellyfin_playlist_calls_use_camel_case_parameters() -> None:
 
 @responses.activate
 @pytest.mark.parametrize("kind", [MediaServerKind.JELLYFIN, MediaServerKind.EMBY])
-def test_replacing_a_playlist_deletes_old_copies_creates_and_adds_in_chunks(kind, monkeypatch) -> None:  # noqa: ANN001
+def test_a_playlist_is_edited_in_place_by_entry_id(kind, monkeypatch) -> None:  # noqa: ANN001
+    """Remove by PlaylistItemId (EntryIds), add in chunks, move to an index: the playlist keeps
+    its id. Jellyfin gets camelCase query names, Emby PascalCase."""
     import app.clients.emby_client as ec
 
     monkeypatch.setattr(ec, "PLAYLIST_CHUNK", 2)
     _user_lookup()
-    responses.add(responses.GET, f"{URL}/Items", json={"Items": [
-        {"Id": "old1", "Name": "Alien (Franchisarr)"}, {"Id": "keep", "Name": "Alien"},
-        {"Id": "old2", "Name": "Alien (Franchisarr)"}]})
-    responses.add(responses.DELETE, f"{URL}/Items/old1")
-    responses.add(responses.DELETE, f"{URL}/Items/old2")
-    responses.add(responses.POST, f"{URL}/Playlists", json={"Id": "new"})
-    responses.add(responses.POST, f"{URL}/Playlists/new/Items")
+    responses.add(responses.GET, f"{URL}/Playlists/p1/Items", json={"Items": [
+        {"Id": "m1", "Type": "Movie", "Name": "Alien", "PlaylistItemId": "e1"}]})
+    responses.add(responses.DELETE, f"{URL}/Playlists/p1/Items")
+    responses.add(responses.POST, f"{URL}/Playlists/p1/Items")
+    responses.add(responses.POST, f"{URL}/Playlists/p1/Items/e9/Move/0")
+    client = _client(kind)
 
-    _client(kind).replace_playlist("Alien (Franchisarr)", ["a", "b", "c", "d", "e"])
+    assert [r.entry_id for r in client.playlist_items("p1")] == ["e1"]
+    client.remove_playlist_entries("p1", ["e1", "e2", "e3"])
+    client.append_to_playlist("p1", ["a", "b", "c"])
+    client.move_playlist_entry("p1", "e9", 0, None)
 
-    methods = [(c.request.method, c.request.url.split("?")[0].replace(URL, "")) for c in responses.calls]
-    assert ("DELETE", "/Items/old1") in methods and ("DELETE", "/Items/old2") in methods
-    assert ("DELETE", "/Items/keep") not in methods, "only our own name"
-    create = next(c for c in responses.calls if c.request.method == "POST" and c.request.url.split("?")[0].endswith("/Playlists"))
-    if kind == MediaServerKind.JELLYFIN:
-        assert json.loads(create.request.body)["Ids"] == ["a", "b"]
-    else:
-        assert "Ids=a%2Cb" in create.request.url
-    adds = [c.request.url for c in responses.calls if "/Playlists/new/Items" in c.request.url]
-    assert len(adds) == 2 and "ids=c%2cd" in adds[0].lower()
+    calls = [(c.request.method, c.request.url.replace(URL, "")) for c in responses.calls]
+    entry = "entryIds" if kind == MediaServerKind.JELLYFIN else "EntryIds"
+    ids = "ids" if kind == MediaServerKind.JELLYFIN else "Ids"
+    removes = [u for m, u in calls if m == "DELETE"]
+    adds = [u for m, u in calls if m == "POST" and "/Move/" not in u]
+    assert removes == [f"/Playlists/p1/Items?{entry}=e1%2Ce2", f"/Playlists/p1/Items?{entry}=e3"]
+    assert len(adds) == 2 and adds[0].split("?")[0] == "/Playlists/p1/Items" and f"{ids}=a%2Cb" in adds[0]
+    assert ("POST", "/Playlists/p1/Items/e9/Move/0") in calls
 
 
 @responses.activate

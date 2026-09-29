@@ -132,8 +132,8 @@ TP_COMMUNITY_THEME=false</code></pre>
 
 <article>
   <header><strong>Scheduled scans</strong></header>
-  <p><small class="muted">Each scan is followed by a <a href="{{ url('/playlists') }}">playlist sync</a>
-    when any playlist is set to sync.</small></p>
+  <p><small class="muted">Each scan is followed by a <a href="{{ url('/playlists') }}">playlist sync</a>,
+    which also keeps Franchisarr's own playlists current.</small></p>
 
   <form method="post" action="{{ url('/settings/schedule') }}">
     <label for="scan_schedule_cron">Cron schedule</label>

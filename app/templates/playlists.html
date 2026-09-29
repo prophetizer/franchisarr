@@ -1,47 +1,25 @@
-{% extends "base.html" %}
-{% block title %}Playlist sync — Franchisarr{% endblock %}
+{% extends "playlists_base.html" %}
 
-{% block content %}
-<hgroup>
-  <h1>Playlist sync</h1>
-  <p>Tick the playlists to copy from their server to your others, and which servers get a copy.
-    A copy has the same name and, when the playlist has its own poster, the same poster.</p>
-</hgroup>
+{% block tab_content %}
+<p>Tick the playlists to copy from their server to your others. A copy has the same name and, when the
+  playlist has its own poster, the same poster; edits to a copy are replaced at the next sync.</p>
 
-{% if error %}<p role="alert" class="notice-bad">{{ error }}</p>{% endif %}
-{% if saved %}<p role="status" class="notice-good">Saved — syncing now.</p>{% endif %}
 {% if not several %}
   <p class="notice-warn">Syncing needs a second media server that's switched on.
     <a href="{{ url('/media-servers') }}">Servers</a></p>
-{% endif %}
-
-{% include "partials/sync_status.html" %}
-
-<details class="sync-settings">
-  <summary>Schedule and switches</summary>
-  <form method="post" action="{{ url('/playlists/schedule') }}">
-    <label for="sync-cron">Sync schedule (cron)</label>
-    <input type="text" id="sync-cron" name="cron" value="{{ cron }}" placeholder="0 */6 * * *" autocomplete="off">
-    <small>{{ cron_description }} Leave empty for none. A sync also runs after every scan, and with
-      Sync now.</small>
-    <button type="submit" class="secondary">Save schedule</button>
-  </form>
-  <form method="post" action="{{ url('/playlists/switches') }}" class="sync-switches">
-    <label><input type="checkbox" role="switch" name="every" value="1" {% if sync_all %}checked{% endif %}>
-      Sync every playlist — new ones too. Untick any below to leave it out.</label>
-    <label><input type="checkbox" role="switch" name="franchisarr" value="1" {% if keep_franchisarr %}checked{% endif %}>
-      Keep Franchisarr's playlists on every server — one made on any server is built on the others from
-      their own libraries; deleting one on any server deletes it everywhere.</label>
-    {% if keep_franchisarr %}
-      <p><small class="muted">Franchisarr's playlists now:
-        {% for entry in servers if not entry.error %}{{ entry.franchisarr }} on {{ entry.server.name }}{{ ', ' if not loop.last }}{% endfor %}.</small></p>
-    {% endif %}
-    <button type="submit" class="secondary">Save switches</button>
-  </form>
-</details>
-
-{% if several %}
+{% else %}
 <form method="post" action="{{ url('/playlists/save') }}" class="sync-checklist" x-data="{ q: '' }">
+  <fieldset class="sync-defaults">
+    <legend>Copy to, unless a playlist says otherwise</legend>
+    {% for s in all_servers %}
+      <label><input type="checkbox" name="default" value="{{ s.id }}"
+                    {% if defaults is none or s.id in defaults %}checked{% endif %}> {{ s.name }}</label>
+    {% endfor %}
+    <small class="muted">A playlist is never copied to its own server. Ticking them all includes servers added later.</small>
+    <label class="sync-every"><input type="checkbox" role="switch" name="every" value="1" {% if sync_all %}checked{% endif %}>
+      Tick new playlists automatically</label>
+  </fieldset>
+
   <input type="search" x-model="q" placeholder="Filter playlists" aria-label="Filter playlists" autocomplete="off">
   {% for entry in servers %}
     <section>
@@ -51,6 +29,8 @@
       {% elif not entry.rows %}
         <p class="muted">No playlists to sync here.</p>
       {% else %}
+        {% set others = all_servers | rejectattr('id', 'equalto', entry.server.id) | list %}
+        {% set by_default = others if defaults is none else others | selectattr('id', 'in', defaults) | list %}
         {% if entry.rows | rejectattr('copy_of') | list %}
           <label class="sync-select-all"><input type="checkbox"
             onclick="this.closest('section').querySelectorAll('input[name=on]').forEach(function (c) { c.checked = this.checked; }, this)">
@@ -64,6 +44,7 @@
                 <span class="film-title">{{ row.title }}
                   <small class="muted">copy of “{{ row.copy_of[0] }}” from {{ row.copy_of[1] }}</small></span>
               {% else %}
+                {% set own = row.targets() %}
                 <input type="hidden" name="row" value="{{ k }}">
                 <input type="hidden" name="title|{{ k }}" value="{{ row.title }}">
                 <span class="sync-pick">
@@ -73,13 +54,20 @@
                   </label>
                   <small class="muted">{{ row.count }} item{{ '' if row.count == 1 else 's' }}{% if row.smart %} · smart, copied as it stands{% endif %}</small>
                 </span>
-                <span class="sync-targets">
-                  <small class="muted">copy to</small>
-                  {% set chosen = row.targets() %}
-                  {% for other in servers if other.server.id != entry.server.id %}
-                    <label><input type="checkbox" name="target|{{ k }}" value="{{ other.server.id }}"
-                                  {% if chosen is none or other.server.id in chosen %}checked{% endif %}> {{ other.server.name }}</label>
-                  {% endfor %}
+                <span class="sync-targets" x-data='{ custom: {{ "true" if own is not none else "false" }} }'>
+                  <input type="hidden" name="custom|{{ k }}" value="1" :disabled="!custom" {% if own is none %}disabled{% endif %}>
+                  <small class="muted" x-show="!custom" {% if own is not none %}x-cloak{% endif %}>
+                    → {{ by_default | map(attribute='name') | join(', ') if by_default else 'nowhere' }} (default)
+                    <a href="#" class="sync-change" @click.prevent="custom = true">change</a></small>
+                  <span class="sync-own" x-show="custom" {% if own is none %}x-cloak{% endif %}>
+                    <small class="muted">copy to</small>
+                    {% for other in others %}
+                      <label><input type="checkbox" name="target|{{ k }}" value="{{ other.id }}" :disabled="!custom"
+                                    {% if own is none %}disabled{% endif %}
+                                    {% if (own is none and other in by_default) or (own is not none and other.id in own) %}checked{% endif %}> {{ other.name }}</label>
+                    {% endfor %}
+                    <a href="#" class="sync-change" @click.prevent="custom = false">use default</a>
+                  </span>
                 </span>
                 {% if row.syncing %}
                   <span class="film-meta sync-meta">
@@ -109,9 +97,9 @@
   {% endfor %}
   <p><small class="muted">Unticking a server deletes the copy sync made there; unticking a playlist
     stops syncing it and leaves its copies as ordinary playlists. A playlist of the same name that
-    sync didn't make is never touched. Music and photo playlists, and Franchisarr's own (see the
-    switch above), aren't listed.</small></p>
-  <button type="submit">Save and sync</button>
+    sync didn't make is never touched. Music and photo playlists, and Franchisarr's own (see
+    <a href="{{ url('/playlists/franchisarr') }}">Franchisarr's</a>), aren't listed.</small></p>
+  <button type="submit" class="sync-save">Save and sync</button>
 </form>
 {% endif %}
 {% endblock %}

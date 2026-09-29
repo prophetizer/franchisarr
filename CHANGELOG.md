@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.42.0] — 2026-09-29
+
+### Added
+
+- **Franchisarr's playlists are kept current.** A playlist made from a franchise, collection or
+  director page now joins a set Franchisarr keeps: after every scan (and at every sync) the
+  titles you've added go in where they belong and the ones you've removed come out. It's edited
+  in place, so it keeps its poster and its spot in your apps, and a new server gets it at the
+  next sync. Deleting one on any server deletes it on the others and drops it from the set; a
+  server that's off or can't be reached is never taken for a deletion.
+- **One Playlists page with tabs** — Your playlists, Franchisarr's, Clean up, History — in place
+  of the four-item menu. Above the tabs: a status line (what's syncing and kept, the last run,
+  titles that couldn't be copied), **Sync now**, and the schedule.
+- **Schedule presets**: only after scans, or also every hour, 6 hours, 12 hours, daily at 04:00,
+  or a cron schedule of your own.
+- **Default "copy to" servers** for playlist sync, with **change** on any playlist that should go
+  somewhere else — instead of a row of server boxes on every playlist.
+- The **Franchisarr's** tab lists every kept playlist with what it holds on each server, a
+  **Remove** button, **Put them on** for which servers they go on, and **Add many at once**.
+
+### Changed
+
+- "Sync every playlist" is now **Tick new playlists automatically**, beside the default servers
+  at the top of the checklist; the separate switches form is gone.
+- **Clean up** on one server also stops Franchisarr's playlists going to that server, rather
+  than having the next sync read it as someone deleting them.
+- Syncs no longer replace a playlist by deleting and recreating it anywhere: every change is an
+  edit by id. On Jellyfin 12.1, which refuses to move an entry, the order is fixed by rewriting
+  from the first out-of-place title onward.
+
+### Removed
+
+- The **Keep Franchisarr's playlists on every server** switch: keeping them on every server is
+  what the set does now.
+
+### Upgrading
+
+- The first sync after upgrading (the next scan, or **Sync now**) takes the "… (Franchisarr)"
+  playlists already on your servers into the set and brings each up to date in place, adding
+  titles you've got since it was made. If you'd rather it didn't keep one, **Remove** it on the
+  Franchisarr's tab, or delete it on any server.
+- Bookmarks to `/playlists/add-all` and `/playlists/delete` still work; they open the tab that
+  holds them now.
+
 ## [0.41.1] — 2026-09-29
 
 ### Fixed

@@ -73,7 +73,8 @@ ADMIN_ONLY = [
     ("get", "/playlists/add-all/status"), ("post", "/playlists/add-all/stop"),
     ("get", "/playlists"), ("post", "/playlists/save"), ("post", "/playlists/schedule"),
     ("get", "/playlists/history"), ("post", "/playlists/sync/run"), ("get", "/playlists/sync/status"),
-    ("post", "/playlists/switches"),
+    ("get", "/playlists/franchisarr"), ("post", "/playlists/franchisarr/servers"),
+    ("post", "/playlists/franchisarr/1/remove"), ("get", "/playlists/clean-up"),
     ("post", "/settings/keys"),
 ]
 

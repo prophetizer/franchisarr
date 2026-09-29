@@ -45,7 +45,8 @@ def test_an_admin_gets_browse_manage_and_their_own_menu(client: TestClient) -> N
     page = client.get(f"{BASE}/collections").text
 
     assert _menu(page, "Browse") == ["Franchises", "Collections", "Spin-offs", "Upcoming", "Directors"]
-    assert _menu(page, "Playlists") == ["Sync", "Add playlists", "Delete playlists", "History"]
+    assert "<summary>Playlists</summary>" not in page, "one page with tabs since 0.42.0: a plain link"
+    assert f'href="{BASE}/playlists" class="nav-link"' in page
     assert _menu(page, "Manage") == ["Servers", "Libraries", "Instances", "Users", "Settings", "Activity"]
     assert _menu(page, "admin") == ["Preferences", "Password"]
     assert "Sign out" in page and "theme-toggle" in page
@@ -94,8 +95,10 @@ def test_the_sign_in_page_has_no_menu(client: TestClient) -> None:
     assert "<summary>Browse</summary>" not in page and 'id="nav-panel"' not in page
 
 
-def test_only_the_playlist_page_youre_on_is_marked(client: TestClient) -> None:
-    """/playlists is the Sync page and the start of the other playlist pages' paths."""
-    page = client.get(f"{BASE}/playlists/history").text
-    block = page.split("<summary>Playlists</summary>", 1)[1].split("</details>", 1)[0]
-    assert block.count('aria-current="page"') == 1 and f'href="{BASE}/playlists/history" aria-current' in block
+def test_every_playlists_tab_marks_the_playlists_link_and_its_own_tab(client: TestClient) -> None:
+    for path, tab in (("/playlists", "Your playlists"), ("/playlists/franchisarr", "Franchisarr"),
+                      ("/playlists/clean-up", "Clean up"), ("/playlists/history", "History")):
+        page = client.get(f"{BASE}{path}").text
+        assert f'href="{BASE}/playlists" class="nav-link nav-here"' in page, path
+        tabs = page.split('<nav class="tabs"', 1)[1].split("</nav>", 1)[0]
+        assert tabs.count('aria-current="page"') == 1 and f'href="{BASE}{path}" aria-current="page">{tab}' in tabs

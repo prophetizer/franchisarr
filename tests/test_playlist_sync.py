@@ -258,14 +258,20 @@ def test_the_checklist_saves_what_is_ticked_and_to_where(client: TestClient, mon
     page = client.get(f"{BASE}/playlists").text
     assert 'name="on" value="1|pl1"' in page and 'name="target|1|pl1" value="2"' in page and "Save and sync" in page
 
-    # Ticked, with its one other server ticked: copies go to "all", new servers included.
+    # Ticked, following the defaults: no servers of its own.
     response = client.post(f"{BASE}/playlists/save", data={
         "row": "1|pl1", "title|1|pl1": "Road trip", "on": "1|pl1", "target|1|pl1": "2"})
     assert response.status_code == 303 and started == ["saved"], "saving starts a sync"
     with Session(get_engine()) as session:
         sync = session.exec(select(PlaylistSync)).one()
-    assert sync.enabled and sync.targets is None
+    assert sync.enabled and sync.targets is None, "without `custom` the boxes don't count"
     assert "Save and sync" in client.get(f"{BASE}/playlists").text
+
+    # "change": servers of its own.
+    client.post(f"{BASE}/playlists/save", data={
+        "row": "1|pl1", "title|1|pl1": "Road trip", "on": "1|pl1", "custom|1|pl1": "1", "target|1|pl1": "2"})
+    with Session(get_engine()) as session:
+        assert session.exec(select(PlaylistSync)).one().targets == "[2]"
 
     # Unticked: no longer synced.
     client.post(f"{BASE}/playlists/save", data={"row": "1|pl1", "title|1|pl1": "Road trip"})
@@ -279,10 +285,18 @@ def test_the_schedule_is_saved_and_applied(client: TestClient, monkeypatch) -> N
     applied = []
     monkeypatch.setattr(scheduler_service, "apply_playlist_sync_schedule", lambda cron: applied.append(cron))
 
-    assert client.post(f"{BASE}/playlists/schedule", data={"cron": "0 */6 * * *"}).status_code == 303
-    assert applied == ["0 */6 * * *"] and 'value="0 */6 * * *"' in client.get(f"{BASE}/playlists").text
-    bad = client.post(f"{BASE}/playlists/schedule", data={"cron": "nonsense"})
-    assert "error=" in bad.headers["location"] and applied == ["0 */6 * * *"]
+    assert client.post(f"{BASE}/playlists/schedule", data={"preset": "0 */6 * * *"}).status_code == 303
+    assert applied == ["0 */6 * * *"]
+    assert '<option value="0 */6 * * *" selected>Also every 6 hours</option>' in client.get(f"{BASE}/playlists").text
+
+    back = client.post(f"{BASE}/playlists/schedule", data={"preset": "custom", "cron": "15 3 * * *", "tab": "history"})
+    assert back.headers["location"].endswith("/playlists/history?saved=1") and applied[-1] == "15 3 * * *"
+    page = client.get(f"{BASE}/playlists/history").text
+    assert '<option value="custom" selected>' in page and 'value="15 3 * * *"' in page
+
+    bad = client.post(f"{BASE}/playlists/schedule", data={"preset": "custom", "cron": "nonsense"})
+    assert "error=" in bad.headers["location"] and applied[-1] == "15 3 * * *"
+    assert "error=" in client.post(f"{BASE}/playlists/schedule", data={"preset": "* * * * *"}).headers["location"]
 
 
 def test_history_keeps_the_last_thirty(session: Session, servers) -> None:
@@ -334,8 +348,8 @@ def test_a_plain_message_goes_out_in_the_webhooks_format() -> None:
 # ------------------------------------------------------------------ sync every playlist
 
 
-def _switches(session: Session, *, every: bool = False, franchisarr: bool = False) -> None:
-    playlist_sync.set_switches(session, every=every, franchisarr=franchisarr)
+def _switches(session: Session, *, every: bool = False) -> None:
+    playlist_sync.set_sync_all(session, every)
 
 
 def test_sync_every_playlist_adopts_new_ones_but_never_the_copies(session: Session, servers) -> None:
@@ -387,74 +401,18 @@ def test_turning_every_playlist_off_keeps_the_ones_picked_by_hand(session: Sessi
     assert [s.title for s in session.exec(select(PlaylistSync)).all()] == ["Road trip"]
 
 
-# ------------------------------------------------------------------ Franchisarr's on every server
-
-
-@pytest.fixture
-def franchisarr_builds(monkeypatch):
-    from app.services import playlist_bulk, playlist_service
-
-    built = []
-
-    def fake_build(session, name, refs, art=None, *, server_id=None, min_items=1):  # noqa: ANN001, ANN202
-        built.append((name, server_id))
-        return playlist_service.PlaylistResult(title=name, servers=[playlist_service.ServerResult(server=str(server_id))])
-
-    monkeypatch.setattr(playlist_service, "build", fake_build)
-    monkeypatch.setattr(playlist_bulk, "sets", lambda s, kinds: [
-        playlist_bulk.PlaylistSet("franchises", "Star Wars", [("movie", 1), ("movie", 2)])])
-    return built
-
-
-def test_a_franchisarr_playlist_is_built_where_missing_from_that_servers_library(
-        session: Session, servers, franchisarr_builds) -> None:
-    plex, jelly, fakes = servers
-    fakes["Plex"].add("sw", "Star Wars (Franchisarr)", [])
-    _switches(session, franchisarr=True)
-
-    state = playlist_sync.run(session)
-
-    assert franchisarr_builds == [("Star Wars", jelly.id)], "built from Jellyfin's own library, not copied"
-    assert state.created == 1
-
-
-def test_deleting_a_franchisarr_playlist_on_one_server_deletes_it_everywhere(
-        session: Session, servers, franchisarr_builds) -> None:
-    plex, jelly, fakes = servers
-    fakes["Plex"].add("sw", "Star Wars (Franchisarr)", [])
-    fakes["Jellyfin"].add("jsw", "Star Wars (Franchisarr)", [])
-    _switches(session, franchisarr=True)
-    playlist_sync.run(session)                       # both have it: remembered on both
-
-    del fakes["Plex"].playlists["sw"]                 # someone deletes it on Plex
-    state = playlist_sync.run(session)
-
-    assert fakes["Jellyfin"].deleted == ["jsw"] and state.deleted == 1
-    assert franchisarr_builds == [], "not rebuilt on Plex"
-
-
-def test_an_unreachable_server_is_never_taken_for_a_deletion(session: Session, servers, franchisarr_builds) -> None:
-    plex, jelly, fakes = servers
-    fakes["Plex"].add("sw", "Star Wars (Franchisarr)", [])
-    fakes["Jellyfin"].add("jsw", "Star Wars (Franchisarr)", [])
-    _switches(session, franchisarr=True)
-    playlist_sync.run(session)
-
-    fakes["Plex"].down = True
-    playlist_sync.run(session)
-
-    assert fakes["Jellyfin"].deleted == [], "Plex being down says nothing about Star Wars"
-    fakes["Plex"].down = False
-    playlist_sync.run(session)
-    assert fakes["Jellyfin"].deleted == [] and franchisarr_builds == []
-
-
-def test_the_switches_save_and_the_page_shows_them(client: TestClient) -> None:
+def test_tick_new_automatically_and_the_defaults_save_with_the_checklist(client: TestClient, monkeypatch) -> None:
+    monkeypatch.setattr(playlist_sync, "run_in_background", lambda trigger: True)
     page = client.get(f"{BASE}/playlists").text
-    assert 'name="every"' in page and 'name="franchisarr"' in page
+    assert 'name="every"' in page and 'name="franchisarr"' not in page, "that switch is the Franchisarr's tab now"
+    assert 'name="default" value="2"' in page and "→ Jellyfin (default)" in page
 
-    assert client.post(f"{BASE}/playlists/switches", data={"every": "1", "franchisarr": "1"}).status_code == 303
+    client.post(f"{BASE}/playlists/save", data={"every": "1", "default": ["1"], "row": "1|pl1",
+                                                "title|1|pl1": "Road trip", "on": "1|pl1"})
 
     page = client.get(f"{BASE}/playlists").text
-    assert 'name="every" value="1" checked' in page and "Franchisarr's playlists now:" in page
-    assert 'name="on" value="1|pl1" checked' in page, "under sync-all, Road trip starts ticked"
+    assert 'name="every" value="1" checked' in page
+    assert 'name="on" value="1|pl1" checked' in page
+    assert "→ nowhere (default)" in page, "Plex's playlist can't go to Plex, and Jellyfin was unticked"
+    with Session(get_engine()) as session:
+        assert playlist_sync.default_targets(session) == {1}

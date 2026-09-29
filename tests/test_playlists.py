@@ -11,12 +11,12 @@ from sqlmodel import Session, select
 
 from app.auth.local_admin import create_local_admin
 from app.clients import plex_client
-from app.clients.plex_client import PlaylistEntry, _delete_playlists, _playlist_entries, _replace_playlist
+from app.clients.plex_client import PlaylistEntry, _delete_playlists, _playlist_entries
 from app.db import get_engine
 from app.models import (
-    Franchise, FranchiseMember, IncludedLibrary, ItemType, LibraryItem, MatchSource, MediaServer,
+    Franchise, FranchiseMember, IncludedLibrary, LibraryItem, MatchSource, MediaServer,
 )
-from app.services import playlist_service
+from app.services import franchisarr_playlists, playlist_service
 from tests.conftest import seed_server
 
 BASE = "/franchisarr"
@@ -138,19 +138,38 @@ def test_entries_batch_the_films_skip_specials_and_date_undated_episodes_after_t
     assert by_key[12].aired == date(2019, 11, 12), "an undated episode stays after the one before it"
 
 
-def test_replacing_touches_only_our_own_playlist_and_chunks_big_ones(monkeypatch) -> None:
-    ours = FakePlaylist("Star Wars (Franchisarr)")
-    theirs = FakePlaylist("Star Wars")
-    server = FakeServer({}, {}, playlists=[ours, theirs])
-    monkeypatch.setattr(plex_client, "PLAYLIST_CHUNK", 3)
-    items = [FakeItem(k) for k in range(8)]
+def test_plex_edits_a_playlist_by_entry_id(monkeypatch) -> None:
+    """Remove and move go straight to Plex's endpoints by playlistItemID; add goes through
+    plexapi in chunks."""
+    from app.clients.plex_client import PlexClient
 
-    _replace_playlist(FakeClient(server), "Star Wars (Franchisarr)", items)
+    queries: list[tuple[str, str]] = []
+    playlist = FakePlaylist("Alien (Franchisarr)")
 
-    assert ours.deleted and not theirs.deleted
-    created = server.created[0]
-    assert created.title == "Star Wars (Franchisarr)"
-    assert [i.ratingKey for i in created.items] == list(range(8)), "all of them, in order"
+    class Session:
+        delete, put = "DELETE", "PUT"
+
+    class Server:
+        _session = Session()
+
+        def query(self, key, method=None):  # noqa: ANN001, ANN201
+            queries.append((method, key))
+
+        def fetchItem(self, key):  # noqa: ANN001, ANN201, N802
+            return playlist
+
+    monkeypatch.setattr(plex_client, "PLAYLIST_CHUNK", 2)
+    client = PlexClient.__new__(PlexClient)
+    monkeypatch.setattr(PlexClient, "server", property(lambda self: Server()), raising=False)
+
+    client.remove_playlist_entries("5", ["71", "72"])
+    client.append_to_playlist("5", ["a", "b", "c"])
+    client.move_playlist_entry("5", "73", 0, None)
+    client.move_playlist_entry("5", "74", 2, "73")
+
+    assert queries == [("DELETE", "/playlists/5/items/71"), ("DELETE", "/playlists/5/items/72"),
+                       ("PUT", "/playlists/5/items/73/move"), ("PUT", "/playlists/5/items/74/move?after=73")]
+    assert playlist.items == ["a", "b", "c"]
 
 
 # ------------------------------------------------------------------ the service end to end
@@ -165,69 +184,6 @@ def _library(session: Session, kind: str = "plex") -> int:
                                 title=str(tmdb_id), tmdb_id=tmdb_id, match_source=MatchSource.GUID.value))
     session.commit()
     return server.id
-
-
-def test_build_orders_and_reports_what_went_in(session: Session, monkeypatch) -> None:
-    _library(session)
-    server = FakeServer(
-        {1: FakeItem(1, aired=datetime(1977, 5, 25)), 2: FakeItem(2, aired=datetime(1980, 5, 21))},
-        {100: FakeShow([FakeItem(101, aired=datetime(2019, 11, 12), season=1, index=1)])},
-    )
-    from app.services import media_server_service
-
-    monkeypatch.setattr(media_server_service, "client_for", lambda s: _AsPlexClient(server))
-
-    result = playlist_service.build(session, "Star Wars", [
-        (ItemType.MOVIE.value, 11), (ItemType.MOVIE.value, 1891), (ItemType.SHOW.value, 82856)])
-
-    assert result.title == "Star Wars (Franchisarr)" and result.made_any
-    assert (result.servers[0].films, result.servers[0].shows, result.servers[0].episodes) == (2, 1, 1)
-    assert [i.ratingKey for i in server.created[0].items] == [1, 2, 101]
-
-
-class _AsPlexClient(FakeClient):
-    def playlist_entries(self, films, shows):  # noqa: ANN001, ANN201
-        return _playlist_entries(self, films, shows)
-
-    def replace_playlist(self, title, items):  # noqa: ANN001, ANN201
-        return _replace_playlist(self, title, items)
-
-
-def test_jellyfin_and_emby_servers_get_playlists_too(session: Session, monkeypatch) -> None:
-    from app.clients.media_server import PlaylistEntry
-    from app.services import media_server_service
-
-    _library(session, kind="jellyfin")
-    built = []
-
-    class Jelly:
-        def playlist_entries(self, films, shows):  # noqa: ANN001, ANN201
-            return [PlaylistEntry(raw=f, aired=None) for f in films]
-
-        def replace_playlist(self, title, items):  # noqa: ANN001, ANN201
-            built.append((title, items))
-
-    monkeypatch.setattr(media_server_service, "client_for", lambda s: Jelly())
-
-    result = playlist_service.build(session, "Star Wars", [(ItemType.MOVIE.value, 11)])
-
-    assert result.made_any and built == [("Star Wars (Franchisarr)", ["1"])]
-
-
-def test_a_plex_failure_is_reported_not_raised(session: Session, monkeypatch) -> None:
-    _library(session)
-    from app.services import media_server_service
-
-    class Broken:
-        def playlist_entries(self, *a):  # noqa: ANN002, ANN201
-            raise ConnectionError("plex is down")
-
-    monkeypatch.setattr(media_server_service, "client_for", lambda s: Broken())
-
-    result = playlist_service.build(session, "Star Wars", [(ItemType.MOVIE.value, 11)])
-
-    assert result.servers[0].error and "ConnectionError" in result.servers[0].error
-    assert not result.made_any
 
 
 # ------------------------------------------------------------------ the page
@@ -249,20 +205,6 @@ def client(app_factory):
         yield test_client
 
 
-def test_the_franchise_page_offers_the_button_and_the_route_builds(client: TestClient, monkeypatch) -> None:
-    page = client.get(f"{BASE}/franchises/Q462").text
-    assert "Make a playlist" in page and f'hx-post="{BASE}/franchises/Q462/playlist"' in page
-
-    server = FakeServer({1: FakeItem(1, aired=datetime(1977, 5, 25)), 2: FakeItem(2, aired=datetime(1980, 5, 21))},
-                        {100: FakeShow([FakeItem(101, aired=datetime(2019, 11, 12), season=1, index=1)])})
-    from app.services import media_server_service
-
-    monkeypatch.setattr(media_server_service, "client_for", lambda s: _AsPlexClient(server))
-    body = client.post(f"{BASE}/franchises/Q462/playlist").text
-
-    assert "Star Wars (Franchisarr)" in body and "2 films, 1 show (1 episode)" in body
-
-
 def test_the_page_offers_every_server_and_each_one_and_builds_on_the_one_asked(
     client: TestClient, monkeypatch
 ) -> None:
@@ -273,42 +215,23 @@ def test_the_page_offers_every_server_and_each_one_and_builds_on_the_one_asked(
     assert "On every server" in page and "On Living room" in page and "On Attic" in page
     assert f'hx-vals=\'{{"server": "{attic}"}}\'' in page
 
-    built = []
-
-    class Recorder:
-        def __init__(self, server) -> None:  # noqa: ANN001
-            self.server = server
-
-        def playlist_entries(self, films, shows):  # noqa: ANN001, ANN201
-            from app.clients.media_server import PlaylistEntry as Entry
-
-            return [Entry(raw=f, aired=None) for f in films]
-
-        def replace_playlist(self, title, items):  # noqa: ANN001, ANN201
-            built.append(self.server.name)
-
     from app.services import media_server_service
+    from tests.playlist_fakes import FakeMediaServer
 
-    monkeypatch.setattr(media_server_service, "client_for", lambda s: Recorder(s))
+    fakes = {"Living room": FakeMediaServer({"1": None, "2": None}), "Attic": FakeMediaServer({"1": None, "2": None})}
+    monkeypatch.setattr(media_server_service, "client_for", lambda s: fakes[s.name])
+    monkeypatch.setattr(playlist_service, "art_from", lambda *a: None)
 
     client.post(f"{BASE}/franchises/Q462/playlist", data={"server": str(attic)})
-    assert built == ["Attic"], "only the server asked for"
+    assert fakes["Attic"].titled("Star Wars (Franchisarr)") and not fakes["Living room"].playlists, \
+        "only the server asked for"
 
-    built.clear()
     client.post(f"{BASE}/franchises/Q462/playlist", data={"server": "all"})
-    assert sorted(built) == ["Attic", "Living room"]
+    assert fakes["Living room"].titled("Star Wars (Franchisarr)")
+    assert len(fakes["Attic"].titled("Star Wars (Franchisarr)")) == 1, "the same one, brought up to date"
 
     assert client.post(f"{BASE}/franchises/Q462/playlist", data={"server": "999"}).status_code == 404
     assert living_room
-
-
-def test_a_server_that_holds_none_of_it_says_so(session: Session) -> None:
-    _library(session)
-    empty = seed_server(session, "emby", name="Empty")
-
-    result = playlist_service.build(session, "Star Wars", [(ItemType.MOVIE.value, 11)], server_id=empty.id)
-
-    assert result.servers == [] and result.only == "Empty"
 
 
 # ------------------------------------------------------------------ deleting ours
@@ -355,8 +278,9 @@ def test_deleting_asks_first_then_deletes_one_server_or_all(client: TestClient, 
 
     monkeypatch.setattr(media_server_service, "client_for", lambda s: shelves[s.name])
 
-    page = client.get(f"{BASE}/playlists/delete").text          # the Delete page, from the menu
-    assert "<h1>Delete playlists</h1>" in page and "Delete all playlists…" in page
+    assert client.get(f"{BASE}/playlists/delete").headers["location"].endswith("/playlists/clean-up")
+    page = client.get(f"{BASE}/playlists/clean-up").text        # the Clean up tab
+    assert "<h1>Playlists</h1>" in page and "Delete all playlists…" in page
     assert f'hx-get="{BASE}/playlists/delete?scope=ours"' in page and 'hx-include="#bulk-server"' in page
     assert f'<option value="{attic}">Attic</option>' in page and '<option value="all">every server</option>' in page
     assert 'id="bulk"' not in client.get(f"{BASE}/media-servers").text, "moved off the Servers page"
@@ -416,23 +340,12 @@ def test_plex_alone_gets_no_shared_playlist_caveat(client: TestClient, monkeypat
     assert "Road trip" in warning and "may be in this list" not in warning
 
 
-def test_a_set_too_small_for_a_server_is_skipped_there(session: Session, monkeypatch) -> None:
-    _library(session)
-    from app.services import media_server_service
-
-    monkeypatch.setattr(media_server_service, "client_for", lambda s: _AsPlexClient(FakeServer({}, {})))
-
-    result = playlist_service.build(session, "Just one", [(ItemType.MOVIE.value, 11)], min_items=2)
-
-    assert result.servers == [] and result.skipped == 1
-
-
 def test_bulk_add_builds_every_set_and_tallies(session: Session, monkeypatch) -> None:
     from app.services import playlist_bulk
 
     made = []
 
-    def fake_build(session, name, refs, art=None, *, server_id=None, min_items=1):  # noqa: ANN001, ANN202
+    def fake_make(session, kind, ref, name, refs, art=None, *, server_id=None, min_items=1, work=None):  # noqa: ANN001, ANN202
         made.append((name, server_id, min_items))
         result = playlist_service.PlaylistResult(title=name)
         if name == "Tiny":
@@ -443,8 +356,8 @@ def test_bulk_add_builds_every_set_and_tallies(session: Session, monkeypatch) ->
             result.servers.append(playlist_service.ServerResult(server="Plex"))
         return result
 
-    monkeypatch.setattr(playlist_service, "build", fake_build)
-    monkeypatch.setattr(playlist_bulk, "sets", lambda s, kinds: [
+    monkeypatch.setattr(franchisarr_playlists, "make", fake_make)
+    monkeypatch.setattr(playlist_bulk, "sets", lambda s, kinds, **kw: [
         playlist_bulk.PlaylistSet("franchises", n, [("movie", 1), ("movie", 2)]) for n in ("Alien", "Tiny", "Broken")])
 
     playlist_bulk._set(running=True, stopping=False, made=0, skipped=0, failed=0, errors=())
@@ -461,13 +374,13 @@ def test_stop_ends_a_bulk_add_between_playlists(session: Session, monkeypatch) -
 
     made = []
 
-    def fake_build(session, name, refs, art=None, **kw):  # noqa: ANN001, ANN202
+    def fake_make(session, kind, ref, name, refs, art=None, **kw):  # noqa: ANN001, ANN202
         made.append(name)
         playlist_bulk.stop()   # the person presses Stop while the first is being made
         return playlist_service.PlaylistResult(title=name, servers=[playlist_service.ServerResult(server="Plex")])
 
-    monkeypatch.setattr(playlist_service, "build", fake_build)
-    monkeypatch.setattr(playlist_bulk, "sets", lambda s, kinds: [
+    monkeypatch.setattr(franchisarr_playlists, "make", fake_make)
+    monkeypatch.setattr(playlist_bulk, "sets", lambda s, kinds, **kw: [
         playlist_bulk.PlaylistSet("collections", n, [("movie", 1), ("movie", 2)]) for n in ("A", "B", "C")])
 
     playlist_bulk._set(running=True, stopping=False, made=0, skipped=0, failed=0, errors=())
@@ -621,30 +534,6 @@ def test_the_poster_is_uploaded_to_our_playlist_only() -> None:
     assert _set_playlist_poster(FakeClient(server), "Star Wars (Franchisarr)", b"\xff\xd8jpeg") is True
     assert uploaded == {"Star Wars (Franchisarr)": b"\xff\xd8jpeg"}
     assert _set_playlist_poster(FakeClient(server), "Gone (Franchisarr)", b"x") is False
-
-
-def test_build_puts_the_poster_on_and_a_poster_failure_keeps_the_playlist(session: Session, monkeypatch) -> None:
-    _library(session)
-    server = FakeServer({1: FakeItem(1, aired=datetime(1977, 5, 25))}, {})
-    posters: list[tuple[str, bytes]] = []
-
-    class WithPoster(_AsPlexClient):
-        def set_playlist_poster(self, title, image):  # noqa: ANN001, ANN201
-            posters.append((title, image))
-            return True
-
-    from app.services import media_server_service, playlist_poster
-
-    monkeypatch.setattr(media_server_service, "client_for", lambda s: WithPoster(server))
-    monkeypatch.setattr(playlist_poster, "_fetch", lambda url: _solid((9, 9, 9)))
-    art = playlist_service.PosterArt(backdrop_url="https://x/b.jpg")
-
-    result = playlist_service.build(session, "Star Wars", [(ItemType.MOVIE.value, 11)], art)
-    assert result.servers[0].poster and posters[0][0] == "Star Wars (Franchisarr)"
-
-    monkeypatch.setattr(playlist_poster, "render", lambda *a, **k: None)
-    again = playlist_service.build(session, "Star Wars", [(ItemType.MOVIE.value, 11)], art)
-    assert again.made_any and again.servers[0].poster is False
 
 
 def test_the_caption_counts_films_shows_and_episodes_leaving_out_zeros() -> None:

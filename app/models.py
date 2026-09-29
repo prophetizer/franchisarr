@@ -733,18 +733,53 @@ class PlaylistSyncRun(SQLModel, table=True):
     errors: str | None = Field(default=None)
 
 
-class FranchisarrPlaylistPresence(SQLModel, table=True):
-    """Which servers a "... (Franchisarr)" playlist was on at the last sync, for "keep
-    Franchisarr's playlists on every server": gone from a server it was on means someone deleted
-    it there, and it goes everywhere; a server that couldn't be reached says nothing."""
+class FranchisarrPlaylist(SQLModel, table=True):
+    """A "<name> (Franchisarr)" playlist Franchisarr keeps: one franchise, collection or
+    director, put on the chosen servers and refreshed in place after every scan so new titles
+    land in it (app/services/franchisarr_playlists.py, 0.42.0). Made by a page's playlist button
+    or by Add many; deleted everywhere, and dropped from here, once it's deleted on any server."""
 
-    __tablename__ = "franchisarr_playlist_presence"
+    __tablename__ = "franchisarr_playlists"
+    __table_args__ = (UniqueConstraint("kind", "ref", name="uq_franchisarr_playlist"),)
 
     id: int | None = Field(default=None, primary_key=True)
-    title: str = Field(index=True, unique=True)
-    #: JSON list of media server ids.
-    server_ids: str = Field(default="[]")
-    updated_at: datetime = Field(default_factory=utcnow)
+    #: "franchises", "collections" or "directors".
+    kind: str
+    #: The page it comes from: a Wikidata id, a TMDb collection id or a TMDb person id.
+    ref: str
+    #: The page's name when last built; the playlist is called "<name> (Franchisarr)".
+    name: str
+    #: JSON list of the servers it goes on. None: the default servers (every one that's on,
+    #: unless the Franchisarr playlists tab narrows it).
+    servers: str | None = Field(default=None)
+    #: Fewest titles worth a playlist on a server: 1 from a page's button, 2 from Add many.
+    min_items: int = Field(default=1)
+    created_at: datetime = Field(default_factory=utcnow)
+    refreshed_at: datetime | None = Field(default=None)
+    #: Set when it's been removed (on the page, or deleted on a server) but a copy is still on a
+    #: server that's off or unreachable; the row goes once the last copy has.
+    removed_at: datetime | None = Field(default=None)
+
+
+class FranchisarrPlaylistCopy(SQLModel, table=True):
+    """One Franchisarr playlist on one server, known by its id there -- which is how a deletion
+    by someone is told apart from a server that merely couldn't be reached."""
+
+    __tablename__ = "franchisarr_playlist_copies"
+    __table_args__ = (UniqueConstraint("playlist_id", "server_id", name="uq_franchisarr_playlist_copy"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    playlist_id: int = Field(foreign_key="franchisarr_playlists.id", ondelete="CASCADE", index=True)
+    server_id: int = Field(foreign_key="media_servers.id", ondelete="CASCADE", index=True)
+    #: The playlist's id on that server; None when it holds too few titles there to have one.
+    server_playlist_id: str | None = Field(default=None)
+    #: The server's item keys it was last written with, in order. Unchanged means no work.
+    fingerprint: str | None = Field(default=None)
+    items: int = Field(default=0)
+    #: "ok", "small" (too few titles there) or "error".
+    status: str = Field(default="ok")
+    message: str | None = Field(default=None)
+    refreshed_at: datetime | None = Field(default=None)
 
 
 class PlaylistCopy(SQLModel, table=True):

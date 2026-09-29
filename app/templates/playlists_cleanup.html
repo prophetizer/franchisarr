@@ -1,0 +1,26 @@
+{% extends "playlists_base.html" %}
+
+{% block tab_content %}
+<p>Delete Franchisarr's playlists, or every playlist in the account Franchisarr uses. You'll see
+  exactly what would go before anything is deleted.</p>
+
+{% if not servers %}
+  <p class="muted">No media server is switched on.</p>
+{% else %}
+  <label class="bulk-on">On
+    <select id="bulk-server" name="server">
+      {% if servers | length > 1 %}<option value="all">every server</option>{% endif %}
+      {% for s in servers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <div class="bulk-buttons">
+    <button class="secondary outline" hx-get="{{ url('/playlists/delete?scope=ours') }}" hx-include="#bulk-server"
+            hx-target="#bulk-panel" hx-swap="innerHTML">Delete Franchisarr's playlists…</button>
+    <button class="secondary outline" hx-get="{{ url('/playlists/delete?scope=all') }}" hx-include="#bulk-server"
+            hx-target="#bulk-panel" hx-swap="innerHTML">Delete all playlists…</button>
+  </div>
+  <p><small class="muted">Deleting Franchisarr's playlists on one server also stops them going there;
+    on every server, it empties the list on the Franchisarr's tab.</small></p>
+  <div id="bulk-panel"></div>
+{% endif %}
+{% endblock %}

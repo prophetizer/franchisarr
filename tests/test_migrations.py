@@ -70,3 +70,23 @@ def test_downgrade_returns_to_empty(db_path: Path) -> None:
         tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
 
     assert not (EXPECTED_TABLES & tables)
+
+
+@pytest.mark.parametrize("had_servers", [True, False])
+def test_0029_marks_existing_franchisarr_playlists_for_taking_in_only_on_an_install_with_servers(
+    db_path: Path, had_servers: bool
+) -> None:
+    config = _alembic_config(db_path)
+    command.upgrade(config, "0028")
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("INSERT INTO settings (key, value, updated_at) VALUES ('playlist_sync_franchisarr', 'true', '2026-09-01')")
+        if had_servers:
+            conn.execute("INSERT INTO media_servers (name, kind, url, credential, enabled, created_at) "
+                         "VALUES ('Plex', 'plex', 'http://plex:32400', 'x', 1, '2026-09-01')")
+
+    command.upgrade(config, "0029")
+
+    with sqlite3.connect(db_path) as conn:
+        settings = dict(conn.execute("SELECT key, value FROM settings"))
+    assert "playlist_sync_franchisarr" not in settings, "the switch is gone"
+    assert (settings.get("franchisarr_playlists_to_adopt") == "true") is had_servers

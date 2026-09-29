@@ -45,7 +45,7 @@ Images are published to GHCR for amd64 and arm64.
 tested against a real library and reviewed by a human. The core — matching, gaps, spin-offs,
 franchises, directors — was measured against that library as it was built (the numbers are in
 the [changelog](CHANGELOG.md)); what hasn't been tested for real is listed under
-[What's been tested](#whats-been-tested-and-on-what). There are over 900 tests with no live
+[What's been tested](#whats-been-tested-and-on-what). There are over 1,100 tests with no live
 network calls, and the full git history was scanned for secrets before the repo went public. The code is
 MIT; read it.
 
@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.41.1`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.42.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -211,7 +211,7 @@ the label changes.
 ## Getting around
 
 The top bar has its menus: **Browse** (Franchises, Collections, Spin-offs, Upcoming,
-Directors); for administrators **Playlists** (Sync, Add playlists, Delete playlists, History) and
+Directors); for administrators **Playlists** (one page with tabs) and
 **Manage** (Servers, Libraries, Instances, Users, Settings, Activity); and one under your name (Preferences, Password, light/dark, Sign out), with
 search at the far right. The menu holding the page you're on is highlighted. On a phone it's a
 single ☰ button.
@@ -240,37 +240,49 @@ out. With more than one server the button becomes a row — **On every server**,
 - It's called "*name* (Franchisarr)" and gets its own square poster: the franchise or
   collection backdrop across the top, and the name, "In release order" and what's in it ("13
   films · 3 shows · 279 episodes") on a dark panel below (a director gets their film posters
-  instead). Pressing the button again rebuilds it with what you own now; playlists with any
-  other name are never touched.
+  instead). Playlists with any other name are never touched.
+- **It's kept current.** After every scan (and at every sync), titles you've added since go in
+  where they belong and ones you've removed come out. The playlist is edited in place, so it
+  keeps its poster and its spot in your apps. Delete it on any server and Franchisarr deletes it
+  on the others too and stops keeping it. A server that's off or can't be reached is never taken
+  for a deletion.
 - Playlists belong to one account. On Plex that's the account of the token Franchisarr uses —
   normally yours as the server owner. On Jellyfin and Emby it's the server's *watched as* user
   (Servers page), which is the first administrator unless you've set one.
 - The order is release order. Nothing records story order (where *Rogue One* sits in the saga),
   so that isn't offered.
-- **Playlists → Add playlists / Delete playlists** work on one server or every server at once:
-  - **Add playlists** makes one for every franchise, collection and/or director you tick, in
-    the background with progress and a Stop button. A set with fewer than two titles on a server
-    is skipped there, and an existing playlist is rebuilt.
-  - **Delete Franchisarr's playlists** removes only playlists named "… (Franchisarr)".
-  - **Delete all playlists** removes every playlist in the account Franchisarr uses (on Plex
-    the token's owner; on Jellyfin and Emby the *watched as* user), including ones made by
-    hand, and needs **DELETE** typed. Jellyfin and Emby don't say who owns a playlist, so one
-    shared with that account may be listed too.
 
-  Both deletes list exactly what would go before anything is deleted.
+## The Playlists page
+
+One page for administrators, with four tabs. At the top: how many playlists are syncing and
+being kept, when the last run was and anything that couldn't be copied, **Sync now**, and when
+syncs run — always after every scan and on **Sync now**, and optionally every hour, 6 hours,
+12 hours, daily, or on a cron schedule of your own.
+
+- **Your playlists** — sync your own playlists between servers (below).
+- **Franchisarr's** — every playlist Franchisarr keeps, with what it holds on each server and a
+  **Remove** button (deletes it everywhere). **Put them on** chooses the servers they go on;
+  unticking one deletes them there. **Add many at once** makes one for every franchise,
+  collection and/or director you tick, on one server or all, in the background with progress
+  and a Stop button; a set with fewer than two titles on a server is skipped there.
+- **Clean up** — on one server or every server: **Delete Franchisarr's playlists** removes only
+  playlists named "… (Franchisarr)" (and stops them going to that server); **Delete all
+  playlists** removes every playlist in the account Franchisarr uses (on Plex the token's owner;
+  on Jellyfin and Emby the *watched as* user), including ones made by hand, and needs **DELETE**
+  typed. Jellyfin and Emby don't say who owns a playlist, so one shared with that account may be
+  listed too. Both list exactly what would go before anything is deleted.
+- **History** — the last 30 runs.
 
 ### Playlist sync
 
-**Playlists → Sync** is a checklist of the playlists on each server (with a filter, and a tick
-for every playlist on a server): tick the ones to copy, and for each, which servers get a copy —
-all of them by default, which also takes in servers you add later. **Save and sync** applies it
-straight away. Syncs also run after every scan, on their own schedule (a cron expression, like
-scans, under **Schedule and switches**), and with **Sync now**; **Playlists → History** lists the
-last 30.
+**Your playlists** is a checklist of the playlists on each server (with a filter, and a tick for
+every playlist on a server): tick the ones to copy. At the top, **Copy to** sets which servers
+get copies — every other one by default, which also takes in servers you add later; any
+playlist can have its own with **change**. **Tick new playlists automatically** syncs playlists
+made later too; untick any one to leave it out. **Save and sync** applies it straight away.
 
 - Unticking a server deletes the copy sync made there; unticking a playlist stops syncing it and
   leaves its copies as ordinary playlists.
-
 - Titles are matched by TMDb id — a film by its own, an episode by its show plus season and
   episode number. One the other server doesn't have is left out, and the page lists what wasn't
   copied and why.
@@ -278,19 +290,10 @@ last 30.
   a copy are overwritten at the next sync; deleting the playlist deletes its copies. A Plex smart
   playlist is copied as what it holds at each sync.
 - A playlist of the same name that sync didn't make is never touched; that copy shows as
-  blocked. Stopping a sync leaves its copies as ordinary playlists.
+  blocked.
 - It uses the same accounts as everything else here (the Plex token's owner, the Jellyfin/Emby
-  *watched as* user). Music and photo playlists aren't synced. A sync that fails sends a
-  notification, if you've set one up.
-
-Two switches under **Schedule and switches**:
-
-- **Sync every playlist** — every video playlist on every server syncs, including ones made
-  later; untick any one in the checklist to leave it out.
-- **Keep Franchisarr's playlists on every server** — a "… (Franchisarr)" playlist on one server
-  is built on the others from *their own* libraries (so each is complete for its server, rather
-  than a copy trimmed to what both hold), and deleting it on any server deletes it everywhere.
-  A server that can't be reached is never taken for a deletion.
+  *watched as* user). Music and photo playlists aren't synced, and Franchisarr's own are kept on
+  their own tab. A sync that fails sends a notification, if you've set one up.
 
 ## Calendar
 
@@ -459,7 +462,7 @@ Honest about what has run against the real thing and what has only run against t
 |---|---|
 | Plex | The developer's own library — ~3,400 films, ~660 shows — every day |
 | Jellyfin 10.11, Emby 4.9 | Real servers during development, library scans and sign-in both; not in daily use |
-| Jellyfin 12.1, Emby 4.10 | Connection, library listing and playlists (build, rebuild, poster) against real servers (September 2026) |
+| Jellyfin 12.1, Emby 4.10 | Connection, library listing and playlists (build, poster, editing in place, sync) against real servers (September 2026) |
 | Seerr 3.4.1 | End to end on a real instance: connection, request cache, and a real request through to Radarr (September 2026). That first live test found three bugs, fixed in 0.23.1 |
 | Radarr 6.3, Sonarr 4.0 | Real instances, one of each, every day |
 | Several Radarr or Sonarr instances | The test suite only — the developer runs one of each |

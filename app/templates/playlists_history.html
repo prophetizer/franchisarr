@@ -1,11 +1,8 @@
-{% extends "base.html" %}
-{% block title %}Sync history — Franchisarr{% endblock %}
+{% extends "playlists_base.html" %}
 
-{% block content %}
-<hgroup>
-  <h1>Sync history</h1>
-  <p>{% if runs %}The last {{ runs | length }} playlist sync{{ '' if runs | length == 1 else 's' }}; up to 30 are kept.{% else %}Each playlist sync is listed here; up to 30 are kept.{% endif %}</p>
-</hgroup>
+{% block tab_content %}
+<p>{% if runs | length == 1 %}The last playlist sync; up to 30 are kept.{% elif runs %}The last {{ runs | length }} playlist syncs; up to 30 are kept.{% else %}Each playlist sync is listed here; up to 30 are kept.{% endif %}
+  A sync covers both tabs: your playlists and Franchisarr's.</p>
 {% if not runs %}
   <p class="muted">No syncs yet.</p>
 {% else %}

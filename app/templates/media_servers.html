@@ -84,8 +84,8 @@
     {% endfor %}
   </ul>
   {% if user.is_admin %}
-    <p><small class="muted">Playlist sync, and adding or deleting playlists in bulk, are under
-      <strong>Playlists</strong> in the menu.</small></p>
+    <p><small class="muted">Playlist sync, Franchisarr's own playlists, and deleting playlists in bulk
+      are on the <a href="{{ url('/playlists') }}">Playlists</a> page.</small></p>
   {% endif %}
 {% else %}
   <p class="muted">No media server configured yet.</p>

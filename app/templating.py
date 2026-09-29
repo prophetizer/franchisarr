@@ -111,7 +111,26 @@ def build_templates(base_url: str) -> Jinja2Templates:
     import json
 
     templates.env.filters["fromjson"] = json.loads
+    templates.env.filters["ago"] = ago
     return templates
+
+
+def ago(when, now=None) -> str:  # noqa: ANN001
+    """"just now", "5 min ago", "3 h ago", "2 days ago". A naive time is UTC, as stored."""
+    from datetime import datetime, timezone
+
+    if when is None:
+        return ""
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    seconds = max(0, int(((now or datetime.now(timezone.utc)) - when).total_seconds()))
+    if seconds < 60:
+        return "just now"
+    if seconds < 3600:
+        return f"{seconds // 60} min ago"
+    if seconds < 2 * 86400:
+        return f"{seconds // 3600} h ago"
+    return f"{seconds // 86400} days ago"
 
 
 @lru_cache(maxsize=4)

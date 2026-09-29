@@ -279,11 +279,14 @@ def _pick(entry: dict, allowed: dict[str, tuple[type, ...]], model) -> dict:  # 
 
 def _importable_settings() -> set[str]:
     """Settings a backup may restore: every SettingKey except values this install generates for
-    itself. The Plex client id is one: it's what plex.tv ties this install's sign-in PINs to."""
+    itself. The Plex client id is one: it's what plex.tv ties this install's sign-in PINs to.
+    Lists of this install's server ids are others: imported servers get new ids."""
     from app.services.settings_service import SettingKey
 
     keys = {v for k, v in vars(SettingKey).items() if k.isupper() and isinstance(v, str)}
-    return keys - {SettingKey.PLEX_CLIENT_ID, SettingKey.SOLO_RESTORE}
+    return keys - {SettingKey.PLEX_CLIENT_ID, SettingKey.SOLO_RESTORE,
+                   SettingKey.PLAYLIST_SYNC_TARGETS, SettingKey.FRANCHISARR_PLAYLIST_SERVERS,
+                   SettingKey.FRANCHISARR_PLAYLISTS_TO_ADOPT}
 
 
 def _setting_value_ok(key: str, value: str) -> bool:

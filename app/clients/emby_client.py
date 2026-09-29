@@ -239,17 +239,6 @@ class EmbyLikeClient:
                                              season=season, episode=int(item.get("IndexNumber") or 0)))
         return entries
 
-    def replace_playlist(self, title: str, items: list) -> None:  # noqa: ANN001 - item ids
-        """Make `title` hold exactly `items` (ids), in order, in the watched-as user's account.
-        Only a playlist with this exact name is touched: it's deleted and made again."""
-        user = self.watched_user_id()
-        # Every copy of this exact name, server-wide. Only Franchisarr names playlists
-        # "... (Franchisarr)".
-        for playlist in self._every_playlist():
-            if playlist.get("Name") == title:
-                self._send("DELETE", f"/Items/{playlist['Id']}")
-        self.create_playlist(title, items)
-
     def create_playlist(self, title: str, items: list) -> str:  # noqa: ANN001 - item ids
         """A new playlist of `items` (ids), in order, in the watched-as user's account; its id.
         Never touches another playlist, same-named ones included."""
@@ -287,15 +276,41 @@ class EmbyLikeClient:
         refs = []
         for row in (found.get("Items") or []) if isinstance(found, dict) else []:
             kind, key = row.get("Type"), str(row.get("Id", ""))
+            entry = str(row.get("PlaylistItemId") or "")
             if kind == "Movie":
-                refs.append(PlaylistItemRef("movie", key, row.get("Name", "")))
+                refs.append(PlaylistItemRef("movie", key, row.get("Name", ""), entry_id=entry))
             elif kind == "Episode":
                 season, number = int(row.get("ParentIndexNumber") or 0), int(row.get("IndexNumber") or 0)
                 refs.append(PlaylistItemRef("episode", key, f"{row.get('SeriesName', '')} S{season:02d}E{number:02d}",
-                                            show_key=str(row.get("SeriesId") or ""), season=season, episode=number))
+                                            show_key=str(row.get("SeriesId") or ""), season=season, episode=number,
+                                            entry_id=entry))
             else:
-                refs.append(PlaylistItemRef("other", key, row.get("Name", "")))
+                refs.append(PlaylistItemRef("other", key, row.get("Name", ""), entry_id=entry))
         return refs
+
+    # Editing in place (media_server.edit_in_place), by PlaylistItemId: the same endpoints on
+    # Jellyfin and Emby -- except that Jellyfin 12.1 answers Move with a 400 ("Error processing
+    # request") whichever id it's given, with or without a user (measured 2026-09-29), so on
+    # Jellyfin the order is fixed by rewriting the tail.
+
+    @property
+    def can_move_playlist_entries(self) -> bool:
+        return self.kind != MediaServerKind.JELLYFIN
+
+    def remove_playlist_entries(self, playlist_id: str, entry_ids: list[str]) -> None:
+        for start in range(0, len(entry_ids), PLAYLIST_CHUNK):
+            self._send("DELETE", f"/Playlists/{playlist_id}/Items",
+                       params={"EntryIds": ",".join(entry_ids[start:start + PLAYLIST_CHUNK])})
+
+    def append_to_playlist(self, playlist_id: str, items: list) -> None:  # noqa: ANN001 - item ids
+        user = self.watched_user_id()
+        for start in range(0, len(items), PLAYLIST_CHUNK):
+            chunk = ",".join(str(i) for i in items[start:start + PLAYLIST_CHUNK])
+            self._send("POST", f"/Playlists/{playlist_id}/Items", params={"Ids": chunk, "UserId": user})
+
+    def move_playlist_entry(self, playlist_id: str, entry_id: str, index: int, after: str | None) -> None:
+        """Jellyfin and Emby place an entry at an index."""
+        self._send("POST", f"/Playlists/{playlist_id}/Items/{entry_id}/Move/{int(index)}")
 
     def delete_playlist_id(self, playlist_id: str) -> None:
         """Delete it if it's still there; one someone already removed is no error. (_send maps a
@@ -338,8 +353,10 @@ class EmbyLikeClient:
                       if p.get("Name", "").endswith(suffix))
 
     def delete_playlists(self, suffix: str) -> list[str]:
-        """Delete every playlist on the server whose name ends with `suffix`, server-wide for the
-        same reason replace_playlist is. The names deleted, sorted."""
+        """Delete every playlist on the server whose name ends with `suffix`, server-wide: an
+        interrupted earlier run, or a changed "watched as" user, can leave one of ours that the
+        user's own view doesn't show. Only Franchisarr names playlists "... (Franchisarr)". The
+        names deleted, sorted."""
         gone = []
         for playlist in self._every_playlist():
             name = playlist.get("Name", "")
@@ -350,7 +367,7 @@ class EmbyLikeClient:
 
     def delete_all_playlists(self) -> list[str]:
         """Every playlist the watched-as user sees (`_playlists` is that user's view, unlike the
-        server-wide listing replace_playlist and delete_playlists use). Jellyfin 12 says nothing
+        server-wide listing delete_playlists uses). Jellyfin 12 says nothing
         about who owns a playlist -- no owner field, and /Playlists/{id} answers 400 -- so one
         shared with this user can't be told from their own and is included; the confirmation
         says so, and lists every title first (michael's call, 0.37.0)."""

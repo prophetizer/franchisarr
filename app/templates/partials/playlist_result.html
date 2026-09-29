@@ -8,6 +8,10 @@
     </p>
   {% endif %}
 {% endfor %}
+{% if r.made_any %}
+  <p><small class="muted">It's kept current after every scan — see
+    <a href="{{ url('/playlists/franchisarr') }}">Playlists → Franchisarr's</a>.</small></p>
+{% endif %}
 {% if not r.servers %}
   {% if r.only %}
     <p class="muted">None of this is on {{ r.only }}, so there's nothing to put in a playlist there.</p>

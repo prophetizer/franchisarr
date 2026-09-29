@@ -6,9 +6,9 @@ fall between the films as they were broadcast. Nothing records story order (wher
 sits in the timeline), so release order is the order there is.
 
 One playlist per media server, since a playlist can only hold that server's items, named
-"<name> (Franchisarr)". Pressing the button again rebuilds that playlist with whatever is owned
-now; playlists with any other name are never touched. Plex, Jellyfin and Emby alike: each
-client implements playlist_entries / replace_playlist / set_playlist_poster.
+"<name> (Franchisarr)". Making and keeping them is franchisarr_playlists.py (0.42.0): each is
+written by its id and edited in place. This module keeps the pieces -- ordering, posters, and
+deleting ours.
 
 Playlists belong to one account on every server. On Plex that's the token's owner (normally the
 server owner); on Jellyfin and Emby it's the server's "watched as" user, the first
@@ -23,8 +23,7 @@ from datetime import date
 
 from sqlmodel import Session, col, select
 
-from app.clients.media_server import MediaServerKind
-from app.models import ItemType, LibraryItem, MediaServer
+from app.models import LibraryItem, MediaServer
 
 logger = logging.getLogger(__name__)
 
@@ -116,55 +115,6 @@ def order_entries(entries: list) -> list:  # noqa: ANN001 - PlaylistEntry
         e.season,
         e.episode,
     ))
-
-
-def build(session: Session, name: str, refs: list[tuple[str, int]],
-          art: PosterArt | None = None, *, server_id: int | None = None,
-          min_items: int = 1) -> PlaylistResult:
-    """Build (or rebuild) the playlist for `name` from the owned (item_type, tmdb_id) pairs,
-    and give it a poster made from `art`. On every server that holds some of them, or only on
-    `server_id`."""
-    from app.services import media_server_service
-
-    title = playlist_title(name)
-    result = PlaylistResult(title=title)
-    if server_id is not None:
-        chosen = session.get(MediaServer, server_id)
-        result.only = chosen.name if chosen else None
-    for held_by, items in _owned_items(session, refs).items():
-        if server_id is not None and held_by != server_id:
-            continue
-        server = session.get(MediaServer, held_by)
-        if server is None or not server.enabled:
-            continue
-        if len(items) < min_items:
-            # Bulk add: a playlist of one film isn't worth making (michael's call, 0.37.0).
-            result.skipped += 1
-            continue
-        outcome = ServerResult(server=server.name)
-        result.servers.append(outcome)
-        films = [i.item_key for i in items if i.item_type == ItemType.MOVIE.value]
-        shows = [i.item_key for i in items if i.item_type == ItemType.SHOW.value]
-        try:
-            client = media_server_service.client_for(server)
-            entries = order_entries(client.playlist_entries(films, shows))
-            if not entries:
-                outcome.error = "None of these titles could be found on the server any more."
-                continue
-            client.replace_playlist(title, [e.raw for e in entries])
-        except Exception as exc:  # noqa: BLE001 -- reported to the admin, logged with detail
-            logger.exception("Couldn't build playlist %r on %s", title, server.name)
-            outcome.error = f"The server refused or couldn't be reached ({type(exc).__name__})."
-            continue
-        outcome.films = sum(1 for e in entries if e.show_key is None)
-        outcome.episodes = len(entries) - outcome.films
-        outcome.shows = len({e.show_key for e in entries if e.show_key is not None})
-        if art is not None:
-            outcome.poster = apply_poster(client, title, name, outcome.films, outcome.episodes, art,
-                                          shows=outcome.shows)
-        logger.info("Playlist %r on %s: %d films, %d episodes", title, server.name,
-                    outcome.films, outcome.episodes)
-    return result
 
 
 def apply_poster(client, title: str, name: str, films: int, episodes: int,  # noqa: ANN001
@@ -271,6 +221,10 @@ def delete_ours(session: Session, server_id: int | None = None, *, everything: b
             entry.titles = client.delete_all_playlists() if everything else client.delete_playlists(SUFFIX)
             logger.info("Deleted %d %splaylist(s) on %s", len(entry.titles),
                         "" if everything else "Franchisarr ", server.name)
+            # Clearing a server isn't someone deleting one playlist: it mustn't spread (0.42.0).
+            from app.services import franchisarr_playlists
+
+            franchisarr_playlists.forget_server(session, server.id if server_id is not None else None)
         except Exception as exc:  # noqa: BLE001 -- reported to the admin, logged in full
             logger.exception("Couldn't delete playlists on %s", server.name)
             entry.error = f"The server refused or couldn't be reached ({type(exc).__name__})."

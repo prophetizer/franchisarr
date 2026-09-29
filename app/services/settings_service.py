@@ -61,11 +61,18 @@ class SettingKey:
     #: others back on" restores exactly those. Absent when not in use. Never restored from a
     #: backup -- the ids are this install's own.
     SOLO_RESTORE = "solo_restore"
-    #: Playlist sync: every video playlist syncs, new ones too, except those switched off.
+    #: Playlist sync: new video playlists are ticked automatically; any can still be unticked.
     PLAYLIST_SYNC_ALL = "playlist_sync_all"
-    #: Playlist sync: a "... (Franchisarr)" playlist on one server is built on the others from
-    #: their own libraries, and deleting it on one deletes it everywhere.
-    PLAYLIST_SYNC_FRANCHISARR = "playlist_sync_franchisarr"
+    #: Playlist sync's default "copy to" servers, a JSON list of ids; empty for every other
+    #: server that's on. A playlist can override it. This install's ids: never restored.
+    PLAYLIST_SYNC_TARGETS = "playlist_sync_targets"
+    #: The servers Franchisarr's own playlists go on, a JSON list of ids; empty for every
+    #: server that's on. This install's ids: never restored.
+    FRANCHISARR_PLAYLIST_SERVERS = "franchisarr_playlist_servers"
+    #: "true" while the "(Franchisarr)" playlists already on the servers are still to be taken
+    #: into the set: set by migration 0029 on an install that had servers, cleared by the first
+    #: sync after it. This install's own: never restored.
+    FRANCHISARR_PLAYLISTS_TO_ADOPT = "franchisarr_playlists_to_adopt"
     #: Playlist sync's own schedule (cron, like the scan's); empty for none. Syncs also follow
     #: every scan.
     PLAYLIST_SYNC_CRON = "playlist_sync_cron"
@@ -90,7 +97,9 @@ DEFAULTS: dict[str, str] = {
     SettingKey.UPDATE_CHECK: "true",
     SettingKey.ALLOW_MEMBER_SIGNIN: "false",
     SettingKey.PLAYLIST_SYNC_ALL: "false",
-    SettingKey.PLAYLIST_SYNC_FRANCHISARR: "false",
+    SettingKey.PLAYLIST_SYNC_TARGETS: "",
+    SettingKey.FRANCHISARR_PLAYLIST_SERVERS: "",
+    SettingKey.FRANCHISARR_PLAYLISTS_TO_ADOPT: "false",
     SettingKey.PLAYLIST_SYNC_CRON: "",
 }
 

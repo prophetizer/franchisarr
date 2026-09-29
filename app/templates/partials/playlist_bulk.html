@@ -1,4 +1,4 @@
-{# Bulk "Add playlists": the form (`form`), or the job's progress, which polls itself while it
+{# Add many (the Franchisarr's tab): the form (`form`), or the job's progress, which polls itself while it
    runs -- the `every 2s` trigger is dropped from the response once it's finished, which is what
    ends the polling. #}
 {% if form and not bulk.running %}
@@ -12,10 +12,10 @@
         <label><input type="checkbox" name="kinds" value="collections"> collection ({{ counts.collections }})</label>
         <label><input type="checkbox" name="kinds" value="directors"> director ({{ counts.directors }})</label>
       </fieldset>
-      <p><small class="muted">One playlist per set on each server, in release order with its own poster.
-        A set with fewer than two titles on a server is skipped there, and one that already has a
-        playlist gets it rebuilt. Hundreds take a while: it runs in the background, and you can
-        leave this page.</small></p>
+      <p><small class="muted">One playlist per set on each server, in release order with its own poster,
+        and each joins the list below to be kept current. A set with fewer than two titles on a
+        server is skipped there, and one that already has a playlist gets it brought up to date.
+        Hundreds take a while: it runs in the background, and you can leave this page.</small></p>
       {% if error %}<p role="alert" class="notice-bad">{{ error }}</p>{% endif %}
       <div class="playlist-delete-buttons">
         <button type="submit" hx-disabled-elt="this">Make playlists</button>

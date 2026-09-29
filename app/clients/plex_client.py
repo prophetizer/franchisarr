@@ -125,9 +125,6 @@ class PlexClient:
         """Playable films and regular episodes for the given rating keys, with air dates."""
         return _playlist_entries(self, films, shows)
 
-    def replace_playlist(self, title: str, items: list) -> None:  # noqa: ANN001 - plexapi objects
-        _replace_playlist(self, title, items)
-
     def set_playlist_poster(self, title: str, image: bytes) -> bool:
         return _set_playlist_poster(self, title, image)
 
@@ -159,16 +156,38 @@ class PlexClient:
         for item in self.server.fetchItem(int(playlist_id)).items():
             kind = getattr(item, "TYPE", "")
             key = str(_attr(item, "ratingKey", ""))
+            entry = str(_attr(item, "playlistItemID", "") or "")
             if kind == "movie":
-                refs.append(PlaylistItemRef("movie", key, _attr(item, "title", "")))
+                refs.append(PlaylistItemRef("movie", key, _attr(item, "title", ""), entry_id=entry))
             elif kind == "episode":
                 season, number = int(_attr(item, "parentIndex", 0) or 0), int(_attr(item, "index", 0) or 0)
                 refs.append(PlaylistItemRef(
                     "episode", key, f"{_attr(item, 'grandparentTitle', '')} S{season:02d}E{number:02d}",
-                    show_key=str(_attr(item, "grandparentRatingKey", "")), season=season, episode=number))
+                    show_key=str(_attr(item, "grandparentRatingKey", "")), season=season, episode=number,
+                    entry_id=entry))
             else:
-                refs.append(PlaylistItemRef("other", key, _attr(item, "title", "")))
+                refs.append(PlaylistItemRef("other", key, _attr(item, "title", ""), entry_id=entry))
         return refs
+
+    # Editing in place (media_server.edit_in_place): by playlistItemID, straight to Plex's
+    # endpoints -- plexapi's removeItems/moveItem re-read the whole playlist for every item.
+
+    def remove_playlist_entries(self, playlist_id: str, entry_ids: list[str]) -> None:
+        for entry_id in entry_ids:
+            self.server.query(f"/playlists/{int(playlist_id)}/items/{int(entry_id)}",
+                              method=self.server._session.delete)
+
+    def append_to_playlist(self, playlist_id: str, items: list) -> None:  # noqa: ANN001 - plexapi objects
+        playlist = self.server.fetchItem(int(playlist_id))
+        for start in range(0, len(items), PLAYLIST_CHUNK):
+            playlist.addItems(items[start:start + PLAYLIST_CHUNK])
+
+    def move_playlist_entry(self, playlist_id: str, entry_id: str, index: int, after: str | None) -> None:
+        """Plex places an entry after another one; with none, first."""
+        key = f"/playlists/{int(playlist_id)}/items/{int(entry_id)}/move"
+        if after:
+            key += f"?after={int(after)}"
+        self.server.query(key, method=self.server._session.put)
 
     def create_playlist(self, title: str, items: list) -> str:  # noqa: ANN001 - plexapi objects
         """A new playlist of `items`, in order; its id. Never touches another playlist."""
@@ -334,18 +353,6 @@ def _playlist_entries(client: "PlexClient", films: list[str], shows: list[str]) 
                                          season=season, episode=int(_attr(raw, "index", 0) or 0),
                                          key=str(_attr(raw, "ratingKey", ""))))
     return entries
-
-
-def _replace_playlist(client: "PlexClient", title: str, items: list) -> None:  # noqa: ANN001
-    """Make `title` hold exactly `items`, in order. Only a playlist with this exact title is
-    touched: it is recreated rather than edited, which is one request instead of one per item."""
-    server = client.server
-    for playlist in server.playlists():
-        if playlist.title == title:
-            playlist.delete()
-    playlist = server.createPlaylist(title, items=items[:PLAYLIST_CHUNK])
-    for start in range(PLAYLIST_CHUNK, len(items), PLAYLIST_CHUNK):
-        playlist.addItems(items[start:start + PLAYLIST_CHUNK])
 
 
 def _delete_playlists(client: "PlexClient", suffix: str) -> list[str]:

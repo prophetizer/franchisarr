@@ -4,8 +4,9 @@ On a real library that's hundreds of playlists per server -- 207 franchises, 409
 148 directors on the developer's -- each a read of the server, a write, and a poster fetched from
 TMDb, so it runs on a background thread with progress, like a scan, and can be stopped between
 playlists. One bulk job at a time. A set whose titles on a server number fewer than two is
-skipped there (michael's call): a playlist of one film isn't worth having. A playlist that
-already exists is rebuilt, exactly as "Make a playlist" does.
+skipped there (michael's call): a playlist of one film isn't worth having. Each one joins the
+Franchisarr playlist set (0.42.0), so it's kept current after that; one that already exists is
+brought up to date in place, exactly as "Make a playlist" does.
 """
 
 from __future__ import annotations
@@ -74,10 +75,12 @@ class PlaylistSet:
     name: str
     refs: list[tuple[str, int]] = field(default_factory=list)
     art: object = None
+    #: The page it comes from: a Wikidata id, a collection id or a person id, as a string.
+    ref: str = ""
 
 
-def sets(session: Session, kinds: tuple[str, ...] | list[str]) -> list[PlaylistSet]:
-    """Every set of the chosen kinds with at least MIN_ITEMS owned titles, with the refs and
+def sets(session: Session, kinds: tuple[str, ...] | list[str], *, min_refs: int = MIN_ITEMS) -> list[PlaylistSet]:
+    """Every set of the chosen kinds with at least `min_refs` owned titles, with the refs and
     poster artwork "Make a playlist" would use for it."""
     from app.services import director_service, franchise_service, movie_gap_service
     from app.services.playlist_service import art_from
@@ -86,16 +89,18 @@ def sets(session: Session, kinds: tuple[str, ...] | list[str]) -> list[PlaylistS
     if "franchises" in kinds:
         for view in franchise_service.franchise_views(session):
             refs = [(t.item_type, t.tmdb_id) for t in view.owned_films + view.owned_shows]
-            found.append(PlaylistSet("franchises", view.name, refs, art_from(view.backdrop_path, view.owned_films)))
+            found.append(PlaylistSet("franchises", view.name, refs, art_from(view.backdrop_path, view.owned_films),
+                                     str(view.wikidata_id)))
     if "collections" in kinds:
         for gap in movie_gap_service.collection_gaps(session):
             refs = [(ItemType.MOVIE.value, m.tmdb_id) for m in gap.owned]
-            found.append(PlaylistSet("collections", gap.name, refs, art_from(getattr(gap, "backdrop_path", None), gap.owned)))
+            found.append(PlaylistSet("collections", gap.name, refs, art_from(getattr(gap, "backdrop_path", None), gap.owned),
+                                     str(gap.collection_id)))
     if "directors" in kinds:
         for view in director_service.director_views(session):
             refs = [(ItemType.MOVIE.value, m.tmdb_id) for m in view.owned]
-            found.append(PlaylistSet("directors", view.name, refs, art_from(None, view.owned)))
-    return [s for s in found if len(s.refs) >= MIN_ITEMS]
+            found.append(PlaylistSet("directors", view.name, refs, art_from(None, view.owned), str(view.person_id)))
+    return [s for s in found if len(s.refs) >= min_refs]
 
 
 def counts(session: Session) -> dict[str, int]:
@@ -104,17 +109,19 @@ def counts(session: Session) -> dict[str, int]:
 
 
 def run(session: Session, kinds: list[str], server_id: int | None, where: str) -> None:
-    from app.services import playlist_service
+    from app.services import franchisarr_playlists
+    from app.services.playlist_sync import _Run
 
     work = sets(session, kinds)
+    servers = _Run(session)       # one listing per server for the whole job
     _set(total=len(work), where=where)
     for index, item in enumerate(work, start=1):
         if current().stopping:
             break
         _set(current=f"{item.name}", done=index - 1)
         try:
-            result = playlist_service.build(session, item.name, item.refs, item.art,
-                                            server_id=server_id, min_items=MIN_ITEMS)
+            result = franchisarr_playlists.make(session, item.kind, item.ref, item.name, item.refs, item.art,
+                                                server_id=server_id, min_items=MIN_ITEMS, work=servers)
         except Exception as exc:  # noqa: BLE001 -- one set must not end the whole run
             logger.exception("Bulk playlist %r failed", item.name)
             state = current()

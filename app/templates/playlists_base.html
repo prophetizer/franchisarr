@@ -1,0 +1,53 @@
+{#- The Playlists page (0.42.0): one heading, the status line, Sync now and the schedule, then
+    four tabs. Each tab's template extends this and fills `tab_content`. -#}
+{% extends "base.html" %}
+{% block title %}Playlists — Franchisarr{% endblock %}
+
+{% block content %}
+<hgroup>
+  <h1>Playlists</h1>
+  <p class="playlists-summary">
+    {{ summary.syncing }} playlist{{ '' if summary.syncing == 1 else 's' }} syncing ·
+    {{ summary.kept }} Franchisarr playlist{{ '' if summary.kept == 1 else 's' }} kept current ·
+    {% if summary.last %}last run {{ summary.last.finished_at | ago }} ({{ summary.last.trigger }}){% if summary.last.failed %},
+      <span class="notice-bad">{{ summary.last.failed }} problem{{ '' if summary.last.failed == 1 else 's' }}</span>{% endif %}
+    {%- else %}not run yet{% endif %}
+    {%- if summary.missing %} · {{ summary.missing }} title{{ '' if summary.missing == 1 else 's' }} couldn't be copied{% endif %}
+    {%- if summary.blocked %} · {{ summary.blocked }} blocked by a same-named playlist{% endif %}
+    {%- if summary.problems %} · <span class="notice-bad">{{ summary.problems }} with an error</span>{% endif %}
+  </p>
+</hgroup>
+
+{% if error %}<p role="alert" class="notice-bad">{{ error }}</p>{% endif %}
+{% if saved %}<p role="status" class="notice-good">Saved — syncing now.</p>{% endif %}
+
+<div class="playlists-actions">
+  {% include "partials/sync_status.html" %}
+  <form method="post" action="{{ url('/playlists/schedule') }}" class="sync-schedule"
+        x-data='{ preset: {{ preset | tojson }} }'>
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <div class="sync-schedule-row">
+      <select name="preset" x-model="preset" aria-label="When syncs run">
+        {% for value, label in presets %}
+          <option value="{{ value }}" {% if value == preset %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" name="cron" value="{{ cron if preset == 'custom' else '' }}" placeholder="0 */6 * * *"
+             aria-label="Cron schedule" autocomplete="off" x-show="preset === 'custom'"
+             {% if preset != 'custom' %}x-cloak{% endif %}>
+      <button type="submit" class="secondary">Save</button>
+    </div>
+    <small class="muted">{{ cron_description }}</small>
+  </form>
+</div>
+
+<nav class="tabs" aria-label="Playlists">
+  <ul>
+    {% for key, label in [('sync', 'Your playlists'), ('franchisarr', "Franchisarr's"), ('clean-up', 'Clean up'), ('history', 'History')] %}
+      <li><a href="{{ url(tabs[key]) }}"{% if tab == key %} aria-current="page"{% endif %}>{{ label }}</a></li>
+    {% endfor %}
+  </ul>
+</nav>
+
+{% block tab_content %}{% endblock %}
+{% endblock %}

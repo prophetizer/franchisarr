@@ -144,3 +144,118 @@ class PlaylistItemRef:
     show_key: str | None = None
     season: int = 0
     episode: int = 0
+    #: Which entry of the playlist this is -- Plex's playlistItemID, Jellyfin/Emby's
+    #: PlaylistItemId -- the handle for removing or moving it. A title can appear twice.
+    entry_id: str = ""
+
+
+#: How long edit_in_place waits for a server to list what was just added: tries, and seconds
+#: apart; and how many passes it makes before giving up on the order.
+SETTLE_TRIES, SETTLE_PAUSE, EDIT_TRIES = 10, 0.5, 3
+
+
+def _pause(seconds: float) -> None:
+    import time
+
+    time.sleep(seconds)
+
+
+def edit_in_place(client, playlist_id: str, wanted: list[tuple[str, object]]) -> bool:  # noqa: ANN001
+    """Make a playlist hold exactly `wanted` -- see _edit_once -- and check it did. Emby 4.10 can
+    list a playlist as it was a moment before the last edit (measured 2026-09-29: a removal by
+    entry id then hit the wrong title, one run in eight), and every pass moves the playlist
+    towards `wanted`, so a pass whose result doesn't read back right is simply run again."""
+    import logging
+
+    changed = False
+    want = [key for key, _ in wanted]
+    for attempt in range(EDIT_TRIES):
+        if not _edit_once(client, playlist_id, wanted):
+            return changed
+        changed = True
+        now = [ref.key for ref in client.playlist_items(playlist_id)]
+        present = set(now)
+        if now == [key for key in want if key in present]:     # right, less anything refused
+            return True
+        _pause(SETTLE_PAUSE * (attempt + 1))
+    logging.getLogger(__name__).warning("Playlist %s still isn't in the wanted order after %d tries",
+                                        playlist_id, EDIT_TRIES)
+    return changed
+
+
+def _edit_once(client, playlist_id: str, wanted: list[tuple[str, object]]) -> bool:  # noqa: ANN001
+    """Make a playlist hold exactly `wanted` -- (item key, what the client adds) -- in that order,
+    by removing, adding and moving entries rather than deleting and recreating it. The playlist
+    keeps its id, its poster and its place in people's apps, and whoever tracks it by id (sync,
+    the Franchisarr set) still finds it. Returns whether anything changed.
+
+    Needs from the client: playlist_items (with entry ids), remove_playlist_entries,
+    append_to_playlist and move_playlist_entry. Only titles not already there are added, so a
+    server that quietly drops duplicates can't lose anything. A client whose server won't move
+    entries (`can_move_playlist_entries` False: Jellyfin) gets the tail rewritten instead."""
+    current = [(ref.entry_id, ref.key) for ref in client.playlist_items(playlist_id)]
+    want_keys = [key for key, _ in wanted]
+    if [key for _, key in current] == want_keys:
+        return False
+    if not getattr(client, "can_move_playlist_entries", True):
+        # Keep what's already in order at the front; remove everything after it, then add the
+        # rest in order. Adding a new film at the end -- the usual case -- removes nothing.
+        same = 0
+        while same < min(len(current), len(want_keys)) and current[same][1] == want_keys[same]:
+            same += 1
+        if current[same:]:
+            client.remove_playlist_entries(playlist_id, [entry_id for entry_id, _ in current[same:]])
+        if wanted[same:]:
+            client.append_to_playlist(playlist_id, [raw for _, raw in wanted[same:]])
+        return True
+    needed: dict[str, int] = {}
+    for key in want_keys:
+        needed[key] = needed.get(key, 0) + 1
+    keep: list[tuple[str, str]] = []
+    remove: list[str] = []
+    for entry_id, key in current:
+        if needed.get(key, 0) > 0:
+            needed[key] -= 1
+            keep.append((entry_id, key))
+        else:
+            remove.append(entry_id)
+    if remove:
+        client.remove_playlist_entries(playlist_id, remove)
+    have: dict[str, int] = {}
+    for _, key in keep:
+        have[key] = have.get(key, 0) + 1
+    add = []
+    for key, raw in wanted:
+        if have.get(key, 0) > 0:
+            have[key] -= 1
+        else:
+            add.append(raw)
+    if add:
+        client.append_to_playlist(playlist_id, add)
+    # Now put it in order: read back the entries (the new ones' ids are the server's to give),
+    # then walk the wanted order, moving whatever is out of place to where it belongs. Emby 4.10
+    # sometimes lists an addition a moment late (measured 2026-09-29: two runs in five), and
+    # ordering a list that's missing it leaves it at the end -- so wait until it's there.
+    entries = [(ref.entry_id, ref.key) for ref in client.playlist_items(playlist_id)]
+    for _ in range(SETTLE_TRIES):
+        if len(entries) >= len(keep) + len(add):
+            break
+        _pause(SETTLE_PAUSE)
+        entries = [(ref.entry_id, ref.key) for ref in client.playlist_items(playlist_id)]
+    there: dict[str, int] = {}
+    for _, key in entries:
+        there[key] = there.get(key, 0) + 1
+    order = []                 # the wanted order, less anything the server wouldn't take
+    for key in want_keys:
+        if there.get(key, 0) > 0:
+            there[key] -= 1
+            order.append(key)
+    for index, key in enumerate(order):
+        if entries[index][1] == key:
+            continue
+        at = next(i for i in range(index + 1, len(entries)) if entries[i][1] == key)
+        entry = entries.pop(at)
+        after = entries[index - 1][0] if index > 0 else None
+        client.move_playlist_entry(playlist_id, entry[0], index, after)
+        entries.insert(index, entry)
+    return True

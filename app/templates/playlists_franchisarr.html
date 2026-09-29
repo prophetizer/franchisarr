@@ -1,0 +1,67 @@
+{% extends "playlists_base.html" %}
+
+{% block tab_content %}
+<p>The playlists Franchisarr makes from a franchise, collection or director page, in release order.
+  Each is kept current: after every scan, titles you've added go in and ones you've removed come out,
+  in place, so it keeps its poster and its spot in your apps. Delete one on any server and it's
+  deleted on the others and taken off this list.</p>
+
+{% if not all_servers %}
+  <p class="muted">No media server is switched on.</p>
+{% else %}
+<form method="post" action="{{ url('/playlists/franchisarr/servers') }}" class="sync-defaults">
+  <fieldset>
+    <legend>Put them on</legend>
+    {% for s in all_servers %}
+      <label><input type="checkbox" name="server" value="{{ s.id }}"
+                    {% if defaults is none or s.id in defaults %}checked{% endif %}> {{ s.name }}</label>
+    {% endfor %}
+    <small class="muted">Unless a page's button put one somewhere else. Untick a server to delete them there.
+      Ticking them all includes servers added later.</small>
+  </fieldset>
+  <button type="submit" class="secondary">Save and sync</button>
+</form>
+
+<details class="playlist-add-many" {% if bulk.running %}open{% endif %}>
+  <summary>Add many at once</summary>
+  <label class="bulk-on">On
+    <select id="bulk-server" name="server" hx-get="{{ url('/playlists/add-all') }}" hx-trigger="change"
+            hx-target="#bulk-panel" hx-swap="innerHTML">
+      {% if all_servers | length > 1 %}<option value="all">every server</option>{% endif %}
+      {% for s in all_servers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <div id="bulk-panel" hx-get="{{ url('/playlists/add-all') }}" hx-include="#bulk-server" hx-trigger="load"
+       hx-swap="innerHTML">{% if bulk.running %}{% with form = false %}{% include "partials/playlist_bulk.html" %}{% endwith %}{% endif %}</div>
+</details>
+
+{% if not entries %}
+  <p class="muted">None yet. Use the playlist button on a franchise, collection or director page, or
+    Add many above.</p>
+{% else %}
+  <ul class="film-list franchisarr-set">
+    {% for v in entries %}
+      <li class="film-row">
+        <span class="film-title"><a href="{{ url(v.path) }}">{{ v.entry.name }}</a>
+          <small class="muted">{{ v.label }}{% if v.custom %} · its own servers{% endif %}</small></span>
+        <span class="film-meta sync-meta">
+          {% for name, copy in v.copies %}
+            <small class="sync-copy sync-copy--{{ copy.status if copy else 'pending' }}">
+              {{ name }}:
+              {% if copy is none %}made at the next sync
+              {%- elif copy.status == 'ok' and copy.server_playlist_id %}{{ copy.items }} item{{ '' if copy.items == 1 else 's' }}{% if copy.refreshed_at %}, checked {{ copy.refreshed_at | ago }}{% endif %}
+              {%- elif copy.status == 'ok' %}made at the next sync
+              {%- else %}{{ copy.message }}{% endif %}
+            </small>
+          {% endfor %}
+        </span>
+        <form method="post" action="{{ url('/playlists/franchisarr/' ~ v.entry.id ~ '/remove') }}" class="nav-form"
+              onsubmit="return confirm({{ ('Delete “' ~ v.entry.name ~ ' (Franchisarr)” on every server?') | tojson | forceescape }})">
+          <button type="submit" class="secondary outline">Remove</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+{% endif %}
+{% endblock %}
