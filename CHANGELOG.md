@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.50.1] — 2026-09-30
+
+### Fixed
+
+- Showcase's dashed frame round a missing film ran on below its poster whenever the card was
+  taller than the picture, and took the page's colour even when that clashed. It now fits the
+  poster and is a quiet grey, lighting up in the page's colour only when pointed at.
+
 ## [0.50.0] — 2026-09-30
 
 ### Added

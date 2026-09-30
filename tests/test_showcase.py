@@ -121,6 +121,9 @@ def test_empty_slots_only_where_owned_films_sit_beside_them() -> None:
     showcase = (Path(__file__).resolve().parents[1] / "app" / "static" / "showcase.css").read_text()
     slots = [line for line in showcase.splitlines() if ".film-tile.missing" in line]
     assert slots and all("main:has(.collection-grid--owned)" in line for line in slots)
+    # The poster box stretches to the card's height; a frame on it ran on below the picture (0.50.1).
+    box = next(line for line in slots if line.rstrip().endswith(".collection-poster { align-self: start; position: relative; }"))
+    assert box
 
 
 def test_the_home_page_wraps_the_spotlight_in_its_band() -> None:

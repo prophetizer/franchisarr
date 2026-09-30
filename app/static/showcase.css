@@ -433,11 +433,13 @@
 /* On a page that shows what you have beside what you don't, a missing film is a gap on the
    shelf: a dim poster in a dashed outline of the page's colour, coming up in colour when pointed
    at. And what you have is shown at full strength, where Classic dims it. */
-[data-look="showcase"] main:has(.collection-grid--owned) .film-tile.missing .collection-poster { position: relative; }
+/* align-self: the poster box spans the card's text rows and stretches to the card's height, so a
+   frame on it ran on below the picture (0.50.1). */
+[data-look="showcase"] main:has(.collection-grid--owned) .film-tile.missing .collection-poster { align-self: start; position: relative; }
 /* The frame is its own layer above the picture: an outline would be painted under an image that
    has a filter, and inside the card's clipping it has to sit within the poster anyway. */
 [data-look="showcase"] main:has(.collection-grid--owned) .film-tile.missing .collection-poster::after {
-  border: 2px dashed color-mix(in srgb, var(--sc-glow) 80%, transparent);
+  border: 2px dashed color-mix(in srgb, var(--pico-muted-color) 70%, transparent);   /* the glow only when pointed at */
   border-radius: calc(var(--pico-border-radius) / 2);
   content: "";
   inset: 4px;
