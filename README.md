@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.48.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.49.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -230,8 +230,13 @@ along with arrows; the release strip **plays** as it comes on screen (posters fl
 the ones you own light up, a ring fills to how much you have); and a poster you click **grows into
 the page** it opens (in browsers with view transitions: Chrome, Edge, Safari). Phones get the
 calmer half (no parallax, tilt or arrows), and your device's "reduce motion" setting turns the
-motion off. **◻ Classic look** switches back. Still to come: confetti when you complete a
-collection.
+motion off. **◻ Classic look** switches back.
+
+When a scan finds you've completed a collection — every released film of it in your library —
+Showcase throws **confetti** with a "Collection complete!" message, once for each person, on
+their next visit to the home page or that collection. (Collections already complete when you
+first upgrade aren't news, and don't count.) While a scan runs, a film reel turns and the progress
+bar runs like film.
 
 Franchise and collection pages open with the whole set **in release order** — a strip of
 posters, the ones you have in colour and the ones you don't dimmed, so the holes in the run show

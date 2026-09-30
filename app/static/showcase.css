@@ -290,6 +290,61 @@
 ::view-transition-old(root),
 ::view-transition-new(root) { animation-duration: 0.35s; }
 
+/* ---------------------------------------------------------------- celebrations (0.49.0) */
+
+[data-look="showcase"] .sc-celebrate {
+  align-items: center;
+  animation: sc-drop 0.7s var(--sc-ease) both;
+  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--pico-card-background-color) 85%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sc-glow) 60%, transparent);
+  border-radius: var(--pico-border-radius);
+  box-shadow: 0 1rem 3rem color-mix(in srgb, var(--pico-background-color) 70%, transparent),
+              0 0 2rem color-mix(in srgb, var(--sc-glow) 40%, transparent);
+  display: flex;
+  gap: 0.9rem;
+  left: 50%;
+  max-width: min(36rem, calc(100vw - 2rem));
+  padding: 0.8rem 1.1rem;
+  position: fixed;
+  top: 1rem;
+  translate: -50% 0;
+  width: max-content;
+  z-index: 60;
+}
+[data-look="showcase"] .sc-celebrate-mark { font-size: 1.8rem; line-height: 1; }
+[data-look="showcase"] .sc-celebrate > span:nth-child(2) { display: flex; flex-direction: column; }
+[data-look="showcase"] .sc-celebrate button { margin: 0; padding: 0.3rem 0.8rem; width: auto; }
+@keyframes sc-drop {
+  from { opacity: 0; translate: -50% -1.5rem; }
+  to { opacity: 1; translate: -50% 0; }
+}
+.sc-confetti { inset: 0; pointer-events: none; position: fixed; z-index: 59; }
+
+/* The film reel while a scan runs: it turns, and the progress bar runs like film. */
+[data-look="showcase"] .sc-reel {
+  animation: sc-spin 2.4s linear infinite;
+  display: inline-block;
+  height: 1.6rem;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+  width: 1.6rem;
+}
+[data-look="showcase"] .sc-reel circle { fill: var(--sc-glow); }
+[data-look="showcase"] .sc-reel .sc-reel-hole { fill: var(--pico-card-background-color); }
+[data-look="showcase"] #scan-status progress::-webkit-progress-value {
+  animation: sc-film 1s linear infinite;
+  background-image: repeating-linear-gradient(90deg, var(--sc-glow) 0 10px,
+                    color-mix(in srgb, var(--sc-glow) 55%, transparent) 10px 14px);
+}
+[data-look="showcase"] #scan-status progress::-moz-progress-bar {
+  animation: sc-film 1s linear infinite;
+  background-image: repeating-linear-gradient(90deg, var(--sc-glow) 0 10px,
+                    color-mix(in srgb, var(--sc-glow) 55%, transparent) 10px 14px);
+}
+@keyframes sc-spin { to { rotate: 360deg; } }
+@keyframes sc-film { to { background-position: 14px 0; } }
+
 /* Phones: no tilt (there's no pointer to follow) and a calmer banner. */
 @media (pointer: coarse), (max-width: 767px) {
   [data-look="showcase"] .collection-heading.has-backdrop { min-height: 22rem; }

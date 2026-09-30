@@ -794,6 +794,22 @@ class FranchisarrPlaylistCopy(SQLModel, table=True):
     refreshed_at: datetime | None = Field(default=None)
 
 
+class CollectionCompletion(SQLModel, table=True):
+    """A collection the library completed, for Showcase's confetti (0.49.0): every film of it
+    released and owned. Rows are only ever added, so a collection is celebrated the first time
+    it's complete and never again -- switching a server off and on doesn't set it off twice."""
+
+    __tablename__ = "collection_completions"
+
+    id: int | None = Field(default=None, primary_key=True)
+    collection_id: int = Field(index=True, unique=True)
+    name: str
+    completed_at: datetime = Field(default_factory=utcnow)
+    #: False for the ones already complete when this was first recorded: that's the state of the
+    #: library, not news (the same reason the first scan never notifies).
+    celebrate: bool = Field(default=True)
+
+
 class PlaylistCopy(SQLModel, table=True):
     """One synced playlist's copy on one other server. The copy's own id is what lets sync
     replace or delete it and never touch a playlist it didn't make."""

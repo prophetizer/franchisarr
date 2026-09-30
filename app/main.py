@@ -197,7 +197,7 @@ def index(request: Request, session: DbSession, user: RequiredUser):
 
     from datetime import date
 
-    from app.services import home_service, movie_gap_service, tv_spinoff_service, upcoming_service
+    from app.services import celebrations, home_service, movie_gap_service, tv_spinoff_service, upcoming_service
 
     gaps = movie_gap_service.collections_with_gaps(session, user.id)
     today = date.today()
@@ -223,6 +223,7 @@ def index(request: Request, session: DbSession, user: RequiredUser):
             ],
             # Showcase's spotlight (0.48.0): rendered always, shown only by showcase.css.
             "spotlight": home_service.spotlight(gaps),
+            "celebrations": celebrations.for_page(session, user),
             "collections_with_gaps": len(gaps),
             "total_missing": sum(len(gap.missing) for gap in gaps),
             "spinoff_count": len(tv_spinoff_service.missing_spinoffs(session, user.id)),

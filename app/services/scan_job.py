@@ -291,6 +291,14 @@ def run_in_background(trigger: str = "manual", *, force_refresh: bool = False,
                     summary += (" Directors, spin-offs and franchises are being worked out now"
                                 " -- a few minutes more, in the background.")
                 scan_state.finish(summary, result.errors)
+            # Collections this scan completed, for Showcase's confetti (0.49.0).
+            try:
+                from app.services import celebrations
+
+                with DbSession(get_engine()) as session:
+                    celebrations.record(session)
+            except Exception:  # noqa: BLE001 -- a celebration must never fail a scan
+                logger.exception("Couldn't record completed collections")
             # Right after a scan is when each server's library is freshest, so it's when
             # playlist titles match best across servers (0.38.0). A no-op when nothing syncs.
             try:

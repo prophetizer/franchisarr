@@ -991,4 +991,4 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
 .poster-mosaic img { aspect-ratio: auto; border-radius: 0; display: block; height: 100%; min-height: 0; object-fit: cover; width: 100%; }
 
 /* Showcase-only pieces that are in the page for everyone (0.48.0): hidden in Classic. */
-.spotlight, .timeline-ring { display: none; }
+.spotlight, .timeline-ring, .sc-reel { display: none; }

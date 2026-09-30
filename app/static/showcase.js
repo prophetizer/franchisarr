@@ -1,4 +1,4 @@
-// Showcase (0.47.0, 0.48.0): the motion that CSS alone can't do. Loaded only for someone who
+// Showcase (0.47.0-0.49.0): the motion that CSS alone can't do. Loaded only for someone who
 // picked the Showcase look. Each part is skipped when it would be unwelcome:
 //   glow       -- the page takes the dominant colour of its artwork (--sc-glow)
 //   parallax   -- a banner's backdrop scrolls slower than the page (not on phones)
@@ -7,6 +7,7 @@
 //   row arrows -- poster rows slide a screen at a time (not on phones)
 //   strip      -- the release-order strip plays when it comes on screen
 //   transition -- the clicked poster grows into the next page (view transitions)
+//   confetti   -- a collection just completed (not on phones)
 //   tilt       -- cards lean toward the pointer, with a glare (mouse and pen only)
 // "Reduce motion" turns off all but the glow, which doesn't move.
 (function () {
@@ -211,6 +212,46 @@
     if (backdrop) { backdrop.style.viewTransitionName = 'sc-backdrop'; }
     else if (poster && !poster.closest('.collection-heading')) { poster.style.viewTransitionName = 'sc-poster'; }
   }, true);
+
+  // ------------------------------------------------------------ confetti (0.49.0)
+  // A collection just completed: one burst from the top, a few seconds, then gone. Not on a
+  // phone (a lighter look there) and not with reduce motion -- the message shows regardless.
+  if (document.querySelector('[data-confetti]') && !reduce && !phone) {
+    var canvas = document.createElement('canvas');
+    canvas.className = 'sc-confetti';
+    document.body.appendChild(canvas);
+    var ctx2 = canvas.getContext('2d');
+    var W = canvas.width = window.innerWidth, H = canvas.height = window.innerHeight;
+    var glow = getComputedStyle(root).getPropertyValue('--sc-glow').trim() || 'gold';
+    var primary = getComputedStyle(root).getPropertyValue('--pico-primary').trim() || 'deepskyblue';
+    var colours = [glow, primary, 'gold', 'white', 'hotpink'];
+    var bits = [];
+    for (var n = 0; n < 160; n++) {
+      bits.push({
+        x: W / 2 + (Math.random() - 0.5) * W * 0.3, y: -20 - Math.random() * H * 0.2,
+        vx: (Math.random() - 0.5) * 9, vy: Math.random() * 4 + 2,
+        size: Math.random() * 7 + 4, spin: Math.random() * Math.PI, turn: (Math.random() - 0.5) * 0.3,
+        colour: colours[n % colours.length],
+      });
+    }
+    var began = performance.now();
+    var frame = function (now) {
+      var age = now - began;
+      ctx2.clearRect(0, 0, W, H);
+      ctx2.globalAlpha = Math.max(0, Math.min(1, (4200 - age) / 900));
+      bits.forEach(function (b) {
+        b.vy += 0.12; b.vx *= 0.99; b.x += b.vx; b.y += b.vy; b.spin += b.turn;
+        ctx2.save();
+        ctx2.translate(b.x, b.y); ctx2.rotate(b.spin);
+        ctx2.fillStyle = b.colour;
+        ctx2.fillRect(-b.size / 2, -b.size / 4, b.size, b.size / 2);
+        ctx2.restore();
+      });
+      if (age < 4200) { window.requestAnimationFrame(frame); } else { canvas.remove(); }
+    };
+    window.requestAnimationFrame(frame);
+    window.setTimeout(function () { canvas.remove(); }, 6000);   // however few frames it got
+  }
 
   // ------------------------------------------------------------ tilt
   if (!reduce && !phone) {

@@ -1,0 +1,15 @@
+{# Showcase's celebration (0.49.0): only ever rendered for someone in the Showcase look, and
+   only the once -- the route marks it seen. showcase.js sees [data-confetti] and throws some. #}
+{% if celebrations %}
+  <div class="sc-celebrate" role="status" data-confetti>
+    <span class="sc-celebrate-mark" aria-hidden="true">🎉</span>
+    <span>
+      <strong>{{ 'Collection complete!' if celebrations | length == 1 else celebrations | length ~ ' collections complete!' }}</strong>
+      <small>
+        {% for c in celebrations %}<a href="{{ url('/collections/' ~ c.collection_id) }}">{{ c.name }}</a>{{ ', ' if not loop.last }}{% endfor %}
+        — every film, in your library.
+      </small>
+    </span>
+    <button type="button" class="secondary outline" onclick="this.closest('.sc-celebrate').remove()">Nice</button>
+  </div>
+{% endif %}

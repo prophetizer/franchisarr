@@ -49,9 +49,12 @@ class Slide:
 
 
 def spotlight(gaps: list, limit: int = 5) -> list[Slide]:  # noqa: ANN001 - CollectionGap
-    """The collections closest to complete that have a backdrop to fill a screen with."""
+    """The collections with a backdrop to fill a screen that are fewest films from done -- and
+    among those, the bigger sets and ones with a logo first (michael, 0.49.0: the first cut led
+    with Frosty the Snowman and a three-film Avengers Grimm)."""
     ranked = sorted((g for g in gaps if g.missing and g.backdrop),
-                    key=lambda g: (-len(g.owned) / (len(g.owned) + len(g.missing)), len(g.missing), g.name.casefold()))
+                    key=lambda g: (len(g.missing), g.logo_image is None, -(len(g.owned) + len(g.missing)),
+                                   g.name.casefold()))
     slides = []
     for g in ranked[:limit]:
         owned, total = len(g.owned), len(g.owned) + len(g.missing)

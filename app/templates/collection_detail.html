@@ -7,6 +7,7 @@
   <ul><li><a href="{{ url('/collections') }}">← All collections</a></li></ul>
 </nav>
 
+{% include "partials/celebration.html" %}
 <div class="collection-heading{% if gap.backdrop %} has-backdrop{% endif %}">
   {% if gap.backdrop %}
     <div class="collection-backdrop-frame" aria-hidden="true">

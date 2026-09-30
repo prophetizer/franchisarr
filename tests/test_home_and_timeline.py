@@ -81,7 +81,17 @@ def test_the_spotlight_is_the_nearly_done_ones_that_have_a_backdrop() -> None:
     slides = home_service.spotlight(gaps)
 
     assert [s.title for s in slides] == ["Nearly", "Half"], "a backdrop to fill the screen, and a gap"
+
     assert slides[0].detail == "You have 4 of 5 — one film away" and slides[1].detail == "You have 2 of 4 — 2 to go"
+
+
+def test_the_spotlight_prefers_bigger_sets_with_a_logo_among_the_fewest_to_go() -> None:
+    gaps = [Spot("Small", 1, (1, 2), (3,), backdrop="/s.jpg"),
+            Spot("Big", 2, tuple(range(8)), (9,), backdrop="/b.jpg"),
+            Spot("Big with logo", 3, tuple(range(5)), (9,), backdrop="/l.jpg", logo_image="/logo.png"),
+            Spot("Two to go", 4, tuple(range(20)), (1, 2), backdrop="/t.jpg")]
+
+    assert [s.title for s in home_service.spotlight(gaps)] == ["Big with logo", "Big", "Small", "Two to go"]
 
 
 @dataclass

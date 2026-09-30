@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.49.0] — 2026-09-29
+
+### Added
+
+Showcase, step 3:
+
+- **Confetti for a completed collection.** When a scan finds a collection newly complete, each
+  person in the Showcase look gets a "Collection complete!" message and a burst of confetti, once,
+  on their next visit to the home page or that collection. (No confetti on phones or with reduce
+  motion; the message still shows.) A collection is celebrated the first time only.
+- **A film reel while a scan runs**, and the progress bar running like film.
+
+### Changed
+
+- The spotlight leads with the collections fewest films from done, and among those the bigger
+  sets and ones with a logo — no more three-film sets ahead of a nearly-finished big one.
+
+### Upgrading
+
+- Collections already complete when you upgrade aren't celebrated: the first scan after it
+  records them quietly.
+
 ## [0.48.0] — 2026-09-29
 
 ### Added
