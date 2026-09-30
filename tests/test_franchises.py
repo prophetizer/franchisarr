@@ -450,3 +450,37 @@ def test_a_collection_holding_most_of_the_franchise_lends_poster_and_backdrop_bu
     _mcu(session, "Harry Potter Collection", films=4)          # 3 of 4: most of it
     view = franchise_service.franchise_view(session, "Q642878")
     assert view.poster_path == "/coll.jpg" and view.logo_url is None
+
+
+def test_a_scan_inside_the_ttl_still_fills_missing_posters(session: Session, monkeypatch) -> None:
+    from datetime import timedelta
+
+    class Tmdb:
+        calls = 0
+
+        def get_movie(self, tmdb_id):  # noqa: ANN001, ANN201
+            Tmdb.calls += 1
+            return type("D", (), {"title": "The Incredible Hulk", "year": 2008, "poster_path": "/hulk.jpg"})()
+
+    session.add(Franchise(wikidata_id="Q642878", name="Marvel Cinematic Universe", kind="media franchise"))
+    session.add(FranchiseMember(franchise_id="Q642878", item_type="movie", tmdb_id=1724, title="The Incredible Hulk"))
+    session.add(FranchiseMember(franchise_id="Q642878", item_type="movie", tmdb_id=1726, title="Iron Man", poster_path="/im.jpg"))
+    session.commit()
+
+    franchise_service.discover(session, wikidata=None, tmdb=Tmdb(), ttl=timedelta(days=7))
+
+    posters = {m.tmdb_id: m.poster_path for m in session.exec(select(FranchiseMember)).all()}
+    assert posters == {1724: "/hulk.jpg", 1726: "/im.jpg"} and Tmdb.calls == 1, "Wikidata not asked, TMDb once"
+
+
+def test_too_few_posters_for_a_mosaic_falls_back_to_the_first_titles_own(session: Session) -> None:
+    _mcu(session, "Iron Man Collection", films=3)
+    for tid in range(300, 304):                      # 3 of 7 in the collection: not most of it
+        _own_film(session, tid, f"Other {tid}", None)
+        session.add(FranchiseMember(franchise_id="Q642878", item_type="movie", tmdb_id=tid, title=f"Other {tid}",
+                                    year=2020))            # and no posters: 3 in all, too few for a mosaic
+    session.commit()
+
+    view = franchise_service.franchise_view(session, "Q642878")
+
+    assert view.logo_url is None and view.poster_path == "/f0.jpg" and view.mosaic == []

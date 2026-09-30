@@ -164,6 +164,10 @@ def discover(
             select(Franchise.fetched_at).order_by(col(Franchise.fetched_at).desc()).limit(1)
         ).first()
         if newest is not None and _as_utc(newest) + ttl > utcnow():
+            # Membership is fresh, but a title with no poster is filled on every scan: it costs
+            # one TMDb request per such title, once, and waiting a week for the TTL left the
+            # MCU's Incredible Hulk blank (0.46.1).
+            fill_posters(session, tmdb)
             return len(session.exec(select(Franchise)).all())
 
     show_ids = sorted(tv_spinoff_service.owned_show_ids(session, all_servers=True))
@@ -219,6 +223,25 @@ def discover(
     session.commit()
     logger.info("Franchises: %d kept of %d found", len(kept), len(groups))
     return len(kept)
+
+
+def fill_posters(session: Session, tmdb: TmdbClient | None) -> int:
+    """Give every roster row nobody has found a poster for one: from the caches, else TMDb.
+    Returns how many got one."""
+    lookups = _PosterLookups(tmdb)
+    filled = 0
+    for member in session.exec(select(FranchiseMember).where(col(FranchiseMember.poster_path).is_(None))).all():
+        poster = _cached_poster(session, member.item_type, member.tmdb_id)
+        if poster is None and (found := lookups.details(member.item_type, member.tmdb_id)) is not None:
+            poster = found[2]
+        if poster is not None:
+            member.poster_path = poster
+            session.add(member)
+            filled += bool(poster)
+    session.commit()
+    if filled:
+        logger.info("Franchises: found posters for %d title%s", filled, "" if filled == 1 else "s")
+    return filled
 
 
 class _PosterLookups:
@@ -500,6 +523,12 @@ def _pick_art(view: FranchiseView, candidates: list, owned_films: int) -> None: 
         view.poster_path, view.backdrop_path = biggest.poster_path, biggest.backdrop_path
     else:
         view.backdrop_path = biggest.backdrop_path
+        if not view.mosaic:
+            # Too few posters for a mosaic: its earliest title's own poster, which names a film
+            # of the franchise rather than claiming a collection is it.
+            first = next((t for t in view.owned_films + view.owned_shows if t.poster_path), None)
+            if first is not None:
+                view.poster_path = first.poster_path
 
 
 def _from_missing(mm: MissingMovie, via: str, collection_name: str) -> Title:

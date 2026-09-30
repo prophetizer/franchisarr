@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.46.2] — 2026-09-29
+
+### Fixed
+
+- Franchise titles without a poster are now filled on every scan. 0.46.1 filled them only when
+  the franchise data itself refreshed, which is weekly, so its "after the next scan" was wrong.
+- A franchise with too few posters for a mosaic, and no collection that stands for it, shows its
+  earliest title's own poster instead of none.
+
 ## [0.46.1] — 2026-09-29
 
 ### Fixed
@@ -24,7 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Upgrading
 
-- The missing posters appear after the next scan.
+- The missing posters appear after the franchise data next refreshes — see 0.46.2, which makes
+  that the next scan.
 
 ## [0.46.0] — 2026-09-29
 
