@@ -1,0 +1,12 @@
+{# The back of a flipped poster (Showcase, 0.51.0); showcase.js puts the title above it and the
+   card's own buttons below. #}
+{% if about %}
+  {% set bits = [] %}
+  {% if about.genres %}{% set _ = bits.append(about.genres[:3] | join(', ')) %}{% endif %}
+  {% if about.runtime %}{% set h, m = about.runtime // 60, about.runtime % 60 %}{% set _ = bits.append(((h ~ 'h') if h else '') ~ (' ' if h and m else '') ~ ((m ~ 'm') if m else '')) %}{% endif %}
+  {% if about.rating %}{% set _ = bits.append('★ ' ~ '%.1f' | format(about.rating)) %}{% endif %}
+  {% if bits %}<p class="sc-back-meta"><small class="muted">{{ bits | join(' · ') }}</small></p>{% endif %}
+  <p class="sc-back-plot">{{ about.overview or 'TMDb has no summary for this one.' }}</p>
+{% else %}
+  <p class="sc-back-plot muted">Nothing more to show for this one.</p>
+{% endif %}

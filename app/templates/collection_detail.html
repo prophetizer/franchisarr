@@ -8,6 +8,8 @@
 </nav>
 
 {% include "partials/celebration.html" %}
+{#- Showcase's October touch looks for this (0.51.0). -#}
+{% if horror %}<span data-sc-horror hidden></span>{% endif %}
 <div class="collection-heading{% if gap.backdrop %} has-backdrop{% endif %}">
   {% if gap.backdrop %}
     <div class="collection-backdrop-frame" aria-hidden="true">

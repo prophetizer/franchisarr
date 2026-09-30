@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.51.0] — 2026-09-30
+
+### Added
+
+Showcase:
+
+- **Posters turn over.** Click a missing film's poster, or rest the pointer on it, and its card
+  flips to the plot, genres and TMDb score, with the card's own buttons; the pointer leaving, or
+  ↺, turns it back.
+- **Previews.** Pausing on a collection or franchise card opens a preview of its backdrop and
+  the posters of what it's missing.
+- **Completeness rings** beside each card's bar, and **a light running round** any card one film
+  from done.
+- **Ambient light**: the page's backdrop, blurred to nothing but colour, behind the whole page.
+- **Quick search**: Ctrl+K (Cmd+K) opens a search box over any page; results as you type, the
+  arrow keys and Enter to go.
+- **Seasons**: in October a horror collection or franchise glows pumpkin as a few leaves fall;
+  in December the top bar frosts over and a little snow falls on the home page.
+
+Phones get the flips, rings, light and search, but no previews or ambient light.
+
+### Upgrading
+
+- The first scan after upgrading refetches every cached collection from TMDb once, to pick up
+  each film's plot and genres (they weren't kept before). It takes a little longer than usual;
+  until it's run, a flipped poster asks TMDb directly, and no page counts as horror yet.
+
 ## [0.50.1] — 2026-09-30
 
 ### Fixed

@@ -497,6 +497,10 @@ class TmdbCollectionMovie(SQLModel, table=True):
     vote_count: int | None = Field(default=None)
     popularity: float | None = Field(default=None)
     position: int = Field(default=0)
+    #: The plot, shown on the back of Showcase's flipped poster; and TMDb's genre ids as
+    #: "27,53", which is how a horror collection is told apart (both 0.51.0).
+    overview: str | None = Field(default=None)
+    genre_ids: str | None = Field(default=None)
 
 
 class SeerrKind(str, Enum):

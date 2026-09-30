@@ -12,10 +12,19 @@
 //   shrink     -- the spotlight shrinks to a strip as you scroll (not on phones)
 //   fade-in    -- posters sharpen in as they load, a shimmer where they'll be
 //   busy bar   -- a glow runs along the top while a button's request works
+//   rings      -- a card's completeness as a ring; one film from done, a light runs round it
+//   peek       -- pausing on a collection or franchise card previews what it's missing (not phones)
+//   flip       -- a missing film's poster turns over to its plot
+//   ambient    -- a blurred copy of the page's artwork lights the whole page (not phones)
+//   seasons    -- October leaves on horror pages, December frost
+//   quick find -- Ctrl+K (or Cmd+K) searches from anywhere
 // "Reduce motion" turns off all but the glow, which doesn't move.
 (function () {
   'use strict';
 
+  // The app's address, from this script's own: everything is under BASE_URL.
+  var script = document.currentScript;
+  var base = script ? script.src.replace(/\/static\/showcase\.js.*$/, '') : '';
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var phone = window.matchMedia('(pointer: coarse), (max-width: 767px)').matches;
   var root = document.documentElement;
@@ -24,10 +33,12 @@
   // TMDb's image server allows cross-origin reads, so a copy loaded with crossOrigin can be
   // sampled on a tiny canvas. Vivid pixels count for more than grey ones: a poster's colour is
   // its reds and greens, not the black around them.
+  var heldGlow = false;   // a season has chosen the colour; the artwork doesn't get a say
   function glowFrom(src) {
     var img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = function () {
+      if (heldGlow) { return; }
       try {
         var size = 24, canvas = document.createElement('canvas');
         canvas.width = size; canvas.height = size;
@@ -60,7 +71,12 @@
     if (!art) { return; }
     var wide = art.classList.contains('collection-backdrop') || art.classList.contains('spotlight-backdrop');
     var src = (art.currentSrc || art.src || '').replace(/\/t\/p\/[^/]+\//, '/t/p/' + (wide ? 'w300' : 'w92') + '/');
-    if (src.indexOf('image.tmdb.org') !== -1) { glowFrom(src); }
+    if (src.indexOf('image.tmdb.org') !== -1) {
+      glowFrom(src);
+      // Ambient light (0.51.0): the same small copy, blurred to nothing but colour behind the
+      // page. Only a wide picture: a poster blown up to a screen is a smear, not a light.
+      if (wide && !phone) { root.style.setProperty('--sc-ambient', 'url("' + src + '")'); }
+    }
   }
   glowOf(document.querySelector('.collection-backdrop, .spotlight-slide.is-current .spotlight-backdrop, ' +
                                  '.collection-heading-poster img, img.collection-heading-poster, .poster-row-card img'));
@@ -345,6 +361,242 @@
     paint();
   });
   window.addEventListener('pageshow', function () { working.clear(); leaving = false; paint(); });
+
+  // ------------------------------------------------------------ rings and the almost-there light (0.51.0)
+  // Each card's completeness bar gets a ring beside it; a card one film from done gets a light
+  // running round its border. Both read the bar itself, so any card with one gets them.
+  var ringsIn = function (scope) {
+    scope.querySelectorAll('.collection-card progress.completeness').forEach(function (bar) {
+      if (bar.closest('.sc-meter')) { return; }
+      var have = Number(bar.value), all = Number(bar.max);
+      if (!all) { return; }
+      var meter = document.createElement('span');
+      meter.className = 'sc-meter';
+      bar.parentNode.insertBefore(meter, bar);
+      meter.appendChild(bar);
+      var ring = document.createElement('span');
+      ring.className = 'sc-ring';
+      ring.setAttribute('aria-hidden', 'true');   // the bar already says it
+      ring.style.setProperty('--sc-p', (have / all).toFixed(3));
+      var label = document.createElement('span');
+      label.textContent = Math.floor(have * 100 / all) + '%';
+      ring.appendChild(label);
+      meter.appendChild(ring);
+      if (all - have === 1) { bar.closest('.collection-card').classList.add('sc-almost'); }
+    });
+  };
+  ringsIn(document);
+
+  // ------------------------------------------------------------ peek (0.51.0)
+  // Pausing on a collection or franchise card opens a preview over it: its backdrop and the
+  // posters it's missing, copied out of the card's inert <template>. Mouse and pen only.
+  if (!phone) {
+    var peeking = null, peekTimer = null, waitingOn = null;
+    var closePeek = function () {
+      window.clearTimeout(peekTimer);
+      waitingOn = null;
+      if (peeking) { peeking.remove(); peeking = null; }
+    };
+    document.addEventListener('pointerover', function (event) {
+      if (event.pointerType === 'touch') { return; }
+      var card = event.target.closest && event.target.closest('.collection-card');
+      var template = card && card.querySelector(':scope > template.sc-peek');
+      if (!template || card === waitingOn) { return; }   // already open, or about to be
+      closePeek();
+      waitingOn = card;
+      peekTimer = window.setTimeout(function () {
+        var pop = document.createElement('div');
+        pop.className = 'sc-peek-pop';
+        pop.setAttribute('aria-hidden', 'true');   // the card itself says all of this
+        pop.appendChild(template.content.cloneNode(true));
+        document.body.appendChild(pop);
+        var rect = card.getBoundingClientRect(), width = pop.offsetWidth;
+        var left = Math.max(8, Math.min(rect.left + rect.width / 2 - width / 2, window.innerWidth - width - 8));
+        // Above the card when there's room (clear of the pinned top bar), else below it; with
+        // room for neither, the roomier side, kept on screen even if it covers part of the card.
+        var height = pop.offsetHeight, bar = 100;
+        var above = rect.top - bar, below = window.innerHeight - rect.bottom;
+        var top = height + 10 <= above ? rect.top - height - 10
+          : height + 10 <= below ? rect.bottom + 10
+            : above > below ? Math.max(bar, rect.top - height - 10)
+              : Math.min(rect.bottom + 10, window.innerHeight - height - 8);
+        pop.style.left = (left + window.scrollX) + 'px';
+        pop.style.top = (top + window.scrollY) + 'px';
+        peeking = pop;
+      }, 550);
+    });
+    document.addEventListener('pointerout', function (event) {
+      var card = event.target.closest && event.target.closest('.collection-card');
+      if (card && !card.contains(event.relatedTarget)) { closePeek(); }
+    });
+    window.addEventListener('scroll', closePeek, { passive: true });
+  }
+
+  // ------------------------------------------------------------ flip (0.51.0)
+  // A missing film's poster turns the card over: its plot, genres and score on the back, with
+  // the card's own buttons. A click or tap on the poster does it, or resting the pointer there;
+  // the pointer leaving the card, or the ↺, turns it back. The back is fetched once, when first
+  // needed. The turn is a transition of `rotate` -- a swapped animation would replay the card's
+  // entrance -- and the faces change over at its midpoint, edge-on.
+  var turn = function (card, over) {
+    if (card.classList.contains('sc-flipped') === over) { return; }
+    if (over && !card.querySelector(':scope > .sc-back')) { card.appendChild(backOf(card)); }
+    var swap = function () {
+      card.classList.toggle('sc-flipped', over);
+      card.classList.remove('sc-turning');
+    };
+    if (reduce) { swap(); return; }
+    card.classList.add('sc-turning');
+    var done = false;
+    var half = function () { if (!done) { done = true; swap(); } };
+    card.addEventListener('transitionend', function end(event) {
+      if (event.propertyName === 'rotate') { card.removeEventListener('transitionend', end); half(); }
+    });
+    window.setTimeout(half, 400);   // a transition that never ends is still over
+  };
+  var backOf = function (card) {
+    var back = document.createElement('div');
+    back.className = 'sc-back';
+    var title = document.createElement('strong');
+    title.className = 'sc-back-title';
+    var front = card.querySelector('.film-title');
+    title.textContent = front ? front.textContent : '';
+    var body = document.createElement('div');
+    body.className = 'sc-back-body';
+    body.innerHTML = '<p class="sc-back-plot muted">…</p>';
+    var again = document.createElement('button');
+    again.type = 'button';
+    again.className = 'sc-back-turn secondary outline';
+    again.setAttribute('aria-label', 'Turn back');
+    again.textContent = '↺';
+    again.addEventListener('click', function () { turn(card, false); });
+    back.append(again, title, body);
+    var actions = card.querySelector(':scope > .card-actions');
+    if (actions) {
+      var copy = actions.cloneNode(true);
+      copy.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
+      back.appendChild(copy);
+      if (window.htmx) { window.htmx.process(copy); }
+    }
+    fetch(base + '/about/' + card.dataset.about, { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); })
+      .then(function (html) { body.innerHTML = html; })
+      .catch(function () { body.innerHTML = '<p class="sc-back-plot muted">Couldn\u2019t fetch the details just now.</p>'; });
+    return back;
+  };
+  var flipsIn = function (scope) {
+    scope.querySelectorAll('.film-tile[data-about] > .collection-poster').forEach(function (poster) {
+      if (poster.dataset.scFlip) { return; }
+      poster.dataset.scFlip = '1';
+      var card = poster.parentNode, rest = null, away = null;
+      poster.setAttribute('role', 'button');
+      poster.setAttribute('tabindex', '0');
+      poster.setAttribute('aria-label', 'Show what it\u2019s about');
+      poster.addEventListener('click', function () { turn(card, !card.classList.contains('sc-flipped')); });
+      poster.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); turn(card, true); }
+      });
+      poster.addEventListener('pointerenter', function (event) {
+        if (event.pointerType !== 'mouse') { return; }
+        rest = window.setTimeout(function () { turn(card, true); }, 700);
+      });
+      poster.addEventListener('pointerleave', function () { window.clearTimeout(rest); });
+      card.addEventListener('pointerenter', function () { window.clearTimeout(away); });
+      card.addEventListener('pointerleave', function (event) {
+        if (event.pointerType !== 'mouse') { return; }
+        away = window.setTimeout(function () { turn(card, false); }, 350);
+      });
+    });
+  };
+  flipsIn(document);
+  // A dismiss re-renders the missing list: its new cards want rings and flips too.
+  document.addEventListener('htmx:load', function (event) {
+    if (event.target.querySelectorAll) { ringsIn(event.target); flipsIn(event.target); }
+  });
+
+  // ------------------------------------------------------------ seasons (0.51.0)
+  // October: a horror collection or franchise glows pumpkin and a few leaves fall, once. December:
+  // frost along the top bar, and a little snow on the home page. `?season=10` tries a month out.
+  var tried = /[?&]season=(\d{1,2})\b/.exec(window.location.search);
+  var month = tried ? parseInt(tried[1], 10) - 1 : new Date().getMonth();
+  var fall = function (marks, count) {
+    if (reduce) { return; }
+    var sky = document.createElement('div');
+    sky.className = 'sc-sky';
+    sky.setAttribute('aria-hidden', 'true');
+    for (var n = 0; n < (phone ? Math.ceil(count / 2) : count); n++) {
+      var bit = document.createElement('span');
+      bit.textContent = marks[n % marks.length];
+      bit.style.setProperty('--sc-x', (Math.random() * 100).toFixed(1) + 'vw');
+      bit.style.setProperty('--sc-sway', ((Math.random() - 0.5) * 30).toFixed(1) + 'vw');
+      bit.style.setProperty('--sc-wait', (Math.random() * 6).toFixed(2) + 's');
+      bit.style.setProperty('--sc-fall', (9 + Math.random() * 7).toFixed(2) + 's');
+      bit.style.setProperty('--sc-size', (0.9 + Math.random() * 0.9).toFixed(2) + 'rem');
+      sky.appendChild(bit);
+    }
+    document.body.appendChild(sky);
+    window.setTimeout(function () { sky.remove(); }, 24000);
+  };
+  if (month === 9 && document.querySelector('[data-sc-horror]')) {
+    heldGlow = true;
+    root.classList.add('sc-october');
+    root.style.setProperty('--sc-glow', 'rgb(255 132 24)');
+    fall(['🍂', '🍁', '🍂'], 12);
+  } else if (month === 11) {
+    root.classList.add('sc-december');
+    if (spot) { fall(['❄', '❅', '❆'], 16); }
+  }
+
+  // ------------------------------------------------------------ quick find (0.51.0)
+  // Ctrl+K or Cmd+K opens a search box over the page; results arrive as you type (the search
+  // page's own, one line each) and the arrow keys and Enter pick one.
+  var finder = null;
+  var openFinder = function () {
+    if (!window.htmx) { window.location.href = base + '/search'; return; }
+    if (!finder) {
+      finder = document.createElement('dialog');
+      finder.className = 'sc-quick';
+      finder.setAttribute('aria-label', 'Quick search');
+      finder.innerHTML = '<article><input type="search" name="q" autocomplete="off" ' +
+        'placeholder="Collection, franchise, director, film or show" aria-label="Search">' +
+        '<div id="quick-results"></div><p class="sc-quick-keys"><small class="muted">' +
+        '↑ ↓ to choose · Enter to go · Esc to close</small></p></article>';
+      var box = finder.querySelector('input');
+      box.setAttribute('hx-get', base + '/search');
+      box.setAttribute('hx-trigger', 'input changed delay:200ms, search');
+      box.setAttribute('hx-target', '#quick-results');
+      box.setAttribute('hx-sync', 'this:replace');
+      document.body.appendChild(finder);
+      window.htmx.process(finder);
+      var links = function () { return Array.prototype.slice.call(finder.querySelectorAll('.sc-quick-list a')); };
+      finder.addEventListener('keydown', function (event) {
+        var all = links(), at = all.indexOf(document.activeElement);
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          event.preventDefault();
+          if (!all.length) { return; }
+          var next = event.key === 'ArrowDown' ? at + 1 : at - 1;
+          if (next < 0) { box.focus(); } else { all[Math.min(next, all.length - 1)].focus(); }
+        } else if (event.key === 'Enter' && event.target === box && all.length) {
+          event.preventDefault();
+          all[0].click();
+        }
+      });
+      finder.addEventListener('click', function (event) { if (event.target === finder) { finder.close(); } });
+    }
+    finder.showModal();
+    var input = finder.querySelector('input');
+    input.focus();
+    input.select();
+  };
+  document.addEventListener('keydown', function (event) {
+    if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      openFinder();
+    }
+  });
+  document.querySelectorAll('a.nav-search').forEach(function (link) {
+    link.title = (link.title ? link.title + ' ' : 'Search ') + '(Ctrl+K)';
+  });
 
   // ------------------------------------------------------------ tilt
   if (!reduce && !phone) {

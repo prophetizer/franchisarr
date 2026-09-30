@@ -3,7 +3,7 @@
 
 {% from "partials/tile.html" import tile %}
 {% macro row(t, css) -%}
-  {% call tile(t.poster, css) %}
+  {% call tile(t.poster, css, (t.item_type ~ '/' ~ t.tmdb_id) if css == 'missing' else None) %}
     <header>
       <strong class="film-title">{{ t.title }}</strong>{% if t.year %} <small class="muted">({{ t.year }})</small>{% endif %}
       <small class="muted">{{ 'film' if t.item_type == 'movie' else 'TV' }}</small>
@@ -35,6 +35,8 @@
 {% block content %}
 <p><a href="{{ url('/franchises') }}">← Franchises</a></p>
 
+{#- Showcase's October touch looks for this (0.51.0). -#}
+{% if horror %}<span data-sc-horror hidden></span>{% endif %}
 <div class="collection-heading{% if f.backdrop %} has-backdrop{% endif %}">
   {% if f.backdrop %}
     <div class="collection-backdrop-frame" aria-hidden="true">

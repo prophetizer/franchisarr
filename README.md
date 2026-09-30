@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.50.1`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.51.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -229,11 +229,17 @@ glass over the page; posters sharpen in as they load; a thin glow runs along the
 button's request works; and on a collection, franchise or director page the films you don't have
 sit as dimmed, outlined gaps on the shelf. The home page opens on a big rotating **spotlight** of
 the collections you're nearly done with, which shrinks to a strip as you scroll, and its poster
-rows slide along with arrows; the release strip **plays** as it comes on screen (posters fly in in order,
-the ones you own light up, a ring fills to how much you have); and a poster you click **grows into
-the page** it opens (in browsers with view transitions: Chrome, Edge, Safari). Phones get the
-calmer half (no parallax, tilt or arrows, and a shorter spotlight that stays put), and your device's "reduce motion" setting turns the
-motion off. **◻ Classic look** switches back.
+rows slide along with arrows. List cards show a completeness ring, and a light runs round any
+set one film from done; pausing on a collection or franchise card previews its backdrop and the
+films it's missing. Click a missing film's poster (or rest the pointer on it) and the card turns
+over to its plot, genres and score. The page's artwork lights the whole page, blurred, behind
+everything; **Ctrl+K** (Cmd+K on a Mac) searches from anywhere; and in October horror sets glow
+pumpkin with a few falling leaves, in December the top bar frosts over. The release strip
+**plays** as it comes on screen (posters fly in in order, the ones you own light up, a ring fills
+to how much you have); and a poster you click **grows into the page** it opens (in browsers with
+view transitions: Chrome, Edge, Safari). Phones get the calmer half (no parallax, tilt, arrows,
+previews or ambient light, and a shorter spotlight that stays put), and your device's "reduce
+motion" setting turns the motion off. **◻ Classic look** switches back.
 
 When a scan finds you've completed a collection — every released film of it in your library —
 Showcase throws **confetti** with a "Collection complete!" message, once for each person, on

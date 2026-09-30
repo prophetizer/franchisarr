@@ -1,0 +1,28 @@
+{# Showcase's quick search (Ctrl+K, 0.51.0): one line per match, each a link somewhere. A film or
+   show goes to the first set it belongs to, or to the full search when it belongs to none. #}
+{% set rows = [] %}
+{% for group, label in [('collections', 'Collection'), ('franchises', 'Franchise'), ('directors', 'Director')] %}
+  {% for g in results[group] %}{% set _ = rows.append((g.path, g.image, g.name, label ~ (' · ' ~ g.detail if g.detail else ''))) %}{% endfor %}
+{% endfor %}
+{% for group, label in [('films', 'Film'), ('shows', 'Show')] %}
+  {% for r in results[group] %}
+    {% set where = r.links[0].path if r.links else '/search?q=' ~ (r.title | urlencode) %}
+    {% set state = {'owned': 'in your library', 'in_arr': 'requested', 'dismissed': 'hidden by you', 'upcoming': 'not out yet'}.get(r.status, 'missing') %}
+    {% set _ = rows.append((where, r.poster, r.title, label ~ (' · ' ~ r.year if r.year else '') ~ ' · ' ~ state)) %}
+  {% endfor %}
+{% endfor %}
+{% if results.too_short %}
+  <p class="sc-quick-note muted">Keep typing…</p>
+{% elif not rows %}
+  <p class="sc-quick-note muted">Nothing called that.</p>
+{% else %}
+  <ul class="sc-quick-list" role="listbox">
+    {% for path, image, name, detail in rows[:12] %}
+      <li role="option"><a href="{{ url(path) }}">
+        {% if image %}<img src="{{ image }}" alt="" width="30" height="45" decoding="async">{% else %}<span class="sc-quick-blank"></span>{% endif %}
+        <span><strong>{{ name }}</strong><small class="muted">{{ detail }}</small></span>
+      </a></li>
+    {% endfor %}
+  </ul>
+  <p class="sc-quick-note"><a href="{{ url('/search?q=' ~ (results.query | urlencode)) }}">All results for “{{ results.query }}” →</a></p>
+{% endif %}

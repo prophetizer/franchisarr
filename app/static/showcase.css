@@ -481,6 +481,210 @@
 }
 @keyframes sc-busy { from { translate: -100% 0; } to { translate: 300% 0; } }
 
+/* ---------------------------------------------------------------- rings and the almost-there light (0.51.0) */
+@property --sc-p { syntax: "<number>"; inherits: true; initial-value: 0; }
+@property --sc-angle { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+
+[data-look="showcase"] .sc-meter { align-items: center; display: flex; gap: 0.6rem; }
+[data-look="showcase"] .sc-meter progress.completeness { flex: 1; margin: 0; }
+[data-look="showcase"] .sc-ring {
+  animation: sc-ring-fill 1.2s var(--sc-ease) both;
+  background: conic-gradient(var(--sc-glow) calc(var(--sc-p) * 1turn),
+              color-mix(in srgb, var(--pico-muted-color) 25%, transparent) 0);
+  border-radius: 50%;
+  display: grid;
+  flex: none;
+  font-size: 0.58rem;
+  font-weight: 600;
+  height: 2.2rem;
+  place-items: center;
+  position: relative;
+  width: 2.2rem;
+}
+[data-look="showcase"] .sc-ring::before {
+  background: var(--pico-card-background-color);
+  border-radius: 50%;
+  content: "";
+  inset: 3px;
+  position: absolute;
+}
+[data-look="showcase"] .sc-ring > span { position: relative; }
+@keyframes sc-ring-fill { from { --sc-p: 0; } }
+
+/* One film from done: a light runs round the card's edge. A masked ring of a turning conic
+   gradient; the mask's colour is only its opacity. */
+[data-look="showcase"] .sc-almost::before {
+  -webkit-mask: linear-gradient(var(--pico-background-color) 0 0) content-box,
+                linear-gradient(var(--pico-background-color) 0 0);
+  -webkit-mask-composite: xor;
+  animation: sc-orbit 4.5s linear infinite;
+  background: conic-gradient(from var(--sc-angle), transparent 0 62%,
+              color-mix(in srgb, var(--sc-glow) 90%, transparent) 80%, transparent 92%);
+  border-radius: inherit;
+  content: "";
+  inset: 0;
+  mask: linear-gradient(var(--pico-background-color) 0 0) content-box exclude,
+        linear-gradient(var(--pico-background-color) 0 0);
+  padding: 2px;
+  pointer-events: none;
+  position: absolute;
+}
+@keyframes sc-orbit { to { --sc-angle: 1turn; } }
+
+/* ---------------------------------------------------------------- peek (0.51.0) */
+[data-look="showcase"] .sc-peek-pop {
+  animation: sc-peek-in 0.28s var(--sc-ease) both;
+  background: var(--pico-card-background-color);
+  border: 1px solid color-mix(in srgb, var(--sc-glow) 45%, transparent);
+  border-radius: var(--pico-border-radius);
+  box-shadow: 0 1.2rem 3rem color-mix(in srgb, var(--pico-background-color) 75%, transparent),
+              0 0 1.6rem color-mix(in srgb, var(--sc-glow) 30%, transparent);
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  width: min(24rem, calc(100vw - 1rem));
+  z-index: 35;
+}
+[data-look="showcase"] .sc-peek-art { aspect-ratio: 16 / 9; background: var(--pico-card-sectioning-background-color); position: relative; }
+[data-look="showcase"] .sc-peek-art img { height: 100%; object-fit: cover; width: 100%; }
+[data-look="showcase"] .sc-peek-art::after {
+  background: linear-gradient(to top, var(--pico-card-background-color), transparent 55%);
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+[data-look="showcase"] .sc-peek-art strong {
+  bottom: 0.5rem;
+  color: var(--pico-h1-color);
+  left: 0.8rem;
+  position: absolute;
+  right: 0.8rem;
+  z-index: 1;
+}
+[data-look="showcase"] .sc-peek-label { color: var(--sc-glow); margin: 0.4rem 0.8rem 0.3rem; }
+[data-look="showcase"] .sc-peek-posters { display: flex; gap: 0.35rem; padding: 0 0.8rem 0.8rem; }
+[data-look="showcase"] .sc-peek-posters img,
+[data-look="showcase"] .sc-peek-blank {
+  aspect-ratio: 2 / 3;
+  background: var(--pico-card-sectioning-background-color);
+  border-radius: calc(var(--pico-border-radius) / 2);
+  object-fit: cover;
+  width: 2.9rem;
+}
+[data-look="showcase"] .sc-peek-more { align-self: center; color: var(--pico-muted-color); font-size: 0.8rem; }
+@keyframes sc-peek-in { from { opacity: 0; scale: 0.94; } }
+
+/* ---------------------------------------------------------------- flip (0.51.0) */
+[data-look="showcase"] .film-tile[data-about] > .collection-poster { cursor: pointer; }
+[data-look="showcase"] .film-tile[data-about] {
+  transition: transform 0.35s var(--sc-ease), box-shadow 0.35s var(--sc-ease), rotate 0.18s ease-in;
+}
+[data-look="showcase"] .film-tile.sc-turning { rotate: y 90deg; }
+[data-look="showcase"] .sc-back {
+  background: var(--pico-card-background-color);
+  border-radius: inherit;
+  display: none;
+  flex-direction: column;
+  gap: 0.3rem;
+  grid-area: auto;                /* the card's grid would put it in the text column alone */
+  inset: 0;
+  overflow-y: auto;
+  padding: 0.7rem 0.9rem;
+  position: absolute;
+  z-index: 3;
+}
+[data-look="showcase"] .sc-flipped > .sc-back { display: flex; }
+[data-look="showcase"] .sc-back-title { padding-right: 2rem; }
+[data-look="showcase"] .sc-back-meta,
+[data-look="showcase"] .sc-back-plot { margin: 0; }
+[data-look="showcase"] .sc-back-plot { font-size: 0.85rem; line-height: 1.4; }
+[data-look="showcase"] .sc-back .card-actions { margin-top: auto; padding-top: 0.3rem; }
+[data-look="showcase"] .sc-back-turn {
+  line-height: 1;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  position: absolute;
+  right: 0.5rem;
+  top: 0.5rem;
+  width: auto;
+}
+
+/* ---------------------------------------------------------------- ambient light (0.51.0) */
+/* The page's backdrop, blurred to nothing but its colours, behind everything. body is made a
+   stacking context so this sits above its background and below its content. */
+[data-look="showcase"] body { isolation: isolate; }
+[data-look="showcase"] body::before {
+  background: var(--sc-ambient, none) center / cover no-repeat;
+  content: "";
+  filter: blur(70px) saturate(1.4);
+  inset: -12%;
+  opacity: 0.3;
+  pointer-events: none;
+  position: fixed;
+  transition: background-image 1.2s ease;
+  z-index: -1;
+}
+
+/* ---------------------------------------------------------------- seasons (0.51.0) */
+[data-look="showcase"] .sc-sky { inset: 0; overflow: hidden; pointer-events: none; position: fixed; z-index: 45; }
+[data-look="showcase"] .sc-sky span {
+  animation: sc-fall var(--sc-fall) linear var(--sc-wait) both;
+  font-size: var(--sc-size);
+  left: var(--sc-x);
+  opacity: 0.85;
+  position: absolute;
+  top: 0;
+}
+@keyframes sc-fall {
+  from { rotate: 0deg; translate: 0 -3rem; }
+  50% { translate: calc(var(--sc-sway) / 2) 50vh; }
+  to { rotate: 400deg; translate: var(--sc-sway) 105vh; }
+}
+/* December: frost gathers along the bottom of the top bar. */
+[data-look="showcase"].sc-december body > header.container::before {
+  background:
+    radial-gradient(circle at 12% 100%, color-mix(in srgb, var(--pico-contrast) 22%, transparent) 0 1px, transparent 2px) 0 100% / 23px 9px repeat-x,
+    linear-gradient(to top, color-mix(in srgb, var(--pico-contrast) 16%, transparent), transparent 45%),
+    color-mix(in srgb, var(--pico-background-color) 82%, transparent);
+}
+
+/* ---------------------------------------------------------------- quick find (0.51.0) */
+[data-look="showcase"] dialog.sc-quick { align-items: flex-start; padding-top: 12vh; }
+[data-look="showcase"] dialog.sc-quick > article {
+  border: 1px solid color-mix(in srgb, var(--sc-glow) 45%, transparent);
+  box-shadow: 0 0 2.5rem color-mix(in srgb, var(--sc-glow) 30%, transparent);
+  padding: 1rem;
+  width: min(38rem, calc(100vw - 2rem));
+}
+[data-look="showcase"] .sc-quick input[type="search"] { margin-bottom: 0.5rem; }
+[data-look="showcase"] .sc-quick-list { list-style: none; margin: 0; max-height: 55vh; overflow-y: auto; padding: 0; }
+[data-look="showcase"] .sc-quick-list li { list-style: none; margin: 0; padding: 0; }
+[data-look="showcase"] .sc-quick-list a {
+  align-items: center;
+  border-radius: calc(var(--pico-border-radius) / 1.5);
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.35rem 0.5rem;
+  text-decoration: none;
+}
+[data-look="showcase"] .sc-quick-list a:is(:hover, :focus) {
+  background: color-mix(in srgb, var(--sc-glow) 16%, transparent);
+  outline: none;
+}
+[data-look="showcase"] .sc-quick-list img,
+[data-look="showcase"] .sc-quick-blank {
+  aspect-ratio: 2 / 3;
+  background: var(--pico-card-sectioning-background-color);
+  border-radius: 3px;
+  flex: none;
+  object-fit: cover;
+  width: 30px;
+}
+[data-look="showcase"] .sc-quick-list a > span { display: flex; flex-direction: column; min-width: 0; }
+[data-look="showcase"] .sc-quick-list strong { color: var(--pico-color); }
+[data-look="showcase"] .sc-quick-note { margin: 0.5rem 0 0; }
+[data-look="showcase"] .sc-quick-keys { margin: 0.5rem 0 0; }
+
 /* Phones: no tilt (there's no pointer to follow) and a calmer banner. */
 @media (pointer: coarse), (max-width: 767px) {
   [data-look="showcase"] .collection-heading.has-backdrop { min-height: 22rem; }
@@ -489,6 +693,7 @@
   [data-look="showcase"] .spotlight-slide.is-current .spotlight-backdrop { animation: none; }
   [data-look="showcase"] .spotlight-logo { max-height: 5rem; max-width: 70vw; }
   [data-look="showcase"] .sc-row-nav { display: none; }
+  [data-look="showcase"] body::before { display: none; }       /* no ambient light: a big blur costs a phone */
 }
 
 @media (prefers-reduced-motion: reduce) {

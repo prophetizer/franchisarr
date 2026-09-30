@@ -598,6 +598,8 @@ def _cache_collection(
                 vote_count=movie.vote_count,
                 popularity=movie.popularity,
                 position=position,
+                overview=movie.overview,
+                genre_ids=",".join(str(g) for g in movie.genre_ids) or None,
             )
         )
     session.commit()

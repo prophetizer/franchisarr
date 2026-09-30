@@ -32,6 +32,8 @@ MAX_REQUESTS_PER_SECOND = 20
 #: A 429 should be rare given the limiter, but TMDb's own accounting is what counts.
 MAX_RETRIES = 3
 
+#: TMDb's genre id for Horror (Showcase's October touch, 0.51.0).
+HORROR_GENRE = 27
 #: TMDb's genre id for Documentary.
 DOCUMENTARY_GENRE = 99
 MUSIC_GENRE = 10402
@@ -58,6 +60,9 @@ class TmdbMovieSummary:
     vote_average: float | None = None
     vote_count: int | None = None
     popularity: float | None = None
+    #: A collection's parts carry these; searches and lookups leave them empty.
+    overview: str | None = None
+    genre_ids: tuple[int, ...] = ()
 
     @property
     def year(self) -> int | None:
@@ -75,6 +80,9 @@ class TmdbMovieDetails:
     collection_name: str | None
     poster_path: str | None = None
     runtime: int | None = None
+    overview: str | None = None
+    genres: tuple[str, ...] = ()
+    vote_average: float | None = None
 
     @property
     def year(self) -> int | None:
@@ -90,6 +98,9 @@ class TmdbShowSummary:
     poster_path: str | None = None
     imdb_id: str | None = None
     tvdb_id: int | None = None
+    overview: str | None = None
+    genres: tuple[str, ...] = ()
+    vote_average: float | None = None
 
     @property
     def year(self) -> int | None:
@@ -163,6 +174,10 @@ def _as_int(value) -> int | None:  # noqa: ANN001 - raw JSON
         return int(value) if value is not None else None
     except (TypeError, ValueError):
         return None
+
+
+def _genre_names(payload: dict) -> tuple[str, ...]:
+    return tuple(str(g["name"]) for g in payload.get("genres") or [] if isinstance(g, dict) and g.get("name"))
 
 
 def looks_like_v4_token(api_key: str) -> bool:
@@ -257,6 +272,9 @@ class TmdbClient:
             collection_name=collection.get("name"),
             poster_path=payload.get("poster_path") or None,
             runtime=_as_int(payload.get("runtime")) or None,
+            overview=str(payload.get("overview") or "").strip() or None,
+            genres=_genre_names(payload),
+            vote_average=_as_float(payload.get("vote_average")),
         )
 
     def get_collection(self, collection_id: int) -> TmdbCollectionDetails:
@@ -276,6 +294,8 @@ class TmdbClient:
                     vote_average=_as_float(part.get("vote_average")),
                     vote_count=_as_int(part.get("vote_count")),
                     popularity=_as_float(part.get("popularity")),
+                    overview=str(part.get("overview") or "").strip() or None,
+                    genre_ids=tuple(g for g in (part.get("genre_ids") or []) if isinstance(g, int)),
                 )
                 for part in parts
                 if isinstance(part, dict) and part.get("id")
@@ -363,6 +383,9 @@ class TmdbClient:
             poster_path=payload.get("poster_path") or None,
             imdb_id=str(external["imdb_id"]) if external.get("imdb_id") else None,
             tvdb_id=int(tvdb_raw) if isinstance(tvdb_raw, int) or str(tvdb_raw).isdigit() else None,
+            overview=str(payload.get("overview") or "").strip() or None,
+            genres=_genre_names(payload),
+            vote_average=_as_float(payload.get("vote_average")),
         )
 
     def find_show_by_external_id(self, external_id: str, source: str) -> TmdbShowSummary | None:

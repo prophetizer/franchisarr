@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/completeness.html" import completeness %}
+{% from "partials/peek.html" import peek %}
 {% block title %}Franchises — Franchisarr{% endblock %}
 
 {% block content %}
@@ -46,6 +47,7 @@
         <p><small class="muted">
           {% if f.owned_films %}{{ f.owned_films | length }} film{{ '' if f.owned_films | length == 1 else 's' }}{% endif %}{% if f.owned_films and f.owned_shows %} · {% endif %}{% if f.owned_shows %}{{ f.owned_shows | length }} show{{ '' if f.owned_shows | length == 1 else 's' }}{% endif %}
         </small></p>
+        {{ peek(f.name, f.backdrop, f.missing_films + f.missing_shows) }}
       </article>
     {% endfor %}
   </div>

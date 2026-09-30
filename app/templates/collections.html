@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/completeness.html" import completeness %}
+{% from "partials/peek.html" import peek %}
 {% block title %}Collections — Franchisarr{% endblock %}
 
 {% block content %}
@@ -97,6 +98,7 @@
             <li class="muted">…and {{ gap.missing | length - 3 }} more</li>
           {% endif %}
         </ul>
+        {{ peek(gap.name, gap.backdrop, gap.missing) }}
       </article>
     {% endfor %}
   </div>

@@ -1,0 +1,26 @@
+{# Showcase's hover preview of a collection or franchise card (0.51.0): its backdrop and the
+   posters of what's missing. A <template> is inert -- nothing in it loads until showcase.js
+   copies it out on a hover, so Classic pays a few bytes of markup and no images. #}
+{% macro peek(name, backdrop, missing) -%}
+  {#- Smaller copies than the pages use: the preview is 24rem wide, and a hover shouldn't cost a
+      hero-sized download. -#}
+  {% set backdrop = backdrop | replace('/t/p/w1280/', '/t/p/w780/') if backdrop else None %}
+  {% if backdrop or missing %}
+    <template class="sc-peek">
+      <div class="sc-peek-art">
+        {% if backdrop %}<img src="{{ backdrop }}" alt="" decoding="async">{% endif %}
+        <strong>{{ name }}</strong>
+      </div>
+      {% if missing %}
+        <p class="sc-peek-label"><small>Missing {{ missing | length }}</small></p>
+        <div class="sc-peek-posters">
+          {% for t in missing[:6] %}
+            {% if t.poster %}<img src="{{ t.poster | replace('/t/p/w342/', '/t/p/w185/') }}" alt="{{ t.title }}" title="{{ t.title }}" decoding="async">
+            {% else %}<span class="sc-peek-blank" title="{{ t.title }}"></span>{% endif %}
+          {% endfor %}
+          {% if missing | length > 6 %}<span class="sc-peek-more">+{{ missing | length - 6 }}</span>{% endif %}
+        </div>
+      {% endif %}
+    </template>
+  {% endif %}
+{%- endmacro %}

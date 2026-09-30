@@ -13,7 +13,7 @@ from sqlmodel import col, select
 
 from app.auth.dependencies import DbSession, RequiredUser
 from app.models import DismissedItem, ItemType
-from app.services import search_service
+from app.services import about_service, search_service
 from app.templating import get_templates
 
 router = APIRouter()
@@ -22,9 +22,12 @@ router = APIRouter()
 @router.get("/search", response_class=HTMLResponse)
 def search_page(request: Request, session: DbSession, user: RequiredUser, q: str = ""):
     results = search_service.search(session, q[:200], user.id)
-    partial = request.headers.get("HX-Request") == "true" and request.headers.get("HX-Target") == "search-results"
+    target = request.headers.get("HX-Target") if request.headers.get("HX-Request") == "true" else None
+    # Showcase's Ctrl+K box (0.51.0) wants somewhere to go, not tiles to act on.
+    template = {"search-results": "partials/search_results.html",
+                "quick-results": "partials/quick_results.html"}.get(target or "", "search.html")
     return get_templates().TemplateResponse(
-        request, "partials/search_results.html" if partial else "search.html",
+        request, template,
         {"user": user, "results": results, "q": q[:200]},
     )
 
@@ -41,3 +44,12 @@ def dismiss_from_search(request: Request, session: DbSession, user: RequiredUser
         session.add(DismissedItem(user_id=user.id, item_type=item_type, tmdb_id=tmdb_id))
         session.commit()
     return HTMLResponse('<span class="muted">Hidden from your lists.</span>')
+
+
+@router.get("/about/{kind}/{tmdb_id}", response_class=HTMLResponse)
+def about_title(request: Request, session: DbSession, user: RequiredUser, kind: str, tmdb_id: int):
+    """The back of a flipped poster in Showcase (0.51.0): plot, genres, score, running time."""
+    if kind not in (ItemType.MOVIE.value, ItemType.SHOW.value):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nothing of that kind.")
+    found = about_service.about(session, kind, tmdb_id, about_service.tmdb_for(session))
+    return get_templates().TemplateResponse(request, "partials/about.html", {"about": found})
