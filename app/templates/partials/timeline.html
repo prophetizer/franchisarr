@@ -6,12 +6,19 @@
   {#- Out of what's released, like the banner ("54 of 55"); what's coming is counted apart. -#}
   {% set coming = timeline | selectattr('status', 'equalto', 'upcoming') | list | length %}
   <section class="timeline" aria-label="In release order">
-    <p class="timeline-heading"><strong>In release order</strong>
+    {#- The ring shows only in Showcase, which fills it as the strip plays (0.48.0). -#}
+    {% set released = timeline | length - coming %}
+    <p class="timeline-heading">
+      <svg class="timeline-ring" viewBox="0 0 36 36" aria-hidden="true" style="--sc-pct: {{ ((have * 100 / released) if released else 0) | round(1) }}">
+        <circle class="timeline-ring-track" cx="18" cy="18" r="15.9"></circle>
+        <circle class="timeline-ring-fill" cx="18" cy="18" r="15.9" pathLength="100"></circle>
+      </svg>
+      <strong>In release order</strong>
       <small class="muted">{{ have }} of {{ timeline | length - coming }}{% if coming %}, {{ coming }} coming{% endif %} — dimmed ones you don't have{% if user and user.is_admin %}; pick one to add it{% endif %}</small></p>
     <ol class="timeline-strip">
       {% for s in timeline %}
         {% set label = s.title ~ (' (' ~ s.year ~ ')' if s.year else '') ~ (' — you have it' if s.status == 'owned' else (' — not out yet' if s.status == 'upcoming' else ' — missing')) %}
-        <li class="timeline-step timeline-step--{{ s.status }}">
+        <li class="timeline-step timeline-step--{{ s.status }}" style="--i: {{ loop.index0 }}">
           {% if s.status != 'owned' and user and user.is_admin %}
             <button type="button" class="timeline-poster" title="{{ label }}" aria-label="Add {{ s.title }}"
                     hx-get="{{ url(('/add/' if s.item_type == 'movie' else '/shows/add/') ~ s.tmdb_id) }}"

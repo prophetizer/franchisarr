@@ -34,6 +34,34 @@ def closest_to_complete(gaps: list, limit: int = ROW) -> list[Card]:  # noqa: AN
                  g.small_poster, f"/collections/{g.collection_id}") for g in ranked[:limit]]
 
 
+@dataclass(frozen=True)
+class Slide:
+    """One slide of Showcase's spotlight (0.48.0): a collection nearly done, big."""
+
+    title: str
+    detail: str
+    backdrop: str | None
+    logo: str | None
+    poster: str | None
+    path: str
+    owned: int
+    total: int
+
+
+def spotlight(gaps: list, limit: int = 5) -> list[Slide]:  # noqa: ANN001 - CollectionGap
+    """The collections closest to complete that have a backdrop to fill a screen with."""
+    ranked = sorted((g for g in gaps if g.missing and g.backdrop),
+                    key=lambda g: (-len(g.owned) / (len(g.owned) + len(g.missing)), len(g.missing), g.name.casefold()))
+    slides = []
+    for g in ranked[:limit]:
+        owned, total = len(g.owned), len(g.owned) + len(g.missing)
+        left = len(g.missing)
+        slides.append(Slide(g.name, f"You have {owned} of {total} — {left} to go" if left > 1 else
+                            f"You have {owned} of {total} — one film away",
+                            g.backdrop, g.logo_image, g.poster, f"/collections/{g.collection_id}", owned, total))
+    return slides
+
+
 def coming_soon(films: list, today: date, days: int = 90, limit: int = ROW) -> list[Card]:  # noqa: ANN001
     """Announced films in owned franchises due in the next `days`, soonest first."""
     due = sorted((f for f in films if (d := f.days_until(today)) is not None and 0 <= d <= days),

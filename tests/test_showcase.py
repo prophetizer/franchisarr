@@ -82,3 +82,14 @@ def test_unknown_values_are_classic(session: Session) -> None:
     session.add(user); session.commit(); session.refresh(user)
 
     assert look.set_look(session, user.id, "disco") == "classic" and look.get(session, user.id) == "classic"
+
+
+def test_showcase_hides_its_pieces_from_classic_and_opts_into_page_transitions() -> None:
+    from pathlib import Path
+
+    static = Path(__file__).resolve().parents[1] / "app" / "static"
+    classic, showcase = (static / "app.css").read_text(), (static / "showcase.css").read_text()
+    assert ".spotlight, .timeline-ring { display: none; }" in classic
+    assert "@view-transition { navigation: auto; }" in showcase
+    reduce = showcase[showcase.index("@media (prefers-reduced-motion: reduce)"):]
+    assert "@view-transition { navigation: none; }" in reduce, "no morphing for reduce motion"

@@ -10,6 +10,35 @@
       and starts polling without anyone pressing anything. -#}
   {% include "partials/scan_status.html" %}
 
+  {#- Showcase's spotlight (0.48.0): the collections nearly done, one screen-wide slide each,
+      turned by showcase.js. Always in the page, shown only in the Showcase look (app.css hides
+      it; its images are lazy, so Classic never fetches them). -#}
+  {% if spotlight %}
+    <section class="spotlight" aria-label="Nearly complete" aria-roledescription="carousel">
+      {% for s in spotlight %}
+        <a href="{{ url(s.path) }}" class="spotlight-slide{% if loop.first %} is-current{% endif %}"
+           aria-label="{{ s.title }}: {{ s.detail }}" {% if not loop.first %}aria-hidden="true" tabindex="-1"{% endif %}>
+          <img class="spotlight-backdrop" src="{{ s.backdrop }}" alt="" loading="lazy" decoding="async">
+          <span class="spotlight-text">
+            <small class="spotlight-kicker">Nearly complete</small>
+            {% if s.logo %}<img class="spotlight-logo" src="{{ s.logo }}" alt="{{ s.title }}" loading="lazy" decoding="async">
+            {% else %}<strong class="spotlight-title">{{ s.title }}</strong>{% endif %}
+            <span class="spotlight-detail">{{ s.detail }}</span>
+            <progress class="completeness" value="{{ s.owned }}" max="{{ s.total }}"></progress>
+          </span>
+        </a>
+      {% endfor %}
+      {% if spotlight | length > 1 %}
+        <div class="spotlight-dots" role="tablist" aria-label="Choose a slide">
+          {% for s in spotlight %}
+            <button type="button" role="tab" aria-label="{{ s.title }}" aria-selected="{{ 'true' if loop.first else 'false' }}"
+                    data-slide="{{ loop.index0 }}"></button>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </section>
+  {% endif %}
+
   {#- Poster rows first (0.45.0); a row with nothing in it isn't shown. -#}
   {% for heading, note, cards, more, more_label in rows if cards %}
     <section class="poster-row" aria-label="{{ heading }}">
@@ -19,7 +48,7 @@
       </div>
       <ul class="poster-row-cards">
         {% for c in cards %}
-          <li>
+          <li style="--i: {{ loop.index0 }}">
             <a href="{{ url(c.path) }}" class="poster-row-card" title="{{ c.title }}">
               {% if c.poster %}<img src="{{ c.poster }}" alt="" loading="lazy" decoding="async" width="185" height="278">
               {% else %}<span class="timeline-placeholder">{{ c.title }}</span>{% endif %}

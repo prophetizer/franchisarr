@@ -1,9 +1,13 @@
-// Showcase (0.47.0): the motion that CSS alone can't do. Loaded only for someone who picked the
-// Showcase look. Four things, each skipped when it would be unwelcome:
-//   glow      -- the page takes the dominant colour of its artwork (--sc-glow)
-//   parallax  -- a banner's backdrop scrolls slower than the page (not on phones)
-//   count-up  -- headline numbers ([data-count]) run up from zero
-//   tilt      -- cards lean toward the pointer, with a glare (mouse and pen only)
+// Showcase (0.47.0, 0.48.0): the motion that CSS alone can't do. Loaded only for someone who
+// picked the Showcase look. Each part is skipped when it would be unwelcome:
+//   glow       -- the page takes the dominant colour of its artwork (--sc-glow)
+//   parallax   -- a banner's backdrop scrolls slower than the page (not on phones)
+//   count-up   -- headline numbers ([data-count]) run up from zero
+//   spotlight  -- the home page's big banner turns (not with reduce motion)
+//   row arrows -- poster rows slide a screen at a time (not on phones)
+//   strip      -- the release-order strip plays when it comes on screen
+//   transition -- the clicked poster grows into the next page (view transitions)
+//   tilt       -- cards lean toward the pointer, with a glare (mouse and pen only)
 // "Reduce motion" turns off all but the glow, which doesn't move.
 (function () {
   'use strict';
@@ -48,12 +52,14 @@
   // A small copy, not the one on the page: the browser keeps that one cached from a plain
   // (non-CORS) request, and reusing it for a cross-origin read fails. A different size is a
   // different URL, and a few kilobytes besides.
-  var art = document.querySelector('.collection-backdrop, .collection-heading-poster img, img.collection-heading-poster, .poster-row-card img');
-  if (art) {
-    var size = art.classList.contains('collection-backdrop') ? 'w300' : 'w92';
-    var src = (art.currentSrc || art.src || '').replace(/\/t\/p\/[^/]+\//, '/t/p/' + size + '/');
+  function glowOf(art) {
+    if (!art) { return; }
+    var wide = art.classList.contains('collection-backdrop') || art.classList.contains('spotlight-backdrop');
+    var src = (art.currentSrc || art.src || '').replace(/\/t\/p\/[^/]+\//, '/t/p/' + (wide ? 'w300' : 'w92') + '/');
     if (src.indexOf('image.tmdb.org') !== -1) { glowFrom(src); }
   }
+  glowOf(document.querySelector('.collection-backdrop, .spotlight-slide.is-current .spotlight-backdrop, ' +
+                                 '.collection-heading-poster img, img.collection-heading-poster, .poster-row-card img'));
 
   // ------------------------------------------------------------ parallax
   var backdrop = document.querySelector('.collection-backdrop');
@@ -96,6 +102,115 @@
       window.setTimeout(function () { done = true; show(target); }, duration + 250);
     });
   }
+
+  // ------------------------------------------------------------ spotlight (0.48.0)
+  // The home page's big banner turns every seven seconds, pausing while pointed at or focused;
+  // the dots choose a slide. "Reduce motion": no turning, the dots still work.
+  var spot = document.querySelector('.spotlight');
+  if (spot) {
+    var slides = spot.querySelectorAll('.spotlight-slide');
+    var dots = spot.querySelectorAll('.spotlight-dots button');
+    var at = 0, paused = false;
+    var go = function (n) {
+      at = (n + slides.length) % slides.length;
+      slides.forEach(function (slide, i) {
+        var on = i === at;
+        slide.classList.toggle('is-current', on);
+        if (on) { slide.removeAttribute('aria-hidden'); slide.removeAttribute('tabindex'); }
+        else { slide.setAttribute('aria-hidden', 'true'); slide.setAttribute('tabindex', '-1'); }
+      });
+      dots.forEach(function (dot, i) { dot.setAttribute('aria-selected', i === at ? 'true' : 'false'); });
+      glowOf(slides[at].querySelector('.spotlight-backdrop'));   // the page's colour follows the slide
+    };
+    dots.forEach(function (dot) {
+      dot.addEventListener('click', function () { go(parseInt(dot.dataset.slide, 10)); });
+    });
+    ['mouseenter', 'focusin'].forEach(function (e) { spot.addEventListener(e, function () { paused = true; }); });
+    ['mouseleave', 'focusout'].forEach(function (e) { spot.addEventListener(e, function () { paused = false; }); });
+    if (!reduce && slides.length > 1) {
+      window.setInterval(function () { if (!paused && !document.hidden) { go(at + 1); } }, 7000);
+    }
+  }
+
+  // ------------------------------------------------------------ rows that glide (0.48.0)
+  // Arrows on a poster row that runs off the screen, each sliding it most of a screen along.
+  if (!phone) {
+    document.querySelectorAll('.poster-row').forEach(function (row) {
+      var list = row.querySelector('.poster-row-cards');
+      if (!list) { return; }
+      var arrows = [-1, 1].map(function (dir) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'sc-row-nav'; b.dataset.dir = String(dir);
+        b.setAttribute('aria-label', dir < 0 ? 'Scroll back' : 'Scroll on');
+        b.textContent = dir < 0 ? '‹' : '›';
+        b.addEventListener('click', function () { list.scrollBy({ left: dir * list.clientWidth * 0.8 }); });
+        row.appendChild(b);
+        return b;
+      });
+      var update = function () {
+        arrows[0].hidden = list.scrollLeft < 8;
+        arrows[1].hidden = list.scrollLeft + list.clientWidth > list.scrollWidth - 8;
+      };
+      list.addEventListener('scroll', update, { passive: true });
+      window.addEventListener('resize', update);
+      update();
+    });
+  }
+
+  // ------------------------------------------------------------ the strip plays (0.48.0)
+  // Armed now (posters hidden, ring empty), played when it's on screen: posters fly in in
+  // release order, owned ones light up, the ring fills to how much of it you have.
+  // Armed only when it can certainly be played: an observer, and a plain on-screen check at load
+  // and on scroll besides -- a strip left armed and never played would be invisible.
+  if (!reduce) {
+    document.querySelectorAll('.timeline').forEach(function (strip) {
+      var played = false, seen = null;
+      var play = function () {
+        if (played) { return; }
+        played = true;
+        strip.classList.add('sc-play');
+        if (seen) { seen.disconnect(); }
+        window.removeEventListener('scroll', check);
+      };
+      var check = function () {
+        var rect = strip.getBoundingClientRect();
+        if (rect.top < window.innerHeight * 0.9 && rect.bottom > 0) { play(); }
+      };
+      strip.classList.add('sc-armed');
+      if ('IntersectionObserver' in window) {
+        seen = new IntersectionObserver(function (entries) {
+          if (entries.some(function (e) { return e.isIntersecting; })) { play(); }
+        }, { threshold: 0.2 });
+        seen.observe(strip);
+      }
+      window.addEventListener('scroll', check, { passive: true });
+      window.setTimeout(check, 50);
+    });
+  }
+
+  // ------------------------------------------------------------ poster grows into the page (0.48.0)
+  // The page being left names the poster that was clicked, and the detail page names its own
+  // (showcase.css): the browser morphs one into the other. A spotlight slide's backdrop becomes
+  // the collection's banner the same way. One name per page, so it's set on the click only.
+  document.addEventListener('click', function (event) {
+    var link = event.target.closest && event.target.closest('a[href]');
+    if (!link || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey) { return; }
+    var backdrop = link.classList.contains('spotlight-slide') && link.querySelector('.spotlight-backdrop');
+    var poster = null;
+    if (!backdrop) {
+      // The link's own image, or -- for a card's title link -- the card's poster.
+      poster = link.querySelector('img');
+      var card = !poster && link.closest('.collection-card');
+      if (card) { poster = card.querySelector('.collection-poster img'); }
+    }
+    // Back to a page from the browser's cache keeps the last click's name: two of a name and
+    // the browser skips the transition, so clear any first.
+    document.querySelectorAll('img[style*="view-transition-name"]').forEach(function (img) {
+      img.style.viewTransitionName = '';
+    });
+    if (backdrop) { backdrop.style.viewTransitionName = 'sc-backdrop'; }
+    else if (poster && !poster.closest('.collection-heading')) { poster.style.viewTransitionName = 'sc-poster'; }
+  }, true);
 
   // ------------------------------------------------------------ tilt
   if (!reduce && !phone) {

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.48.0] — 2026-09-29
+
+### Added
+
+Showcase, step 2:
+
+- **Spotlight** on the home page: a full-width banner of the collections you're closest to
+  completing — backdrop, logo, "one film away" — turning every seven seconds (pausing while
+  pointed at), with dots to choose; the page's glow follows the slide. Poster rows get arrows to
+  slide them along, and their cards arrive in turn.
+- **The release strip plays** when it comes on screen: posters fly in in release order, the ones
+  you own light up from grey, their ticks pop, and a ring beside the heading fills to how much of
+  the set you have.
+- **A poster grows into the page it opens**, and a spotlight's backdrop into the collection's
+  banner, using the browser's view transitions (Chrome, Edge, Safari 18.2+; others just navigate).
+
+Classic is unchanged; the spotlight and the ring are in the page but hidden there (their images
+aren't fetched).
+
 ## [0.47.0] — 2026-09-29
 
 ### Added

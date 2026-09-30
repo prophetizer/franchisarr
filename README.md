@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.47.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.48.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -224,10 +224,14 @@ arrived). The summary cards for each section sit below them.
 **Showcase look.** Under your name, **✦ Showcase look** switches you (and only you — it's saved to
 your account) from the everyday Classic look to a flashier one: franchise and collection banners
 go full-width with a slow zoom and parallax, the page takes on the colour of its artwork, headline
-numbers count up, and posters and cards tilt toward the pointer. Phones get the calmer half (no
-parallax or tilt), and your device's "reduce motion" setting turns the motion off. **◻ Classic
-look** switches back. More is coming to it: a spotlight home page, a release strip that plays,
-and confetti when you complete a collection.
+numbers count up, and posters and cards tilt toward the pointer. The home page opens on a big
+rotating **spotlight** of the collections you're nearly done with, and its poster rows slide
+along with arrows; the release strip **plays** as it comes on screen (posters fly in in order,
+the ones you own light up, a ring fills to how much you have); and a poster you click **grows into
+the page** it opens (in browsers with view transitions: Chrome, Edge, Safari). Phones get the
+calmer half (no parallax, tilt or arrows), and your device's "reduce motion" setting turns the
+motion off. **◻ Classic look** switches back. Still to come: confetti when you complete a
+collection.
 
 Franchise and collection pages open with the whole set **in release order** — a strip of
 posters, the ones you have in colour and the ones you don't dimmed, so the holes in the run show

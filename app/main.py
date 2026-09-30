@@ -221,6 +221,8 @@ def index(request: Request, session: DbSession, user: RequiredUser):
                 ("Just added", "New in your library, from sets you're collecting.",
                  home_service.just_added(session), None, None),
             ],
+            # Showcase's spotlight (0.48.0): rendered always, shown only by showcase.css.
+            "spotlight": home_service.spotlight(gaps),
             "collections_with_gaps": len(gaps),
             "total_missing": sum(len(gap.missing) for gap in gaps),
             "spinoff_count": len(tv_spinoff_service.missing_spinoffs(session, user.id)),

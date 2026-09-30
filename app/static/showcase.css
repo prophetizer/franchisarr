@@ -123,13 +123,185 @@
   to { transform: scaleX(1); }
 }
 
+/* ---------------------------------------------------------------- spotlight (0.48.0) */
+
+/* The slides share one grid cell, inside a band padded to line up with the page (the padding's
+   % is the page column's width); each backdrop is positioned against the band, not the slide,
+   so it fills the full width while the text keeps to the column. */
+[data-look="showcase"] .spotlight {
+  display: grid;
+  height: min(68vh, 40rem);
+  isolation: isolate;
+  margin: 0 calc(50% - 50vw) var(--pico-block-spacing-vertical);
+  overflow: hidden;
+  padding: 2.5rem calc(50vw - 50%);
+  position: relative;
+}
+[data-look="showcase"] .spotlight-slide {
+  --pico-color: var(--pico-h1-color);
+  align-items: flex-end;
+  color: var(--pico-h1-color);
+  display: flex;
+  grid-area: 1 / 1;
+  opacity: 0;
+  text-decoration: none;
+  transition: opacity 1.2s ease, visibility 1.2s;
+  visibility: hidden;
+}
+[data-look="showcase"] .spotlight-slide.is-current { opacity: 1; visibility: visible; }
+[data-look="showcase"] .spotlight-backdrop {
+  height: 100%;
+  inset: 0;
+  object-fit: cover;
+  object-position: center 25%;
+  position: absolute;
+  width: 100%;
+  z-index: -2;
+}
+[data-look="showcase"] .spotlight-slide.is-current .spotlight-backdrop { animation: sc-drift 16s ease-out both; }
+[data-look="showcase"] .spotlight-slide::after {
+  background:
+    linear-gradient(to top, var(--pico-background-color) 3%, color-mix(in srgb, var(--pico-background-color) 50%, transparent) 45%, transparent 80%),
+    linear-gradient(to right, color-mix(in srgb, var(--pico-background-color) 80%, transparent), transparent 60%);
+  content: "";
+  inset: 0;
+  position: absolute;
+  z-index: -1;
+}
+[data-look="showcase"] .spotlight-text {
+  text-shadow: 0 1px 1rem var(--pico-background-color), 0 0 2px var(--pico-background-color);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 32rem;
+}
+[data-look="showcase"] .spotlight-slide.is-current .spotlight-text > * { animation: sc-rise 0.9s var(--sc-ease) both; }
+[data-look="showcase"] .spotlight-slide.is-current .spotlight-text > :nth-child(2) { animation-delay: 0.12s; }
+[data-look="showcase"] .spotlight-slide.is-current .spotlight-text > :nth-child(n+3) { animation-delay: 0.24s; }
+[data-look="showcase"] .spotlight-kicker { color: var(--sc-glow); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+[data-look="showcase"] .spotlight-logo { align-self: flex-start; max-height: 8rem; max-width: 26rem; object-fit: contain; }
+[data-look="showcase"] .spotlight-title { font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1.1; }
+[data-look="showcase"] .spotlight-detail { font-size: 1.1rem; }
+[data-look="showcase"] .spotlight progress.completeness { height: 0.45rem; width: min(20rem, 70vw); }
+[data-look="showcase"] .spotlight-dots {
+  bottom: 1.5rem;
+  display: flex;
+  gap: 0.5rem;
+  position: absolute;
+  right: 2rem;
+}
+[data-look="showcase"] .spotlight-dots button {
+  background: color-mix(in srgb, var(--pico-color) 35%, transparent);
+  border: none;
+  border-radius: 999px;
+  height: 0.55rem;
+  margin: 0;
+  padding: 0;
+  transition: width 0.4s var(--sc-ease), background 0.4s;
+  width: 0.55rem;
+}
+[data-look="showcase"] .spotlight-dots button[aria-selected="true"] { background: var(--sc-glow); width: 1.8rem; }
+
+/* ---------------------------------------------------------------- rows that glide (0.48.0) */
+
+[data-look="showcase"] .poster-row { position: relative; }
+[data-look="showcase"] .poster-row-cards { scroll-behavior: smooth; }
+[data-look="showcase"] .sc-row-nav {
+  align-items: center;
+  backdrop-filter: blur(6px);
+  background: color-mix(in srgb, var(--pico-background-color) 70%, transparent);
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 999px;
+  color: var(--pico-color);
+  display: flex;
+  height: 2.6rem;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  top: 38%;
+  transition: opacity 0.3s;
+  width: 2.6rem;
+  z-index: 3;
+}
+[data-look="showcase"] .sc-row-nav[data-dir="-1"] { left: -0.6rem; }
+[data-look="showcase"] .sc-row-nav[data-dir="1"] { right: -0.6rem; }
+[data-look="showcase"] .sc-row-nav[hidden] { display: none; }
+[data-look="showcase"] .poster-row-cards > li { animation: sc-rise 0.7s var(--sc-ease) both; animation-delay: calc(min(var(--i, 0), 8) * 60ms); }
+
+/* ---------------------------------------------------------------- the strip plays (0.48.0) */
+
+[data-look="showcase"] .timeline-ring {
+  display: inline-block;
+  height: 1.6rem;
+  margin-right: 0.4rem;
+  rotate: -90deg;
+  vertical-align: middle;
+  width: 1.6rem;
+}
+[data-look="showcase"] .timeline-ring circle { fill: none; stroke-width: 3.4; }
+[data-look="showcase"] .timeline-ring-track { stroke: var(--pico-muted-border-color); }
+[data-look="showcase"] .timeline-ring-fill {
+  stroke: var(--sc-glow);
+  stroke-dasharray: 100;
+  stroke-dashoffset: calc(100 - var(--sc-pct, 0));
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1.8s var(--sc-ease) 0.3s;
+}
+/* Armed by showcase.js (never without it, so nothing stays hidden if the script doesn't run):
+   the strip waits, empty, until it's on screen, then plays. */
+[data-look="showcase"] .timeline.sc-armed:not(.sc-play) .timeline-ring-fill { stroke-dashoffset: 100; }
+[data-look="showcase"] .timeline.sc-armed:not(.sc-play) .timeline-step { opacity: 0; }
+[data-look="showcase"] .timeline.sc-play .timeline-step {
+  animation: sc-fly 0.55s var(--sc-ease) both;
+  animation-delay: calc(min(var(--i, 0), 40) * 45ms);
+}
+[data-look="showcase"] .timeline.sc-armed .timeline-step--owned .timeline-poster img { filter: grayscale(1) brightness(0.55); }
+[data-look="showcase"] .timeline.sc-play .timeline-step--owned .timeline-poster img {
+  animation: sc-light 0.7s ease forwards;
+  animation-delay: calc(min(var(--i, 0), 40) * 45ms + 0.45s);
+}
+[data-look="showcase"] .timeline.sc-play .timeline-tick {
+  animation: sc-tick 0.5s var(--sc-ease) both;
+  animation-delay: calc(min(var(--i, 0), 40) * 45ms + 0.7s);
+}
+@keyframes sc-fly {
+  from { opacity: 0; translate: 2rem 0; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes sc-light {
+  to { filter: none; }
+}
+@keyframes sc-tick {
+  from { opacity: 0; scale: 0.2; }
+  60% { opacity: 1; scale: 1.35; }
+  to { opacity: 1; scale: 1; }
+}
+
+/* ---------------------------------------------------------------- poster grows into the page (0.48.0) */
+/* Cross-document view transitions: both pages load this file, so both opt in. The poster that
+   was clicked (named by showcase.js) becomes the detail page's poster, and a spotlight's
+   backdrop becomes the banner. Browsers without them just navigate. */
+@view-transition { navigation: auto; }
+[data-look="showcase"] .collection-heading-poster { view-transition-name: sc-poster; }
+[data-look="showcase"] .collection-backdrop-frame { view-transition-name: sc-backdrop; }
+::view-transition-group(sc-poster),
+::view-transition-group(sc-backdrop) { animation-duration: 0.55s; animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 0.35s; }
+
 /* Phones: no tilt (there's no pointer to follow) and a calmer banner. */
 @media (pointer: coarse), (max-width: 767px) {
   [data-look="showcase"] .collection-heading.has-backdrop { min-height: 22rem; }
   [data-look="showcase"] .sc-tilting::after { display: none; }
+  [data-look="showcase"] .spotlight { height: 26rem; }
+  [data-look="showcase"] .spotlight-slide.is-current .spotlight-backdrop { animation: none; }
+  [data-look="showcase"] .spotlight-logo { max-height: 5rem; max-width: 70vw; }
+  [data-look="showcase"] .sc-row-nav { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  @view-transition { navigation: none; }
   [data-look="showcase"] *,
   [data-look="showcase"] *::before,
   [data-look="showcase"] *::after {

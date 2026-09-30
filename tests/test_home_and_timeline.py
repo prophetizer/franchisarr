@@ -68,6 +68,23 @@ def test_closest_to_complete_puts_the_smallest_share_missing_first() -> None:
 
 
 @dataclass
+class Spot(Gap):
+    backdrop: str | None = None
+    logo_image: str | None = None
+    poster: str | None = None
+
+
+def test_the_spotlight_is_the_nearly_done_ones_that_have_a_backdrop() -> None:
+    gaps = [Spot("Half", 1, (1, 2), (3, 4), backdrop="/h.jpg"), Spot("Nearly", 2, (1, 2, 3, 4), (5,), backdrop="/n.jpg"),
+            Spot("No picture", 3, (1, 2, 3, 4, 5), (6,)), Spot("Done", 4, (1,), (), backdrop="/d.jpg")]
+
+    slides = home_service.spotlight(gaps)
+
+    assert [s.title for s in slides] == ["Nearly", "Half"], "a backdrop to fill the screen, and a gap"
+    assert slides[0].detail == "You have 4 of 5 — one film away" and slides[1].detail == "You have 2 of 4 — 2 to go"
+
+
+@dataclass
 class Upcoming:
     title: str
     release_date: str
@@ -168,7 +185,7 @@ def test_the_collection_page_has_the_strip_with_add_on_the_missing_one(client: T
     strip = page.split('<ol class="timeline-strip">', 1)[1].split("</ol>", 1)[0]
     assert strip.index("Alien (1979)") < strip.index("Aliens (1986)") < strip.index("Alien³ (1992)")
     assert "timeline-step--missing" in strip and f'hx-get="{BASE}/add/8077"' in strip
-    assert "2 of 3" in page.split('class="timeline-heading"', 1)[1][:300]
+    assert "2 of 3" in page.split('class="timeline-heading"', 1)[1][:1200]
     assert page.index('class="timeline"') < page.index("<h2>Missing"), "above the grids"
 
 
@@ -180,7 +197,26 @@ def test_the_strips_count_matches_the_banner_with_whats_coming_apart(client: Tes
 
     page = client.get(f"{BASE}/collections/8091").text
 
-    assert "2 of 3, 1 coming" in page.split('class="timeline-heading"', 1)[1][:300]
+    assert "2 of 3, 1 coming" in page.split('class="timeline-heading"', 1)[1][:1200]
+
+
+def test_the_strip_carries_its_ring_and_play_order_for_showcase(client: TestClient) -> None:
+    page = client.get(f"{BASE}/collections/8091").text
+
+    assert 'class="timeline-ring"' in page and "--sc-pct: 66.7" in page, "2 of 3"
+    assert 'style="--i: 0"' in page and 'style="--i: 2"' in page
+
+
+def test_the_home_page_carries_the_spotlight_hidden_unless_showcase(client: TestClient) -> None:
+    with Session(get_engine()) as session:
+        collection = session.get(TmdbCollection, 8091)
+        collection.backdrop_path = "/back.jpg"
+        session.add(collection); session.commit()
+
+    page = client.get(f"{BASE}/").text
+
+    assert 'class="spotlight"' in page and "You have 2 of 3 — one film away" in page
+    assert 'loading="lazy"' in page.split('class="spotlight"', 1)[1][:600], "Classic never fetches it"
 
 
 def test_the_franchise_page_has_the_strip_too(client: TestClient) -> None:
