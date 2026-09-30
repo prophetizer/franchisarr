@@ -86,7 +86,7 @@ def test_the_collection_counts_films_not_copies(client: TestClient) -> None:
 
     body = client.get(f"{BASE}/collections/{COLLECTION}").text
 
-    assert "2 of 3 in your library, 1 watched." in body
+    assert "<span data-count>2</span> of 3 in your library, 1 watched." in body
     assert body.count('film-tile owned') == 2
     assert "on Attic, Living room" in body, "a two-server install says where a film is"
     assert 'class="watched-mark"' in body
@@ -99,7 +99,7 @@ def test_a_single_server_install_does_not_name_it(client: TestClient) -> None:
 
     body = client.get(f"{BASE}/collections/{COLLECTION}").text
 
-    assert "1 of 3 in your library, 1 watched." in body
+    assert "<span data-count>1</span> of 3 in your library, 1 watched." in body
     assert "owned-where" not in body and 'class="watched-mark"' in body
 
 

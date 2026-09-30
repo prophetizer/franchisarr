@@ -12,7 +12,7 @@ from typing import Annotated
 from fastapi import APIRouter, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from app.auth.dependencies import AdminUser, DbSession
+from app.auth.dependencies import AdminUser, DbSession, RequiredUser
 from app.config import get_settings
 from app.services.settings_service import SettingKey, get_setting, set_setting
 from app.templating import get_templates
@@ -82,3 +82,16 @@ def save_preferences(
     if first:
         return RedirectResponse(_url("/"), status_code=status.HTTP_303_SEE_OTHER)
     return RedirectResponse(_url("/preferences?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/look")
+def choose_look(request: Request, session: DbSession, user: RequiredUser,
+                look: Annotated[str, Form()] = "classic", back: Annotated[str, Form()] = ""):
+    """Classic or Showcase, for this person (0.47.0), then back to the page they were on --
+    only ever a path inside this app, never somewhere a form says."""
+    from app.services import look as look_service
+
+    look_service.set_look(session, user.id, look)
+    base = get_settings().base_url
+    target = back if back.startswith(f"{base}/") and not back.startswith("//") and "://" not in back else _url("/")
+    return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)

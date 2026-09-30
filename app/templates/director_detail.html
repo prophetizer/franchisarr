@@ -28,7 +28,7 @@
     {% endif %}
     <hgroup>
       <h1>{{ d.name }}</h1>
-      <p>You have {{ d.owned | length }} of {{ d.total }} film{{ '' if d.total == 1 else 's' }} they directed.</p>
+      <p>You have <span data-count>{{ d.owned | length }}</span> of {{ d.total }} film{{ '' if d.total == 1 else 's' }} they directed.</p>
     </hgroup>
     {% with playlist_url = url('/directors/' ~ d.person_id ~ '/playlist') %}{% include "partials/playlist_button.html" %}{% endwith %}
   </div>

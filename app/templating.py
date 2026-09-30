@@ -108,6 +108,9 @@ def build_templates(base_url: str) -> Jinja2Templates:
     from app.services.sorting import sort_titles
 
     templates.env.globals["sort_titles"] = sort_titles
+    from app.services import look as look_service
+
+    templates.env.globals["look_of"] = look_service.of
     import json
 
     templates.env.filters["fromjson"] = json.loads

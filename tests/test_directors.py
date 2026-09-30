@@ -236,7 +236,7 @@ def test_the_pages_render_and_route_adds_to_radarr(client: TestClient) -> None:
     assert 'src="https://image.tmdb.org/t/p/w185/nolan.jpg"' in index, "the card carries the photo"
 
     detail = client.get(f"{BASE}/directors/{NOLAN}").text
-    assert "You have 2 of 3" in detail and "/h632/nolan.jpg" in detail
+    assert "You have <span data-count>2</span> of 3" in detail and "/h632/nolan.jpg" in detail
     assert f'hx-get="{BASE}/add/320"' in detail
     assert client.get(f"{BASE}/directors/1").status_code == 404
 

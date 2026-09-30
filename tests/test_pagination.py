@@ -142,8 +142,8 @@ def test_a_long_list_is_paged_and_the_totals_still_describe_all_of_it(client: Te
     second = client.get(f"{BASE}/collections?sort=name&page=2").text
 
     # The heading counts every collection and every missing film, not the page's share.
-    assert f"{total} collections" in first
-    assert f"missing {total} films" in first
+    assert f"<span data-count>{total}</span> collections" in first
+    assert f"missing <span data-count>{total}</span> films" in first
     # Each page holds its own slice, and page 2 is the remainder. The boundary is derived
     # from the threshold, not written in: raising DEFAULT_SIZE must not silently pass here.
     first_of_page_two = f"Collection {DEFAULT_SIZE + 1:04d}"

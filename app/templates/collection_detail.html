@@ -9,8 +9,10 @@
 
 <div class="collection-heading{% if gap.backdrop %} has-backdrop{% endif %}">
   {% if gap.backdrop %}
-    <img class="collection-backdrop" src="{{ gap.backdrop }}" alt="" decoding="async"
+    <div class="collection-backdrop-frame" aria-hidden="true">
+      <img class="collection-backdrop" src="{{ gap.backdrop }}" alt="" decoding="async"
          aria-hidden="true">
+    </div>
   {% endif %}
   <div class="collection-heading-inner">
     {% if gap.poster %}
@@ -28,7 +30,7 @@
       {% else %}
         <h1>{{ gap.name }}</h1>
       {% endif %}
-      <p>{{ gap.owned | length }} of {{ gap.total }} in your library{% if gap.watched_count %}, {{ gap.watched_count }} watched{% endif %}.</p>
+      <p><span data-count>{{ gap.owned | length }}</span> of {{ gap.total }} in your library{% if gap.watched_count %}, {{ gap.watched_count }} watched{% endif %}.</p>
     </hgroup>
     {% with playlist_url = url('/collections/' ~ gap.collection_id ~ '/playlist') %}{% include "partials/playlist_button.html" %}{% endwith %}
   </div>

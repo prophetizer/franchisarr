@@ -220,7 +220,7 @@ def test_the_index_and_detail_pages_render(client: TestClient) -> None:
     assert '<progress class="completeness" value="2" max="3"' in index, "how complete, at a glance (0.44.0)"
 
     detail = client.get(f"{BASE}/franchises/{TREK}").text
-    assert "You have 2 of 3" in detail
+    assert "You have <span data-count>2</span> of 3" in detail
     assert "Deep Space Nine" in detail
     assert f'hx-get="{BASE}/shows/add/580"' in detail, "a show routes to the Sonarr dialog"
     assert detail.count("Wikidata files it under Star Trek") == 1, "on the missing tile, not the owned ones"

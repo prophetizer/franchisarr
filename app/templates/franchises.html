@@ -8,9 +8,9 @@
   <h1>Franchises</h1>
   <p>
     {% if franchises %}
-      {{ franchises | length }} franchise{{ '' if franchises | length == 1 else 's' }} you own part
+      <span data-count>{{ franchises | length }}</span> franchise{{ '' if franchises | length == 1 else 's' }} you own part
       of{% if both %}, {{ both }} across both films and TV{% endif %}, missing
-      {{ total_missing }} title{{ '' if total_missing == 1 else 's' }} between them.
+      <span data-count>{{ total_missing }}</span> title{{ '' if total_missing == 1 else 's' }} between them.
     {% else %}
       Nothing grouped yet — franchises are worked out from Wikidata during a scan.
     {% endif %}

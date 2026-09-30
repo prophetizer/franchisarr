@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.46.3`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.47.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -220,6 +220,14 @@ The home page leads with rows of posters: the collections you're **closest to co
 films in franchises you own **coming in the next 90 days**, and titles **just added** to your
 library from sets you're collecting (counted from 0.45.0 on — nobody recorded when earlier ones
 arrived). The summary cards for each section sit below them.
+
+**Showcase look.** Under your name, **✦ Showcase look** switches you (and only you — it's saved to
+your account) from the everyday Classic look to a flashier one: franchise and collection banners
+go full-width with a slow zoom and parallax, the page takes on the colour of its artwork, headline
+numbers count up, and posters and cards tilt toward the pointer. Phones get the calmer half (no
+parallax or tilt), and your device's "reduce motion" setting turns the motion off. **◻ Classic
+look** switches back. More is coming to it: a spotlight home page, a release strip that plays,
+and confetti when you complete a collection.
 
 Franchise and collection pages open with the whole set **in release order** — a strip of
 posters, the ones you have in colour and the ones you don't dimmed, so the holes in the run show

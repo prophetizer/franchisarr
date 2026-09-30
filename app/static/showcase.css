@@ -1,0 +1,139 @@
+/* Showcase (0.47.0): the Classic look plus motion and the page's own colour, for whoever picks it
+   under their name. Loaded only then, and every rule is scoped to [data-look="showcase"] anyway.
+
+   Like app.css, no colour literals: everything is a Pico variable or --sc-glow, which
+   showcase.js sets from the page's own artwork. Phones (coarse pointers, narrow screens) keep the
+   fades and the glow but not the parallax or the tilt; "reduce motion" turns every animation off.
+*/
+
+[data-look="showcase"] {
+  --sc-glow: var(--pico-primary);
+  --sc-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The page takes on its artwork's colour: a soft glow from the top, fixed behind everything. */
+[data-look="showcase"] body {
+  background:
+    radial-gradient(ellipse 90% 60% at 50% -10%, color-mix(in srgb, var(--sc-glow) 26%, transparent), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, color-mix(in srgb, var(--sc-glow) 10%, transparent), transparent 70%),
+    var(--pico-background-color);
+  background-attachment: fixed;
+  overflow-x: clip;               /* the full-bleed banner is 100vw, which includes the scrollbar */
+  transition: background 1.2s ease;
+}
+[data-look="showcase"] .app-brand-name,
+[data-look="showcase"] h1 {
+  text-shadow: 0 0 2rem color-mix(in srgb, var(--sc-glow) 45%, transparent);
+}
+
+/* ---------------------------------------------------------------- cinematic banners */
+
+[data-look="showcase"] .collection-heading.has-backdrop {
+  border-radius: 0;
+  margin-inline: calc(50% - 50vw);  /* % of the container: full width, content still aligned */
+  min-height: min(62vh, 40rem);
+  padding-block: 2.5rem;
+  padding-inline: calc(50vw - 50%);
+}
+/* Taller than its frame, so the parallax (showcase.js moves it up to 12% of the band) never
+   shows an edge. */
+[data-look="showcase"] .collection-backdrop {
+  animation: sc-drift 38s ease-in-out infinite alternate;
+  height: 124%;
+  inset: -12% 0 auto;
+  object-position: center 25%;
+  transform-origin: 50% 30%;
+  will-change: scale, translate;
+}
+[data-look="showcase"] .collection-heading.has-backdrop::after {
+  background:
+    linear-gradient(to top, var(--pico-background-color) 2%, color-mix(in srgb, var(--pico-background-color) 55%, transparent) 40%, transparent 85%),
+    linear-gradient(to right, color-mix(in srgb, var(--pico-background-color) 70%, transparent), transparent 55%);
+}
+[data-look="showcase"] .collection-heading-poster {
+  animation: sc-pop 0.9s var(--sc-ease) both;
+  box-shadow: 0 1.5rem 3rem color-mix(in srgb, var(--pico-background-color) 60%, transparent),
+              0 0 2.5rem color-mix(in srgb, var(--sc-glow) 35%, transparent);
+}
+[data-look="showcase"] .collection-heading hgroup > * { animation: sc-rise 0.9s var(--sc-ease) both; }
+[data-look="showcase"] .collection-heading hgroup > :nth-child(2) { animation-delay: 0.15s; }
+[data-look="showcase"] .collection-heading h1 { font-size: clamp(2rem, 5vw, 3.6rem); }
+[data-look="showcase"] .collection-logo { max-height: 9rem; }
+[data-look="showcase"] .heading-actions { animation: sc-rise 0.9s var(--sc-ease) 0.3s both; }
+
+/* ---------------------------------------------------------------- cards: lift, tilt, glare */
+
+[data-look="showcase"] .collection-card,
+[data-look="showcase"] .film-tile,
+[data-look="showcase"] .poster-row-card,
+[data-look="showcase"] .timeline-poster {
+  position: relative;
+  transform: perspective(900px) rotateX(var(--sc-rx, 0deg)) rotateY(var(--sc-ry, 0deg)) translateY(var(--sc-lift, 0));
+  transition: transform 0.35s var(--sc-ease), box-shadow 0.35s var(--sc-ease);
+  transform-style: preserve-3d;
+}
+[data-look="showcase"] .collection-card:hover,
+[data-look="showcase"] .film-tile:hover,
+[data-look="showcase"] .poster-row-card:hover {
+  --sc-lift: -4px;
+  box-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--pico-background-color) 70%, transparent),
+              0 0 1.5rem color-mix(in srgb, var(--sc-glow) 30%, transparent);
+}
+[data-look="showcase"] .sc-tilting { transition-duration: 0.08s; }
+[data-look="showcase"] .sc-tilting::after {
+  background: radial-gradient(circle at var(--sc-gx, 50%) var(--sc-gy, 50%),
+              color-mix(in srgb, var(--pico-contrast) 16%, transparent), transparent 55%);
+  border-radius: inherit;
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+/* Cards arrive rather than appear: a short stagger down each grid. */
+[data-look="showcase"] .collection-grid > * { animation: sc-rise 0.6s var(--sc-ease) both; }
+[data-look="showcase"] .collection-grid > :nth-child(2) { animation-delay: 0.04s; }
+[data-look="showcase"] .collection-grid > :nth-child(3) { animation-delay: 0.08s; }
+[data-look="showcase"] .collection-grid > :nth-child(4) { animation-delay: 0.12s; }
+[data-look="showcase"] .collection-grid > :nth-child(5) { animation-delay: 0.16s; }
+[data-look="showcase"] .collection-grid > :nth-child(6) { animation-delay: 0.2s; }
+[data-look="showcase"] .collection-grid > :nth-child(n+7) { animation-delay: 0.24s; }
+
+/* Completeness bars fill in. */
+[data-look="showcase"] progress.completeness { animation: sc-fill 1.2s var(--sc-ease) both; transform-origin: left; }
+
+[data-look="showcase"] [data-count] { font-variant-numeric: tabular-nums; }
+
+@keyframes sc-drift {
+  from { scale: 1.02; }
+  to { scale: 1.14; }
+}
+/* translate and scale, not transform: a finished animation holds its last frame, and holding
+   `transform` would override the tilt for good. */
+@keyframes sc-rise {
+  from { opacity: 0; translate: 0 1.25rem; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes sc-pop {
+  from { opacity: 0; translate: 0 1rem; scale: 0.94; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
+}
+@keyframes sc-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Phones: no tilt (there's no pointer to follow) and a calmer banner. */
+@media (pointer: coarse), (max-width: 767px) {
+  [data-look="showcase"] .collection-heading.has-backdrop { min-height: 22rem; }
+  [data-look="showcase"] .sc-tilting::after { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-look="showcase"] *,
+  [data-look="showcase"] *::before,
+  [data-look="showcase"] *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

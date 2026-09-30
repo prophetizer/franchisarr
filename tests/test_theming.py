@@ -153,10 +153,10 @@ def test_app_css_never_hardcodes_a_colour() -> None:
     every theme."""
     import re
 
-    css = (STATIC_DIR / "app.css").read_text()
-    literals = re.findall(r":\s*(#[0-9a-fA-F]{3,8}|rgb\([^)]*\)|hsl\([^)]*\))\s*;", css)
-
-    assert literals == [], f"hardcoded colours in app.css: {literals}"
+    for name in ("app.css", "showcase.css"):          # Showcase too (0.47.0)
+        css = (STATIC_DIR / name).read_text()
+        literals = re.findall(r"(#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\))", re.sub(r"/\*.*?\*/", "", css, flags=re.S))
+        assert literals == [], f"hardcoded colours in {name}: {literals}"
 
 
 def test_the_light_dark_attribute_is_not_shadowed_by_the_theme_config() -> None:

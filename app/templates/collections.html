@@ -10,8 +10,8 @@
   <hgroup>
     <h1>Collections with gaps</h1>
     <p>
-      {{ '{:,}'.format(pager.total) }} collection{{ '' if pager.total == 1 else 's' }} you own part of,
-      missing {{ total_missing }} film{{ '' if total_missing == 1 else 's' }}.
+      <span data-count>{{ '{:,}'.format(pager.total) }}</span> collection{{ '' if pager.total == 1 else 's' }} you own part of,
+      missing <span data-count>{{ total_missing }}</span> film{{ '' if total_missing == 1 else 's' }}.
     </p>
   </hgroup>
   {% if gaps and user and user.is_admin %}

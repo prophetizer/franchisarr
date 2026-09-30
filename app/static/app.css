@@ -479,6 +479,15 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
   position: relative;
 }
 
+/* The backdrop sits in its own clipping frame: the band itself can't clip (its Playlist menu
+   hangs out of it, 0.44.0), and Showcase zooms and moves the image inside (0.47.0). */
+.collection-backdrop-frame {
+  border-radius: inherit;
+  inset: 0;
+  overflow: hidden;
+  position: absolute;
+  z-index: -2;
+}
 .collection-backdrop {
   height: 100%;
   inset: 0;
@@ -486,10 +495,6 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
   object-position: center 30%;
   position: absolute;
   width: 100%;
-  z-index: -2;
-  /* Rounded here rather than clipped by the band (overflow: hidden) -- that clipped the
-     banner's Playlist menu too (0.44.0). */
-  border-radius: inherit;
 }
 
 .collection-heading.has-backdrop::after {

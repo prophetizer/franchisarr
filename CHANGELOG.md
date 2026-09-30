@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.47.0] — 2026-09-29
+
+### Added
+
+- **Showcase look**, per person: **✦ Showcase look** under your name (and in the phone menu)
+  switches your account from Classic — which stays the default for everyone — to a flashier look:
+  - franchise and collection banners full-width, the backdrop slowly zooming and scrolling slower
+    than the page, the title and poster sliding in;
+  - the page glowing with its artwork's colour;
+  - headline numbers counting up;
+  - cards and posters tilting toward the pointer with a glare, and lifting on hover; grids and
+    completeness bars animating in.
+  Phones keep the fades and the glow but not the parallax or tilt; "reduce motion" turns the
+  motion off. **◻ Classic look** switches back.
+
+### Changed
+
+- A banner's backdrop sits in its own clipping frame (no visible change in Classic).
+
 ## [0.46.3] — 2026-09-29
 
 ### Fixed

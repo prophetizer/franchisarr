@@ -8,8 +8,8 @@
   <h1>Directors</h1>
   <p>
     {% if directors %}
-      {{ '{:,}'.format(pager.total) }} director{{ '' if pager.total == 1 else 's' }} you own
-      {{ floor }} or more films by, missing {{ total_missing }} film{{ '' if total_missing == 1 else 's' }}
+      <span data-count>{{ '{:,}'.format(pager.total) }}</span> director{{ '' if pager.total == 1 else 's' }} you own
+      {{ floor }} or more films by, missing <span data-count>{{ total_missing }}</span> film{{ '' if total_missing == 1 else 's' }}
       between them.
       {% if pending %}<br><small class="muted">{{ pending }} filmograph{{ 'y' if pending == 1 else 'ies' }} not fetched yet — the next scan will.</small>{% endif %}
     {% else %}

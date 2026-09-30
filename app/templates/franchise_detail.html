@@ -37,7 +37,9 @@
 
 <div class="collection-heading{% if f.backdrop %} has-backdrop{% endif %}">
   {% if f.backdrop %}
-    <img class="collection-backdrop" src="{{ f.backdrop }}" alt="" decoding="async" aria-hidden="true">
+    <div class="collection-backdrop-frame" aria-hidden="true">
+      <img class="collection-backdrop" src="{{ f.backdrop }}" alt="" decoding="async" aria-hidden="true">
+    </div>
   {% endif %}
   <div class="collection-heading-inner">
     {% if f.poster %}
@@ -54,7 +56,7 @@
         <h1>{{ f.name }}</h1>
       {% endif %}
       <p>
-        You have {{ f.owned }} of {{ f.total }} —
+        You have <span data-count>{{ f.owned }}</span> of {{ f.total }} —
         {{ f.owned_films | length }} film{{ '' if f.owned_films | length == 1 else 's' }} and
         {{ f.owned_shows | length }} show{{ '' if f.owned_shows | length == 1 else 's' }}.
       </p>
