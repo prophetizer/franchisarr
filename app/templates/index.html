@@ -1,10 +1,19 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <hgroup>
-    <h1>Franchisarr</h1>
-    <p>Films missing from collections you already own, and spin-offs of shows you already watch.</p>
-  </hgroup>
+  <div class="page-heading">
+    <hgroup>
+      <h1>Franchisarr</h1>
+      <p>Films missing from collections you already own, and spin-offs of shows you already watch.</p>
+    </hgroup>
+    {#- Surprise me (0.53.0). Showcase's Ctrl+K box links here with ?surprise=1, which spins on load. -#}
+    {% if scanned %}
+      <button type="button" class="secondary surprise-button" hx-get="{{ url('/surprise') }}" hx-target="#surprise-card"
+              hx-swap="innerHTML"{% if surprise_now %} hx-trigger="click, load"{% endif %}>🎲 Surprise me</button>
+    {% endif %}
+  </div>
+  <div id="surprise-card" aria-live="polite"></div>
+  <div id="add-dialog"></div>
 
   {#- Rendered on load so a scan running anywhere -- another tab, the scheduler -- shows here
       and starts polling without anyone pressing anything. -#}

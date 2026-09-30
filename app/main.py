@@ -185,7 +185,7 @@ def _library_counts(session) -> list[tuple[str, int]]:  # noqa: ANN001
 
 
 @router.get("/", response_class=HTMLResponse)
-def index(request: Request, session: DbSession, user: RequiredUser):
+def index(request: Request, session: DbSession, user: RequiredUser, surprise: str | None = None):
     from app.routes_movies import scan_prerequisites
 
     # The library-selection step is part of first-run setup: until something is chosen there is
@@ -236,6 +236,7 @@ def index(request: Request, session: DbSession, user: RequiredUser):
             "scanned": bool(movie_gap_service.owned_tmdb_ids(session, all_servers=True)),
             # Said before anyone presses Scan, not only after (a Reddit report, 0.33.1).
             "scan_blockers": scan_prerequisites(session) if user.is_admin else [],
+            "surprise_now": surprise == "1",
         },
     )
 

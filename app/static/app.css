@@ -1027,5 +1027,26 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
 .trophy-frame .poster-mosaic { border-radius: 0; height: 100%; }
 .trophy-new { color: var(--pico-primary); font-weight: 600; }
 
+/* Surprise me (0.53.0): the pick, poster beside its details. */
+.surprise-button { margin: 0 0 var(--pico-spacing); white-space: nowrap; width: auto; }
+.surprise-card {
+  align-items: start;
+  display: grid;
+  gap: 0 1.25rem;
+  grid-template-columns: minmax(6rem, 10rem) 1fr;
+}
+.surprise-card--empty { display: block; }
+.surprise-poster { aspect-ratio: 2 / 3; border-radius: var(--pico-border-radius); overflow: hidden; position: relative; }
+.surprise-poster img, .surprise-poster > span { display: block; height: 100%; object-fit: cover; width: 100%; }
+.surprise-body h2 { margin-bottom: 0.25rem; }
+.surprise-kicker, .surprise-meta { margin-bottom: 0.4rem; }
+.surprise-plot { font-size: 0.92rem; }
+.surprise-card .card-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.surprise-card .card-actions button { margin: 0; width: auto; }
+@media (max-width: 575px) {
+  .surprise-card { gap: 0 0.9rem; grid-template-columns: 6.5rem 1fr; }
+  .surprise-body h2 { font-size: 1.2rem; }
+}
+
 /* Showcase-only pieces that are in the page for everyone (0.48.0): hidden in Classic. */
 .spotlight, .timeline-ring, .sc-reel { display: none; }

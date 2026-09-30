@@ -1,0 +1,35 @@
+{# Surprise me (0.53.0): one pick, swapped into #surprise-card. data-reel carries the posters
+   Showcase's spin rolls past before landing on this one; Classic just shows the pick. #}
+{% if not pick %}
+  <article class="surprise-card surprise-card--empty">
+    <p>Nothing to pick from yet: no missing film in your collections or directors' lists is rated
+      {{ '%g' | format(min_rating) }} or more by enough people. Try again after a scan.</p>
+    <button type="button" class="secondary outline" onclick="this.closest('#surprise-card').innerHTML = ''">Close</button>
+  </article>
+{% else %}
+  <article class="surprise-card" data-reel='{{ reel | tojson }}'>
+    <div class="surprise-poster">
+      {% if pick.poster %}<img src="{{ pick.poster }}" alt="" decoding="async" width="185" height="278">
+      {% else %}<span class="collection-poster--empty" aria-hidden="true"></span>{% endif %}
+    </div>
+    <div class="surprise-body">
+      <p class="surprise-kicker"><small>🎲 Surprise</small></p>
+      <h2>{{ pick.title }}{% if pick.year %} <small class="muted">({{ pick.year }})</small>{% endif %}</h2>
+      <p class="surprise-meta"><small>
+        ★ {{ '%.1f' | format(pick.rating) }}
+        {%- if about and about.genres %} · {{ about.genres[:3] | join(', ') }}{% endif %}
+        {%- if about and about.runtime %} · {% if about.runtime >= 60 %}{{ about.runtime // 60 }}h{% endif %}{% if about.runtime % 60 %} {{ about.runtime % 60 }}m{% endif %}{% endif %}
+        · {% if pick.by_director %}by{% else %}from{% endif %} <a href="{{ url(pick.path) }}">{{ pick.source }}</a>
+      </small></p>
+      {% if about and about.overview %}<p class="surprise-plot">{{ about.overview }}</p>{% endif %}
+      <div class="card-actions">
+        {% if user and user.is_admin %}
+          <button hx-get="{{ url('/add/' ~ pick.tmdb_id) }}" hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
+        {% endif %}
+        <button class="secondary" hx-get="{{ url('/surprise?avoid=' ~ pick.tmdb_id) }}" hx-target="#surprise-card"
+                hx-swap="innerHTML">🎲 Spin again</button>
+        <button type="button" class="secondary outline" onclick="this.closest('#surprise-card').innerHTML = ''">Close</button>
+      </div>
+    </div>
+  </article>
+{% endif %}

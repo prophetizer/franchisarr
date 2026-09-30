@@ -13,7 +13,7 @@ from sqlmodel import col, select
 
 from app.auth.dependencies import DbSession, RequiredUser
 from app.models import DismissedItem, ItemType
-from app.services import about_service, search_service
+from app.services import about_service, search_service, surprise
 from app.templating import get_templates
 
 router = APIRouter()
@@ -53,3 +53,15 @@ def about_title(request: Request, session: DbSession, user: RequiredUser, kind: 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nothing of that kind.")
     found = about_service.about(session, kind, tmdb_id, about_service.tmdb_for(session))
     return get_templates().TemplateResponse(request, "partials/about.html", {"about": found})
+
+
+@router.get("/surprise", response_class=HTMLResponse)
+def surprise_me(request: Request, session: DbSession, user: RequiredUser, avoid: int | None = None):
+    """Surprise me (0.53.0): a well-rated missing film, picked at random. `avoid` is the one just
+    shown, so "spin again" always moves."""
+    pick, reel = surprise.spin(session, user.id, avoid=avoid)
+    found = about_service.about(session, "movie", pick.tmdb_id, about_service.tmdb_for(session)) if pick else None
+    return get_templates().TemplateResponse(
+        request, "partials/surprise.html", {"user": user, "pick": pick, "reel": reel, "about": found,
+                          "min_rating": surprise.MIN_RATING},
+    )

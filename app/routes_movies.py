@@ -23,7 +23,7 @@ from app.auth.dependencies import AdminUser, DbSession, RequiredUser
 from app.clients.radarr_client import RadarrError
 from app.config import get_settings
 from app.models import CollectionExclude, DismissedItem, ItemType, TmdbCollection
-from app.services import about_service, add_service, instance_service, movie_gap_service, seerr_instance_service
+from app.services import about_service, add_service, instance_service, movie_gap_service, seerr_instance_service, surprise
 from app.services.settings_service import SettingKey, get_setting
 from app.templating import get_templates
 
@@ -296,6 +296,7 @@ def submit_request(
             title=_film_title(session, tmdb_id), user=user,
         )
         context.update(added=True, title=result.title, needs_approval=result.needs_approval)
+        surprise.forget()       # a requested film isn't a surprise any more
     except add_service.AddFailed as exc:
         context["error"] = str(exc)
     return get_templates().TemplateResponse(request, "partials/add_result.html", context)
@@ -332,6 +333,7 @@ def submit_add(
             added=True, title=result.title, instance=result.instance_name,
             searched=result.searched,
         )
+        surprise.forget()       # an added film isn't a surprise any more
     except add_service.AddFailed as exc:
         context["error"] = str(exc)
 

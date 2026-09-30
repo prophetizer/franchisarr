@@ -18,6 +18,7 @@
 //   ambient    -- a blurred copy of the page's artwork lights the whole page (not phones)
 //   seasons    -- October leaves on horror pages, December frost
 //   quick find -- Ctrl+K (or Cmd+K) searches from anywhere
+//   surprise   -- Surprise me's pick lands after a slot-machine spin of posters
 // "Reduce motion" turns off all but the glow, which doesn't move.
 (function () {
   'use strict';
@@ -175,6 +176,12 @@
       if (!shrinking) { shrinking = true; window.requestAnimationFrame(shrink); }
     }, { passive: true });
     window.addEventListener('resize', place);
+    // Whatever sits above it can change height after load -- the scan status when a scan starts,
+    // a Surprise me card (0.53.0) -- and the band must stay pinned where it now starts.
+    if ('ResizeObserver' in window) {
+      var main = spot.closest('main');
+      if (main) { new ResizeObserver(place).observe(main); }
+    }
   }
 
   // ------------------------------------------------------------ rows that glide (0.48.0)
@@ -562,6 +569,8 @@
       finder.setAttribute('aria-label', 'Quick search');
       finder.innerHTML = '<article><input type="search" name="q" autocomplete="off" ' +
         'placeholder="Collection, franchise, director, film or show" aria-label="Search">' +
+        '<a class="sc-quick-surprise" href="' + base + '/?surprise=1">🎲 Surprise me ' +
+        '<small class="muted">a well-rated film you\u2019re missing</small></a>' +
         '<div id="quick-results"></div><p class="sc-quick-keys"><small class="muted">' +
         '↑ ↓ to choose · Enter to go · Esc to close</small></p></article>';
       var box = finder.querySelector('input');
@@ -599,6 +608,45 @@
   });
   document.querySelectorAll('a.nav-search').forEach(function (link) {
     link.title = (link.title ? link.title + ' ' : 'Search ') + '(Ctrl+K)';
+  });
+
+  // ------------------------------------------------------------ surprise (0.53.0)
+  // The pick arrives with the posters to roll past (data-reel). They run down a window over its
+  // poster, slowing like a reel, and land on it; its details come up once it has.
+  document.addEventListener('htmx:afterSwap', function (event) {
+    var card = event.target.id === 'surprise-card' && event.target.querySelector('.surprise-card[data-reel]');
+    if (!card || reduce) { return; }
+    var reel;
+    try { reel = JSON.parse(card.dataset.reel || '[]'); } catch (e) { reel = []; }
+    var frame = card.querySelector('.surprise-poster');
+    var final = frame && frame.querySelector('img');
+    if (!reel.length || !final || !frame.animate) { return; }
+    var body = card.querySelector('.surprise-body');
+    var slot = document.createElement('div');
+    slot.className = 'sc-slot';
+    slot.setAttribute('aria-hidden', 'true');
+    var strip = document.createElement('div');
+    strip.className = 'sc-slot-strip';
+    reel.concat([final.currentSrc || final.src]).forEach(function (src) {
+      var img = document.createElement('img');
+      img.src = src; img.alt = ''; img.decoding = 'async';
+      strip.appendChild(img);
+    });
+    slot.appendChild(strip);
+    frame.appendChild(slot);
+    body.classList.add('sc-hold');
+    var ended = false;
+    var land = function () {
+      if (ended) { return; }
+      ended = true;
+      slot.remove();
+      body.classList.remove('sc-hold');
+    };
+    var steps = reel.length;
+    strip.animate([{ translate: '0 0' }, { translate: '0 ' + (-100 * steps / (steps + 1)).toFixed(3) + '%' }],
+                  { duration: 1900, easing: 'cubic-bezier(0.12, 0.6, 0.15, 1)', fill: 'forwards' })
+      .finished.then(land, land);
+    window.setTimeout(land, 2600);   // however few frames it got
   });
 
   // ------------------------------------------------------------ tilt

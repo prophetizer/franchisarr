@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.53.0] — 2026-09-30
+
+### Added
+
+- **🎲 Surprise me**, on the home page for everyone and at the top of Showcase's Ctrl+K box: a
+  missing film picked at random from your collections and directors' lists — rated 6.5 or more on
+  TMDb by at least 50 people, not one you've dismissed — with its plot, genres, where it's from, an
+  Add button and **Spin again** (which never lands on the same film twice running). In Showcase
+  the posters spin past like a slot machine before it lands.
+
+### Fixed
+
+- Showcase's shrinking spotlight kept pinning to where it started when something above it
+  changed height after the page loaded (the scan status appearing, a Surprise me card); it
+  re-measures now.
+
 ## [0.52.0] — 2026-09-30
 
 ### Added
