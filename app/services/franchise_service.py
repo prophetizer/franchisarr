@@ -513,22 +513,22 @@ def _pick_art(view: FranchiseView, candidates: list, owned_films: int) -> None: 
     logo, which names it, needs the same name; the poster and backdrop also go with a collection
     holding most of the franchise's films. Otherwise: no logo, the mosaic for a poster, and the
     backdrop of the biggest collection -- a picture, not a claim."""
-    if not candidates:
-        return
-    named = next((gap for gap, _ in candidates if _same_name(gap.name, view.name)), None)
-    biggest, count = max(candidates, key=lambda pair: pair[1])
-    if named is not None:
-        view.poster_path, view.backdrop_path, view.logo_url = named.poster_path, named.backdrop_path, named.logo
-    elif count * 2 > owned_films:
-        view.poster_path, view.backdrop_path = biggest.poster_path, biggest.backdrop_path
-    else:
-        view.backdrop_path = biggest.backdrop_path
-        if not view.mosaic:
-            # Too few posters for a mosaic: its earliest title's own poster, which names a film
-            # of the franchise rather than claiming a collection is it.
-            first = next((t for t in view.owned_films + view.owned_shows if t.poster_path), None)
-            if first is not None:
-                view.poster_path = first.poster_path
+    if candidates:
+        named = next((gap for gap, _ in candidates if _same_name(gap.name, view.name)), None)
+        biggest, count = max(candidates, key=lambda pair: pair[1])
+        if named is not None:
+            view.poster_path, view.backdrop_path, view.logo_url = named.poster_path, named.backdrop_path, named.logo
+        elif count * 2 > owned_films:
+            view.poster_path, view.backdrop_path = biggest.poster_path, biggest.backdrop_path
+        else:
+            view.backdrop_path = biggest.backdrop_path
+    if not view.poster_path and not view.mosaic:
+        # Too few posters for a mosaic (or no collection at all -- Arrowverse, Cloverfield): its
+        # earliest title's own poster, which names a film of the franchise rather than claiming
+        # a collection is it.
+        first = next((t for t in view.owned_films + view.owned_shows if t.poster_path), None)
+        if first is not None:
+            view.poster_path = first.poster_path
 
 
 def _from_missing(mm: MissingMovie, via: str, collection_name: str) -> Title:

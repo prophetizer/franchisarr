@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.46.3] — 2026-09-29
+
+### Fixed
+
+- A franchise with no TMDb collection at all (Arrowverse, Cloverfield) showed no poster; it now
+  shows its earliest title's own, as 0.46.2 did for franchises spread over several collections.
+
 ## [0.46.2] — 2026-09-29
 
 ### Fixed

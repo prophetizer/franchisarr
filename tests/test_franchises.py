@@ -484,3 +484,15 @@ def test_too_few_posters_for_a_mosaic_falls_back_to_the_first_titles_own(session
     view = franchise_service.franchise_view(session, "Q642878")
 
     assert view.logo_url is None and view.poster_path == "/f0.jpg" and view.mosaic == []
+
+
+def test_a_franchise_in_no_collection_still_gets_its_first_titles_poster(session: Session) -> None:
+    _own_film(session, 7, "Cloverfield"); _own_film(session, 8, "10 Cloverfield Lane")
+    session.add(Franchise(wikidata_id="Q1", name="Cloverfield", kind="media franchise"))
+    session.add(FranchiseMember(franchise_id="Q1", item_type="movie", tmdb_id=7, title="Cloverfield", year=2008,
+                                poster_path="/c.jpg"))
+    session.add(FranchiseMember(franchise_id="Q1", item_type="movie", tmdb_id=8, title="10 Cloverfield Lane",
+                                year=2016, poster_path="/l.jpg"))
+    session.commit()
+
+    assert franchise_service.franchise_view(session, "Q1").poster_path == "/c.jpg"
