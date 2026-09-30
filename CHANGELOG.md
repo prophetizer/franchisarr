@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.49.1] — 2026-09-29
+
+### Changed
+
+- Showcase's spotlight leads with the best-known collections one or two films from done — the most
+  TMDb votes across their films — so The Lion King and Star Trek come before Frosty the Snowman.
+  Sorting by size (0.49.0) changed little on a library whose nearly-done sets are all small.
+
 ## [0.49.0] — 2026-09-29
 
 ### Added

@@ -49,12 +49,19 @@ class Slide:
 
 
 def spotlight(gaps: list, limit: int = 5) -> list[Slide]:  # noqa: ANN001 - CollectionGap
-    """The collections with a backdrop to fill a screen that are fewest films from done -- and
-    among those, the bigger sets and ones with a logo first (michael, 0.49.0: the first cut led
-    with Frosty the Snowman and a three-film Avengers Grimm)."""
-    ranked = sorted((g for g in gaps if g.missing and g.backdrop),
-                    key=lambda g: (len(g.missing), g.logo_image is None, -(len(g.owned) + len(g.missing)),
-                                   g.name.casefold()))
+    """Collections with a backdrop to fill a screen, one or two films from done, best-known first
+    -- the most TMDb votes across their films -- then the rest by how close they are (michael,
+    0.49.1). Bigger-first (0.49.0) changed nothing on his library, whose one-away sets top out
+    at six films; what separated Star Trek from Frosty the Snowman was how well-known they are."""
+    def fame(g) -> int:  # noqa: ANN001
+        return sum(getattr(m, "vote_count", 0) or 0 for m in (*g.owned, *g.missing))
+
+    candidates = [g for g in gaps if g.missing and g.backdrop]
+    near = sorted((g for g in candidates if len(g.missing) <= 2),
+                  key=lambda g: (-fame(g), len(g.missing), g.name.casefold()))
+    rest = sorted((g for g in candidates if len(g.missing) > 2),
+                  key=lambda g: (-len(g.owned) / (len(g.owned) + len(g.missing)), g.name.casefold()))
+    ranked = near + rest
     slides = []
     for g in ranked[:limit]:
         owned, total = len(g.owned), len(g.owned) + len(g.missing)
