@@ -15,7 +15,10 @@
       turned by showcase.js. Always in the page, shown only in the Showcase look (app.css hides
       it; its images are lazy, so Classic never fetches them). -#}
   {% if spotlight %}
+    {#- The band inside is what you see; the section around it is what the page lays out. As
+        you scroll, showcase.js shrinks both (0.50.0), the band pinned where it started. -#}
     <section class="spotlight" aria-label="Nearly complete" aria-roledescription="carousel">
+      <div class="spotlight-band">
       {% for s in spotlight %}
         <a href="{{ url(s.path) }}" class="spotlight-slide{% if loop.first %} is-current{% endif %}"
            aria-label="{{ s.title }}: {{ s.detail }}" {% if not loop.first %}aria-hidden="true" tabindex="-1"{% endif %}>
@@ -37,6 +40,7 @@
           {% endfor %}
         </div>
       {% endif %}
+      </div>
     </section>
   {% endif %}
 

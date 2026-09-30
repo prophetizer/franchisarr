@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.50.0] — 2026-09-30
+
+### Added
+
+Showcase:
+
+- **The spotlight shrinks as you scroll.** It stays where it is and shrinks to a slim strip, its
+  kicker and bar folding away, so the poster rows come up twice as fast; then it scrolls off.
+  Phones and "reduce motion" get a shorter spotlight that stays put.
+- **A frosted top bar**, pinned while you scroll, tinted with the page's colour and more compact
+  than Classic's.
+- **Posters sharpen in** from a blur as they load, with a shimmer where each will be.
+- **Missing films as gaps on the shelf.** On collection, franchise and director pages the films
+  you don't have are dimmed in a dashed outline and come up in colour when pointed at; the ones
+  you have are shown at full strength.
+- **A loading bar** — a thin glow across the top while an add, scan, sync or saved form works.
+
 ## [0.49.1] — 2026-09-29
 
 ### Changed

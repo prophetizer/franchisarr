@@ -9,6 +9,9 @@
 //   transition -- the clicked poster grows into the next page (view transitions)
 //   confetti   -- a collection just completed (not on phones)
 //   tilt       -- cards lean toward the pointer, with a glare (mouse and pen only)
+//   shrink     -- the spotlight shrinks to a strip as you scroll (not on phones)
+//   fade-in    -- posters sharpen in as they load, a shimmer where they'll be
+//   busy bar   -- a glow runs along the top while a button's request works
 // "Reduce motion" turns off all but the glow, which doesn't move.
 (function () {
   'use strict';
@@ -133,6 +136,28 @@
     }
   }
 
+  // ------------------------------------------------------------ spotlight shrinks (0.50.0)
+  // showcase.css does the sizing from two numbers: how far the page has scrolled (--sc-y) and
+  // where the band starts (--sc-top), which it stays pinned to while it shrinks. Past the point
+  // where it's a strip nothing changes, so the page stops being told.
+  if (spot && !reduce && !phone) {
+    var shrinking = false, lastY = -1;
+    var place = function () {
+      spot.style.setProperty('--sc-top', (spot.getBoundingClientRect().top + window.scrollY).toFixed(0) + 'px');
+    };
+    var shrink = function () {
+      shrinking = false;
+      var y = Math.min(Math.max(window.scrollY, 0), window.innerHeight);
+      if (y !== lastY) { lastY = y; spot.style.setProperty('--sc-y', y.toFixed(0) + 'px'); }
+    };
+    place();
+    shrink();
+    window.addEventListener('scroll', function () {
+      if (!shrinking) { shrinking = true; window.requestAnimationFrame(shrink); }
+    }, { passive: true });
+    window.addEventListener('resize', place);
+  }
+
   // ------------------------------------------------------------ rows that glide (0.48.0)
   // Arrows on a poster row that runs off the screen, each sliding it most of a screen along.
   if (!phone) {
@@ -252,6 +277,74 @@
     window.requestAnimationFrame(frame);
     window.setTimeout(function () { canvas.remove(); }, 6000);   // however few frames it got
   }
+
+  // ------------------------------------------------------------ posters fade in (0.50.0)
+  // An image still loading gets a shimmer (.sc-pending), and sharpens in when it arrives. One
+  // already loaded -- from the cache, usually -- is left as it is, as are the images something
+  // else animates: the spotlight's, the release strip's, and the detail page's own poster and
+  // banner, which the page transition hands over from the page before.
+  var OWN_MOTION = '.spotlight, .timeline, .collection-heading';
+  var soften = function (img) {
+    if (img.dataset.scSoft || (img.complete && img.naturalWidth) || img.closest(OWN_MOTION)) { return; }
+    img.dataset.scSoft = '1';
+    img.classList.add('sc-pending');
+    var arrived = function () {
+      img.classList.remove('sc-pending');
+      if (!reduce && img.naturalWidth) { img.classList.add('sc-arrived'); }
+    };
+    img.addEventListener('load', arrived, { once: true });
+    img.addEventListener('error', arrived, { once: true });
+  };
+  var softenIn = function (el) {
+    if (el.tagName === 'IMG') { soften(el); } else if (el.querySelectorAll) { el.querySelectorAll('main img').forEach(soften); }
+  };
+  softenIn(document);
+  // htmx puts new content in (a panel, a list after a dismiss): the same for its images.
+  document.addEventListener('htmx:load', function (event) {
+    if (event.target.closest && event.target.closest('main')) { softenIn(event.target); }
+  });
+
+  // ------------------------------------------------------------ busy bar (0.50.0)
+  // For a button's request -- an add, a scan, a sync, a form sent -- not for the page's own polls
+  // (GETs), and only once it has taken a moment, so a quick one doesn't flash. A form that sends
+  // the whole page away has nothing to say it's done: the next page doesn't have the bar on, and
+  // one that never leaves (a download) is let go of after 20 seconds.
+  var bar = document.createElement('div');
+  bar.className = 'sc-busy';
+  bar.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(bar);
+  var working = new Set(), leaving = false, soon = null, giveUp = null;
+  var paint = function () {
+    var on = leaving || working.size > 0;
+    window.clearTimeout(soon);
+    if (on && !bar.classList.contains('is-on')) {
+      soon = window.setTimeout(function () { bar.classList.add('is-on'); }, 150);
+      window.clearTimeout(giveUp);
+      giveUp = window.setTimeout(function () { working.clear(); leaving = false; paint(); }, 20000);
+    } else if (!on) {
+      bar.classList.remove('is-on');
+      window.clearTimeout(giveUp);
+    }
+  };
+  document.addEventListener('htmx:beforeRequest', function (event) {
+    var config = event.detail && event.detail.requestConfig;
+    if (!config || String(config.verb).toLowerCase() === 'get') { return; }
+    working.add(event.detail.xhr);
+    paint();
+  });
+  ['htmx:afterRequest', 'htmx:sendError', 'htmx:timeout', 'htmx:sendAbort'].forEach(function (name) {
+    document.addEventListener(name, function (event) {
+      if (event.detail && working.delete(event.detail.xhr)) { paint(); }
+    });
+  });
+  // Last in line, so it sees whether a confirm() said no or htmx took the form over.
+  document.addEventListener('submit', function (event) {
+    var form = event.target;
+    if (event.defaultPrevented || (form.target && form.target !== '_self')) { return; }
+    leaving = true;
+    paint();
+  });
+  window.addEventListener('pageshow', function () { working.clear(); leaving = false; paint(); });
 
   // ------------------------------------------------------------ tilt
   if (!reduce && !phone) {

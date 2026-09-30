@@ -93,3 +93,39 @@ def test_showcase_hides_its_pieces_from_classic_and_opts_into_page_transitions()
     assert "@view-transition { navigation: auto; }" in showcase
     reduce = showcase[showcase.index("@media (prefers-reduced-motion: reduce)"):]
     assert "@view-transition { navigation: none; }" in reduce, "no morphing for reduce motion"
+
+
+def test_the_spotlight_shrinks_without_losing_what_made_it_work() -> None:
+    """0.50.0's shrinking spotlight: each rule here was a bug in the browser before it was a rule."""
+    import re
+    from pathlib import Path
+
+    showcase = (Path(__file__).resolve().parents[1] / "app" / "static" / "showcase.css").read_text()
+    section = re.search(r'\[data-look="showcase"\] \.spotlight \{(.*?)\n\}', showcase, re.S).group(1)
+    assert "display: block;" in section, "app.css hides it for Classic; Showcase has to show it again"
+    assert "overflow: clip;" in section and "overflow: hidden" not in section, "hidden would stop the band sticking"
+    band = re.search(r'\[data-look="showcase"\] \.spotlight-band \{(.*?)\n\}', showcase, re.S).group(1)
+    assert "position: sticky;" in band
+    backdrop = re.search(r'\[data-look="showcase"\] \.spotlight-backdrop \{(.*?)\n\}', showcase, re.S).group(1)
+    assert "max-width: none;" in backdrop, "Pico caps an image at the band's width, short of the window's edges"
+    # Phones and "reduce motion" get a shorter band that stays put.
+    phones = showcase[showcase.index("@media (pointer: coarse), (max-width: 767px)"):]
+    assert "--sc-full: 20rem" in phones
+    assert "--sc-full: min(45vh, 26rem)" in showcase[showcase.index("@media (prefers-reduced-motion: reduce)"):]
+
+
+def test_empty_slots_only_where_owned_films_sit_beside_them() -> None:
+    """A search result or a list of nothing but missing films isn't a shelf with gaps in it."""
+    from pathlib import Path
+
+    showcase = (Path(__file__).resolve().parents[1] / "app" / "static" / "showcase.css").read_text()
+    slots = [line for line in showcase.splitlines() if ".film-tile.missing" in line]
+    assert slots and all("main:has(.collection-grid--owned)" in line for line in slots)
+
+
+def test_the_home_page_wraps_the_spotlight_in_its_band() -> None:
+    from pathlib import Path
+
+    template = (Path(__file__).resolve().parents[1] / "app" / "templates" / "index.html").read_text()
+    start = template.index('<section class="spotlight"')
+    assert template.index('<div class="spotlight-band">', start) < template.index('class="spotlight-slide', start)
