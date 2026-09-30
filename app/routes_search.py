@@ -65,3 +65,15 @@ def surprise_me(request: Request, session: DbSession, user: RequiredUser, avoid:
         request, "partials/surprise.html", {"user": user, "pick": pick, "reel": reel, "about": found,
                           "min_rating": surprise.MIN_RATING},
     )
+
+
+@router.get("/trailer/{kind}/{tmdb_id}", response_class=HTMLResponse)
+def play_trailer(request: Request, session: DbSession, user: RequiredUser, kind: str, tmdb_id: int,
+                 title: str = ""):
+    """A trailer in a pop-up (0.54.0): YouTube's privacy-enhanced player, loaded only now that
+    someone has pressed Play. Swapped into #trailer, which every page has."""
+    if kind not in (ItemType.MOVIE.value, ItemType.SHOW.value):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nothing of that kind.")
+    key = about_service.trailer(kind, tmdb_id, about_service.tmdb_for(session))
+    return get_templates().TemplateResponse(request, "partials/trailer.html",
+                                            {"key": key, "title": title[:200]})

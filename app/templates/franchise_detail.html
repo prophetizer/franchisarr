@@ -2,6 +2,7 @@
 {% block title %}{{ f.name }} — Franchisarr{% endblock %}
 
 {% from "partials/tile.html" import tile %}
+{% from "partials/trailer_button.html" import trailer_button %}
 {% macro row(t, css) -%}
   {% call tile(t.poster, css, (t.item_type ~ '/' ~ t.tmdb_id) if css == 'missing' else None) %}
     <header>
@@ -19,14 +20,17 @@
       {% else %}{{ t.note }}{% endif %}
     </span></p>
     {% endif %}
-    {% if css != 'owned' and user and user.is_admin %}
+    {% if css != 'owned' and ((user and user.is_admin) or css == 'missing') %}
       <p class="card-actions">
+        {% if user and user.is_admin %}
         {% if t.item_type == 'movie' %}
           <button class="{{ 'outline' if css == 'upcoming' else '' }}"
                   hx-get="{{ url('/add/' ~ t.tmdb_id) }}" hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
         {% else %}
           <button hx-get="{{ url('/shows/add/' ~ t.tmdb_id) }}" hx-target="#add-show-dialog" hx-swap="innerHTML">Add</button>
         {% endif %}
+        {% endif %}
+        {% if css == 'missing' %}{{ trailer_button(t.item_type, t.tmdb_id, t.title, '▶') }}{% endif %}
       </p>
     {% endif %}
   {% endcall %}

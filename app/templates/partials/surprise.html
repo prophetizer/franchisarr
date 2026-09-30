@@ -1,3 +1,4 @@
+{% from "partials/trailer_button.html" import trailer_button %}
 {# Surprise me (0.53.0): one pick, swapped into #surprise-card. data-reel carries the posters
    Showcase's spin rolls past before landing on this one; Classic just shows the pick. #}
 {% if not pick %}
@@ -26,6 +27,7 @@
         {% if user and user.is_admin %}
           <button hx-get="{{ url('/add/' ~ pick.tmdb_id) }}" hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
         {% endif %}
+        {{ trailer_button('movie', pick.tmdb_id, pick.title) }}
         <button class="secondary" hx-get="{{ url('/surprise?avoid=' ~ pick.tmdb_id) }}" hx-target="#surprise-card"
                 hx-swap="innerHTML">🎲 Spin again</button>
         <button type="button" class="secondary outline" onclick="this.closest('#surprise-card').innerHTML = ''">Close</button>

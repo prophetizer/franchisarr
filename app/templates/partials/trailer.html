@@ -1,0 +1,21 @@
+{# A trailer (0.54.0), swapped into #trailer. The key was checked against YouTube's id format
+   before it got here. referrerpolicy: the app sends referrers only to itself, and YouTube's
+   player refuses to play without one (error 153); this frame alone sends the site's origin. #}
+<dialog open class="trailer-dialog" aria-label="Trailer{% if title %}: {{ title }}{% endif %}"
+        onclick="if (event.target === this) { document.getElementById('trailer').innerHTML = ''; }">
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" onclick="document.getElementById('trailer').innerHTML = ''"></button>
+      <strong>{{ title or 'Trailer' }}</strong>
+    </header>
+    {% if key %}
+      <div class="trailer-frame">
+        <iframe src="https://www.youtube-nocookie.com/embed/{{ key }}?autoplay=1&amp;rel=0&amp;modestbranding=1"
+                title="{{ title or 'Trailer' }}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+      </div>
+    {% else %}
+      <p>TMDb doesn't list a trailer for this one.</p>
+    {% endif %}
+  </article>
+</dialog>

@@ -30,6 +30,8 @@
       <div class="spotlight-band">
       {% for s in spotlight %}
         <a href="{{ url(s.path) }}" class="spotlight-slide{% if loop.first %} is-current{% endif %}"
+           {% if s.next_id %}data-trailer="{{ url('/trailer/movie/' ~ s.next_id) }}?title={{ s.next_title | urlencode }}"
+           data-trailer-title="{{ s.next_title }}"{% endif %}
            aria-label="{{ s.title }}: {{ s.detail }}" {% if not loop.first %}aria-hidden="true" tabindex="-1"{% endif %}>
           <img class="spotlight-backdrop" src="{{ s.backdrop }}" alt="" loading="lazy" decoding="async">
           <span class="spotlight-text">
@@ -41,6 +43,9 @@
           </span>
         </a>
       {% endfor %}
+      {#- One button for whichever slide is showing (a button can't sit inside the slide's link);
+          showcase.js points it at the current slide's film. -#}
+      <button type="button" class="spotlight-trailer secondary" hidden>▶ Trailer</button>
       {% if spotlight | length > 1 %}
         <div class="spotlight-dots" role="tablist" aria-label="Choose a slide">
           {% for s in spotlight %}

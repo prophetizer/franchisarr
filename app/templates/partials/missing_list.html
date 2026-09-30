@@ -1,6 +1,7 @@
 {# Re-rendered on its own by htmx after a dismiss or exclude, so it must not depend on anything
    the full page sets up beyond `gap`. #}
 {% from "partials/tile.html" import tile %}
+{% from "partials/trailer_button.html" import trailer_button %}
 {% if gap.missing %}
   <div class="collection-grid collection-grid--compact">
     {% for movie in sort_titles(gap.missing, detail_sort or 'release') %}
@@ -12,6 +13,7 @@
           <button hx-get="{{ url('/add/' ~ movie.tmdb_id) }}"
                   hx-target="#add-dialog" hx-swap="innerHTML">Add</button>
           {% endif %}
+          {{ trailer_button('movie', movie.tmdb_id, movie.title, '▶') }}
 
           {# Two different kinds of "hide this", deliberately not one button. Dismiss is a personal
              preference; exclude is a correction to TMDb's data that everyone should get. #}

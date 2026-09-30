@@ -12,6 +12,7 @@ question this project will ever get.
 from __future__ import annotations
 
 import logging
+import re
 import time
 from dataclasses import dataclass, field
 
@@ -32,6 +33,8 @@ MAX_REQUESTS_PER_SECOND = 20
 #: A 429 should be rare given the limiter, but TMDb's own accounting is what counts.
 MAX_RETRIES = 3
 
+#: A YouTube video id. Checked before one goes anywhere near a page (0.54.0's trailers).
+YOUTUBE_KEY = re.compile(r"[A-Za-z0-9_-]{11}")
 #: TMDb's genre id for Horror (Showcase's October touch, 0.51.0).
 HORROR_GENRE = 27
 #: TMDb's genre id for Documentary.
@@ -276,6 +279,23 @@ class TmdbClient:
             genres=_genre_names(payload),
             vote_average=_as_float(payload.get("vote_average")),
         )
+
+    def get_trailer(self, tmdb_id: int, kind: str = "movie") -> str | None:
+        """The YouTube key of a film's (or, kind="tv", a show's) trailer, or None. Official
+        trailers first, then any trailer, then a teaser; English before other languages, which
+        is what the request asks for (with untagged videos as the fallback)."""
+        payload = self._get(f"/{'tv' if kind == 'tv' else 'movie'}/{tmdb_id}/videos",
+                            {"include_video_language": "en,null"})
+        videos = [v for v in payload.get("results") or []
+                  if isinstance(v, dict) and v.get("site") == "YouTube"
+                  and YOUTUBE_KEY.fullmatch(str(v.get("key") or ""))]
+        ranked = sorted(videos, key=lambda v: (
+            {"Trailer": 0, "Teaser": 1}.get(v.get("type"), 2),
+            not v.get("official"),
+            v.get("iso_639_1") not in ("en", None),
+        ))
+        best = ranked[0] if ranked and ranked[0].get("type") in ("Trailer", "Teaser") else None
+        return str(best["key"]) if best else None
 
     def get_collection(self, collection_id: int) -> TmdbCollectionDetails:
         payload = self._get(f"/collection/{collection_id}")

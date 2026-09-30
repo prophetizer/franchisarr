@@ -1048,5 +1048,11 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
   .surprise-body h2 { font-size: 1.2rem; }
 }
 
+/* Trailers (0.54.0): a wide pop-up with a 16:9 player; ▶ on a tile is a small square button. */
+.trailer-dialog > article { max-width: none; width: min(60rem, 94vw); }
+.trailer-frame { aspect-ratio: 16 / 9; border-radius: var(--pico-border-radius); overflow: hidden; }
+.trailer-frame iframe { border: 0; display: block; height: 100%; width: 100%; }
+.card-actions .trailer-button { padding-inline: 0.7rem; }
+
 /* Showcase-only pieces that are in the page for everyone (0.48.0): hidden in Classic. */
 .spotlight, .timeline-ring, .sc-reel { display: none; }

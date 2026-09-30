@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.54.0] — 2026-09-30
+
+### Added
+
+- **▶ Trailers**, for everyone: a play button on missing films' tiles (collection, franchise and
+  director pages), on the Surprise me card, on the back of a turned-over poster, and in Showcase's
+  spotlight (the film that would finish that set). The trailer TMDb lists — an official one first,
+  English first, a teaser if that's all there is — plays in a pop-up; Esc or a click outside
+  closes it.
+
+### Security
+
+- The Content-Security-Policy gains `frame-src https://www.youtube-nocookie.com`, YouTube's
+  privacy-enhanced player, and nothing else. Nothing from YouTube loads until a trailer is played.
+  That one frame sends your install's origin as its referrer (the rest of the app still sends
+  referrers only to itself), because YouTube's player refuses to play without one.
+
 ## [0.53.0] — 2026-09-30
 
 ### Added

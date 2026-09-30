@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.53.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.54.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -251,6 +251,12 @@ bar runs like film.
 missing at random — one rated 6.5 or more on TMDb by at least 50 people, from your collections
 and directors' lists, and not one you've dismissed — with its plot, where it's from, an Add button
 and **Spin again**. Showcase spins through posters like a slot machine before it lands.
+
+**▶ Trailers**, in either look: a missing film's tile (collection, franchise and director pages),
+the Surprise me card, the back of a turned-over poster and the Showcase spotlight each have a play
+button, which opens the trailer TMDb lists in a pop-up. It plays in YouTube's privacy-enhanced
+player (youtube-nocookie.com); nothing from YouTube loads until someone presses play, and then
+YouTube sees your Franchisarr's address (the origin only — its player won't play without it).
 
 The **Trophy case** (Browse → Trophy case, in either look) shelves everything your library has
 finished — every collection, franchise and director's filmography with each released film in it

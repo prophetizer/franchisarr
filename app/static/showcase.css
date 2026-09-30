@@ -762,6 +762,26 @@
 }
 [data-look="showcase"] .sc-quick-surprise:is(:hover, :focus) { background: color-mix(in srgb, var(--sc-glow) 16%, transparent); outline: none; }
 
+/* ---------------------------------------------------------------- trailers (0.54.0) */
+[data-look="showcase"] .spotlight-trailer {
+  bottom: 2.6rem;
+  margin: 0;
+  max-width: min(22rem, 70%);
+  overflow: hidden;
+  padding: 0.35rem 0.9rem;
+  position: absolute;
+  right: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: auto;
+  z-index: 2;
+}
+[data-look="showcase"] .trailer-dialog > article {
+  animation: sc-peek-in 0.35s var(--sc-ease) both;
+  border: 1px solid color-mix(in srgb, var(--sc-glow) 45%, transparent);
+  box-shadow: 0 0 3rem color-mix(in srgb, var(--sc-glow) 30%, transparent);
+}
+
 /* Phones: no tilt (there's no pointer to follow) and a calmer banner. */
 @media (pointer: coarse), (max-width: 767px) {
   [data-look="showcase"] .collection-heading.has-backdrop { min-height: 22rem; }

@@ -145,7 +145,29 @@
       });
       dots.forEach(function (dot, i) { dot.setAttribute('aria-selected', i === at ? 'true' : 'false'); });
       glowOf(slides[at].querySelector('.spotlight-backdrop'));   // the page's colour follows the slide
+      pointTrailer();
     };
+    // ▶ Trailer (0.54.0): the film that would finish the slide's set.
+    var trailerButton = spot.querySelector('.spotlight-trailer');
+    var pointTrailer = function () {
+      if (!trailerButton) { return; }
+      var slide = slides[at];
+      // Not "and htmx": this file runs before htmx.min.js has (both deferred, this one first).
+      trailerButton.hidden = !(slide && slide.dataset.trailer);
+      if (!trailerButton.hidden) {
+        trailerButton.textContent = '▶ Trailer: ' + slide.dataset.trailerTitle;
+        trailerButton.setAttribute('aria-label', 'Play the trailer for ' + slide.dataset.trailerTitle);
+      }
+    };
+    if (trailerButton) {
+      trailerButton.addEventListener('click', function () {
+        var slide = slides[at];
+        if (slide && slide.dataset.trailer && window.htmx) {
+          window.htmx.ajax('GET', slide.dataset.trailer, { target: '#trailer', swap: 'innerHTML' });
+        }
+      });
+    }
+    pointTrailer();
     dots.forEach(function (dot) {
       dot.addEventListener('click', function () { go(parseInt(dot.dataset.slide, 10)); });
     });

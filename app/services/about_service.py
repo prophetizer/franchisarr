@@ -91,3 +91,27 @@ def is_horror(session: Session, *, collection_id: int | None = None, film_ids: l
         return False
     genres = {tmdb_id: genre_ids(raw) for tmdb_id, raw in session.exec(query).all()}
     return bool(genres) and sum(HORROR_GENRE in g for g in genres.values()) * 2 > len(genres)
+
+
+_trailers: OrderedDict[tuple[str, int], str | None] = OrderedDict()
+
+
+def trailer(kind: str, tmdb_id: int, tmdb: TmdbClient | None) -> str | None:
+    """A film's or show's YouTube trailer key (0.54.0), asked of TMDb once and remembered --
+    "none" included, so a film without one isn't asked about on every press."""
+    key = (kind, tmdb_id)
+    with _lock:
+        if key in _trailers:
+            _trailers.move_to_end(key)
+            return _trailers[key]
+    if tmdb is None:
+        return None
+    try:
+        found = tmdb.get_trailer(tmdb_id, "tv" if kind == "show" else "movie")
+    except TmdbError:
+        return None                      # not remembered: TMDb may be back in a minute
+    with _lock:
+        _trailers[key] = found
+        while len(_trailers) > REMEMBERED:
+            _trailers.popitem(last=False)
+    return found

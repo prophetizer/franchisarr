@@ -137,3 +137,4 @@ def test_a_proxy_injected_theme_stylesheet_is_allowed_by_the_csp() -> None:
     assert "https:" in directives["img-src"] and "https:" in directives["font-src"]
     assert directives["script-src"] == ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
     assert directives["frame-ancestors"] == ["'none'"]
+    assert directives["frame-src"] == ["https://www.youtube-nocookie.com"], "trailers, and only them"

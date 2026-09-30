@@ -1,0 +1,7 @@
+{# Play trailer (0.54.0): opens the pop-up in #trailer. Nothing from YouTube loads until pressed. #}
+{% macro trailer_button(kind, tmdb_id, title, label='▶ Trailer') -%}
+  <button type="button" class="secondary outline trailer-button" title="Play the trailer"
+          aria-label="Play the trailer for {{ title }}"
+          hx-get="{{ url('/trailer/' ~ kind ~ '/' ~ tmdb_id) }}?title={{ title | urlencode }}"
+          hx-target="#trailer" hx-swap="innerHTML">{{ label }}</button>
+{%- endmacro %}

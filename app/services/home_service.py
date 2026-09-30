@@ -46,6 +46,9 @@ class Slide:
     path: str
     owned: int
     total: int
+    #: The film that would finish it -- the earliest missing -- for the ▶ Trailer (0.54.0).
+    next_id: int | None = None
+    next_title: str = ""
 
 
 def spotlight(gaps: list, limit: int = 5) -> list[Slide]:  # noqa: ANN001 - CollectionGap
@@ -66,9 +69,11 @@ def spotlight(gaps: list, limit: int = 5) -> list[Slide]:  # noqa: ANN001 - Coll
     for g in ranked[:limit]:
         owned, total = len(g.owned), len(g.owned) + len(g.missing)
         left = len(g.missing)
+        first = min(g.missing, key=lambda m: (getattr(m, "release_date", None) or "9999", str(getattr(m, "title", ""))))
         slides.append(Slide(g.name, f"You have {owned} of {total} — {left} to go" if left > 1 else
                             f"You have {owned} of {total} — one film away",
-                            g.backdrop, g.logo_image, g.poster, f"/collections/{g.collection_id}", owned, total))
+                            g.backdrop, g.logo_image, g.poster, f"/collections/{g.collection_id}", owned, total,
+                            getattr(first, "tmdb_id", None), getattr(first, "title", "")))
     return slides
 
 

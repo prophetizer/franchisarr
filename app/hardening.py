@@ -264,6 +264,8 @@ def security_headers() -> dict[str, str]:
         "img-src 'self' data: https:",
         "font-src 'self' data: https:",
         "connect-src 'self'",
+        # Trailers (0.54.0) play in YouTube's privacy-enhanced player, and nothing else frames.
+        "frame-src https://www.youtube-nocookie.com",
         "frame-ancestors 'none'",
         "object-src 'none'",
         "base-uri 'self'",
