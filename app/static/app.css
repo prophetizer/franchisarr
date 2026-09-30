@@ -990,5 +990,42 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
 }
 .poster-mosaic img { aspect-ratio: auto; border-radius: 0; display: block; height: 100%; min-height: 0; object-fit: cover; width: 100%; }
 
+/* The Trophy case (0.52.0): milestones as chips, then shelves of posters. Showcase adds the gold. */
+.trophy-badges ul { display: flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; margin: 0 0 var(--pico-block-spacing-vertical); padding: 0; }
+.trophy-badge {
+  align-items: center;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 999px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0.3rem 0.85rem;
+}
+.trophy-badge--next { border-style: dashed; color: var(--pico-muted-color); }
+.trophy-badge progress { height: 0.3rem; margin: 0; width: 4rem; }
+.trophy-shelf {
+  display: grid;
+  gap: 1.25rem 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 8.5rem), 1fr));
+  margin-bottom: var(--pico-block-spacing-vertical);
+}
+.trophy { color: inherit; display: flex; flex-direction: column; gap: 0.2rem; text-decoration: none; }
+.trophy strong { font-size: 0.9rem; line-height: 1.25; }
+.trophy small { font-size: 0.75rem; }
+.trophy-frame {
+  aspect-ratio: 2 / 3;
+  background: var(--pico-card-sectioning-background-color);
+  border-radius: var(--pico-border-radius);
+  display: block;
+  margin-bottom: 0.3rem;
+  overflow: hidden;
+  position: relative;
+}
+.trophy-frame img, .trophy-blank { display: block; height: 100%; object-fit: cover; width: 100%; }
+.trophy-frame .poster-mosaic { border-radius: 0; height: 100%; }
+.trophy-new { color: var(--pico-primary); font-weight: 600; }
+
 /* Showcase-only pieces that are in the page for everyone (0.48.0): hidden in Classic. */
 .spotlight, .timeline-ring, .sc-reel { display: none; }

@@ -44,7 +44,7 @@ def _menu(page: str, label: str) -> list[str]:
 def test_an_admin_gets_browse_manage_and_their_own_menu(client: TestClient) -> None:
     page = client.get(f"{BASE}/collections").text
 
-    assert _menu(page, "Browse") == ["Franchises", "Collections", "Spin-offs", "Upcoming", "Directors"]
+    assert _menu(page, "Browse") == ["Franchises", "Collections", "Spin-offs", "Upcoming", "Directors", "Trophy case"]
     assert "<summary>Playlists</summary>" not in page, "one page with tabs since 0.42.0: a plain link"
     assert f'href="{BASE}/playlists" class="nav-link"' in page
     assert _menu(page, "Manage") == ["Servers", "Libraries", "Instances", "Users", "Settings", "Activity"]

@@ -56,7 +56,7 @@
           so they can't disagree. Each item is (path, label). -#}
       {% if user %}
         {% set browse = [('/franchises', 'Franchises'), ('/collections', 'Collections'), ('/shows', 'Spin-offs'),
-                         ('/upcoming', 'Upcoming'), ('/directors', 'Directors')] %}
+                         ('/upcoming', 'Upcoming'), ('/directors', 'Directors'), ('/trophies', 'Trophy case')] %}
         {% set manage = [('/media-servers', 'Servers'), ('/libraries', 'Libraries'), ('/instances', 'Instances'),
                          ('/users', 'Users'), ('/settings', 'Settings'), ('/activity', 'Activity')] if user.is_admin else [] %}
         {#- Playlists is one page with tabs (0.42.0): a plain link, not a menu. -#}

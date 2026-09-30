@@ -28,6 +28,9 @@
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var phone = window.matchMedia('(pointer: coarse), (max-width: 767px)').matches;
   var root = document.documentElement;
+  // The Trophy case's gold (0.52.0). Set here, not in showcase.css, which holds no colour of its
+  // own so that a theme can repaint everything; a trophy's gold is the one thing it shouldn't.
+  root.style.setProperty('--sc-gold', 'rgb(232 186 84)');
 
   // ------------------------------------------------------------ glow
   // TMDb's image server allows cross-origin reads, so a copy loaded with crossOrigin can be

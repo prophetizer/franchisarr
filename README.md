@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.51.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.52.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -246,6 +246,11 @@ Showcase throws **confetti** with a "Collection complete!" message, once for eac
 their next visit to the home page or that collection. (Collections already complete when you
 first upgrade aren't news, and don't count.) While a scan runs, a film reel turns and the progress
 bar runs like film.
+
+The **Trophy case** (Browse → Trophy case, in either look) shelves everything your library has
+finished — every collection, franchise and director's filmography with each released film in it
+— newest first, with milestone badges (first complete collection, 10, 25, 50…) and how far off the
+next one is. Showcase frames them in gold.
 
 Franchise and collection pages open with the whole set **in release order** — a strip of
 posters, the ones you have in colour and the ones you don't dimmed, so the holes in the run show

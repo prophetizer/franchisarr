@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Trophy case — Franchisarr{% endblock %}
+
+{% macro shelf(items, kind) -%}
+  <div class="trophy-shelf">
+    {% for t in items %}
+      <a href="{{ url(t.path) }}" class="trophy{% if t.new %} trophy--new{% endif %} trophy--{{ kind }}" style="--i: {{ loop.index0 % 12 }}">
+        <span class="trophy-frame">
+          {% if t.image %}<img src="{{ t.image }}" alt="" loading="lazy" decoding="async" width="92" height="138">
+          {% elif t.mosaic %}<span class="poster-mosaic">{% for src in t.mosaic %}<img src="{{ src }}" alt="" loading="lazy" decoding="async">{% endfor %}</span>
+          {% else %}<span class="trophy-blank" aria-hidden="true"></span>{% endif %}
+        </span>
+        <strong>{{ t.name }}</strong>
+        <small class="muted">{{ t.detail }}{% if t.when %} · {% if t.new %}<span class="trophy-new">new, </span>{% endif %}{{ t.when | ago }}{% endif %}</small>
+      </a>
+    {% endfor %}
+  </div>
+{%- endmacro %}
+
+{% block content %}
+<hgroup class="trophy-heading">
+  <h1>Trophy case</h1>
+  <p>
+    {% if case.total %}
+      Everything your library has finished:
+      <span data-count>{{ case.count('collections') }}</span> collection{{ '' if case.count('collections') == 1 else 's' }},
+      <span data-count>{{ case.count('franchises') }}</span> franchise{{ '' if case.count('franchises') == 1 else 's' }} and
+      <span data-count>{{ case.count('directors') }}</span> complete filmograph{{ 'y' if case.count('directors') == 1 else 'ies' }}.
+    {% else %}
+      Nothing finished yet. A collection lands here when every released film of it is in your library.
+    {% endif %}
+  </p>
+</hgroup>
+
+{% if case.earned or case.next_up %}
+  <section class="trophy-badges" aria-label="Milestones">
+    <ul>
+      {% for b in case.earned %}
+        <li class="trophy-badge trophy-badge--earned" style="--i: {{ loop.index0 }}"><span aria-hidden="true">🏆</span> {{ b.label }}</li>
+      {% endfor %}
+      {% for b in case.next_up %}
+        <li class="trophy-badge trophy-badge--next" title="{{ b.have }} of {{ b.threshold }}">
+          <span aria-hidden="true">🔒</span> {{ b.label }}
+          <small class="muted">{{ b.to_go }} to go</small>
+          <progress value="{{ b.have }}" max="{{ b.threshold }}" aria-label="{{ b.have }} of {{ b.threshold }}"></progress>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endif %}
+
+{% if case.collections %}
+  <section id="collections" aria-labelledby="trophy-collections">
+    <h2 id="trophy-collections">Collections <small class="muted">{{ case.count('collections') }}</small></h2>
+    {{ shelf(collections, 'collection') }}
+    {% include "partials/pager.html" %}
+  </section>
+{% endif %}
+{% if case.franchises %}
+  <section aria-labelledby="trophy-franchises">
+    <h2 id="trophy-franchises">Franchises <small class="muted">{{ case.count('franchises') }}</small></h2>
+    {{ shelf(case.franchises, 'franchise') }}
+  </section>
+{% endif %}
+{% if case.directors %}
+  <section aria-labelledby="trophy-directors">
+    <h2 id="trophy-directors">Filmographies <small class="muted">{{ case.count('directors') }}</small></h2>
+    {{ shelf(case.directors, 'director') }}
+  </section>
+{% endif %}
+{% endblock %}

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.52.0] — 2026-09-30
+
+### Added
+
+- **Trophy case** (Browse → Trophy case), for everyone: every collection, franchise and
+  director's filmography the library has finished, collections newest first (those complete
+  before 0.49.0 started counting come after, undated), with milestone badges — first complete
+  collection, then 10, 25, 50 and up — and how many to go for the next of each. Showcase frames
+  the posters in gold, with a glint on hover, and a trophy from the last month glows.
+
 ## [0.51.0] — 2026-09-30
 
 ### Added

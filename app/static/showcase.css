@@ -685,6 +685,62 @@
 [data-look="showcase"] .sc-quick-note { margin: 0.5rem 0 0; }
 [data-look="showcase"] .sc-quick-keys { margin: 0.5rem 0 0; }
 
+/* ---------------------------------------------------------------- trophy case (0.52.0) */
+/* Gold frames, a glint across each on hover, and a pedestal's shadow beneath. --sc-gold is set by
+   showcase.js: a trophy's gold is the one colour here that isn't the theme's to choose. */
+[data-look="showcase"] .trophy-heading h1 {
+  background: linear-gradient(100deg, var(--pico-h1-color) 20%, var(--sc-gold, var(--sc-glow)) 50%, var(--pico-h1-color) 80%) 0 0 / 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: sc-gleam 5s ease-in-out infinite;
+  color: transparent;
+}
+@keyframes sc-gleam { 0%, 60% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+[data-look="showcase"] .trophy { animation: sc-rise 0.6s var(--sc-ease) both; animation-delay: calc(var(--i, 0) * 0.04s); }
+[data-look="showcase"] .trophy-frame {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--sc-gold) 60%, var(--pico-contrast)),
+    var(--sc-gold) 35%,
+    color-mix(in srgb, var(--sc-gold) 55%, var(--pico-background-color)) 70%,
+    color-mix(in srgb, var(--sc-gold) 85%, var(--pico-contrast)));
+  box-shadow: 0 0.9rem 1.2rem -0.8rem color-mix(in srgb, var(--pico-background-color) 90%, transparent),
+              0 0 1.1rem color-mix(in srgb, var(--sc-gold) 22%, transparent);
+  padding: 5px;
+  transition: box-shadow 0.35s var(--sc-ease), translate 0.35s var(--sc-ease);
+}
+[data-look="showcase"] .trophy-frame > * { border-radius: calc(var(--pico-border-radius) / 2); overflow: hidden; }
+[data-look="showcase"] .trophy-frame::after {
+  background: linear-gradient(105deg, transparent 35%, color-mix(in srgb, var(--pico-contrast) 45%, transparent) 50%, transparent 65%);
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  translate: -120% 0;
+  transition: translate 0.9s var(--sc-ease);
+}
+[data-look="showcase"] .trophy:is(:hover, :focus-visible) .trophy-frame {
+  box-shadow: 0 1.4rem 1.6rem -1rem color-mix(in srgb, var(--pico-background-color) 90%, transparent),
+              0 0 2rem color-mix(in srgb, var(--sc-gold) 45%, transparent);
+  translate: 0 -4px;
+}
+[data-look="showcase"] .trophy:is(:hover, :focus-visible) .trophy-frame::after { translate: 120% 0; }
+/* A new trophy breathes, for its first month. */
+[data-look="showcase"] .trophy--new .trophy-frame { animation: sc-breathe 2.6s ease-in-out infinite; }
+@keyframes sc-breathe {
+  50% { box-shadow: 0 0.9rem 1.2rem -0.8rem color-mix(in srgb, var(--pico-background-color) 90%, transparent),
+                    0 0 2.2rem color-mix(in srgb, var(--sc-gold) 60%, transparent); }
+}
+[data-look="showcase"] .trophy-new { color: var(--sc-gold); }
+[data-look="showcase"] .trophy-badge--earned {
+  animation: sc-rise 0.6s var(--sc-ease) both;
+  animation-delay: calc(var(--i, 0) * 0.06s);
+  background: color-mix(in srgb, var(--sc-gold) 14%, transparent);
+  border-color: color-mix(in srgb, var(--sc-gold) 70%, transparent);
+  box-shadow: 0 0 0.9rem color-mix(in srgb, var(--sc-gold) 25%, transparent);
+}
+[data-look="showcase"] .trophy-badge--next progress::-webkit-progress-value { background: var(--sc-gold); }
+[data-look="showcase"] .trophy-badge--next progress::-moz-progress-bar { background: var(--sc-gold); }
+
 /* Phones: no tilt (there's no pointer to follow) and a calmer banner. */
 @media (pointer: coarse), (max-width: 767px) {
   [data-look="showcase"] .collection-heading.has-backdrop { min-height: 22rem; }

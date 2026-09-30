@@ -36,6 +36,7 @@ from app.routes_api import router as api_router
 from app.routes_instances import router as instances_router
 from app.routes_movies import router as movies_router
 from app.routes_directors import router as directors_router
+from app.routes_trophies import router as trophies_router
 from app.routes_franchises import router as franchises_router
 from app.routes_lists import router as lists_router
 from app.routes_users import router as users_router  # noqa: E402
@@ -280,6 +281,7 @@ app.include_router(media_servers_router, prefix=settings.base_url)
 app.include_router(tv_router, prefix=settings.base_url)
 app.include_router(franchises_router, prefix=settings.base_url)
 app.include_router(directors_router, prefix=settings.base_url)
+app.include_router(trophies_router, prefix=settings.base_url)
 app.include_router(preferences_router, prefix=settings.base_url)
 app.include_router(lists_router, prefix=settings.base_url)
 app.include_router(users_router, prefix=settings.base_url)
