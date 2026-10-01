@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.56.0] — 2026-09-30
+
+### Added
+
+Showcase:
+
+- **A poster wall**: your own library's posters, a fresh draw each day, drifting slowly behind the
+  home page's heading and under the frosted top bar.
+- **Title cards**: a collection or franchise page opens like a film — the backdrop comes up out
+  of the dark, the title scales in and a light sweeps across it — with **specks of light**
+  drifting up through the banner.
+- **Reveal on scroll**: cards and poster-row entries glide in as they come into view, all the way
+  down a page, each poster catching a **glint** as it arrives.
+- **Focus**: pointing at a card in a grid or row dims the others.
+- **Cursor glow**: a soft pool of the page's colour follows the mouse.
+- **Holographic foil** on a complete collection's or franchise's poster and on every trophy,
+  shifting as the pointer moves.
+- **Scan progress in the tab**: while a scan runs, the tab's icon is a filling ring and its title
+  leads with the percentage.
+
+Phones get the title cards, fewer specks, the reveal and a still two-row wall; no cursor glow.
+
+### Fixed
+
+- On a phone, the spotlight's ▶ Trailer button sat over the "You have … of …" line; it's at the
+  top of the spotlight there now.
+
 ## [0.55.2] — 2026-09-30
 
 ### Changed

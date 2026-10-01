@@ -42,7 +42,7 @@
 
 {#- Showcase's October touch looks for this (0.51.0). -#}
 {% if horror %}<span data-sc-horror hidden></span>{% endif %}
-<div class="collection-heading{% if f.backdrop %} has-backdrop{% endif %}">
+<div class="collection-heading{% if f.backdrop %} has-backdrop{% endif %}"{% if f.owned and not f.missing %} data-complete{% endif %}>
   {% if f.backdrop %}
     <div class="collection-backdrop-frame" aria-hidden="true">
       <img class="collection-backdrop" src="{{ f.backdrop }}" alt="" decoding="async" aria-hidden="true">

@@ -1135,4 +1135,4 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
 .fm-star--root text { font-size: 15px; font-weight: 700; }
 
 /* Showcase-only pieces that are in the page for everyone (0.48.0): hidden in Classic. */
-.spotlight, .timeline-ring, .sc-reel { display: none; }
+.spotlight, .timeline-ring, .sc-reel, .poster-wall { display: none; }

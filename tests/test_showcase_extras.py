@@ -195,3 +195,73 @@ def test_quick_search_answers_with_one_line_per_match(client: TestClient) -> Non
     assert "Beverly Hills Cop III" in page.text and "Film · 1994 · missing" in page.text
     short = client.get(f"{BASE}/search", params={"q": "b"}, headers={"HX-Request": "true", "HX-Target": "quick-results"})
     assert "Keep typing" in short.text
+
+
+# ------------------------------------------------------------------ 0.56.0
+
+
+def test_the_poster_wall_draws_owned_posters_and_keeps_them_all_day(session: Session) -> None:
+    from datetime import date
+
+    from app.models import IncludedLibrary, ItemType, LibraryItem, MatchSource, TmdbMovie
+    from app.services import home_service
+    from tests.conftest import ensure_server
+
+    session.add(IncludedLibrary(server_id=ensure_server(session), library_key="1", library_name="Movies",
+                                library_type="movie", enabled=True))
+    for n in range(1, 41):
+        _film(session, n, overview=None)
+        row = session.exec(select(TmdbCollectionMovie).where(TmdbCollectionMovie.tmdb_movie_id == n)).one()
+        row.poster_path = f"/p{n}.jpg"
+        session.add(row)
+        if n <= 30:   # ten of them not owned
+            session.add(TmdbMovie(tmdb_id=n, title=str(n), collection_id=7))
+            session.add(LibraryItem(server_id=ensure_server(session), library_key="1", item_key=str(n),
+                                    item_type=ItemType.MOVIE.value, title=str(n), tmdb_id=n,
+                                    match_source=MatchSource.GUID.value))
+    session.commit()
+
+    home_service._walls.clear()
+    today = home_service.poster_wall(session, date(2026, 10, 1), limit=12)
+    again = home_service.poster_wall(session, date(2026, 10, 1), limit=12)
+    tomorrow = home_service.poster_wall(session, date(2026, 10, 2), limit=12)
+
+    assert len(today) == 12 and today == again and today != tomorrow
+    assert all("/w92/p" in url and int(url.rsplit("/p", 1)[1].split(".")[0]) <= 30 for url in today), "owned only"
+
+
+def test_a_complete_collection_page_says_so(client: TestClient) -> None:  # noqa: F811
+    _seed_collection()
+    assert "data-complete" not in client.get(f"{BASE}/collections/{COLLECTION}").text
+    from app.models import ItemType, LibraryItem, MatchSource
+    from tests.conftest import ensure_server
+    with Session(get_engine()) as session:
+        for tmdb_id in (96, 306):
+            session.add(LibraryItem(server_id=ensure_server(session), library_key="1", item_key=str(tmdb_id),
+                                    item_type=ItemType.MOVIE.value, title=str(tmdb_id), tmdb_id=tmdb_id,
+                                    match_source=MatchSource.GUID.value))
+        session.commit()
+    assert "data-complete" in client.get(f"{BASE}/collections/{COLLECTION}").text
+
+
+def test_still_layers_are_parked_off_screen_for_reduce_motion() -> None:
+    """With "reduce motion" no animation runs, so the sweep and glint layers sit at their base
+    position -- which must be off to the side, not a stripe across the title or a poster."""
+    import re
+    from pathlib import Path
+
+    css = (Path(__file__).resolve().parents[1] / "app" / "static" / "showcase.css").read_text()
+    sweep = re.search(r"\.collection-heading hgroup::after \{(.*?)\n\}", css, re.S).group(1)
+    glint = re.search(r":is\(\.collection-poster, \.poster-row-card\)::before \{(.*?)\n\}", css, re.S).group(1)
+    assert "translate: -120% 0;" in sweep and "translate: -130% 0;" in glint
+
+
+def test_only_showcase_pays_for_the_poster_wall(client: TestClient) -> None:  # noqa: F811
+    from app.services import home_service
+
+    _seed_collection()
+    home_service._walls.clear()
+    assert 'class="poster-wall"' not in client.get(f"{BASE}/").text and not home_service._walls, "Classic: not drawn"
+    client.post(f"{BASE}/look", data={"look": "showcase"})
+    client.get(f"{BASE}/")
+    assert home_service._walls, "Showcase: drawn (and kept)"

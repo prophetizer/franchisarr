@@ -19,6 +19,11 @@
 //   seasons    -- October leaves on horror pages, December frost
 //   quick find -- Ctrl+K (or Cmd+K) searches from anywhere
 //   surprise   -- Surprise me's pick lands after a slot-machine spin of posters
+//   reveal     -- cards glide up as they scroll into view, with a glint across each poster
+//   motes      -- specks of light drift up through a banner (fewer on phones)
+//   cursor     -- a soft pool of the page's colour follows the pointer (mouse only)
+//   holo       -- rainbow foil on a complete collection's poster and on trophies
+//   tab        -- a running scan's progress in the browser tab's icon and title
 // "Reduce motion" turns off all but the glow, which doesn't move.
 (function () {
   'use strict';
@@ -32,6 +37,9 @@
   // The Trophy case's gold (0.52.0). Set here, not in showcase.css, which holds no colour of its
   // own so that a theme can repaint everything; a trophy's gold is the one thing it shouldn't.
   root.style.setProperty('--sc-gold', 'rgb(232 186 84)');
+  // The holographic finish's foil (0.56.0), set here for the same reason as the gold.
+  root.style.setProperty('--sc-rainbow', 'linear-gradient(115deg, transparent 15%, rgb(255 60 150 / 0.7) 28%, ' +
+    'rgb(255 214 60 / 0.7) 38%, rgb(60 255 180 / 0.7) 50%, rgb(60 170 255 / 0.7) 62%, rgb(180 80 255 / 0.7) 74%, transparent 87%)');
 
   // ------------------------------------------------------------ glow
   // TMDb's image server allows cross-origin reads, so a copy loaded with crossOrigin can be
@@ -331,7 +339,7 @@
   // already loaded -- from the cache, usually -- is left as it is, as are the images something
   // else animates: the spotlight's, the release strip's, and the detail page's own poster and
   // banner, which the page transition hands over from the page before.
-  var OWN_MOTION = '.spotlight, .timeline, .collection-heading';
+  var OWN_MOTION = '.spotlight, .timeline, .collection-heading, .poster-wall';
   var soften = function (img) {
     if (img.dataset.scSoft || (img.complete && img.naturalWidth) || img.closest(OWN_MOTION)) { return; }
     img.dataset.scSoft = '1';
@@ -670,6 +678,171 @@
       .finished.then(land, land);
     window.setTimeout(land, 2600);   // however few frames it got
   });
+
+  // ------------------------------------------------------------ reveal (0.56.0)
+  // Cards and poster-row entries glide up as they come into view, in small staggered batches.
+  // One is only veiled once something can certainly reveal it: an observer, with an on-screen
+  // check at load and on scroll behind it (the browser pane has been known to skip observers).
+  if (!reduce && 'IntersectionObserver' in window) {
+    var REVEAL = '.collection-grid > *, .poster-row-cards > li';
+    var batch = [], batchTimer = null;
+    var flush = function () {
+      batchTimer = null;
+      batch.forEach(function (el, i) {
+        el.style.setProperty('--sc-d', (Math.min(i, 10) * 0.05).toFixed(2) + 's');
+        el.classList.add('sc-seen');
+      });
+      batch = [];
+    };
+    var reveal = function (el) {
+      if (el.classList.contains('sc-seen') || batch.indexOf(el) !== -1) { return; }
+      batch.push(el);
+      if (!batchTimer) { batchTimer = window.setTimeout(flush, 30); }
+    };
+    var watcher = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) { reveal(e.target); watcher.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -4% 0px' });
+    var veil = function (scope) {
+      scope.querySelectorAll(REVEAL).forEach(function (el) {
+        if (el.dataset.scVeiled) { return; }
+        el.dataset.scVeiled = '1';
+        el.classList.add('sc-veiled');
+        watcher.observe(el);
+      });
+    };
+    var sweep = function () {
+      document.querySelectorAll('.sc-veiled:not(.sc-seen)').forEach(function (el) {
+        var rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0) { reveal(el); }
+      });
+    };
+    veil(document);
+    window.setTimeout(sweep, 80);
+    var sweeping = false;
+    window.addEventListener('scroll', function () {
+      if (!sweeping) { sweeping = true; window.setTimeout(function () { sweeping = false; sweep(); }, 150); }
+    }, { passive: true });
+    document.addEventListener('htmx:load', function (event) {
+      if (event.target.querySelectorAll) { veil(event.target); window.setTimeout(sweep, 80); }
+    });
+  }
+
+  // ------------------------------------------------------------ motes (0.56.0)
+  // A few specks of light in each banner, rising and fading at their own pace.
+  if (!reduce) {
+    document.querySelectorAll('.collection-heading.has-backdrop').forEach(function (band) {
+      var motes = document.createElement('div');
+      motes.className = 'sc-motes';
+      motes.setAttribute('aria-hidden', 'true');
+      for (var n = 0; n < (phone ? 6 : 16); n++) {
+        var mote = document.createElement('span');
+        var t = 9 + Math.random() * 10;
+        mote.style.setProperty('--sc-x', (Math.random() * 100).toFixed(1) + '%');
+        mote.style.setProperty('--sc-y', (45 + Math.random() * 55).toFixed(1) + '%');
+        mote.style.setProperty('--sc-size', (2 + Math.random() * 5).toFixed(1) + 'px');
+        mote.style.setProperty('--sc-t', t.toFixed(1) + 's');
+        mote.style.setProperty('--sc-wait', (-Math.random() * t).toFixed(1) + 's');   // already on its way
+        mote.style.setProperty('--sc-dx', ((Math.random() - 0.5) * 6).toFixed(1) + 'rem');
+        motes.appendChild(mote);
+      }
+      band.appendChild(motes);   // under the content (z-index 1), over the picture and its shading
+    });
+  }
+
+  // ------------------------------------------------------------ cursor (0.56.0)
+  if (!reduce && !phone) {
+    var glowSpot = document.createElement('div');
+    glowSpot.className = 'sc-cursor';
+    glowSpot.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(glowSpot);
+    var spotX = 0, spotY = 0, spotQueued = false;
+    document.addEventListener('pointermove', function (event) {
+      if (event.pointerType !== 'mouse') { return; }
+      spotX = event.clientX; spotY = event.clientY;
+      glowSpot.classList.add('is-on');
+      if (!spotQueued) {
+        spotQueued = true;
+        window.requestAnimationFrame(function () {
+          spotQueued = false;
+          glowSpot.style.translate = spotX + 'px ' + spotY + 'px';
+        });
+      }
+    }, { passive: true });
+    document.documentElement.addEventListener('pointerleave', function () { glowSpot.classList.remove('is-on'); });
+  }
+
+  // ------------------------------------------------------------ holo (0.56.0)
+  // Rainbow foil on a complete collection's or franchise's poster, and on every trophy, the
+  // light moving as the pointer does. An <img> can't carry the foil layer, so it's wrapped.
+  var foil = function (el) {
+    el.classList.add('sc-holo');
+    el.addEventListener('pointermove', function (event) {
+      var rect = el.getBoundingClientRect();
+      el.style.setProperty('--sc-hx', ((event.clientX - rect.left) / rect.width * 100).toFixed(1) + '%');
+      el.style.setProperty('--sc-hy', ((event.clientY - rect.top) / rect.height * 100).toFixed(1) + '%');
+    });
+  };
+  document.querySelectorAll('.collection-heading[data-complete] .collection-heading-poster').forEach(function (poster) {
+    if (poster.tagName === 'IMG') {
+      var wrap = document.createElement('span');
+      wrap.className = 'sc-holo-wrap';
+      poster.parentNode.insertBefore(wrap, poster);
+      wrap.appendChild(poster);
+      foil(wrap);
+    } else {
+      foil(poster);   // a mosaic is a block already
+    }
+  });
+  document.querySelectorAll('.trophy-frame').forEach(foil);
+
+  // ------------------------------------------------------------ tab (0.56.0)
+  // While a scan runs (the scan status box is on the page), the tab's icon becomes a ring
+  // filling to its progress and the title leads with the percentage; both go back after.
+  var icon = document.querySelector('link[rel="icon"]');
+  var plainIcon = icon ? icon.getAttribute('href') : null, plainTitle = document.title;
+  var glowColour = function () {
+    var probe = document.createElement('span');
+    probe.style.color = 'var(--sc-glow)';
+    document.body.appendChild(probe);
+    var colour = getComputedStyle(probe).color;
+    probe.remove();
+    return colour;
+  };
+  var tabProgress = function () {
+    var status = document.getElementById('scan-status');
+    var bar = status && status.querySelector('progress');
+    var running = !!(status && status.hasAttribute('hx-trigger') && bar);
+    if (!running) {
+      document.title = plainTitle;
+      if (icon && plainIcon) { icon.setAttribute('href', plainIcon); icon.setAttribute('type', 'image/svg+xml'); }
+      return;
+    }
+    var known = bar.hasAttribute('max') && Number(bar.max) > 0;
+    var share = known ? Math.min(1, Number(bar.value) / Number(bar.max)) : null;
+    document.title = (share === null ? 'Scanning' : Math.round(share * 100) + '%') + ' · ' + plainTitle;
+    if (!icon) { return; }
+    var size = 64, c = document.createElement('canvas');
+    c.width = c.height = size;
+    var g = c.getContext('2d');
+    if (!g) { return; }
+    var colour = glowColour();
+    g.lineWidth = 9;
+    g.strokeStyle = 'rgba(128, 128, 128, 0.35)';
+    g.beginPath(); g.arc(32, 32, 26, 0, Math.PI * 2); g.stroke();
+    g.strokeStyle = colour;
+    g.lineCap = 'round';
+    g.beginPath();
+    var start = -Math.PI / 2;
+    g.arc(32, 32, 26, start, start + Math.PI * 2 * (share === null ? 0.3 : Math.max(0.04, share)));
+    g.stroke();
+    g.fillStyle = colour;
+    g.beginPath(); g.arc(32, 32, 9, 0, Math.PI * 2); g.fill();
+    icon.setAttribute('type', 'image/png');
+    icon.setAttribute('href', c.toDataURL('image/png'));
+  };
+  tabProgress();
+  // The status box replaces itself every two seconds while a scan runs.
+  document.addEventListener('htmx:afterSettle', tabProgress);
 
   // ------------------------------------------------------------ tilt
   if (!reduce && !phone) {

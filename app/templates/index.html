@@ -2,6 +2,15 @@
 
 {% block content %}
   <div class="page-heading">
+    {#- Showcase's poster wall (0.56.0): the library's own posters drifting behind the heading.
+        Hidden in Classic, and lazy, so Classic never fetches them. -#}
+    {% if poster_wall %}
+      <div class="poster-wall" aria-hidden="true">
+        {% for row in poster_wall | batch(24) %}
+          <div class="poster-wall-row">{% for src in row %}<img src="{{ src }}" alt="" loading="lazy" decoding="async" width="92" height="138">{% endfor %}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
     <hgroup>
       <h1>Franchisarr</h1>
       <p>Films missing from collections you already own, and spin-offs of shows you already watch.</p>

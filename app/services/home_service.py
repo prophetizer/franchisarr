@@ -11,6 +11,9 @@ from sqlmodel import Session, col, select
 
 from app.models import DirectorFilm, FranchiseMember, LibraryItem, TmdbCollectionMovie, TmdbShow
 
+#: Showcase's poster wall (0.56.0): three rows behind the home heading, wide enough to pan.
+WALL = 72
+
 #: Cards per row: enough to fill a wide screen, few enough to stay a glance.
 ROW = 12
 #: On a fresh install the first scan brings in the whole library at once. That isn't "just added",
@@ -148,3 +151,43 @@ def _ago(when: datetime, now: datetime) -> str:
         when = when.replace(tzinfo=timezone.utc)
     days = (now - when).days
     return "today" if days < 1 else ("yesterday" if days == 1 else f"{days} days ago")
+
+
+#: The day's wall, kept an hour: drawing it reads the library (380ms on 3,400 films), and the
+#: draw is the same all day anyway.
+_walls: dict[tuple[date, int], tuple[float, list[str]]] = {}
+WALL_FOR = 3600.0
+
+
+def poster_wall(session: Session, today: date, limit: int = WALL) -> list[str]:
+    """Posters of films in the library, for the wall behind Showcase's home heading (0.56.0):
+    a different draw each day, the same all day. Small copies -- they're dimmed and drifting."""
+    import time
+
+    kept = _walls.get((today, limit))
+    if kept and time.monotonic() - kept[0] < WALL_FOR:
+        return kept[1]
+    wall = _draw_wall(session, today, limit)
+    _walls.clear()
+    _walls[(today, limit)] = (time.monotonic(), wall)
+    return wall
+
+
+def _draw_wall(session: Session, today: date, limit: int) -> list[str]:
+    import random
+
+    from app.services.artwork import poster_url
+    from app.services.movie_gap_service import owned_tmdb_ids
+
+    owned = owned_tmdb_ids(session)
+    if not owned:
+        return []
+    paths = {tmdb_id: path for tmdb_id, path in session.exec(
+        select(TmdbCollectionMovie.tmdb_movie_id, TmdbCollectionMovie.poster_path)
+        .where(col(TmdbCollectionMovie.poster_path).is_not(None))).all() if tmdb_id in owned}
+    for tmdb_id, path in session.exec(select(DirectorFilm.tmdb_movie_id, DirectorFilm.poster_path)
+                                      .where(col(DirectorFilm.poster_path).is_not(None))).all():
+        if tmdb_id in owned:
+            paths.setdefault(tmdb_id, path)
+    chosen = random.Random(today.toordinal()).sample(sorted(paths.values()), min(limit, len(paths)))
+    return [url for url in (poster_url(p, "w92") for p in chosen) if url]
