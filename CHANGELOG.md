@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.57.0] — 2026-10-01
+
+### Added
+
+Showcase:
+
+- **A film-reel release strip**: sprocket holes along a dark film base, rolling in as it plays.
+- **A mini header**: past a collection or franchise banner, a slim bar slides out under the top
+  bar with its poster, name and how much of it you have.
+- **Watermark titles**: the name, huge and outlined, behind each banner.
+- **Film grain and vignette** over banners and the home spotlight.
+- **A poster fan**: pointing at a collection card fans three of its films out from behind its
+  poster.
+- **Milestone unlocks**: a Trophy case badge earned since your last visit flips in and shines,
+  once. (Your first visit after upgrading records the ones you have quietly.)
+- **Rolling numbers**: headline counts roll up digit by digit, like an odometer, instead of
+  counting up.
+- **Liquid progress bars**, a little taller, with a slow wave along the top.
+- **Franchise intros**, once per visit and skippable: Star Wars opens with a crawl about your
+  collection, The Matrix with falling code, Harry Potter with sparks from the title.
+- **An easter egg**: the Konami code (↑ ↑ ↓ ↓ ← → ← → B A) turns the app into a worn VHS tape; the
+  same again turns it back.
+
 ## [0.56.1] — 2026-09-30
 
 ### Removed

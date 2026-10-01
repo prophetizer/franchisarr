@@ -11,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from app.models import CollectionCompletion
 
@@ -133,3 +133,28 @@ def case(session: Session, *, now: datetime | None = None) -> Case:
     ]
     directors.sort(key=lambda t: t.name.casefold())
     return Case(collections, franchises, directors)
+
+
+#: Milestones a person has seen, for Showcase's "unlocked" moment (0.57.0).
+SEEN_KEY = "trophies_seen"
+
+
+def newly_earned(session: Session, user_id: int, case: Case) -> set[str]:
+    """Milestones earned since this person last looked, marked seen as they're returned. The
+    first look ever records them all quietly -- a case full of badges isn't news (the same
+    reason the confetti skips what was complete before it existed)."""
+    import json
+
+    from app.models import UserPreference
+    from app.services.sorting import _save
+
+    earned = [b.label for b in case.earned]
+    raw = session.exec(select(UserPreference.value).where(
+        col(UserPreference.user_id) == user_id, col(UserPreference.key) == SEEN_KEY)).first()
+    try:
+        seen = set(json.loads(raw)) if raw else None
+    except (ValueError, TypeError):
+        seen = None
+    _save(session, user_id, SEEN_KEY, json.dumps(sorted(earned)))
+    session.commit()
+    return set() if seen is None else set(earned) - seen

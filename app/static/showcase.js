@@ -2,7 +2,7 @@
 // picked the Showcase look. Each part is skipped when it would be unwelcome:
 //   glow       -- the page takes the dominant colour of its artwork (--sc-glow)
 //   parallax   -- a banner's backdrop scrolls slower than the page (not on phones)
-//   count-up   -- headline numbers ([data-count]) run up from zero
+//   numbers    -- headline numbers ([data-count]) roll up digit by digit, like an odometer
 //   spotlight  -- the home page's big banner turns (not with reduce motion)
 //   row arrows -- poster rows slide a screen at a time (not on phones)
 //   strip      -- the release-order strip plays when it comes on screen
@@ -23,6 +23,11 @@
 //   motes      -- specks of light drift up through a banner (fewer on phones)
 //   holo       -- rainbow foil on a complete collection's poster and on trophies
 //   tab        -- a running scan's progress in the browser tab's icon and title
+//   watermark  -- a banner's name, huge and outlined, behind it
+//   mini bar   -- past a detail page's banner, a slim bar says what page this is
+//   fan        -- a collection card fans three of its films out from behind its poster
+//   intros     -- a few franchises open with a nod to their films, once per visit
+//   VHS        -- the Konami code turns the app into a worn videotape, and back
 // "Reduce motion" turns off all but the glow, which doesn't move.
 (function () {
   'use strict';
@@ -111,26 +116,36 @@
     move();
   }
 
-  // ------------------------------------------------------------ count-up
+  // ------------------------------------------------------------ rolling numbers (0.57.0)
+  // Headline numbers roll up like an odometer: each digit a column of 0-9 sliding to its value,
+  // the units first. Screen readers get the number itself; the columns are hidden from them.
+  // (Until 0.57.0 they counted up, frame by frame.)
   if (!reduce) {
     document.querySelectorAll('[data-count]').forEach(function (el) {
       var text = el.textContent.trim();
-      var target = parseInt(text.replace(/[^0-9]/g, ''), 10);
-      if (!target || target < 2) { return; }
-      var grouped = text.indexOf(',') !== -1;
-      var start = performance.now(), duration = Math.min(1400, 500 + target * 4), done = false;
-      var show = function (n) { el.textContent = grouped ? n.toLocaleString('en-US') : String(n); };
-      // Timed from now, not from the first frame, and finished for good by the timeout: a tab
-      // in the background gets few or no frames, and a late one mustn't undo the real number.
-      var step = function () {
-        if (done) { return; }
-        var t = Math.min(1, (performance.now() - start) / duration);
-        show(Math.round(target * (1 - Math.pow(1 - t, 3))));
-        if (t < 1) { window.requestAnimationFrame(step); } else { done = true; }
-      };
-      show(0);
-      window.requestAnimationFrame(step);
-      window.setTimeout(function () { done = true; show(target); }, duration + 250);
+      if (!/[0-9]/.test(text) || el.querySelector('.sc-odo')) { return; }
+      var said = document.createElement('span');
+      said.className = 'sc-sr';
+      said.textContent = text;
+      var odo = document.createElement('span');
+      odo.className = 'sc-odo';
+      odo.setAttribute('aria-hidden', 'true');
+      var chars = text.split('');
+      chars.forEach(function (ch, i) {
+        if (!/[0-9]/.test(ch)) { var mark = document.createElement('span'); mark.textContent = ch; odo.appendChild(mark); return; }
+        var column = document.createElement('span');
+        column.className = 'sc-odo-col';
+        column.style.setProperty('--sc-digit', ch);
+        column.style.setProperty('--sc-wait', (0.1 * (chars.length - 1 - i)).toFixed(2) + 's');
+        for (var d = 0; d < 10; d++) { var digit = document.createElement('span'); digit.textContent = String(d); column.appendChild(digit); }
+        odo.appendChild(column);
+      });
+      el.textContent = '';
+      el.append(said, odo);
+      // Rolled once it's on the page (two frames), or by the timeout if frames are scarce.
+      var roll = function () { odo.classList.add('is-rolled'); };
+      window.requestAnimationFrame(function () { window.requestAnimationFrame(roll); });
+      window.setTimeout(roll, 150);
     });
   }
 
@@ -726,27 +741,35 @@
     });
   }
 
-  // ------------------------------------------------------------ motes (0.56.0)
-  // A few specks of light in each banner, rising and fading at their own pace.
-  if (!reduce) {
-    document.querySelectorAll('.collection-heading.has-backdrop').forEach(function (band) {
-      var motes = document.createElement('div');
-      motes.className = 'sc-motes';
-      motes.setAttribute('aria-hidden', 'true');
-      for (var n = 0; n < (phone ? 6 : 16); n++) {
-        var mote = document.createElement('span');
-        var t = 9 + Math.random() * 10;
-        mote.style.setProperty('--sc-x', (Math.random() * 100).toFixed(1) + '%');
-        mote.style.setProperty('--sc-y', (45 + Math.random() * 55).toFixed(1) + '%');
-        mote.style.setProperty('--sc-size', (2 + Math.random() * 5).toFixed(1) + 'px');
-        mote.style.setProperty('--sc-t', t.toFixed(1) + 's');
-        mote.style.setProperty('--sc-wait', (-Math.random() * t).toFixed(1) + 's');   // already on its way
-        mote.style.setProperty('--sc-dx', ((Math.random() - 0.5) * 6).toFixed(1) + 'rem');
-        motes.appendChild(mote);
-      }
-      band.appendChild(motes);   // under the content (z-index 1), over the picture and its shading
-    });
-  }
+  // ------------------------------------------------------------ banner layer (0.56.0, 0.57.0)
+  // Between a banner's picture and its text: the name, huge and outlined (0.57.0), and a few
+  // specks of light rising and fading at their own pace (0.56.0; not with reduce motion).
+  document.querySelectorAll('.collection-heading.has-backdrop').forEach(function (band) {
+    var layer = document.createElement('div');
+    layer.className = 'sc-motes';
+    layer.setAttribute('aria-hidden', 'true');
+    var heading = band.querySelector('h1');
+    var logo = heading && heading.querySelector('img');
+    var name = logo ? logo.alt : (heading ? heading.textContent.trim() : '');
+    if (name) {
+      var mark = document.createElement('span');
+      mark.className = 'sc-watermark';
+      mark.textContent = name.replace(/\s+collection$/i, '');
+      layer.appendChild(mark);
+    }
+    for (var n = 0; n < (reduce ? 0 : phone ? 6 : 16); n++) {
+      var mote = document.createElement('span');
+      var t = 9 + Math.random() * 10;
+      mote.style.setProperty('--sc-x', (Math.random() * 100).toFixed(1) + '%');
+      mote.style.setProperty('--sc-y', (45 + Math.random() * 55).toFixed(1) + '%');
+      mote.style.setProperty('--sc-size', (2 + Math.random() * 5).toFixed(1) + 'px');
+      mote.style.setProperty('--sc-t', t.toFixed(1) + 's');
+      mote.style.setProperty('--sc-wait', (-Math.random() * t).toFixed(1) + 's');   // already on its way
+      mote.style.setProperty('--sc-dx', ((Math.random() - 0.5) * 6).toFixed(1) + 'rem');
+      layer.appendChild(mote);
+    }
+    band.appendChild(layer);   // under the content (z-index 1), over the picture and its shading
+  });
 
   // ------------------------------------------------------------ holo (0.56.0)
   // Rainbow foil on a complete collection's or franchise's poster, and on every trophy, the
@@ -820,6 +843,227 @@
   tabProgress();
   // The status box replaces itself every two seconds while a scan runs.
   document.addEventListener('htmx:afterSettle', tabProgress);
+
+  // An element's words as a reader sees them: a rolled number's digit columns left out.
+  function plainText(el) {
+    if (!el) { return ''; }
+    var copy = el.cloneNode(true);
+    copy.querySelectorAll('.sc-odo').forEach(function (odo) { odo.remove(); });
+    return copy.textContent.replace(/\s+/g, ' ').trim();
+  }
+
+  // ------------------------------------------------------------ mini bar (0.57.0)
+  // Once a detail page's banner has scrolled away, a slim bar slides out from under the top
+  // bar: its poster, its name, how much of it you have.
+  var heading = document.querySelector('.collection-heading');
+  if (heading) {
+    var title = heading.querySelector('h1');
+    var titleLogo = title && title.querySelector('img');
+    var label = titleLogo ? titleLogo.alt : (title ? title.textContent.trim() : '');
+    var poster = heading.querySelector('img.collection-heading-poster, .collection-heading-poster img');
+    var line = heading.querySelector('hgroup p');
+    if (label) {
+      var mini = document.createElement('div');
+      mini.className = 'sc-mini';
+      mini.setAttribute('aria-hidden', 'true');   // the page's own heading says all this
+      var inner = document.createElement('div');
+      inner.className = 'container';
+      if (poster) { var thumb = document.createElement('img'); thumb.src = poster.currentSrc || poster.src; thumb.alt = ''; inner.appendChild(thumb); }
+      var strong = document.createElement('strong'); strong.textContent = label; inner.appendChild(strong);
+      if (line) {
+        var small = document.createElement('small');
+        small.textContent = plainText(line).split('.')[0];
+        inner.appendChild(small);
+      }
+      mini.appendChild(inner);
+      document.body.appendChild(mini);
+      var bar = document.querySelector('body > header');
+      var placeMini = function () {
+        if (bar) { mini.style.setProperty('--sc-mini-top', Math.round(bar.getBoundingClientRect().height) + 'px'); }
+      };
+      var checkMini = function () {
+        mini.classList.toggle('is-on', heading.getBoundingClientRect().bottom < (bar ? bar.getBoundingClientRect().height : 0));
+      };
+      placeMini();
+      checkMini();
+      window.addEventListener('scroll', checkMini, { passive: true });
+      window.addEventListener('resize', placeMini);
+    }
+  }
+
+  // ------------------------------------------------------------ fan (0.57.0)
+  // A collection card's <template> holds three of its films; they sit stacked behind its poster
+  // and fan out when the card is pointed at (showcase.css). Laid out once, on first approach.
+  if (!phone) {
+    document.addEventListener('pointerover', function (event) {
+      var card = event.target.closest && event.target.closest('.collection-card');
+      var template = card && card.querySelector(':scope > template.sc-fan');
+      if (!template || card.querySelector(':scope > .sc-fanned')) { return; }   // not .sc-fan: that's the template
+      var poster = card.querySelector(':scope > .collection-poster');
+      if (!poster) { return; }
+      var fan = document.createElement('div');
+      fan.className = 'sc-fanned';
+      fan.setAttribute('aria-hidden', 'true');
+      fan.appendChild(template.content.cloneNode(true));
+      fan.style.left = poster.offsetLeft + 'px';
+      fan.style.top = poster.offsetTop + 'px';
+      fan.style.width = poster.offsetWidth + 'px';
+      fan.style.height = poster.offsetHeight + 'px';
+      card.insertBefore(fan, poster);
+    });
+  }
+
+  // ------------------------------------------------------------ intros (0.57.0)
+  // Three franchises open with a nod to their films -- once per visit to each page, gone at a
+  // click or a key. The words are this app's own; the looks are the films'.
+  var pageName = (function () {
+    var h = document.querySelector('.collection-heading h1');
+    if (!h) { return ''; }
+    var img = h.querySelector('img');
+    return (img ? img.alt : h.textContent).trim();
+  })();
+  var intro = /star wars/i.test(pageName) ? 'crawl' : /matrix/i.test(pageName) ? 'rain'
+    : /harry potter|wizarding world|fantastic beasts/i.test(pageName) ? 'sparks' : null;
+  var introKey = 'sc-intro:' + window.location.pathname;
+  var introSeen = false;
+  try { introSeen = window.sessionStorage.getItem(introKey) === '1'; } catch (e) { introSeen = true; }
+  if (intro && !reduce && !introSeen) {
+    try { window.sessionStorage.setItem(introKey, '1'); } catch (e) { /* shown anyway, once */ }
+    var curtain = document.createElement('div');
+    curtain.className = 'sc-intro';
+    curtain.setAttribute('role', 'presentation');
+    var skip = document.createElement('span');
+    skip.className = 'sc-intro-skip';
+    skip.textContent = 'Click or press any key to skip';
+    var finish = function () {
+      if (curtain.classList.contains('is-leaving')) { return; }
+      curtain.classList.add('is-leaving');
+      document.removeEventListener('keydown', finish, true);
+      window.setTimeout(function () { curtain.remove(); }, 900);
+    };
+    curtain.addEventListener('click', finish);
+    document.addEventListener('keydown', finish, true);
+    var have = /([0-9,]+) of ([0-9,]+)/.exec(plainText(document.querySelector('.collection-heading hgroup p')));
+    if (intro === 'crawl') {
+      curtain.style.background = 'radial-gradient(1px 1px at 20% 30%, white, transparent), radial-gradient(1px 1px at 70% 60%, white, transparent), ' +
+        'radial-gradient(1px 1px at 40% 80%, white, transparent), radial-gradient(1.5px 1.5px at 85% 20%, white, transparent), ' +
+        'radial-gradient(1px 1px at 10% 70%, white, transparent), radial-gradient(1px 1px at 55% 15%, white, transparent) 0 0 / 260px 260px, black';
+      var opening = document.createElement('p');
+      opening.className = 'sc-crawl-opening';
+      opening.style.color = 'rgb(75 213 238)';
+      opening.textContent = 'A short while ago, in a library not so far away\u2026.';
+      var stage = document.createElement('div');
+      stage.className = 'sc-crawl-stage';
+      var crawl = document.createElement('div');
+      crawl.className = 'sc-crawl-text';
+      crawl.style.color = 'rgb(255 214 64)';
+      var head = document.createElement('h2');
+      head.textContent = pageName;
+      var body = document.createElement('p');
+      body.textContent = (have ? 'It is a period of collecting. Of ' + have[2] + ' films released, ' + have[1] +
+        ' are safely in the library. ' : 'It is a period of collecting. ') +
+        'The rest remain at large, scattered across the galaxy\u2019s streaming services and bargain bins. ' +
+        'Pursued by an import list, one collector races home aboard a humble media server, ' +
+        'custodian of a franchise that can still be made whole\u2026.';
+      crawl.append(head, body);
+      stage.appendChild(crawl);
+      curtain.append(opening, stage, skip);
+      window.setTimeout(finish, 23000);
+    } else {
+      var canvas = document.createElement('canvas');
+      curtain.append(canvas, skip);
+      if (intro === 'sparks') { curtain.style.pointerEvents = 'none'; skip.remove(); }
+      window.setTimeout(function () { runIntro(intro, canvas, finish); }, 30);
+    }
+    document.body.appendChild(curtain);
+  }
+  function runIntro(kind, canvas, finish) {
+    var W = canvas.width = window.innerWidth, H = canvas.height = window.innerHeight;
+    var g = canvas.getContext('2d');
+    if (!g) { finish(); return; }
+    var began = performance.now();
+    if (kind === 'rain') {
+      // Falling code: columns of glyphs, the newest bright, the rest fading behind.
+      var size = 16, columns = Math.ceil(W / size), drops = [];
+      for (var i = 0; i < columns; i++) { drops.push(Math.random() * -40); }
+      var glyphs = '\u30a2\u30a4\u30a6\u30a8\u30aa\u30ab\u30ad\u30af\u30b1\u30b3\u30b5\u30b7\u30b9\u30bb\u30bd0123456789';
+      g.fillStyle = 'black'; g.fillRect(0, 0, W, H);
+      var rain = function (now) {
+        var age = now - began;
+        g.fillStyle = 'rgba(0, 0, 0, 0.08)';
+        g.fillRect(0, 0, W, H);
+        g.font = size + 'px monospace';
+        for (var c = 0; c < columns; c++) {
+          g.fillStyle = Math.random() > 0.97 ? 'rgb(200 255 200)' : 'rgb(0 255 70)';
+          g.fillText(glyphs[Math.floor(Math.random() * glyphs.length)], c * size, drops[c] * size);
+          if (drops[c] * size > H && Math.random() > 0.96) { drops[c] = 0; }
+          drops[c] += 1;
+        }
+        if (age < 3200) { window.requestAnimationFrame(rain); } else { finish(); }
+      };
+      window.requestAnimationFrame(rain);
+      window.setTimeout(finish, 4500);
+    } else {
+      // Sparks from the title, as from a wand: gold, rising, falling away.
+      var title = document.querySelector('.collection-heading h1');
+      var box = title ? title.getBoundingClientRect() : { left: W / 2, top: H / 3, width: 0, height: 0 };
+      var bits = [];
+      for (var n = 0; n < 140; n++) {
+        bits.push({ x: box.left + Math.random() * Math.max(box.width, 40), y: box.top + box.height / 2,
+                    vx: (Math.random() - 0.5) * 5, vy: -Math.random() * 6 - 1, life: 0.6 + Math.random() * 0.6 });
+      }
+      var spark = function (now) {
+        var age = (now - began) / 1000;
+        g.clearRect(0, 0, W, H);
+        bits.forEach(function (b) {
+          b.vy += 0.12; b.x += b.vx; b.y += b.vy;
+          var left = Math.max(0, 1 - age / (b.life * 2.2));
+          g.globalAlpha = left;
+          g.fillStyle = Math.random() > 0.5 ? 'rgb(255 214 120)' : 'rgb(255 245 210)';
+          g.beginPath(); g.arc(b.x, b.y, 1.8, 0, Math.PI * 2); g.fill();
+        });
+        if (age < 2.6) { window.requestAnimationFrame(spark); } else { finish(); }
+      };
+      window.requestAnimationFrame(spark);
+      window.setTimeout(finish, 4000);
+    }
+  }
+
+  // ------------------------------------------------------------ VHS (0.57.0)
+  // Up, up, down, down, left, right, left, right, B, A: the app becomes a worn videotape until
+  // the same again. Kept in this browser only; it's a game, not a setting.
+  var vhsOn = function (on, fresh) {
+    root.classList.toggle('sc-vhs', on);
+    root.style.setProperty('--sc-vhs-a', 'rgb(255 40 80 / 0.55)');
+    root.style.setProperty('--sc-vhs-b', 'rgb(40 200 255 / 0.55)');
+    var band = document.querySelector('.sc-vhs-band');
+    if (on && !band && !reduce) {
+      band = document.createElement('div'); band.className = 'sc-vhs-band'; band.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(band);
+    } else if (!on && band) { band.remove(); }
+    if (on) {
+      var osd = document.createElement('div');
+      osd.className = 'sc-vhs-osd'; osd.setAttribute('aria-hidden', 'true');
+      osd.textContent = fresh ? '\u25b6 PLAY' : 'SP \u25b6';
+      document.body.appendChild(osd);
+      window.setTimeout(function () { osd.remove(); }, 3600);
+    }
+  };
+  try { if (window.localStorage.getItem('sc-vhs') === '1') { vhsOn(true, false); } } catch (e) { /* off */ }
+  var KONAMI = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'];
+  var typed = [];
+  document.addEventListener('keydown', function (event) {
+    var t = event.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) { return; }
+    typed.push(String(event.key).toLowerCase());
+    typed = typed.slice(-KONAMI.length);
+    if (typed.join(' ') === KONAMI.join(' ')) {
+      typed = [];
+      var on = !root.classList.contains('sc-vhs');
+      vhsOn(on, true);
+      try { window.localStorage.setItem('sc-vhs', on ? '1' : '0'); } catch (e) { /* this page only */ }
+    }
+  });
 
   // ------------------------------------------------------------ tilt
   if (!reduce && !phone) {

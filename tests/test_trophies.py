@@ -94,3 +94,28 @@ def test_an_empty_case_says_how_to_fill_it(client: TestClient) -> None:  # noqa:
     page = client.get(f"{BASE}/trophies")
 
     assert "Nothing finished yet" in page.text
+
+
+def test_a_new_milestone_is_news_once_and_the_first_look_is_quiet(session: Session) -> None:
+    from app.auth.local_admin import create_local_admin
+
+    me = create_local_admin(session, "admin", "s3cret-passphrase").id
+    nine = trophies.Case(collections=[trophies.Trophy(str(n), "/", None, "") for n in range(9)])
+    ten = trophies.Case(collections=[trophies.Trophy(str(n), "/", None, "") for n in range(10)])
+
+    assert trophies.newly_earned(session, me, nine) == set(), "the first look records quietly"
+    assert trophies.newly_earned(session, me, ten) == {"10 complete collections"}
+    assert trophies.newly_earned(session, me, ten) == set(), "news once"
+
+
+def test_only_showcase_uses_up_an_unlock(client: TestClient) -> None:  # noqa: F811
+    with Session(get_engine()) as session:
+        _library(session)
+
+    assert "trophy-badge--unlocked" not in client.get(f"{BASE}/trophies").text
+    client.post(f"{BASE}/look", data={"look": "showcase"})
+    client.get(f"{BASE}/trophies")                      # first look in Showcase: quiet
+    with Session(get_engine()) as session:
+        _collection(session, 5, "Evil Dead Collection", [50, 51], [50, 51])
+    page = client.get(f"{BASE}/trophies").text
+    assert "trophy-badge--unlocked" not in page, "four trophies earn nothing new past the first"

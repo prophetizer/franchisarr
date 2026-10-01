@@ -99,6 +99,11 @@
           {% endif %}
         </ul>
         {{ peek(gap.name, gap.backdrop, gap.missing) }}
+        {#- Showcase's poster fan (0.57.0): three of its films, behind the card's poster. Inert. -#}
+        {% set fan = ((gap.owned | list) + (gap.missing | list)) | selectattr('poster') | list %}
+        {% if gap.small_poster and fan | length >= 2 %}
+          <template class="sc-fan">{% for m in fan[:3] %}<img src="{{ m.poster }}" alt="" decoding="async">{% endfor %}</template>
+        {% endif %}
       </article>
     {% endfor %}
   </div>

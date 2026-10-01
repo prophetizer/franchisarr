@@ -116,8 +116,8 @@
   to { opacity: 1; translate: 0 0; scale: 1; }
 }
 @keyframes sc-fill {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
+  from { scale: 0 1; }
+  to { scale: 1 1; }
 }
 
 /* ---------------------------------------------------------------- spotlight (0.48.0) */
@@ -935,6 +935,254 @@
 }
 @keyframes sc-sweep { from { translate: -120% 0; } to { translate: 120% 0; } }
 
+/* ---------------------------------------------------------------- film-reel strip (0.57.0) */
+/* The release-order strip is a length of film: a dark base, sprocket holes top and bottom that
+   scroll with it, and it rolls in from the right as it plays. */
+[data-look="showcase"] .timeline-strip {
+  background:
+    linear-gradient(90deg, var(--pico-muted-border-color) 0 0.55rem, transparent 0.55rem 1rem) 0 0.3rem / 1rem 0.4rem repeat-x,
+    linear-gradient(90deg, var(--pico-muted-border-color) 0 0.55rem, transparent 0.55rem 1rem) 0 calc(100% - 0.3rem) / 1rem 0.4rem repeat-x,
+    color-mix(in srgb, var(--pico-contrast-inverse) 75%, var(--pico-background-color));
+  background-attachment: local;
+  border-radius: calc(var(--pico-border-radius) / 2);
+  gap: 0.45rem;
+  padding: 1.05rem 0.6rem;
+}
+[data-look="showcase"] .timeline-strip .timeline-poster { border-radius: 2px; }
+[data-look="showcase"] .timeline-strip .timeline-year { color: var(--pico-muted-color); text-align: center; }
+[data-look="showcase"] .timeline.sc-play .timeline-strip { animation: sc-roll 1.4s var(--sc-ease) both; }
+@keyframes sc-roll {
+  from { background-position: 12rem 0.3rem, 12rem calc(100% - 0.3rem), 0 0; }
+  to { background-position: 0 0.3rem, 0 calc(100% - 0.3rem), 0 0; }
+}
+
+/* ---------------------------------------------------------------- mini header (0.57.0) */
+/* Past a detail page's banner, a slim bar slides out from under the top bar: what page this is. */
+[data-look="showcase"] .sc-mini {
+  background: color-mix(in srgb, var(--pico-background-color) 88%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--sc-glow) 30%, transparent);
+  box-shadow: 0 0.5rem 1.2rem -0.8rem color-mix(in srgb, var(--sc-glow) 45%, transparent);
+  inset: var(--sc-mini-top, 4rem) 0 auto;
+  position: fixed;
+  transition: translate 0.4s var(--sc-ease), opacity 0.3s ease;
+  translate: 0 -110%;
+  opacity: 0;
+  z-index: 39;
+}
+[data-look="showcase"] .sc-mini.is-on { opacity: 1; translate: 0 0; }
+[data-look="showcase"] .sc-mini > div { align-items: center; display: flex; gap: 0.7rem; padding-block: 0.35rem; }
+[data-look="showcase"] .sc-mini img { aspect-ratio: 2 / 3; border-radius: 3px; object-fit: cover; width: 1.6rem; }
+[data-look="showcase"] .sc-mini strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+[data-look="showcase"] .sc-mini small { color: var(--pico-muted-color); white-space: nowrap; }
+
+/* ---------------------------------------------------------------- watermark (0.57.0) */
+/* The name, huge and outlined, behind the banner like a poster's background type. */
+[data-look="showcase"] .sc-watermark {
+  -webkit-text-stroke: 1px color-mix(in srgb, var(--sc-glow) 45%, transparent);
+  bottom: 6%;
+  color: transparent;
+  font-size: clamp(4rem, 13vw, 12rem);
+  font-weight: 900;
+  left: 2vw;
+  letter-spacing: -0.02em;
+  line-height: 0.85;
+  opacity: 0.55;
+  position: absolute;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- grain and vignette (0.57.0) */
+/* A projected-film finish over banners and the spotlight: a fine moving grain and darkened
+   corners. The grain is SVG noise, grey; its colour comes from nowhere but the noise. */
+[data-look="showcase"] .collection-backdrop-frame::after,
+[data-look="showcase"] .spotlight-band::after {
+  animation: sc-grain 0.8s steps(5) infinite;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.9 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>") 0 0 / 180px 180px,
+    radial-gradient(ellipse at center, transparent 55%, color-mix(in srgb, var(--pico-background-color) 55%, transparent) 100%);
+  content: "";
+  inset: 0;
+  mix-blend-mode: overlay;
+  opacity: 0.4;
+  pointer-events: none;
+  position: absolute;
+}
+[data-look="showcase"] .spotlight-band::after { inset: 0 calc(50% - 50vw); z-index: -1; }
+@keyframes sc-grain {
+  0% { background-position: 0 0, 0 0; }
+  20% { background-position: -40px 25px, 0 0; }
+  40% { background-position: 30px -50px, 0 0; }
+  60% { background-position: -70px -15px, 0 0; }
+  80% { background-position: 55px 60px, 0 0; }
+  100% { background-position: 0 0, 0 0; }
+}
+
+/* ---------------------------------------------------------------- poster fan (0.57.0) */
+/* Pointing at a collection card fans three of its films out from behind its poster. */
+[data-look="showcase"] .collection-card > a.collection-poster { z-index: 1; }
+/* grid-area: the card's grid would otherwise make its text column the containing block, as it
+   did for the flipped poster's back (0.51.0). */
+[data-look="showcase"] .sc-fanned { grid-area: auto; pointer-events: none; position: absolute; z-index: 0; }
+[data-look="showcase"] .sc-fanned img {
+  aspect-ratio: 2 / 3;
+  border-radius: var(--pico-border-radius);
+  box-shadow: 0 0.4rem 1rem color-mix(in srgb, var(--pico-background-color) 70%, transparent);
+  inset: 0;
+  object-fit: cover;
+  opacity: 0;
+  position: absolute;
+  transform-origin: 50% 100%;
+  transition: rotate 0.45s var(--sc-ease), translate 0.45s var(--sc-ease), opacity 0.3s ease;
+  width: 100%;
+}
+[data-look="showcase"] .collection-card:hover .sc-fanned img { opacity: 1; }
+/* Out to the left and up, away from the card's text. */
+[data-look="showcase"] .collection-card:hover .sc-fanned img:nth-child(1) { rotate: -26deg; translate: -22% 2%; }
+[data-look="showcase"] .collection-card:hover .sc-fanned img:nth-child(2) { rotate: -16deg; translate: -13% 0; }
+[data-look="showcase"] .collection-card:hover .sc-fanned img:nth-child(3) { rotate: -7deg; translate: -5% -2%; }
+
+/* ---------------------------------------------------------------- milestone unlocks (0.57.0) */
+[data-look="showcase"] .trophy-badge--unlocked {
+  animation: sc-unlock 1.3s var(--sc-ease) 0.4s both, sc-breathe 2.6s ease-in-out 1.8s 3;
+  position: relative;
+}
+@keyframes sc-unlock {
+  0% { opacity: 0; rotate: y 90deg; scale: 0.6; }
+  55% { opacity: 1; rotate: y -12deg; scale: 1.18; }
+  100% { rotate: y 0deg; scale: 1; }
+}
+[data-look="showcase"] .trophy-unlocked { color: var(--sc-gold); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* ---------------------------------------------------------------- rolling numbers (0.57.0) */
+/* Each digit is a column of 0-9 that rolls to its value, like an odometer (showcase.js). */
+[data-look="showcase"] .sc-sr { clip-path: inset(50%); height: 1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }
+[data-look="showcase"] .sc-odo { font-variant-numeric: tabular-nums; display: inline-flex; height: 1.15em; line-height: 1.15em; overflow: hidden; vertical-align: bottom; }
+[data-look="showcase"] .sc-odo-col { display: flex; flex-direction: column; transition: translate 1.5s var(--sc-ease); transition-delay: var(--sc-wait, 0s); }
+[data-look="showcase"] .sc-odo-col > span { display: block; height: 1.15em; }
+[data-look="showcase"] .sc-odo.is-rolled .sc-odo-col { translate: 0 calc(var(--sc-digit, 0) * -1.15em); }
+
+/* ---------------------------------------------------------------- liquid bars (0.57.0) */
+/* Completeness bars fill like liquid: a little taller, with a slow wave along the top. */
+[data-look="showcase"] progress.completeness { border-radius: 999px; height: 0.6rem; }
+[data-look="showcase"] progress.completeness::-webkit-progress-bar { background: color-mix(in srgb, var(--pico-muted-color) 18%, transparent); border-radius: 999px; }
+[data-look="showcase"] progress.completeness::-webkit-progress-value {
+  animation: sc-wave 2.8s linear infinite;
+  background:
+    radial-gradient(circle at 50% -40%, color-mix(in srgb, var(--pico-contrast) 35%, transparent) 0 40%, transparent 42%) 0 0 / 0.9rem 0.6rem repeat-x,
+    linear-gradient(to bottom, color-mix(in srgb, var(--sc-glow) 85%, var(--pico-contrast)), var(--sc-glow));
+  border-radius: 999px;
+}
+[data-look="showcase"] progress.completeness::-moz-progress-bar {
+  animation: sc-wave 2.8s linear infinite;
+  background:
+    radial-gradient(circle at 50% -40%, color-mix(in srgb, var(--pico-contrast) 35%, transparent) 0 40%, transparent 42%) 0 0 / 0.9rem 0.6rem repeat-x,
+    linear-gradient(to bottom, color-mix(in srgb, var(--sc-glow) 85%, var(--pico-contrast)), var(--sc-glow));
+  border-radius: 999px;
+}
+@keyframes sc-wave { from { background-position: 0 0, 0 0; } to { background-position: 0.9rem 0, 0 0; } }
+
+/* ---------------------------------------------------------------- franchise intros (0.57.0) */
+/* A nod to a few franchises' films, once per visit, skippable (showcase.js picks and paints
+   them: the colours are each film's own, so they're set there). */
+[data-look="showcase"] .sc-intro {
+  cursor: pointer;
+  inset: 0;
+  overflow: hidden;
+  position: fixed;
+  transition: opacity 0.8s ease;
+  z-index: 90;
+}
+[data-look="showcase"] .sc-intro.is-leaving { opacity: 0; }
+[data-look="showcase"] .sc-intro canvas { height: 100%; width: 100%; }
+[data-look="showcase"] .sc-intro-skip {
+  bottom: 1.2rem;
+  color: var(--pico-muted-color);
+  font-size: 0.8rem;
+  position: absolute;
+  right: 1.4rem;
+}
+[data-look="showcase"] .sc-crawl-opening {
+  animation: sc-opening 4.2s ease both;
+  font-size: clamp(1.1rem, 3vw, 2rem);
+  left: 50%;
+  max-width: 86vw;
+  position: absolute;
+  top: 42%;
+  translate: -50% -50%;
+}
+@keyframes sc-opening { 0% { opacity: 0; } 15%, 75% { opacity: 1; } 100% { opacity: 0; } }
+[data-look="showcase"] .sc-crawl-stage { inset: 0; perspective: 22rem; position: absolute; }
+/* transform, not rotate/translate: the text must move along its own tilted plane to recede, and
+   only one transform orders the two that way. The overlay is removed after, so nothing holds it. */
+[data-look="showcase"] .sc-crawl-text {
+  animation: sc-crawl 20s linear 4.2s both;
+  font-size: clamp(1.15rem, 3.4vw, 2.2rem);
+  font-weight: 700;
+  left: 50%;
+  line-height: 1.5;
+  margin-left: calc(min(38rem, 86vw) / -2);
+  position: absolute;
+  text-align: justify;
+  top: 100%;
+  transform-origin: 50% 100%;
+  width: min(38rem, 86vw);
+}
+[data-look="showcase"] .sc-crawl-text h2,
+[data-look="showcase"] .sc-crawl-text p { color: inherit; text-align: inherit; }
+[data-look="showcase"] .sc-crawl-text h2 { font-size: 1.15em; text-align: center; text-transform: uppercase; }
+@keyframes sc-crawl {
+  from { transform: rotateX(24deg) translateY(45%); }     /* wholly below the screen while the opening line shows */
+  to { transform: rotateX(24deg) translateY(-260%); }
+}
+
+/* ---------------------------------------------------------------- retro VHS (0.57.0) */
+/* The Konami code turns the app into a worn tape: scanlines, a tracking band rolling down, colour
+   fringes on the text, a wobble now and then. The fringe colours are set by showcase.js. */
+[data-look="showcase"].sc-vhs body::after {
+  background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--pico-background-color) 45%, transparent) 0 1px, transparent 1px 3px);
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: fixed;
+  z-index: 95;
+}
+[data-look="showcase"].sc-vhs main { animation: sc-wobble 6s ease-in-out infinite; text-shadow: 1.5px 0 var(--sc-vhs-a), -1.5px 0 var(--sc-vhs-b); }
+[data-look="showcase"].sc-vhs img { filter: saturate(1.6) contrast(1.15) blur(0.35px); }
+[data-look="showcase"] .sc-vhs-band {
+  animation: sc-tracking 7s linear infinite;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--pico-contrast) 12%, transparent) 45%,
+              color-mix(in srgb, var(--pico-contrast) 22%, transparent) 50%, transparent);
+  height: 9vh;
+  left: 0;
+  pointer-events: none;
+  position: fixed;
+  right: 0;
+  top: -10vh;
+  z-index: 96;
+}
+[data-look="showcase"] .sc-vhs-osd {
+  animation: sc-osd 3.5s steps(1) both;
+  color: var(--pico-contrast);
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 1.5rem;
+  left: 1.4rem;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+  position: fixed;
+  text-shadow: 2px 0 var(--sc-vhs-a), -2px 0 var(--sc-vhs-b);
+  top: 6.5rem;
+  z-index: 97;
+}
+@keyframes sc-tracking { to { translate: 0 120vh; } }
+@keyframes sc-wobble {
+  0%, 88%, 100% { translate: 0 0; }
+  90% { translate: 3px 0; }
+  92% { translate: -2px 1px; }
+  94% { translate: 1px 0; }
+}
+@keyframes sc-osd { 0%, 20%, 40%, 60% { opacity: 1; } 10%, 30%, 50% { opacity: 0.3; } 100% { opacity: 0; } }
+
 /* Phones: no tilt (there's no pointer to follow) and a calmer banner. */
 @media (pointer: coarse), (max-width: 767px) {
   [data-look="showcase"] .collection-heading.has-backdrop { min-height: 22rem; }
@@ -945,6 +1193,8 @@
   [data-look="showcase"] .sc-row-nav { display: none; }
   [data-look="showcase"] body::before { display: none; }       /* no ambient light: a big blur costs a phone */
   [data-look="showcase"] .spotlight-trailer { bottom: auto; top: 0.25rem; }   /* clear of the text below */
+  [data-look="showcase"] :is(.collection-backdrop-frame, .spotlight-band)::after { animation: none; }   /* still grain */
+  [data-look="showcase"] .sc-watermark { font-size: 5rem; }
   [data-look="showcase"] .poster-wall-row { animation: none !important; }   /* a still wall */
   [data-look="showcase"] .poster-wall-row:nth-child(n+3) { display: none; }
   [data-look="showcase"] .sc-holo-wrap { flex-basis: 6rem; width: 6rem; }

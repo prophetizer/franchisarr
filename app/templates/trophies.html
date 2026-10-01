@@ -36,7 +36,7 @@
   <section class="trophy-badges" aria-label="Milestones">
     <ul>
       {% for b in case.earned %}
-        <li class="trophy-badge trophy-badge--earned" style="--i: {{ loop.index0 }}"><span aria-hidden="true">🏆</span> {{ b.label }}</li>
+        <li class="trophy-badge trophy-badge--earned{% if b.label in unlocked %} trophy-badge--unlocked{% endif %}" style="--i: {{ loop.index0 }}"><span aria-hidden="true">🏆</span> {{ b.label }}{% if b.label in unlocked %} <small class="trophy-unlocked">unlocked!</small>{% endif %}</li>
       {% endfor %}
       {% for b in case.next_up %}
         <li class="trophy-badge trophy-badge--next" title="{{ b.have }} of {{ b.threshold }}">

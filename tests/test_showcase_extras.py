@@ -265,3 +265,34 @@ def test_only_showcase_pays_for_the_poster_wall(client: TestClient) -> None:  # 
     client.post(f"{BASE}/look", data={"look": "showcase"})
     client.get(f"{BASE}/")
     assert home_service._walls, "Showcase: drawn (and kept)"
+
+
+def test_a_collection_card_carries_its_fan_of_films(client: TestClient) -> None:  # noqa: F811
+    _seed_collection()
+    from app.models import TmdbCollection
+
+    with Session(get_engine()) as session:
+        session.get(TmdbCollection, COLLECTION).poster_path = "/c.jpg"
+        for row in session.exec(select(TmdbCollectionMovie)).all():
+            row.poster_path = f"/p{row.tmdb_movie_id}.jpg"
+            session.add(row)
+        session.commit()
+
+    page = client.get(f"{BASE}/collections").text
+
+    fan = page[page.index('<template class="sc-fan">'):]
+    fan = fan[:fan.index("</template>")]
+    assert fan.count("<img") == 3 and "/p90.jpg" in fan, "owned first"
+
+
+def test_transform_is_only_used_where_it_must_be() -> None:
+    """Animations use translate/rotate/scale so nothing holds a transform over the tilt
+    (CLAUDE.md). The crawl is the exception: its text must move along its own tilted plane,
+    and its overlay is removed when it ends."""
+    import re
+    from pathlib import Path
+
+    css = (Path(__file__).resolve().parents[1] / "app" / "static" / "showcase.css").read_text()
+    frames = re.findall(r"@keyframes ([\w-]+) \{(.*?)\n\}", css, re.S) + re.findall(r"@keyframes ([\w-]+) \{([^\n]*)\}", css)
+    holding = {name for name, body in frames if "transform:" in body}
+    assert holding == {"sc-crawl"}
