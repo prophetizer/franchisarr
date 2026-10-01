@@ -1,4 +1,4 @@
-// Showcase's franchise intros (0.57.0; their own file since 0.58.0): a nod to a franchise's films
+// Showcase's franchise intros (0.57.0; their own file since 0.58.0; nineteen since 0.59.0): a nod to a franchise's films
 // when its page opens -- once per visit to each page, skipped by a click or any key, and replayed
 // from the ▶ Intro button. Off for anyone who turned them off in their menu (data-intros="off")
 // and with "reduce motion". The words are this app's own; the looks are the films'.
@@ -577,6 +577,136 @@
         return t < 3.5;
       });
     },
+
+    // Ghostbusters: green slime runs down the screen in thick drips, then slides away.
+    slime: function () {
+      var c = curtain({ max: 5500 });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var drips = [];
+      // Uneven, like the real thing: drips of every width and reach, with gaps between.
+      for (var x = 10; x < W; x += 40 + Math.random() * 70) {
+        drips.push({ x: x, w: 14 + Math.random() * 40, speed: 0.3 + Math.random() * 0.6,
+                     reach: 0.15 + Math.pow(Math.random(), 1.6) * 0.75, wobble: Math.random() * 6 });
+      }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var slide = t > 3.0 ? Math.min(1, (t - 3.0) / 0.9) : 0;
+        g.save();
+        g.translate(0, slide * H);
+        g.globalAlpha = 1 - slide * 0.6;
+        var top = H * 0.08;
+        g.fillStyle = 'rgba(110, 230, 60, 0.88)';
+        g.beginPath(); g.moveTo(0, 0); g.lineTo(W, 0);
+        for (var edge = W; edge >= 0; edge -= 30) { g.lineTo(edge, top + Math.sin(edge / 45) * 10); }
+        g.fill();
+        drips.forEach(function (d) {
+          var len = top + Math.min(1, t * d.speed) * H * d.reach;
+          g.beginPath();
+          g.moveTo(d.x - d.w / 2, 0);
+          g.lineTo(d.x - d.w / 2 + Math.sin(t * 2 + d.wobble) * 2, len - d.w / 2);
+          g.arc(d.x, len - d.w / 2, d.w / 2, Math.PI, 0, true);
+          g.lineTo(d.x + d.w / 2, 0);
+          g.fill();
+        });
+        g.fillStyle = 'rgba(210, 255, 170, 0.35)';   // a wet shine down each drip
+        drips.forEach(function (d) {
+          g.fillRect(d.x - d.w / 4, 0, 3, top + Math.min(1, t * d.speed) * H * d.reach - d.w);
+        });
+        g.restore();
+        return t < 3.9;
+      });
+    },
+
+    // Godzilla: footsteps that shake the page, dust falling from the ceiling, a vast shadow
+    // passing, and a blue glow rising at the last. The page stays usable.
+    footsteps: function () {
+      var c = curtain({ max: 6000, through: true });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var steps = [0.3, 1.25, 2.2, 3.1], stepped = 0, dust = [];
+      var main = document.querySelector('main');
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        steps.forEach(function (at, i) {
+          if (t > at && i >= stepped) {
+            stepped = i + 1;
+            var shake = 3 + i * 3;
+            if (main && main.animate) {
+              main.animate([{ translate: '0 0' }, { translate: '0 ' + shake + 'px' }, { translate: '0 -' + (shake * 0.6) + 'px' },
+                            { translate: '0 ' + (shake * 0.3) + 'px' }, { translate: '0 0' }], { duration: 420 });
+            }
+            for (var d = 0; d < 40; d++) { dust.push({ x: Math.random() * W, y: -10 - Math.random() * 40, v: 1 + Math.random() * 2.5 }); }
+          }
+        });
+        var pass = Math.min(1, Math.max(0, (t - 0.6) / 3));   // the shadow crosses
+        var sx = -W * 0.6 + pass * W * 1.6;
+        var shadow = g.createRadialGradient(sx, H * 0.55, 0, sx, H * 0.55, W * 0.55);
+        shadow.addColorStop(0, 'rgba(0, 0, 0, 0.8)'); shadow.addColorStop(0.6, 'rgba(0, 0, 0, 0.45)'); shadow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        g.fillStyle = shadow; g.fillRect(0, 0, W, H);
+        g.fillStyle = 'rgba(170, 160, 140, 0.8)';
+        dust.forEach(function (p) { p.y += p.v; p.x += Math.sin(p.y / 40) * 0.4; g.fillRect(p.x, p.y, 2, 2); });
+        if (t > 3.3) {
+          var glow = Math.sin(Math.min(1, (t - 3.3) / 0.8) * Math.PI);
+          var blue = g.createLinearGradient(0, H, 0, H * 0.5);
+          blue.addColorStop(0, 'rgba(80, 190, 255, ' + 0.55 * glow + ')'); blue.addColorStop(1, 'rgba(80, 190, 255, 0)');
+          g.fillStyle = blue; g.fillRect(0, 0, W, H);
+        }
+        return t < 4.2;
+      });
+    },
+
+    // Mad Max: a sandstorm tears across the screen, then blows itself out.
+    storm: function () {
+      var c = curtain({ max: 5500, through: true });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var grains = [];
+      for (var i = 0; i < 700; i++) {
+        grains.push({ x: Math.random() * W, y: Math.random() * H, v: 6 + Math.random() * 18, l: 4 + Math.random() * 18 });
+      }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var strength = Math.min(1, t / 0.6) * (t > 3.0 ? Math.max(0, 1 - (t - 3.0) / 1.0) : 1);
+        var haze = g.createLinearGradient(0, 0, W, H);
+        haze.addColorStop(0, 'rgba(210, 120, 40, ' + 0.55 * strength + ')');
+        haze.addColorStop(1, 'rgba(150, 70, 20, ' + 0.65 * strength + ')');
+        g.fillStyle = haze; g.fillRect(0, 0, W, H);
+        g.strokeStyle = 'rgba(255, 210, 150, ' + 0.6 * strength + ')'; g.lineWidth = 1.5;
+        g.beginPath();
+        grains.forEach(function (p) {
+          p.x += p.v * (0.4 + strength); p.y += Math.sin(p.x / 90 + t) * 0.8;
+          if (p.x > W + 20) { p.x = -20; p.y = Math.random() * H; }
+          g.moveTo(p.x, p.y); g.lineTo(p.x - p.l, p.y - p.l * 0.08);
+        });
+        g.stroke();
+        return t < 4.0;
+      });
+    },
+
+    // Toy Story: a blue sky of fluffy clouds, which part to let the page through.
+    clouds: function () {
+      // The sky is the curtain's own colour, so it's there before the first frame is drawn.
+      var c = curtain({ max: 5000, background: 'rgb(90 170 240)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var puffs = [];
+      for (var i = 0; i < 22; i++) {
+        var cx = Math.random() * W, cy = Math.random() * H, size = 40 + Math.random() * 60;
+        var bits = [];
+        for (var b = 0; b < 6; b++) { bits.push([(b - 2.5) * size * 0.45, (Math.random() - 0.3) * size * 0.4, size * (0.45 + Math.random() * 0.35)]); }
+        puffs.push({ x: cx, y: cy, bits: bits, side: cx < W / 2 ? -1 : 1 });
+      }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var part = t > 2.2 ? Math.min(1, (t - 2.2) / 1.1) : 0;
+        c.el.style.background = 'rgba(90, 170, 240, ' + (1 - part) + ')';
+        puffs.forEach(function (p) {
+          var x = p.x + t * 12 + p.side * part * part * W * 0.7;
+          g.fillStyle = 'rgba(255, 255, 255, 0.95)';
+          p.bits.forEach(function (bit) { g.beginPath(); g.arc(x + bit[0], p.y + bit[1], bit[2], 0, Math.PI * 2); g.fill(); });
+          g.fillStyle = 'rgba(200, 225, 245, 0.6)';   // a soft shade under each cloud
+          g.beginPath(); g.ellipse(x, p.y + p.bits[0][2] * 0.5, p.bits[0][2] * 2.2, p.bits[0][2] * 0.35, 0, 0, Math.PI * 2); g.fill();
+        });
+        return t < 3.4;
+      });
+    },
   };
 
   // Which franchise this page is. The first match wins, so the specific ones come first.
@@ -596,6 +726,10 @@
     [/terminator/i, 'hud'],
     [/indiana jones/i, 'map'],
     [/lord of the rings|hobbit|middle-earth/i, 'ring'],
+    [/ghostbusters/i, 'slime'],
+    [/godzilla|monsterverse/i, 'footsteps'],
+    [/mad max|furiosa/i, 'storm'],
+    [/toy story/i, 'clouds'],
   ];
   var which = WHICH.filter(function (w) { return w[0].test(name); })[0];
   if (!which || reduce) { return; }

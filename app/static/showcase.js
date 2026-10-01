@@ -325,6 +325,10 @@
     [/terminator/i, ['rgb(255 30 30)', 'rgb(200 200 210)'], 'rod'],
     [/indiana jones/i, ['rgb(160 100 40)', 'rgb(230 190 90)', 'rgb(200 40 30)'], 'rect'],
     [/lord of the rings|hobbit|middle-earth/i, ['rgb(255 200 80)', 'rgb(255 120 30)'], 'spark'],
+    [/ghostbusters/i, ['rgb(110 230 60)', 'rgb(200 255 150)', 'rgb(230 40 40)'], 'spark'],
+    [/godzilla|monsterverse/i, ['rgb(80 190 255)', 'rgb(160 220 255)', 'rgb(90 90 100)'], 'spark'],
+    [/mad max|furiosa/i, ['rgb(220 120 40)', 'rgb(255 200 120)', 'rgb(140 60 20)'], 'rect'],
+    [/toy story/i, ['rgb(90 170 240)', 'rgb(255 255 255)', 'rgb(240 60 50)', 'rgb(255 210 40)'], 'rect'],
   ];
 
   // ------------------------------------------------------------ confetti (0.49.0)

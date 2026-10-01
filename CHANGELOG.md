@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.59.0] — 2026-10-01
+
+### Added
+
+Showcase:
+
+- **Four more franchise intros**: Ghostbusters (green slime running down the screen), Godzilla
+  (footsteps that shake the page, dust from the ceiling, a vast shadow and a blue glow), Mad Max
+  (a sandstorm tearing across) and Toy Story (a sky of fluffy clouds that parts). Each has its own
+  confetti for when you complete it.
+
 ## [0.58.0] — 2026-10-01
 
 ### Added
