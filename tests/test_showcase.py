@@ -132,3 +132,29 @@ def test_the_home_page_wraps_the_spotlight_in_its_band() -> None:
     template = (Path(__file__).resolve().parents[1] / "app" / "templates" / "index.html").read_text()
     start = template.index('<section class="spotlight"')
     assert template.index('<div class="spotlight-band">', start) < template.index('class="spotlight-slide', start)
+
+
+def test_franchise_intros_are_showcase_only_and_each_persons_to_switch_off(client: TestClient) -> None:
+    classic = client.get(f"{BASE}/collections").text
+    assert "showcase-intros.js" not in classic and "Franchise intros" not in classic
+
+    client.post(f"{BASE}/look", data={"look": "showcase", "back": f"{BASE}/collections"})
+    page = client.get(f"{BASE}/collections").text
+    assert "showcase-intros.js" in page and "Franchise intros: on" in page and 'data-intros="off"' not in page
+
+    response = client.post(f"{BASE}/preferences/intros", data={"on": "false", "back": f"{BASE}/collections"})
+    assert response.status_code == 303 and response.headers["location"] == f"{BASE}/collections"
+    page = client.get(f"{BASE}/collections").text
+    assert 'data-intros="off"' in page and "Franchise intros: off" in page
+    assert client.post(f"{BASE}/preferences/intros", data={"on": "true", "back": "https://evil.example/"}).headers[
+        "location"] == f"{BASE}/", "only ever back inside the app"
+
+
+def test_every_franchise_pattern_has_an_intro_to_play() -> None:
+    import re
+    from pathlib import Path
+
+    js = (Path(__file__).resolve().parents[1] / "app" / "static" / "showcase-intros.js").read_text()
+    defined = set(re.findall(r"^    (\w+): function \(\) \{", js, re.M))
+    wanted = set(re.findall(r"^    \[/.*/i, '(\w+)'\],$", js, re.M))
+    assert len(wanted) == 15 and wanted <= defined, wanted - defined

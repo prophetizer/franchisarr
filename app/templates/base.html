@@ -11,9 +11,11 @@
 <!DOCTYPE html>
 {#- Classic or Showcase, per person (0.47.0); Showcase is classic plus showcase.css/.js. -#}
 {% set look = look_of(user) if user is defined and user else 'classic' %}
+{#- Franchise intros (0.58.0), each person's switch; only Showcase has them. -#}
+{% set intros = (intros_of(user) if look == 'showcase' else false) %}
 {#- `color_scheme` rather than `theme`: this is the light/dark attribute, and a context key
     called `theme` once shadowed it and rendered an object into the attribute. -#}
-<html lang="en" data-theme="{{ color_scheme|default('dark') }}"{% if look == 'showcase' %} data-look="showcase"{% endif %}>
+<html lang="en" data-theme="{{ color_scheme|default('dark') }}"{% if look == 'showcase' %} data-look="showcase"{% if not intros %} data-intros="off"{% endif %}{% endif %}>
 {#- The stored preference is applied before the stylesheets load, so a light-mode viewer never
     sees a dark flash. Wrapped in try/catch: a browser with site data blocked would otherwise
     throw here and stop the rest of the page's scripts. -#}
@@ -44,6 +46,7 @@
     {% if look == 'showcase' %}
       <link rel="stylesheet" href="{{ asset('/static/showcase.css') }}">
       <script src="{{ asset('/static/showcase.js') }}" defer></script>
+      <script src="{{ asset('/static/showcase-intros.js') }}" defer></script>
     {% endif %}
     <script src="{{ asset('/static/htmx.min.js') }}" defer></script>
     <script src="{{ asset('/static/alpine.min.js') }}" defer></script>
@@ -114,6 +117,13 @@
                     <input type="hidden" name="back" value="{{ here }}">
                     <button type="submit" class="nav-menu-button" title="Classic is the everyday look; Showcase adds motion and colour">
                       {{ '◻ Classic look' if look == 'showcase' else '✦ Showcase look' }}</button></form></li>
+                  {% if look == 'showcase' %}
+                  <li><form method="post" action="{{ url('/preferences/intros') }}" class="nav-form">
+                    <input type="hidden" name="on" value="{{ 'false' if intros else 'true' }}">
+                    <input type="hidden" name="back" value="{{ here }}">
+                    <button type="submit" class="nav-menu-button" title="The nods to Star Wars, The Matrix and others when a franchise's page opens">
+                      {{ '🎬 Franchise intros: on' if intros else '🎬 Franchise intros: off' }}</button></form></li>
+                  {% endif %}
                   <li><form method="post" action="{{ url('/logout') }}" class="nav-form">
                     <button type="submit" class="nav-menu-button">Sign out</button></form></li>
                 </ul>
@@ -150,6 +160,12 @@
               <input type="hidden" name="look" value="{{ 'classic' if look == 'showcase' else 'showcase' }}">
               <input type="hidden" name="back" value="{{ here }}">
               <button type="submit" class="nav-menu-button">{{ '◻ Classic look' if look == 'showcase' else '✦ Showcase look' }}</button></form></li>
+            {% if look == 'showcase' %}
+            <li><form method="post" action="{{ url('/preferences/intros') }}" class="nav-form">
+              <input type="hidden" name="on" value="{{ 'false' if intros else 'true' }}">
+              <input type="hidden" name="back" value="{{ here }}">
+              <button type="submit" class="nav-menu-button">{{ '🎬 Franchise intros: on' if intros else '🎬 Franchise intros: off' }}</button></form></li>
+            {% endif %}
             <li><form method="post" action="{{ url('/logout') }}" class="nav-form">
               <button type="submit" class="nav-menu-button">Sign out</button></form></li>
           </ul>

@@ -26,7 +26,7 @@
 //   watermark  -- a banner's name, huge and outlined, behind it
 //   mini bar   -- past a detail page's banner, a slim bar says what page this is
 //   fan        -- a collection card fans three of its films out from behind its poster
-//   intros     -- a few franchises open with a nod to their films, once per visit
+//   (intros    -- the franchise intros are in showcase-intros.js since 0.58.0)
 //   VHS        -- the Konami code turns the app into a worn videotape, and back
 // "Reduce motion" turns off all but the glow, which doesn't move.
 (function () {
@@ -308,6 +308,25 @@
     else if (poster && !poster.closest('.collection-heading')) { poster.style.viewTransitionName = 'sc-poster'; }
   }, true);
 
+  // Confetti themes (0.58.0): [name, colours, shape] for the franchises with intros.
+  var CONFETTI = [
+    [/harry potter|wizarding world|fantastic beasts/i, ['rgb(255 214 120)', 'rgb(255 245 210)', 'rgb(230 170 60)'], 'spark'],
+    [/matrix/i, ['rgb(0 255 70)', 'rgb(170 255 180)'], 'glyph'],
+    [/star wars/i, ['rgb(80 160 255)', 'rgb(255 60 60)', 'rgb(90 255 120)'], 'rod'],
+    [/james bond/i, ['rgb(212 175 55)', 'rgb(240 240 240)', 'rgb(190 20 30)'], 'rect'],
+    [/marvel cinematic|avengers collection/i, ['rgb(226 54 54)', 'rgb(255 210 80)', 'rgb(240 240 240)'], 'rect'],
+    [/star trek/i, ['rgb(255 204 0)', 'rgb(0 130 255)', 'rgb(210 20 20)'], 'rect'],
+    [/jurassic/i, ['rgb(255 170 30)', 'rgb(70 150 70)', 'rgb(200 40 30)'], 'rect'],
+    [/back to the future/i, ['rgb(255 120 0)', 'rgb(255 210 60)', 'rgb(120 220 255)'], 'spark'],
+    [/mission: impossible/i, ['rgb(255 150 30)', 'rgb(255 230 140)'], 'spark'],
+    [/^alien|alien collection|alien vs/i, ['rgb(90 255 120)', 'rgb(30 160 70)'], 'spark'],
+    [/batman|dark knight/i, ['rgb(255 215 0)', 'rgb(40 40 40)', 'rgb(240 240 240)'], 'rect'],
+    [/jaws/i, ['rgb(120 200 255)', 'rgb(240 250 255)', 'rgb(30 90 160)'], 'spark'],
+    [/terminator/i, ['rgb(255 30 30)', 'rgb(200 200 210)'], 'rod'],
+    [/indiana jones/i, ['rgb(160 100 40)', 'rgb(230 190 90)', 'rgb(200 40 30)'], 'rect'],
+    [/lord of the rings|hobbit|middle-earth/i, ['rgb(255 200 80)', 'rgb(255 120 30)'], 'spark'],
+  ];
+
   // ------------------------------------------------------------ confetti (0.49.0)
   // A collection just completed: one burst from the top, a few seconds, then gone. Not on a
   // phone (a lighter look there) and not with reduce motion -- the message shows regardless.
@@ -320,6 +339,11 @@
     var glow = getComputedStyle(root).getPropertyValue('--sc-glow').trim() || 'gold';
     var primary = getComputedStyle(root).getPropertyValue('--pico-primary').trim() || 'deepskyblue';
     var colours = [glow, primary, 'gold', 'white', 'hotpink'];
+    // Themed for the franchises that have an intro (0.58.0): the first one celebrated picks.
+    var shape = 'rect';
+    var said = document.querySelector('[data-confetti]').textContent;
+    var themed = CONFETTI.filter(function (t) { return t[0].test(said); })[0];
+    if (themed) { colours = themed[1]; shape = themed[2]; }
     var bits = [];
     for (var n = 0; n < 160; n++) {
       bits.push({
@@ -339,7 +363,18 @@
         ctx2.save();
         ctx2.translate(b.x, b.y); ctx2.rotate(b.spin);
         ctx2.fillStyle = b.colour;
-        ctx2.fillRect(-b.size / 2, -b.size / 4, b.size, b.size / 2);
+        if (shape === 'glyph') {
+          ctx2.font = (b.size * 2.2).toFixed(0) + 'px monospace';
+          ctx2.fillText(b.glyph || (b.glyph = '\u30a2\u30ab\u30b5\u30bf\u30ca01'[Math.floor(Math.random() * 7)]), 0, 0);
+        } else if (shape === 'rod') {
+          ctx2.shadowBlur = 8; ctx2.shadowColor = b.colour;
+          ctx2.fillRect(-b.size * 1.6, -1, b.size * 3.2, 2);
+        } else if (shape === 'spark') {
+          ctx2.shadowBlur = 10; ctx2.shadowColor = b.colour;
+          ctx2.beginPath(); ctx2.arc(0, 0, b.size / 3, 0, Math.PI * 2); ctx2.fill();
+        } else {
+          ctx2.fillRect(-b.size / 2, -b.size / 4, b.size, b.size / 2);
+        }
         ctx2.restore();
       });
       if (age < 4200) { window.requestAnimationFrame(frame); } else { canvas.remove(); }
@@ -913,121 +948,8 @@
     });
   }
 
-  // ------------------------------------------------------------ intros (0.57.0)
-  // Three franchises open with a nod to their films -- once per visit to each page, gone at a
-  // click or a key. The words are this app's own; the looks are the films'.
-  var pageName = (function () {
-    var h = document.querySelector('.collection-heading h1');
-    if (!h) { return ''; }
-    var img = h.querySelector('img');
-    return (img ? img.alt : h.textContent).trim();
-  })();
-  var intro = /star wars/i.test(pageName) ? 'crawl' : /matrix/i.test(pageName) ? 'rain'
-    : /harry potter|wizarding world|fantastic beasts/i.test(pageName) ? 'sparks' : null;
-  var introKey = 'sc-intro:' + window.location.pathname;
-  var introSeen = false;
-  try { introSeen = window.sessionStorage.getItem(introKey) === '1'; } catch (e) { introSeen = true; }
-  if (intro && !reduce && !introSeen) {
-    try { window.sessionStorage.setItem(introKey, '1'); } catch (e) { /* shown anyway, once */ }
-    var curtain = document.createElement('div');
-    curtain.className = 'sc-intro';
-    curtain.setAttribute('role', 'presentation');
-    var skip = document.createElement('span');
-    skip.className = 'sc-intro-skip';
-    skip.textContent = 'Click or press any key to skip';
-    var finish = function () {
-      if (curtain.classList.contains('is-leaving')) { return; }
-      curtain.classList.add('is-leaving');
-      document.removeEventListener('keydown', finish, true);
-      window.setTimeout(function () { curtain.remove(); }, 900);
-    };
-    curtain.addEventListener('click', finish);
-    document.addEventListener('keydown', finish, true);
-    var have = /([0-9,]+) of ([0-9,]+)/.exec(plainText(document.querySelector('.collection-heading hgroup p')));
-    if (intro === 'crawl') {
-      curtain.style.background = 'radial-gradient(1px 1px at 20% 30%, white, transparent), radial-gradient(1px 1px at 70% 60%, white, transparent), ' +
-        'radial-gradient(1px 1px at 40% 80%, white, transparent), radial-gradient(1.5px 1.5px at 85% 20%, white, transparent), ' +
-        'radial-gradient(1px 1px at 10% 70%, white, transparent), radial-gradient(1px 1px at 55% 15%, white, transparent) 0 0 / 260px 260px, black';
-      var opening = document.createElement('p');
-      opening.className = 'sc-crawl-opening';
-      opening.style.color = 'rgb(75 213 238)';
-      opening.textContent = 'A short while ago, in a library not so far away\u2026.';
-      var stage = document.createElement('div');
-      stage.className = 'sc-crawl-stage';
-      var crawl = document.createElement('div');
-      crawl.className = 'sc-crawl-text';
-      crawl.style.color = 'rgb(255 214 64)';
-      var head = document.createElement('h2');
-      head.textContent = pageName;
-      var body = document.createElement('p');
-      body.textContent = (have ? 'It is a period of collecting. Of ' + have[2] + ' films released, ' + have[1] +
-        ' are safely in the library. ' : 'It is a period of collecting. ') +
-        'The rest remain at large, scattered across the galaxy\u2019s streaming services and bargain bins. ' +
-        'Pursued by an import list, one collector races home aboard a humble media server, ' +
-        'custodian of a franchise that can still be made whole\u2026.';
-      crawl.append(head, body);
-      stage.appendChild(crawl);
-      curtain.append(opening, stage, skip);
-      window.setTimeout(finish, 23000);
-    } else {
-      var canvas = document.createElement('canvas');
-      curtain.append(canvas, skip);
-      if (intro === 'sparks') { curtain.style.pointerEvents = 'none'; skip.remove(); }
-      window.setTimeout(function () { runIntro(intro, canvas, finish); }, 30);
-    }
-    document.body.appendChild(curtain);
-  }
-  function runIntro(kind, canvas, finish) {
-    var W = canvas.width = window.innerWidth, H = canvas.height = window.innerHeight;
-    var g = canvas.getContext('2d');
-    if (!g) { finish(); return; }
-    var began = performance.now();
-    if (kind === 'rain') {
-      // Falling code: columns of glyphs, the newest bright, the rest fading behind.
-      var size = 16, columns = Math.ceil(W / size), drops = [];
-      for (var i = 0; i < columns; i++) { drops.push(Math.random() * -40); }
-      var glyphs = '\u30a2\u30a4\u30a6\u30a8\u30aa\u30ab\u30ad\u30af\u30b1\u30b3\u30b5\u30b7\u30b9\u30bb\u30bd0123456789';
-      g.fillStyle = 'black'; g.fillRect(0, 0, W, H);
-      var rain = function (now) {
-        var age = now - began;
-        g.fillStyle = 'rgba(0, 0, 0, 0.08)';
-        g.fillRect(0, 0, W, H);
-        g.font = size + 'px monospace';
-        for (var c = 0; c < columns; c++) {
-          g.fillStyle = Math.random() > 0.97 ? 'rgb(200 255 200)' : 'rgb(0 255 70)';
-          g.fillText(glyphs[Math.floor(Math.random() * glyphs.length)], c * size, drops[c] * size);
-          if (drops[c] * size > H && Math.random() > 0.96) { drops[c] = 0; }
-          drops[c] += 1;
-        }
-        if (age < 3200) { window.requestAnimationFrame(rain); } else { finish(); }
-      };
-      window.requestAnimationFrame(rain);
-      window.setTimeout(finish, 4500);
-    } else {
-      // Sparks from the title, as from a wand: gold, rising, falling away.
-      var title = document.querySelector('.collection-heading h1');
-      var box = title ? title.getBoundingClientRect() : { left: W / 2, top: H / 3, width: 0, height: 0 };
-      var bits = [];
-      for (var n = 0; n < 140; n++) {
-        bits.push({ x: box.left + Math.random() * Math.max(box.width, 40), y: box.top + box.height / 2,
-                    vx: (Math.random() - 0.5) * 5, vy: -Math.random() * 6 - 1, life: 0.6 + Math.random() * 0.6 });
-      }
-      var spark = function (now) {
-        var age = (now - began) / 1000;
-        g.clearRect(0, 0, W, H);
-        bits.forEach(function (b) {
-          b.vy += 0.12; b.x += b.vx; b.y += b.vy;
-          var left = Math.max(0, 1 - age / (b.life * 2.2));
-          g.globalAlpha = left;
-          g.fillStyle = Math.random() > 0.5 ? 'rgb(255 214 120)' : 'rgb(255 245 210)';
-          g.beginPath(); g.arc(b.x, b.y, 1.8, 0, Math.PI * 2); g.fill();
-        });
-        if (age < 2.6) { window.requestAnimationFrame(spark); } else { finish(); }
-      };
-      window.requestAnimationFrame(spark);
-      window.setTimeout(finish, 4000);
-    }
-  }
+  // ------------------------------------------------------------ intros
+  // The franchise intros live in showcase-intros.js (0.58.0), loaded after this file.
 
   // ------------------------------------------------------------ VHS (0.57.0)
   // Up, up, down, down, left, right, left, right, B, A: the app becomes a worn videotape until

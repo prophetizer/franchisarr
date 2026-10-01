@@ -111,6 +111,7 @@ def build_templates(base_url: str) -> Jinja2Templates:
     from app.services import look as look_service
 
     templates.env.globals["look_of"] = look_service.of
+    templates.env.globals["intros_of"] = look_service.intros_of
     import json
 
     templates.env.filters["fromjson"] = json.loads

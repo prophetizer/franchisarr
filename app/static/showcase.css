@@ -1094,6 +1094,69 @@
   z-index: 90;
 }
 [data-look="showcase"] .sc-intro.is-leaving { opacity: 0; }
+[data-look="showcase"] .sc-intro--through { cursor: default; pointer-events: none; }   /* decorates; the page still works */
+[data-look="showcase"] .sc-intro canvas { inset: 0; position: absolute; }
+
+/* The intros' own pieces (0.58.0). Their colours are each film's, set by showcase-intros.js. */
+[data-look="showcase"] .sc-flip-page {
+  border-radius: 4px;
+  height: min(78vh, 46rem);
+  left: 50%;
+  object-fit: cover;
+  position: absolute;
+  top: 50%;
+  translate: -50% -50%;
+}
+[data-look="showcase"] .sc-flip-flash { inset: 0; opacity: 0; position: absolute; transition: opacity 0.35s ease; }
+[data-look="showcase"] .sc-flip-flash.is-on { opacity: 1; }
+[data-look="showcase"] .sc-circuits {
+  display: grid;
+  gap: 1.1rem;
+  left: 50%;
+  position: absolute;
+  top: 40%;
+  translate: -50% -50%;
+  transition: opacity 0.4s ease;
+}
+[data-look="showcase"] .sc-circuits > div { align-items: baseline; display: flex; flex-direction: column; }
+[data-look="showcase"] .sc-circuits-time {
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: clamp(1.6rem, 6vw, 3.4rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 0.6rem currentColor;
+}
+[data-look="showcase"] .sc-circuits small { color: var(--pico-muted-color); letter-spacing: 0.25em; }
+[data-look="showcase"] .sc-brief,
+[data-look="showcase"] .sc-hud,
+[data-look="showcase"] .sc-tracker-label {
+  font-family: ui-monospace, "Courier New", monospace;
+  position: absolute;
+  z-index: 1;
+}
+[data-look="showcase"] .sc-brief {
+  color: var(--pico-contrast);
+  font-size: clamp(1rem, 2.4vw, 1.4rem);
+  left: 50%;
+  line-height: 1.6;
+  max-width: min(44rem, 86vw);
+  top: 40%;
+  transition: filter 1.2s ease, opacity 1.2s ease;
+  translate: -50% -50%;
+  width: 100%;
+}
+[data-look="showcase"] .sc-brief.is-smoke { filter: blur(8px); opacity: 0; }
+[data-look="showcase"] .sc-tracker-label { font-size: 1.3rem; left: 50%; letter-spacing: 0.2em; top: 12%; translate: -50% 0; }
+[data-look="showcase"] .sc-hud {
+  color: var(--pico-contrast);
+  font-size: clamp(0.8rem, 1.6vw, 1rem);
+  line-height: 1.7;
+  right: 4vw;
+  text-shadow: 0 0 6px currentColor;
+  top: 18%;
+  width: min(26rem, 80vw);
+}
+[data-look="showcase"] .sc-intro-replay { font-size: 0.85rem; margin: 0 0 0.4rem; padding: 0.25rem 0.75rem; width: auto; }
 [data-look="showcase"] .sc-intro canvas { height: 100%; width: 100%; }
 [data-look="showcase"] .sc-intro-skip {
   bottom: 1.2rem;

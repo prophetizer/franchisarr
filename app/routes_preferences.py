@@ -103,3 +103,15 @@ def choose_map_shape(session: DbSession, user: RequiredUser, shape: Annotated[st
     from app.services import franchise_map
 
     franchise_map.set_shape(session, user.id, shape)
+
+
+@router.post("/preferences/intros")
+def choose_intros(session: DbSession, user: RequiredUser, on: Annotated[str, Form()] = "true",
+                  back: Annotated[str, Form()] = ""):
+    """Showcase's franchise intros on or off, for this person (0.58.0), then back to the page."""
+    from app.services import look as look_service
+
+    look_service.set_intros(session, user.id, on == "true")
+    base = get_settings().base_url
+    target = back if back.startswith(f"{base}/") and not back.startswith("//") and "://" not in back else _url("/")
+    return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)

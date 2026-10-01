@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.58.0] — 2026-10-01
+
+### Added
+
+Showcase:
+
+- **Twelve more franchise intros**, each a nod to its films in this app's own words: the MCU
+  (your posters flicking past like comic pages), James Bond (a gun-barrel opening onto the page),
+  Star Trek (the jump to warp), Jurassic Park (ripples in a glass, the page shaking), Back to the
+  Future (a time-circuit display of the franchise's span, then fire trails), Mission: Impossible (a
+  fuse and a self-destructing briefing about your missing films), Alien (a motion tracker, one
+  contact per missing film), Batman (a searchlight signal), Jaws (a fin through the water),
+  Terminator (a red targeting display listing your missing films), Indiana Jones (a map route
+  through the films in release order) and Middle-earth (a ring glowing in the dark).
+- **▶ Intro** on any page with one, to watch it again.
+- **Franchise intros: on/off** in the menu under your name.
+- **Themed confetti** for those franchises when a scan completes one: lightsaber rods for Star
+  Wars, falling code for The Matrix, gold sparks for Harry Potter, and so on.
+
+### Changed
+
+- The intros moved to their own file, `showcase-intros.js`, loaded only in Showcase.
+
 ## [0.57.0] — 2026-10-01
 
 ### Added

@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.57.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.58.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -240,8 +240,11 @@ holographic foil; a running scan shows its progress in the browser tab; banners 
 and their name in huge outlined type behind them; the release strip becomes a strip of film;
 headline numbers roll like an odometer; a slim bar keeps a detail page's name in view as you
 scroll; pointing at a collection card fans its films out; a new Trophy case badge unlocks with a
-flourish; and a couple of franchises open with a nod to their films (and there's a code for a
-retro VHS mode, if you know it); **Ctrl+K** (Cmd+K on a Mac) searches from anywhere; and in October horror sets glow
+flourish; and fifteen franchises open with a nod to their films — Star Wars, The Matrix, Harry
+Potter, the MCU, James Bond, Star Trek, Jurassic Park, Back to the Future, Mission: Impossible,
+Alien, Batman, Jaws, Terminator, Indiana Jones and Middle-earth — once per visit, skippable, with
+a ▶ Intro button to watch again and a switch in your menu to turn them off (and there's a code
+for a retro VHS mode, if you know it); **Ctrl+K** (Cmd+K on a Mac) searches from anywhere; and in October horror sets glow
 pumpkin with a few falling leaves, in December the top bar frosts over. The release strip
 **plays** as it comes on screen (posters fly in in order, the ones you own light up, a ring fills
 to how much you have); and a poster you click **grows into the page** it opens (in browsers with
