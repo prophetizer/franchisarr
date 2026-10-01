@@ -207,8 +207,9 @@ CATALOGUE_WORDS = ("list of", "feature films", "productions", "greatest", " in f
 MEMBER_ALLOW = ("film", "series")
 #: ...and the ones that never are, even when the item carries a TMDb id: an episode, a
 #: cancelled project, a web series, a trailer. Star Wars has 3,178 members on Wikidata and most
-#: of the ones with an id are one of these.
-MEMBER_DENY = ("episode", "project", "web series", "4d", "trailer", "video game", "music video")
+#: of the ones with an id are one of these. A fan film isn't the franchise's at all (michael,
+#: 0.55.2: Wizarding World listed two as missing films) -- dropped, not folded like a short.
+MEMBER_DENY = ("episode", "project", "web series", "4d", "trailer", "video game", "music video", "fan film")
 #: ...and the ones that are a matter of taste, kept but tagged: the Holiday Special, the LEGO
 #: tie-ins, a short. A preference decides whether they show; nothing is thrown away.
 MINOR_KINDS = ("television film", "short", "special")

@@ -141,8 +141,8 @@ def _member_row(qid: str, name: str, cls: str, film: int | None = None, tv: int 
 
 @responses.activate
 def test_discovery_folds_subgroups_and_filters_the_roster(session: Session) -> None:
-    """Infinity Saga folds into the MCU; episodes and cancelled projects are dropped, and a
-    short is kept but tagged so a preference can decide."""
+    """Infinity Saga folds into the MCU; episodes, cancelled projects and fan films are dropped,
+    and a short is kept but tagged so a preference can decide."""
     _own_film(session, 1, "Iron Man"); _own_film(session, 2, "Thor")
     session.commit()
     # membership: shows batch (none), films batch
@@ -162,6 +162,8 @@ def test_discovery_folds_subgroups_and_filters_the_roster(session: Session) -> N
         _member_row("Q12", "Team Thor", "short film", film=3),
         _member_row("Q13", "Some Episode", "television series episode", film=4),
         _member_row("Q14", "Loki", "television series", tv=84958),
+        _member_row("Q15", "Someone's Fan Film", "fan film", film=5),
+        _member_row("Q15", "Someone's Fan Film", "film", film=5),
     ))
     responses.add(responses.GET, f"{TMDB_BASE_URL}/tv/84958",
                   json={"id": 84958, "name": "Loki", "first_air_date": "2021-06-09", "poster_path": "/l.jpg"})

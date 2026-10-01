@@ -17,7 +17,7 @@ button beside it ("↓ Most first", "A → Z") — and each page remembers your 
 account, so it follows you between devices.
 
 And, built on the same data: **franchise pages** that put films and TV together (*Star Wars —
-you have 8 of 15*), **director pages** (*you own 11 Nolan films; missing* Following *and*
+you have 8 of 15*; fan films are left out), **director pages** (*you own 11 Nolan films; missing* Following *and*
 Insomnia), an **Upcoming** page of announced films in franchises you own with release-date
 notifications, **import lists** Radarr and Sonarr can poll so you never have to click Add, and
 **playlists** of a franchise, collection or director in release order, on Plex, Jellyfin or Emby — films and episodes
@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.55.1`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.55.2`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -211,7 +211,7 @@ the label changes.
 ## Getting around
 
 The top bar has its menus: **Browse** (Franchises, Collections, Spin-offs, Upcoming,
-Directors); for administrators **Playlists** (one page with tabs) and
+Directors, Trophy case); for administrators **Playlists** (one page with tabs) and
 **Manage** (Servers, Libraries, Instances, Users, Settings, Activity); and one under your name (Preferences, Password, light/dark, Sign out), with
 search at the far right. The menu holding the page you're on is highlighted. On a phone it's a
 single ☰ button.

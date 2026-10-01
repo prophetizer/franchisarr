@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.55.2] — 2026-09-30
+
+### Changed
+
+- **Fan films are left out of franchises.** Wikidata files some fan-made films under a franchise
+  (Wizarding World had *Voldemort: Origins of the Heir* and *Le Maître de la Mort* as missing
+  films); they're no longer listed, counted, mapped or offered anywhere. Only what Wikidata
+  labels a fan film can be recognised — "Not interested" hides any other.
+
+### Upgrading
+
+- Fan films already stored are removed when the app starts; nothing else in a franchise changes.
+
 ## [0.55.1] — 2026-09-30
 
 ### Changed

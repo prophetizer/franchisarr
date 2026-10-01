@@ -90,3 +90,21 @@ def test_0029_marks_existing_franchisarr_playlists_for_taking_in_only_on_an_inst
         settings = dict(conn.execute("SELECT key, value FROM settings"))
     assert "playlist_sync_franchisarr" not in settings, "the switch is gone"
     assert (settings.get("franchisarr_playlists_to_adopt") == "true") is had_servers
+
+
+def test_0034_drops_stored_fan_films_and_nothing_else(db_path: Path) -> None:
+    config = _alembic_config(db_path)
+    command.upgrade(config, "0033")
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("INSERT INTO franchises (wikidata_id, name, kind, fetched_at) VALUES ('Q1', 'Wizarding World', "
+                     "'media franchise', '2026-09-01')")
+        for tmdb_id, title, kind in ((1, "Philosopher's Stone", "film"), (2, "Origins of the Heir", "fan film / film"),
+                                     (3, "A Short", "short film"), (4, "Untagged", None)):
+            conn.execute("INSERT INTO franchise_members (franchise_id, item_type, tmdb_id, title, kind) "
+                         "VALUES ('Q1', 'movie', ?, ?, ?)", (tmdb_id, title, kind))
+
+    command.upgrade(config, "0034")
+
+    with sqlite3.connect(db_path) as conn:
+        left = [row[0] for row in conn.execute("SELECT title FROM franchise_members ORDER BY tmdb_id")]
+    assert left == ["Philosopher's Stone", "A Short", "Untagged"]
