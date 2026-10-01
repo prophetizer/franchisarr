@@ -240,12 +240,8 @@ holographic foil; a running scan shows its progress in the browser tab; banners 
 and their name in huge outlined type behind them; the release strip becomes a strip of film;
 headline numbers roll like an odometer; a slim bar keeps a detail page's name in view as you
 scroll; pointing at a collection card fans its films out; a new Trophy case badge unlocks with a
-flourish; and nineteen franchises open with a nod to their films — Star Wars, The Matrix, Harry
-Potter, the MCU, James Bond, Star Trek, Jurassic Park, Back to the Future, Mission: Impossible,
-Alien, Batman, Jaws, Terminator, Indiana Jones, Middle-earth, Ghostbusters, Godzilla, Mad Max and
-Toy Story — once per visit, skippable, with
-a ▶ Intro button to watch again and a switch in your menu to turn them off (and there's a code
-for a retro VHS mode, if you know it); **Ctrl+K** (Cmd+K on a Mac) searches from anywhere; and in October horror sets glow
+flourish; and nineteen franchises open with a nod to their films ([listed
+below](#franchise-intros)) (and there's a code for a retro VHS mode, if you know it); **Ctrl+K** (Cmd+K on a Mac) searches from anywhere; and in October horror sets glow
 pumpkin with a few falling leaves, in December the top bar frosts over. The release strip
 **plays** as it comes on screen (posters fly in in order, the ones you own light up, a ring fills
 to how much you have); and a poster you click **grows into the page** it opens (in browsers with
@@ -284,6 +280,37 @@ next one is. Showcase frames them in gold.
 Franchise and collection pages open with the whole set **in release order** — a strip of
 posters, the ones you have in colour and the ones you don't dimmed, so the holes in the run show
 at a glance. Pick a dimmed one to add it; the lists below have everything else.
+
+### Franchise intros
+
+In the Showcase look, these franchises' collection and franchise pages open with a nod to their
+films — in this app's own words and drawing, with no logos, music or lines from the films. Each
+plays once per visit to a page; a click or any key skips it, **▶ Intro** on the page plays it
+again, **🎬 Franchise intros** in the menu under your name turns them off for you, and your
+device's "reduce motion" setting turns them off altogether. Completing one of these franchises
+also brings its own confetti.
+
+| Franchise | Plays on pages named | What happens |
+|---|---|---|
+| Star Wars | *Star Wars* | "A short while ago, in a library not so far away…", then a crawl about your collection — how many films you have and the rest still at large — receding into the stars |
+| The Matrix | *Matrix* | Falling green code |
+| Harry Potter | *Harry Potter*, *Wizarding World*, *Fantastic Beasts* | Gold sparks thrown from the title, as from a wand (the page stays usable) |
+| Marvel Cinematic Universe | *Marvel Cinematic Universe*, *The Avengers Collection* | Your own posters flick past like comic pages, faster and faster, then a red flash |
+| James Bond | *James Bond* | Dots across a black screen, a gun barrel opening onto the page, a red wash, then the circle widens |
+| Star Trek | *Star Trek* | Stars stretch into streaks, the jump to warp, a white flash |
+| Jurassic Park | *Jurassic Park*, *Jurassic World* | A glass of water ripples with each distant thud, and the page shakes (the page stays usable) |
+| Back to the Future | *Back to the Future* | A time-circuit display — latest film, today, first film — then twin fire trails |
+| Mission: Impossible | *Mission: Impossible* | A burning fuse and a briefing about your missing films, which then self-destructs |
+| Alien | *Alien…* | A motion tracker, one contact for each missing film, closing in |
+| Batman | *Batman*, *Dark Knight* | A searchlight sweeps the clouds and settles into a bat signal |
+| Jaws | *Jaws* | The page under water, a fin cutting slowly across, then the water drains away |
+| Terminator | *Terminator* | A red targeting display frames the poster and lists your missing films as targets |
+| Indiana Jones | *Indiana Jones* | An old map, a red route travelling through the films in release order |
+| Middle-earth | *Lord of the Rings*, *Hobbit*, *Middle-earth* | A gold ring turning in the dark, glowing hotter, then flaring |
+| Ghostbusters | *Ghostbusters* | Green slime runs down the screen in uneven drips, then slides away |
+| Godzilla | *Godzilla*, *MonsterVerse* | Footsteps shake the page, dust falls, a vast shadow passes and a blue glow rises (the page stays usable) |
+| Mad Max | *Mad Max*, *Furiosa* | A sandstorm tears across the screen, then blows itself out (the page stays usable) |
+| Toy Story | *Toy Story* | A blue sky of fluffy clouds, which part to let the page through |
 
 ## Search
 

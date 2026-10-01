@@ -40,6 +40,10 @@ Numbered because code comments cite them.
    column that existing cached rows should be refetched to fill, date those rows to the epoch.
 7. **Nothing auto-adds.** Suggestions require a click; import lists are polled by the user's own
    Radarr/Sonarr under their rules. Franchisarr sends nothing to an *arr on its own.
+8. **A new franchise intro is listed in the README.** Showcase's intros live in
+   `app/static/showcase-intros.js` (`INTROS`, and the page names that pick one in `WHICH`), with a
+   confetti theme in `showcase.js`'s `CONFETTI`. Each needs a row in the README's *Franchise
+   intros* table; `tests/test_showcase.py` fails until it has one.
 
 ## Things worth knowing before you touch them
 

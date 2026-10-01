@@ -158,3 +158,25 @@ def test_every_franchise_pattern_has_an_intro_to_play() -> None:
     defined = set(re.findall(r"^    (\w+): function \(\) \{", js, re.M))
     wanted = set(re.findall(r"^    \[/.*/i, '(\w+)'\],$", js, re.M))
     assert len(wanted) == 19 and wanted <= defined, wanted - defined
+
+
+def test_the_readme_lists_every_franchise_intro() -> None:
+    """michael, 2026-10-01: the README keeps a list of the intros, updated whenever one is added.
+    One table row per franchise the intros recognise, and every page name in the row recognised."""
+    import re
+    from pathlib import Path
+
+    here = Path(__file__).resolve().parents[1]
+    js = (here / "app" / "static" / "showcase-intros.js").read_text()
+    patterns = [re.compile(p, re.I) for p in re.findall(r"^    \[/(.*)/i, '\w+'\],$", js, re.M)]
+    readme = (here / "README.md").read_text()
+    section = readme[readme.index("### Franchise intros"):]
+    section = section[:section.index("\n## ")]
+    rows = [line for line in section.splitlines() if line.startswith("| ") and not line.startswith("| Franchise")]
+    assert len(rows) == len(patterns), f"{len(patterns)} intros, {len(rows)} README rows"
+    for row in rows:
+        names = re.findall(r"\*([^*]+)\*", row.split("|")[2])
+        assert names, row
+        for name in names:
+            plain = name.rstrip("…")
+            assert any(p.search(plain) for p in patterns), f"README names {plain!r}, which no intro recognises"
