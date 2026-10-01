@@ -1,9 +1,9 @@
 """The Franchise map (0.55.0): how a franchise hangs together -- its collections, its other films,
 its shows and which show spun off which -- as data for static/franchise_map.js to draw.
 
-Three shapes are on trial (michael asked to see all three): lanes (a timeline lane per series),
-tree (the franchise, its series, their titles) and constellation (a web to drag about). Each
-person's pick is kept, like the look."""
+Three shapes, all kept after a trial (michael, 0.55.1): lanes (a timeline lane per series), tree
+(the franchise, its series, their titles) and constellation (a web to drag about). Each person's
+pick is kept, like the look."""
 
 from __future__ import annotations
 

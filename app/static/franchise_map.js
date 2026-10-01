@@ -1,5 +1,5 @@
 // The Franchise map (0.55.0): one franchise's collections, other films and shows, drawn three
-// ways while michael tries them out -- lanes (a timeline lane per series), a tree, and a
+// ways, all kept after a trial (0.55.1) -- lanes (a timeline lane per series), a tree, and a
 // constellation to drag about. The data is the JSON the page carries (franchise_map.build);
 // each person's choice of shape is saved to their account. Loaded in both looks; the Showcase
 // look adds motion through showcase.css, and "reduce motion" keeps everything still.

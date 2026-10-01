@@ -74,7 +74,7 @@
 
 {% include "partials/playlist_result_area.html" %}
 {% include "partials/timeline.html" %}
-{#- The Franchise map (0.55.0), drawn by franchise_map.js from the JSON below; three shapes on trial. -#}
+{#- The Franchise map (0.55.0), drawn by franchise_map.js from the JSON below, in three shapes. -#}
 {% if franchise_map.nodes | length > 1 %}
   <details class="franchise-map" open>
     <summary><strong>Map</strong> <small class="muted">how it all fits together</small></summary>
@@ -83,7 +83,6 @@
         <button type="button" role="tab" class="secondary outline" data-shape="{{ shape }}"
                 aria-selected="{{ 'true' if shape == map_shape else 'false' }}">{{ label }}</button>
       {% endfor %}
-      <small class="muted">Three shapes on trial: keep the one that reads best.</small>
     </div>
     <div class="fm-canvas" data-shape="{{ map_shape }}" data-base="{{ url('/')[:-1] }}"
          data-save="{{ url('/preferences/map-shape') }}"></div>

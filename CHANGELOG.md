@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.55.1] — 2026-09-30
+
+### Changed
+
+- The Franchise map keeps all three shapes — Lanes, Tree and Constellation — and the switch
+  between them; the "on trial" note is gone.
+
 ## [0.55.0] — 2026-09-30
 
 ### Added

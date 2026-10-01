@@ -1054,7 +1054,7 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
 .trailer-frame iframe { border: 0; display: block; height: 100%; width: 100%; }
 .card-actions .trailer-button { padding-inline: 0.7rem; }
 
-/* The Franchise map (0.55.0), in three shapes on trial. SVG colours come from these rules, not
+/* The Franchise map (0.55.0), in three shapes. SVG colours come from these rules, not
    attributes: a presentation attribute can't take a var(). */
 .franchise-map { margin-bottom: var(--pico-block-spacing-vertical); }
 .franchise-map > summary { margin-bottom: 0.5rem; }
