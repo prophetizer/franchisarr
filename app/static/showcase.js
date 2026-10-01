@@ -21,7 +21,6 @@
 //   surprise   -- Surprise me's pick lands after a slot-machine spin of posters
 //   reveal     -- cards glide up as they scroll into view, with a glint across each poster
 //   motes      -- specks of light drift up through a banner (fewer on phones)
-//   cursor     -- a soft pool of the page's colour follows the pointer (mouse only)
 //   holo       -- rainbow foil on a complete collection's poster and on trophies
 //   tab        -- a running scan's progress in the browser tab's icon and title
 // "Reduce motion" turns off all but the glow, which doesn't move.
@@ -747,28 +746,6 @@
       }
       band.appendChild(motes);   // under the content (z-index 1), over the picture and its shading
     });
-  }
-
-  // ------------------------------------------------------------ cursor (0.56.0)
-  if (!reduce && !phone) {
-    var glowSpot = document.createElement('div');
-    glowSpot.className = 'sc-cursor';
-    glowSpot.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(glowSpot);
-    var spotX = 0, spotY = 0, spotQueued = false;
-    document.addEventListener('pointermove', function (event) {
-      if (event.pointerType !== 'mouse') { return; }
-      spotX = event.clientX; spotY = event.clientY;
-      glowSpot.classList.add('is-on');
-      if (!spotQueued) {
-        spotQueued = true;
-        window.requestAnimationFrame(function () {
-          spotQueued = false;
-          glowSpot.style.translate = spotX + 'px ' + spotY + 'px';
-        });
-      }
-    }, { passive: true });
-    document.documentElement.addEventListener('pointerleave', function () { glowSpot.classList.remove('is-on'); });
   }
 
   // ------------------------------------------------------------ holo (0.56.0)

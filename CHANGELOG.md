@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.56.1] — 2026-09-30
+
+### Removed
+
+- Showcase's cursor glow (0.56.0), the soft pool of colour that followed the mouse.
+
 ## [0.56.0] — 2026-09-30
 
 ### Added
