@@ -466,8 +466,9 @@ URL list, but `?api_key=` works too for widgets that can't send headers.
 ## Signing in
 
 **Sign in with your media server account.** For Plex that is the usual OAuth button, and
-Franchisarr never sees your Plex password; only accounts that can actually reach *your* Plex
-server are admitted, so having a Plex account isn't enough. For Jellyfin and Emby it is a
+Franchisarr never sees your Plex password. By default only the account that **owns** your Plex
+server gets in: a Plex account that doesn't own it is refused, and so is anyone it's merely shared
+with (see below to let them in). For Jellyfin and Emby it is a
 username and password, checked against the server itself. Who administers Franchisarr follows
 from the server: with Plex it's the server's owner, with Jellyfin and Emby it's anyone who is an
 administrator there — checked again every time they sign in, so handing the server over, or
