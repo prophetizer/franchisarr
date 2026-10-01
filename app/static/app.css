@@ -1054,5 +1054,85 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
 .trailer-frame iframe { border: 0; display: block; height: 100%; width: 100%; }
 .card-actions .trailer-button { padding-inline: 0.7rem; }
 
+/* The Franchise map (0.55.0), in three shapes on trial. SVG colours come from these rules, not
+   attributes: a presentation attribute can't take a var(). */
+.franchise-map { margin-bottom: var(--pico-block-spacing-vertical); }
+.franchise-map > summary { margin-bottom: 0.5rem; }
+.fm-switch { align-items: center; display: flex; flex-wrap: wrap; gap: 0.4rem 0.5rem; margin-bottom: 0.75rem; }
+.fm-switch button { margin: 0; padding: 0.3rem 0.85rem; width: auto; }
+.fm-switch button[aria-selected="true"] {
+  background: var(--pico-primary-background);
+  border-color: var(--pico-primary-background);
+  color: var(--pico-primary-inverse);
+}
+.fm-canvas { overflow-x: auto; }
+.fm-key { align-items: center; display: flex; flex-wrap: wrap; font-size: 0.8rem; gap: 0.3rem 0.5rem; margin: 0.4rem 0 0; }
+.fm-k { border: 2px solid var(--pico-primary); border-radius: 50%; display: inline-block; height: 0.7rem; width: 0.7rem; }
+.fm-k.fm-owned { background: var(--pico-primary); }
+.fm-k.fm-upcoming { border-style: dashed; }
+.fm-k.fm-k-show { border-color: var(--pico-muted-color); border-radius: 2px; }
+
+.fm-lanes { display: block; font-family: inherit; }
+.fm-tick { stroke: var(--pico-muted-border-color); stroke-dasharray: 2 4; }
+.fm-year { fill: var(--pico-muted-color); font-size: 11px; }
+.fm-lane-name { fill: var(--pico-color); font-size: 13px; }
+.fm-lane { stroke: var(--pico-muted-border-color); stroke-linecap: round; stroke-width: 3; }
+.fm-node :is(circle, rect) { fill: var(--pico-background-color); stroke: var(--pico-primary); stroke-width: 2; }
+.fm-node.fm-owned :is(circle, rect) { fill: var(--pico-primary); }
+.fm-node.fm-missing :is(circle, rect) { stroke: var(--pico-muted-color); }
+.fm-node.fm-upcoming :is(circle, rect) { stroke: var(--pico-muted-color); stroke-dasharray: 3 2; }
+.fm-node:is(:hover, :focus) :is(circle, rect) { stroke-width: 3.5; }
+.fm-edge { fill: none; stroke: var(--pico-primary); stroke-opacity: 0.55; stroke-width: 1.5; }
+.fm-edge--continuation { stroke-dasharray: 5 4; }
+
+.fm-tree { text-align: left; }
+.fm-root {
+  border: 1px solid var(--pico-primary);
+  border-radius: 999px;
+  font-weight: 700;
+  margin: 0 auto 1rem;
+  padding: 0.35rem 1.1rem;
+  width: max-content;
+  max-width: 100%;
+}
+.fm-branches {
+  border-top: 2px solid var(--pico-muted-border-color);
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  padding-top: 0.9rem;
+}
+.fm-group { display: block; font-weight: 600; margin-bottom: 0.4rem; }
+.fm-tree ul { border-left: 2px solid var(--pico-muted-border-color); list-style: none; margin: 0; padding: 0 0 0 0.75rem; }
+.fm-tree li { list-style: none; margin: 0.2rem 0; padding: 0; }
+.fm-tree li > ul { margin-left: 0.6rem; }
+.fm-tree li a { align-items: center; color: inherit; display: flex; gap: 0.5rem; text-decoration: none; }
+.fm-tree li img, .fm-noposter {
+  aspect-ratio: 2 / 3;
+  background: var(--pico-card-sectioning-background-color);
+  border-radius: 3px;
+  flex: none;
+  object-fit: cover;
+  width: 1.6rem;
+}
+.fm-tree .fm-name { flex: 0 1 auto; font-size: 0.88rem; line-height: 1.2; min-width: 0; }
+.fm-tree li a small { flex: none; white-space: nowrap; }
+.fm-tree .fm-missing a { opacity: 0.6; }
+.fm-tree .fm-missing img { filter: grayscale(1); }
+.fm-tree .fm-upcoming .fm-name { font-style: italic; }
+
+/* A finger on the background still scrolls the page; only a star is dragged. */
+.fm-sky { display: block; max-height: 75vh; touch-action: pan-y; user-select: none; width: 100%; }
+.fm-star { touch-action: none; }
+.fm-wire { stroke: var(--pico-muted-border-color); stroke-width: 1; }
+.fm-wire.fm-edge--spin-off, .fm-wire.fm-edge--continuation { stroke: var(--pico-primary); stroke-opacity: 0.6; }
+.fm-star circle { cursor: grab; fill: var(--pico-background-color); stroke: var(--pico-muted-color); stroke-width: 1.5; }
+.fm-star--root circle { fill: var(--pico-primary); stroke: var(--pico-primary); }
+.fm-star--group circle { fill: var(--pico-card-background-color); stroke: var(--pico-primary); stroke-width: 2; }
+.fm-star.fm-owned circle { fill: var(--pico-primary); stroke: var(--pico-primary); }
+.fm-star.fm-upcoming circle { stroke-dasharray: 2 2; }
+.fm-star text { fill: var(--pico-color); font-size: 12px; pointer-events: none; }
+.fm-star--root text { font-size: 15px; font-weight: 700; }
+
 /* Showcase-only pieces that are in the page for everyone (0.48.0): hidden in Classic. */
 .spotlight, .timeline-ring, .sc-reel { display: none; }

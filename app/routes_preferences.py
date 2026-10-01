@@ -95,3 +95,11 @@ def choose_look(request: Request, session: DbSession, user: RequiredUser,
     base = get_settings().base_url
     target = back if back.startswith(f"{base}/") and not back.startswith("//") and "://" not in back else _url("/")
     return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/preferences/map-shape", status_code=status.HTTP_204_NO_CONTENT)
+def choose_map_shape(session: DbSession, user: RequiredUser, shape: Annotated[str, Form()] = "lanes") -> None:
+    """The Franchise map's shape for this person (0.55.0): lanes, tree or constellation."""
+    from app.services import franchise_map
+
+    franchise_map.set_shape(session, user.id, shape)

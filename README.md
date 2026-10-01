@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.54.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.55.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -257,6 +257,12 @@ the Surprise me card, the back of a turned-over poster and the Showcase spotligh
 button, which opens the trailer TMDb lists in a pop-up. It plays in YouTube's privacy-enhanced
 player (youtube-nocookie.com); nothing from YouTube loads until someone presses play, and then
 YouTube sees your Franchisarr's address (the origin only — its player won't play without it).
+
+Each franchise page has a **Map** of how the franchise fits together — its collections, its other
+films and its shows, with which show spun off which — in three shapes on trial: **Lanes** (a
+timeline lane per series), **Tree** (the franchise, its series, their titles) and
+**Constellation** (a web you can drag about). Your pick is remembered; owned titles are filled in,
+missing ones hollow, and each leads to its collection page.
 
 The **Trophy case** (Browse → Trophy case, in either look) shelves everything your library has
 finished — every collection, franchise and director's filmography with each released film in it

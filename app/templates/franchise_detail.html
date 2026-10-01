@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% block head %}<script src="{{ asset('/static/franchise_map.js') }}" defer></script>{% endblock %}
 {% block title %}{{ f.name }} — Franchisarr{% endblock %}
 
 {% from "partials/tile.html" import tile %}
@@ -73,6 +74,23 @@
 
 {% include "partials/playlist_result_area.html" %}
 {% include "partials/timeline.html" %}
+{#- The Franchise map (0.55.0), drawn by franchise_map.js from the JSON below; three shapes on trial. -#}
+{% if franchise_map.nodes | length > 1 %}
+  <details class="franchise-map" open>
+    <summary><strong>Map</strong> <small class="muted">how it all fits together</small></summary>
+    <div class="fm-switch" role="tablist" aria-label="Map shape">
+      {% for shape, label in [('lanes', 'Lanes'), ('tree', 'Tree'), ('constellation', 'Constellation')] %}
+        <button type="button" role="tab" class="secondary outline" data-shape="{{ shape }}"
+                aria-selected="{{ 'true' if shape == map_shape else 'false' }}">{{ label }}</button>
+      {% endfor %}
+      <small class="muted">Three shapes on trial: keep the one that reads best.</small>
+    </div>
+    <div class="fm-canvas" data-shape="{{ map_shape }}" data-base="{{ url('/')[:-1] }}"
+         data-save="{{ url('/preferences/map-shape') }}"></div>
+    <script type="application/json" class="fm-data">{{ franchise_map | tojson }}</script>
+    <noscript><p class="muted">The map needs JavaScript.</p></noscript>
+  </details>
+{% endif %}
 <div class="gap-controls">{% include "partials/sort_control.html" %}</div>
 
 {% if f.missing_films %}

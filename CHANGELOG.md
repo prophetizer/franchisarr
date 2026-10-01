@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.55.0] — 2026-09-30
+
+### Added
+
+- **Franchise map**, on every franchise page, for everyone: the franchise's collections, its
+  other films and its shows, with spin-off and film-to-show links between them. Three shapes are
+  on trial — **Lanes** (a timeline lane per series), **Tree** (the franchise, its series, their
+  titles) and **Constellation** (a web to drag about) — and each person's pick is remembered.
+  Showcase draws the lanes in, pops the titles on and lights what you own. A later release keeps
+  the shape (or shapes) that read best.
+
 ## [0.54.0] — 2026-09-30
 
 ### Added
