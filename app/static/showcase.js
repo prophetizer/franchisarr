@@ -16,7 +16,7 @@
 //   peek       -- pausing on a collection or franchise card previews what it's missing (not phones)
 //   flip       -- a missing film's poster turns over to its plot
 //   ambient    -- a blurred copy of the page's artwork lights the whole page (not phones)
-//   seasons    -- October leaves on horror pages, December frost
+//   seasons    -- October's pumpkin glow on horror pages, December frost
 //   quick find -- Ctrl+K (or Cmd+K) searches from anywhere
 //   surprise   -- Surprise me's pick lands after a slot-machine spin of posters
 //   reveal     -- cards glide up as they scroll into view, with a glint across each poster
@@ -608,36 +608,17 @@
   });
 
   // ------------------------------------------------------------ seasons (0.51.0)
-  // October: a horror collection or franchise glows pumpkin and a few leaves fall, once. December:
-  // frost along the top bar, and a little snow on the home page. `?season=10` tries a month out.
+  // October: a horror collection or franchise glows pumpkin. December: frost along the top bar.
+  // Nothing falls any more -- the leaves and the snow went in 0.61.1, michael's call.
+  // `?season=10` tries a month out.
   var tried = /[?&]season=(\d{1,2})\b/.exec(window.location.search);
   var month = tried ? parseInt(tried[1], 10) - 1 : new Date().getMonth();
-  var fall = function (marks, count) {
-    if (reduce) { return; }
-    var sky = document.createElement('div');
-    sky.className = 'sc-sky';
-    sky.setAttribute('aria-hidden', 'true');
-    for (var n = 0; n < (phone ? Math.ceil(count / 2) : count); n++) {
-      var bit = document.createElement('span');
-      bit.textContent = marks[n % marks.length];
-      bit.style.setProperty('--sc-x', (Math.random() * 100).toFixed(1) + 'vw');
-      bit.style.setProperty('--sc-sway', ((Math.random() - 0.5) * 30).toFixed(1) + 'vw');
-      bit.style.setProperty('--sc-wait', (Math.random() * 6).toFixed(2) + 's');
-      bit.style.setProperty('--sc-fall', (9 + Math.random() * 7).toFixed(2) + 's');
-      bit.style.setProperty('--sc-size', (0.9 + Math.random() * 0.9).toFixed(2) + 'rem');
-      sky.appendChild(bit);
-    }
-    document.body.appendChild(sky);
-    window.setTimeout(function () { sky.remove(); }, 24000);
-  };
   if (month === 9 && document.querySelector('[data-sc-horror]')) {
     heldGlow = true;
     root.classList.add('sc-october');
     root.style.setProperty('--sc-glow', 'rgb(255 132 24)');
-    fall(['🍂', '🍁', '🍂'], 12);
   } else if (month === 11) {
     root.classList.add('sc-december');
-    if (spot) { fall(['❄', '❅', '❆'], 16); }
   }
 
   // ------------------------------------------------------------ quick find (0.51.0)

@@ -188,3 +188,11 @@ def test_shading_never_reads_the_background_colour_inside_a_link() -> None:
     app = (HERE / "app" / "static" / "app.css").read_text()
     assert ".fm-node :is(circle, rect) { fill: var(--franchisarr-page);" in app, "the map's nodes are links"
     assert ".fm-star circle { cursor: grab; fill: var(--franchisarr-page);" in app
+
+
+def test_nothing_falls_in_october_or_december() -> None:
+    """michael, 2026-10-02: "remove those falling leaves things" -- and December's snow with them.
+    October's pumpkin glow and December's frost stay."""
+    js = (HERE / "app" / "static" / "showcase.js").read_text()
+    assert not any(mark in js for mark in ("🍂", "🍁", "❄", "❅", "❆", "sc-sky"))
+    assert "root.classList.add('sc-october');" in js and "root.classList.add('sc-december');" in js

@@ -11,6 +11,8 @@
   var root = document.documentElement;
   if (root.dataset.look !== 'showcase') { return; }
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // The intro mark's clapperboard: dark on the gold badge in any theme (0.61.1).
+  root.style.setProperty('--sc-mark-ink', 'rgb(46 30 6)');
 
   // Which franchise a page is, by its name. The first match wins, so the specific ones come first.
   var WHICH = [

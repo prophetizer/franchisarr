@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.61.1] — 2026-10-02
+
+### Changed
+
+- **The intro mark is brighter**: a gold badge with a dark clapperboard and a slow glow, a little
+  larger, where the first one took the page's colour and got lost on posters.
+- **Nothing falls any more**: no leaves on horror pages in October (they still glow pumpkin) and
+  no snow on the home page in December (the top bar still frosts over).
+
 ## [0.61.0] — 2026-10-02
 
 ### Added

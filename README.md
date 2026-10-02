@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.61.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.61.1`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -249,7 +249,7 @@ End*, or *To be continued…* while titles are missing; adding a film prints you
 poster (or the page's own) opens it large; a projector beam shines across the home spotlight;
 empty and finished pages get a little scene; and nineteen franchises open with a nod to their films ([listed
 below](#franchise-intros)) (and there's a code for a retro VHS mode, if you know it); **Ctrl+K** (Cmd+K on a Mac) searches from anywhere; and in October horror sets glow
-pumpkin with a few falling leaves, in December the top bar frosts over. The release strip
+pumpkin, in December the top bar frosts over. The release strip
 **plays** as it comes on screen (posters fly in in order, the ones you own light up, a ring fills
 to how much you have); and a poster you click **grows into the page** it opens (in browsers with
 view transitions: Chrome, Edge, Safari). Phones get the calmer half (no parallax, tilt, arrows,
@@ -295,7 +295,7 @@ films — in this app's own words and drawing, with no logos, music or lines fro
 plays once per visit to a page; a click or any key skips it, **▶ Intro** on the page plays it
 again, **🎬 Franchise intros** in the menu under your name turns them off for you, and your
 device's "reduce motion" setting turns them off altogether. Completing one of these franchises
-also brings its own confetti. A small clapperboard on a card — in the Collections and Franchises
+also brings its own confetti. A small gold clapperboard on a card — in the Collections and Franchises
 lists (and on the shelf), the home page's rows and spotlight, the Trophy case, search and Ctrl+K
 — marks a set whose page has one; it isn't shown to anyone who has intros switched off.
 

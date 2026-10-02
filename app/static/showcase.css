@@ -628,20 +628,6 @@
 }
 
 /* ---------------------------------------------------------------- seasons (0.51.0) */
-[data-look="showcase"] .sc-sky { inset: 0; overflow: hidden; pointer-events: none; position: fixed; z-index: 45; }
-[data-look="showcase"] .sc-sky span {
-  animation: sc-fall var(--sc-fall) linear var(--sc-wait) both;
-  font-size: var(--sc-size);
-  left: var(--sc-x);
-  opacity: 0.85;
-  position: absolute;
-  top: 0;
-}
-@keyframes sc-fall {
-  from { rotate: 0deg; translate: 0 -3rem; }
-  50% { translate: calc(var(--sc-sway) / 2) 50vh; }
-  to { rotate: 400deg; translate: var(--sc-sway) 105vh; }
-}
 /* December: frost gathers along the bottom of the top bar. */
 [data-look="showcase"].sc-december body > header.container::before {
   background:
@@ -1252,36 +1238,42 @@
 @keyframes sc-osd { 0%, 20%, 40%, 60% { opacity: 1; } 10%, 30%, 50% { opacity: 0.3; } 100% { opacity: 0; } }
 
 /* ---------------------------------------------------------------- intro marks (0.61.0) */
-/* A clapperboard on a card whose page opens with a franchise intro (showcase-intros.js places it): a small
-   round badge in a poster's corner, glowing in the page's colour; inline beside the spotlight's
-   kicker and a Ctrl+K line's name. */
+/* A clapperboard on a card whose page opens with a franchise intro (showcase-intros.js places it):
+   a gold badge in a poster's corner -- gold, not the page's colour, which got lost on posters
+   (0.61.1, michael: "make it brighter") -- with a slow glow; inline beside the spotlight's kicker
+   and a Ctrl+K line's name. --sc-gold and --sc-mark-ink are set by the scripts. */
 [data-look="showcase"] :is(.collection-poster, .poster-row-card, .trophy-frame):has(> .sc-intro-mark) { position: relative; }
 [data-look="showcase"] .sc-intro-mark {
   align-items: center;
-  background: color-mix(in srgb, var(--sc-page) 82%, transparent);
-  border: 1px solid color-mix(in srgb, var(--sc-glow) 80%, transparent);
+  animation: sc-mark-glow 3s ease-in-out infinite alternate;
+  background: var(--sc-gold);
   border-radius: 50%;
-  box-shadow: 0 0 0.55rem color-mix(in srgb, var(--sc-glow) 60%, transparent);
-  color: color-mix(in srgb, var(--sc-glow) 55%, var(--pico-h1-color));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sc-gold) 40%, var(--pico-contrast)),
+    0 0 0.7rem var(--sc-gold), 0 0.15rem 0.4rem var(--sc-page);
+  color: var(--sc-mark-ink);
   display: inline-flex;
-  height: 1.6rem;
+  height: 1.9rem;
   justify-content: center;
   line-height: 1;
-  width: 1.6rem;
+  width: 1.9rem;
 }
-[data-look="showcase"] .sc-intro-mark svg { height: 62%; width: 62%; }
+[data-look="showcase"] .sc-intro-mark svg { height: 64%; width: 64%; }
+@keyframes sc-mark-glow {
+  from { box-shadow: 0 0 0 2px color-mix(in srgb, var(--sc-gold) 40%, var(--pico-contrast)), 0 0 0.5rem var(--sc-gold), 0 0.15rem 0.4rem var(--sc-page); }
+  to { box-shadow: 0 0 0 2px color-mix(in srgb, var(--sc-gold) 40%, var(--pico-contrast)), 0 0 1.1rem var(--sc-gold), 0 0.15rem 0.4rem var(--sc-page); }
+}
 [data-look="showcase"] :is(.collection-poster, .poster-row-card, .trophy-frame, .sc-spine) > .sc-intro-mark {
   position: absolute;
-  right: 0.25rem;
-  top: 0.25rem;
-  z-index: 3;
+  right: 0.3rem;
+  top: 0.3rem;
+  z-index: 5;
 }
-[data-look="showcase"] .sc-spine > .sc-intro-mark { left: calc(50% - 0.8rem); right: auto; }
+[data-look="showcase"] .sc-spine > .sc-intro-mark { height: 1.6rem; left: calc(50% - 0.8rem); right: auto; top: 0.4rem; width: 1.6rem; }
 [data-look="showcase"] :is(.spotlight-kicker, .sc-quick-list strong) > .sc-intro-mark {
-  height: 1.2rem;
+  height: 1.35rem;
   margin-left: 0.4rem;
   vertical-align: middle;
-  width: 1.2rem;
+  width: 1.35rem;
 }
 
 /* ================================================================ cinema (0.60.0) */
