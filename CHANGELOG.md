@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.60.1] — 2026-10-02
+
+### Fixed
+
+- **Showcase shading that never showed.** Pico gives every link its own (transparent) background
+  colour, and the shadows and fades drawn inside links were built from it — so since 0.48.0 the
+  home spotlight's text had no darkened backing or shadow over a bright picture, and the poster
+  rows' hover shadow, the trophy frames' shadow and the fanned posters' shadow were missing too.
+  They're all drawn from the page's colour now.
+- **The franchise map's linked nodes were hollow** (Classic too): a missing title's circle showed
+  the lines running under it instead of covering them.
+
 ## [0.60.0] — 2026-10-02
 
 ### Added

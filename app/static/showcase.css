@@ -9,6 +9,11 @@
 [data-look="showcase"] {
   --sc-glow: var(--pico-primary);
   --sc-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* The page's colour, taken here at the root (0.60.1). Pico redefines --pico-background-color on
+     every link (as transparent) and button, so a shadow or fade built from it inside one -- the
+     spotlight's slides, the poster rows, the trophies -- quietly drew nothing. A custom property
+     resolves where it's declared, so this one keeps the page's colour all the way down. */
+  --sc-page: var(--pico-background-color);
 }
 
 /* The page takes on its artwork's colour: a soft glow from the top, fixed behind everything. */
@@ -16,7 +21,7 @@
   background:
     radial-gradient(ellipse 90% 60% at 50% -10%, color-mix(in srgb, var(--sc-glow) 26%, transparent), transparent 70%),
     radial-gradient(ellipse 60% 40% at 100% 100%, color-mix(in srgb, var(--sc-glow) 10%, transparent), transparent 70%),
-    var(--pico-background-color);
+    var(--sc-page);
   background-attachment: fixed;
   overflow-x: clip;               /* the full-bleed banner is 100vw, which includes the scrollbar */
   transition: background 1.2s ease;
@@ -47,12 +52,12 @@
 }
 [data-look="showcase"] .collection-heading.has-backdrop::after {
   background:
-    linear-gradient(to top, var(--pico-background-color) 2%, color-mix(in srgb, var(--pico-background-color) 55%, transparent) 40%, transparent 85%),
-    linear-gradient(to right, color-mix(in srgb, var(--pico-background-color) 70%, transparent), transparent 55%);
+    linear-gradient(to top, var(--sc-page) 2%, color-mix(in srgb, var(--sc-page) 55%, transparent) 40%, transparent 85%),
+    linear-gradient(to right, color-mix(in srgb, var(--sc-page) 70%, transparent), transparent 55%);
 }
 [data-look="showcase"] .collection-heading-poster {
   animation: sc-pop 0.9s var(--sc-ease) both;
-  box-shadow: 0 1.5rem 3rem color-mix(in srgb, var(--pico-background-color) 60%, transparent),
+  box-shadow: 0 1.5rem 3rem color-mix(in srgb, var(--sc-page) 60%, transparent),
               0 0 2.5rem color-mix(in srgb, var(--sc-glow) 35%, transparent);
 }
 [data-look="showcase"] .collection-heading hgroup > * { animation: sc-rise 0.9s var(--sc-ease) both; }
@@ -76,7 +81,7 @@
 [data-look="showcase"] .film-tile:hover,
 [data-look="showcase"] .poster-row-card:hover {
   --sc-lift: -4px;
-  box-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--pico-background-color) 70%, transparent),
+  box-shadow: 0 1rem 2.5rem color-mix(in srgb, var(--sc-page) 70%, transparent),
               0 0 1.5rem color-mix(in srgb, var(--sc-glow) 30%, transparent);
 }
 [data-look="showcase"] .sc-tilting { transition-duration: 0.08s; }
@@ -179,15 +184,15 @@
 [data-look="showcase"] .spotlight-slide.is-current .spotlight-backdrop { animation: sc-drift 16s ease-out both; }
 [data-look="showcase"] .spotlight-slide::after {
   background:
-    linear-gradient(to top, var(--pico-background-color) 3%, color-mix(in srgb, var(--pico-background-color) 50%, transparent) 45%, transparent 80%),
-    linear-gradient(to right, color-mix(in srgb, var(--pico-background-color) 80%, transparent), transparent 60%);
+    linear-gradient(to top, var(--sc-page) 3%, color-mix(in srgb, var(--sc-page) 50%, transparent) 45%, transparent 80%),
+    linear-gradient(to right, color-mix(in srgb, var(--sc-page) 80%, transparent), transparent 60%);
   content: "";
   inset: 0 calc(50% - 50vw);
   position: absolute;
   z-index: -1;
 }
 [data-look="showcase"] .spotlight-text {
-  text-shadow: 0 1px 1rem var(--pico-background-color), 0 0 2px var(--pico-background-color);
+  text-shadow: 0 1px 1rem var(--sc-page), 0 0 2px var(--sc-page);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -245,7 +250,7 @@
 [data-look="showcase"] .sc-row-nav {
   align-items: center;
   backdrop-filter: blur(6px);
-  background: color-mix(in srgb, var(--pico-background-color) 70%, transparent);
+  background: color-mix(in srgb, var(--sc-page) 70%, transparent);
   border: 1px solid var(--pico-muted-border-color);
   border-radius: 999px;
   color: var(--pico-color);
@@ -335,7 +340,7 @@
   background: color-mix(in srgb, var(--pico-card-background-color) 85%, transparent);
   border: 1px solid color-mix(in srgb, var(--sc-glow) 60%, transparent);
   border-radius: var(--pico-border-radius);
-  box-shadow: 0 1rem 3rem color-mix(in srgb, var(--pico-background-color) 70%, transparent),
+  box-shadow: 0 1rem 3rem color-mix(in srgb, var(--sc-page) 70%, transparent),
               0 0 2rem color-mix(in srgb, var(--sc-glow) 40%, transparent);
   display: flex;
   gap: 0.9rem;
@@ -400,7 +405,7 @@
   backdrop-filter: blur(14px) saturate(1.4);
   background:
     linear-gradient(to bottom, color-mix(in srgb, var(--sc-glow) 10%, transparent), transparent),
-    color-mix(in srgb, var(--pico-background-color) 82%, transparent);
+    color-mix(in srgb, var(--sc-page) 82%, transparent);
   box-shadow: 0 0.6rem 1.6rem -1rem color-mix(in srgb, var(--sc-glow) 45%, transparent);
   content: "";
   inset: 0 calc(50% - 50vw);
@@ -511,8 +516,8 @@
 /* One film from done: a light runs round the card's edge. A masked ring of a turning conic
    gradient; the mask's colour is only its opacity. */
 [data-look="showcase"] .sc-almost::before {
-  -webkit-mask: linear-gradient(var(--pico-background-color) 0 0) content-box,
-                linear-gradient(var(--pico-background-color) 0 0);
+  -webkit-mask: linear-gradient(var(--sc-page) 0 0) content-box,
+                linear-gradient(var(--sc-page) 0 0);
   -webkit-mask-composite: xor;
   animation: sc-orbit 4.5s linear infinite;
   background: conic-gradient(from var(--sc-angle), transparent 0 62%,
@@ -520,8 +525,8 @@
   border-radius: inherit;
   content: "";
   inset: 0;
-  mask: linear-gradient(var(--pico-background-color) 0 0) content-box exclude,
-        linear-gradient(var(--pico-background-color) 0 0);
+  mask: linear-gradient(var(--sc-page) 0 0) content-box exclude,
+        linear-gradient(var(--sc-page) 0 0);
   padding: 2px;
   pointer-events: none;
   position: absolute;
@@ -534,7 +539,7 @@
   background: var(--pico-card-background-color);
   border: 1px solid color-mix(in srgb, var(--sc-glow) 45%, transparent);
   border-radius: var(--pico-border-radius);
-  box-shadow: 0 1.2rem 3rem color-mix(in srgb, var(--pico-background-color) 75%, transparent),
+  box-shadow: 0 1.2rem 3rem color-mix(in srgb, var(--sc-page) 75%, transparent),
               0 0 1.6rem color-mix(in srgb, var(--sc-glow) 30%, transparent);
   overflow: hidden;
   pointer-events: none;
@@ -642,7 +647,7 @@
   background:
     radial-gradient(circle at 12% 100%, color-mix(in srgb, var(--pico-contrast) 22%, transparent) 0 1px, transparent 2px) 0 100% / 23px 9px repeat-x,
     linear-gradient(to top, color-mix(in srgb, var(--pico-contrast) 16%, transparent), transparent 45%),
-    color-mix(in srgb, var(--pico-background-color) 82%, transparent);
+    color-mix(in srgb, var(--sc-page) 82%, transparent);
 }
 
 /* ---------------------------------------------------------------- quick find (0.51.0) */
@@ -698,9 +703,9 @@
   background: linear-gradient(135deg,
     color-mix(in srgb, var(--sc-gold) 60%, var(--pico-contrast)),
     var(--sc-gold) 35%,
-    color-mix(in srgb, var(--sc-gold) 55%, var(--pico-background-color)) 70%,
+    color-mix(in srgb, var(--sc-gold) 55%, var(--sc-page)) 70%,
     color-mix(in srgb, var(--sc-gold) 85%, var(--pico-contrast)));
-  box-shadow: 0 0.9rem 1.2rem -0.8rem color-mix(in srgb, var(--pico-background-color) 90%, transparent),
+  box-shadow: 0 0.9rem 1.2rem -0.8rem color-mix(in srgb, var(--sc-page) 90%, transparent),
               0 0 1.1rem color-mix(in srgb, var(--sc-gold) 22%, transparent);
   padding: 5px;
   transition: box-shadow 0.35s var(--sc-ease), translate 0.35s var(--sc-ease);
@@ -716,7 +721,7 @@
   transition: translate 0.9s var(--sc-ease);
 }
 [data-look="showcase"] .trophy:is(:hover, :focus-visible) .trophy-frame {
-  box-shadow: 0 1.4rem 1.6rem -1rem color-mix(in srgb, var(--pico-background-color) 90%, transparent),
+  box-shadow: 0 1.4rem 1.6rem -1rem color-mix(in srgb, var(--sc-page) 90%, transparent),
               0 0 2rem color-mix(in srgb, var(--sc-gold) 45%, transparent);
   translate: 0 -4px;
 }
@@ -724,7 +729,7 @@
 /* A new trophy breathes, for its first month. */
 [data-look="showcase"] .trophy--new .trophy-frame { animation: sc-breathe 2.6s ease-in-out infinite; }
 @keyframes sc-breathe {
-  50% { box-shadow: 0 0.9rem 1.2rem -0.8rem color-mix(in srgb, var(--pico-background-color) 90%, transparent),
+  50% { box-shadow: 0 0.9rem 1.2rem -0.8rem color-mix(in srgb, var(--sc-page) 90%, transparent),
                     0 0 2.2rem color-mix(in srgb, var(--sc-gold) 60%, transparent); }
 }
 [data-look="showcase"] .trophy-new { color: var(--sc-gold); }
@@ -819,8 +824,8 @@
   z-index: -1;
 }
 [data-look="showcase"] .poster-wall::after {
-  background: linear-gradient(to right, color-mix(in srgb, var(--pico-background-color) 88%, transparent) 30%,
-              color-mix(in srgb, var(--pico-background-color) 55%, transparent));
+  background: linear-gradient(to right, color-mix(in srgb, var(--sc-page) 88%, transparent) 30%,
+              color-mix(in srgb, var(--sc-page) 55%, transparent));
   content: "";
   inset: 0;
   position: absolute;
@@ -905,7 +910,7 @@
 [data-look="showcase"] .sc-holo:hover::before { opacity: 0.5; }
 [data-look="showcase"] .sc-holo-wrap {
   border-radius: var(--pico-border-radius);
-  box-shadow: 0 1.5rem 3rem color-mix(in srgb, var(--pico-background-color) 60%, transparent),
+  box-shadow: 0 1.5rem 3rem color-mix(in srgb, var(--sc-page) 60%, transparent),
               0 0 2.5rem color-mix(in srgb, var(--sc-glow) 35%, transparent);
   display: block;
   flex: 0 0 8rem;
@@ -942,7 +947,7 @@
   background:
     linear-gradient(90deg, var(--pico-muted-border-color) 0 0.55rem, transparent 0.55rem 1rem) 0 0.3rem / 1rem 0.4rem repeat-x,
     linear-gradient(90deg, var(--pico-muted-border-color) 0 0.55rem, transparent 0.55rem 1rem) 0 calc(100% - 0.3rem) / 1rem 0.4rem repeat-x,
-    color-mix(in srgb, var(--pico-contrast-inverse) 75%, var(--pico-background-color));
+    color-mix(in srgb, var(--pico-contrast-inverse) 75%, var(--sc-page));
   background-attachment: local;
   border-radius: calc(var(--pico-border-radius) / 2);
   gap: 0.45rem;
@@ -959,7 +964,7 @@
 /* ---------------------------------------------------------------- mini header (0.57.0) */
 /* Past a detail page's banner, a slim bar slides out from under the top bar: what page this is. */
 [data-look="showcase"] .sc-mini {
-  background: color-mix(in srgb, var(--pico-background-color) 88%, transparent);
+  background: color-mix(in srgb, var(--sc-page) 88%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--sc-glow) 30%, transparent);
   box-shadow: 0 0.5rem 1.2rem -0.8rem color-mix(in srgb, var(--sc-glow) 45%, transparent);
   inset: var(--sc-mini-top, 4rem) 0 auto;
@@ -1000,7 +1005,7 @@
   animation: sc-grain 0.8s steps(5) infinite;
   background:
     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.9 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>") 0 0 / 180px 180px,
-    radial-gradient(ellipse at center, transparent 55%, color-mix(in srgb, var(--pico-background-color) 55%, transparent) 100%);
+    radial-gradient(ellipse at center, transparent 55%, color-mix(in srgb, var(--sc-page) 55%, transparent) 100%);
   content: "";
   inset: 0;
   mix-blend-mode: overlay;
@@ -1027,7 +1032,7 @@
 [data-look="showcase"] .sc-fanned img {
   aspect-ratio: 2 / 3;
   border-radius: var(--pico-border-radius);
-  box-shadow: 0 0.4rem 1rem color-mix(in srgb, var(--pico-background-color) 70%, transparent);
+  box-shadow: 0 0.4rem 1rem color-mix(in srgb, var(--sc-page) 70%, transparent);
   inset: 0;
   object-fit: cover;
   opacity: 0;
@@ -1203,7 +1208,7 @@
 /* The Konami code turns the app into a worn tape: scanlines, a tracking band rolling down, colour
    fringes on the text, a wobble now and then. The fringe colours are set by showcase.js. */
 [data-look="showcase"].sc-vhs body::after {
-  background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--pico-background-color) 45%, transparent) 0 1px, transparent 1px 3px);
+  background: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--sc-page) 45%, transparent) 0 1px, transparent 1px 3px);
   content: "";
   inset: 0;
   pointer-events: none;
@@ -1248,10 +1253,7 @@
 
 /* ================================================================ cinema (0.60.0) */
 /* showcase-cinema.js builds these; each colour that's the object's own (a bulb, a ticket's
-   paper, a shelf's wood) is set there, as a variable. Shade is the theme's opposite of its text,
-   not its background: a theme.park theme can leave --pico-background-color transparent (its
-   background is on the body), which made every shadow and mask built on it vanish. */
-[data-look="showcase"] { --sc-shade: var(--pico-contrast-inverse); }
+   paper, a shelf's wood) is set there, as a variable. Shading uses --sc-page (see the top). */
 
 /* ---------------------------------------------------------------- ticket stub */
 /* Printed down out of the add dialog's header, then its stub tears off along the perforation. */
@@ -1259,7 +1261,7 @@
   animation: sc-print 1.1s cubic-bezier(0.3, 0.7, 0.4, 1) both;
   color: var(--sc-paper-ink);
   display: flex;
-  filter: drop-shadow(0 0.4rem 0.8rem color-mix(in srgb, var(--sc-shade) 70%, transparent));
+  filter: drop-shadow(0 0.4rem 0.8rem color-mix(in srgb, var(--sc-page) 70%, transparent));
   font-family: Georgia, "Times New Roman", serif;
   margin: 0 auto var(--pico-spacing);
   max-width: 24rem;
@@ -1267,9 +1269,9 @@
 [data-look="showcase"] .sc-ticket > div {
   background: var(--sc-paper);
   /* the notches at the ends of the perforation */
-  mask: radial-gradient(circle at 100% 0, transparent 0.55rem, var(--sc-shade) 0.58rem) top right / 51% 51% no-repeat,
-        radial-gradient(circle at 100% 100%, transparent 0.55rem, var(--sc-shade) 0.58rem) bottom right / 51% 51% no-repeat,
-        linear-gradient(var(--sc-shade) 0 0) left / 50% 100% no-repeat;
+  mask: radial-gradient(circle at 100% 0, transparent 0.55rem, var(--sc-page) 0.58rem) top right / 51% 51% no-repeat,
+        radial-gradient(circle at 100% 100%, transparent 0.55rem, var(--sc-page) 0.58rem) bottom right / 51% 51% no-repeat,
+        linear-gradient(var(--sc-page) 0 0) left / 50% 100% no-repeat;
   padding: 0.7rem 1rem;
 }
 [data-look="showcase"] .sc-ticket-main {
@@ -1334,7 +1336,7 @@
 [data-look="showcase"] .end-credits { display: block; margin: calc(var(--pico-block-spacing-vertical) * 2) auto 0; max-width: 40rem; text-align: center; }
 [data-look="showcase"] .end-credits-window {
   height: min(26rem, 70vh);
-  mask: linear-gradient(transparent, var(--sc-shade) 18%, var(--sc-shade) 82%, transparent);
+  mask: linear-gradient(transparent, var(--sc-page) 18%, var(--sc-page) 82%, transparent);
   overflow: hidden;
   position: relative;
 }
@@ -1389,7 +1391,7 @@
   filter: blur(12px);
   height: 170%;
   left: 2%;
-  mask: radial-gradient(circle at 0 0, var(--sc-shade) 30%, transparent 95%);
+  mask: radial-gradient(circle at 0 0, var(--sc-page) 30%, transparent 95%);
   mix-blend-mode: screen;
   position: absolute;
   top: -30%;
@@ -1554,7 +1556,7 @@
   align-items: flex-end;
   background: var(--sc-art, none) center / cover, var(--pico-card-background-color);
   border-radius: 3px 3px 1px 1px;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pico-contrast) 12%, transparent), 0.15rem 0 0.4rem color-mix(in srgb, var(--sc-shade) 60%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pico-contrast) 12%, transparent), 0.15rem 0 0.4rem color-mix(in srgb, var(--sc-page) 60%, transparent);
   color: var(--pico-h1-color);
   display: flex;
   height: var(--sc-h, 92%);
@@ -1570,10 +1572,10 @@
    and a sheen down the middle gives the case its curve. */
 [data-look="showcase"] .sc-spine::before {
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--sc-shade) 55%, transparent),
+    linear-gradient(90deg, color-mix(in srgb, var(--sc-page) 55%, transparent),
       transparent 30%, color-mix(in srgb, var(--pico-contrast) 10%, transparent) 50%, transparent 70%,
-      color-mix(in srgb, var(--sc-shade) 55%, transparent)),
-    linear-gradient(transparent 0 26%, color-mix(in srgb, var(--sc-shade) 86%, transparent) 36%);
+      color-mix(in srgb, var(--sc-page) 55%, transparent)),
+    linear-gradient(transparent 0 26%, color-mix(in srgb, var(--sc-page) 86%, transparent) 36%);
   content: "";
   inset: 0;
   position: absolute;
@@ -1598,13 +1600,13 @@
   overflow: hidden;
   position: relative;
   text-overflow: ellipsis;
-  text-shadow: 0 1px 0.3rem var(--sc-shade);
+  text-shadow: 0 1px 0.3rem var(--sc-page);
   text-transform: uppercase;
   white-space: nowrap;
   writing-mode: vertical-rl;
 }
 [data-look="showcase"] .sc-spine:is(:hover, :focus-visible) {
-  box-shadow: 0 0 0 2px var(--sc-glow, var(--pico-primary)), 0 0.8rem 1.4rem color-mix(in srgb, var(--sc-shade) 70%, transparent);
+  box-shadow: 0 0 0 2px var(--sc-glow, var(--pico-primary)), 0 0.8rem 1.4rem color-mix(in srgb, var(--sc-page) 70%, transparent);
   scale: 1.06;
   translate: 0 -0.9rem;
   z-index: 1;
@@ -1632,13 +1634,13 @@
 }
 [data-look="showcase"] .sc-lightbox-poster {
   border-radius: var(--pico-border-radius);
-  box-shadow: 0 1.5rem 4rem color-mix(in srgb, var(--sc-shade) 85%, transparent);
+  box-shadow: 0 1.5rem 4rem color-mix(in srgb, var(--sc-page) 85%, transparent);
   max-height: 80vh;
   max-width: min(90vw, 34rem);
   transform: perspective(1000px) rotateX(var(--sc-lx, 0deg)) rotateY(var(--sc-ly, 0deg));
   transition: transform 0.2s ease-out;
 }
-[data-look="showcase"] .sc-lightbox figcaption { margin-top: 0.8rem; text-shadow: 0 1px 0.5rem var(--sc-shade); }
+[data-look="showcase"] .sc-lightbox figcaption { margin-top: 0.8rem; text-shadow: 0 1px 0.5rem var(--sc-page); }
 [data-look="showcase"] .sc-lightbox-close { padding: 0.2rem 0.6rem; position: absolute; right: 1rem; top: 1rem; width: auto; }
 @keyframes sc-lightbox-in { from { opacity: 0; scale: 0.85; translate: 0 1.5rem; } }
 
@@ -1656,7 +1658,7 @@
 @keyframes sc-moth { to { rotate: 360deg; } }
 [data-look="showcase"] .sc-scene-reel { animation: sc-reel 6s linear infinite; transform-box: view-box; transform-origin: 90px 52px; }
 @keyframes sc-reel { to { rotate: -360deg; } }
-[data-look="showcase"] .sc-scene-sprockets { stroke: var(--sc-shade); }
+[data-look="showcase"] .sc-scene-sprockets { stroke: var(--sc-page); }
 
 /* Phones: no tilt (there's no pointer to follow) and a calmer banner. */
 @media (pointer: coarse), (max-width: 767px) {

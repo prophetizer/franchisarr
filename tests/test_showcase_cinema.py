@@ -176,3 +176,15 @@ def test_every_scene_the_pages_name_is_one_the_script_draws() -> None:
 
 def test_an_empty_collections_page_sets_its_scene(client: TestClient) -> None:  # noqa: F811
     assert 'data-scene="reel"' in client.get(f"{BASE}/collections").text, "nothing scanned yet"
+
+
+def test_shading_never_reads_the_background_colour_inside_a_link() -> None:
+    """Pico redefines --pico-background-color on every link (as transparent) and button, so a fade
+    or shadow built from it inside one draws nothing: the spotlight's legibility shading was
+    invisible from 0.48.0 to 0.60.1. Showcase takes the page's colour once, at the root."""
+    css = (HERE / "app" / "static" / "showcase.css").read_text()
+    assert css.count("var(--pico-background-color)") == 1
+    assert "--sc-page: var(--pico-background-color);" in css
+    app = (HERE / "app" / "static" / "app.css").read_text()
+    assert ".fm-node :is(circle, rect) { fill: var(--franchisarr-page);" in app, "the map's nodes are links"
+    assert ".fm-star circle { cursor: grab; fill: var(--franchisarr-page);" in app

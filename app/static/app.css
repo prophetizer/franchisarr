@@ -8,6 +8,9 @@
 
 :root {
   --franchisarr-header-border: var(--pico-muted-border-color);
+  /* The page's colour, resolved here (0.60.1): Pico redefines --pico-background-color on every
+     link -- SVG ones included -- as transparent, so the map's linked nodes were drawn hollow. */
+  --franchisarr-page: var(--pico-background-color);
 }
 
 body > header.container {
@@ -1077,7 +1080,7 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
 .fm-year { fill: var(--pico-muted-color); font-size: 11px; }
 .fm-lane-name { fill: var(--pico-color); font-size: 13px; }
 .fm-lane { stroke: var(--pico-muted-border-color); stroke-linecap: round; stroke-width: 3; }
-.fm-node :is(circle, rect) { fill: var(--pico-background-color); stroke: var(--pico-primary); stroke-width: 2; }
+.fm-node :is(circle, rect) { fill: var(--franchisarr-page); stroke: var(--pico-primary); stroke-width: 2; }
 .fm-node.fm-owned :is(circle, rect) { fill: var(--pico-primary); }
 .fm-node.fm-missing :is(circle, rect) { stroke: var(--pico-muted-color); }
 .fm-node.fm-upcoming :is(circle, rect) { stroke: var(--pico-muted-color); stroke-dasharray: 3 2; }
@@ -1126,7 +1129,7 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
 .fm-star { touch-action: none; }
 .fm-wire { stroke: var(--pico-muted-border-color); stroke-width: 1; }
 .fm-wire.fm-edge--spin-off, .fm-wire.fm-edge--continuation { stroke: var(--pico-primary); stroke-opacity: 0.6; }
-.fm-star circle { cursor: grab; fill: var(--pico-background-color); stroke: var(--pico-muted-color); stroke-width: 1.5; }
+.fm-star circle { cursor: grab; fill: var(--franchisarr-page); stroke: var(--pico-muted-color); stroke-width: 1.5; }
 .fm-star--root circle { fill: var(--pico-primary); stroke: var(--pico-primary); }
 .fm-star--group circle { fill: var(--pico-card-background-color); stroke: var(--pico-primary); stroke-width: 2; }
 .fm-star.fm-owned circle { fill: var(--pico-primary); stroke: var(--pico-primary); }
