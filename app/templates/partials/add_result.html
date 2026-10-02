@@ -1,4 +1,5 @@
-<dialog open>
+{#- data-ticket: Showcase prints a ticket stub for it (0.60.0, showcase-cinema.js). -#}
+<dialog open{% if added %} data-ticket="{{ title }}" data-ticket-to="{{ instance }}"{% if requested %} data-ticket-requested{% endif %}{% endif %}>
   <article>
     <header>
       <button aria-label="Close" rel="prev" hx-get="{{ url('/add/close') }}"

@@ -39,7 +39,7 @@
 </hgroup>
 
 {% if not shows %}
-  <article>
+  <article data-scene="reel">
     <header>No TV libraries scanned yet</header>
     <p>Enable a TV library and run a scan, and your shows will appear here.</p>
     <footer><a href="{{ url('/libraries') }}" role="button" class="secondary">Choose libraries</a></footer>
@@ -62,7 +62,7 @@
       {% include "partials/pager.html" %}
 
     {% else %}
-      <p class="muted">
+      <p class="muted" data-scene="ghostlight">
         Nothing found yet. Spin-offs are discovered from Wikidata during a scan — run one and
         they'll appear here. You can also add a mapping by hand below.
       </p>

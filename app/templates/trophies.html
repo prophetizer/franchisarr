@@ -27,7 +27,7 @@
       <span data-count>{{ case.count('franchises') }}</span> franchise{{ '' if case.count('franchises') == 1 else 's' }} and
       <span data-count>{{ case.count('directors') }}</span> complete filmograph{{ 'y' if case.count('directors') == 1 else 'ies' }}.
     {% else %}
-      Nothing finished yet. A collection lands here when every released film of it is in your library.
+      <span data-scene="reel" hidden></span>Nothing finished yet. A collection lands here when every released film of it is in your library.
     {% endif %}
   </p>
 </hgroup>

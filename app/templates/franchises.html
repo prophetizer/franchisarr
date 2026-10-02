@@ -13,14 +13,14 @@
       of{% if both %}, {{ both }} across both films and TV{% endif %}, missing
       <span data-count>{{ total_missing }}</span> title{{ '' if total_missing == 1 else 's' }} between them.
     {% else %}
-      Nothing grouped yet — franchises are worked out from Wikidata during a scan.
+      <span data-scene="reel" hidden></span>Nothing grouped yet — franchises are worked out from Wikidata during a scan.
     {% endif %}
   </p>
 </hgroup>
 
 {% if franchises %}
   <div class="gap-controls">{% include "partials/sort_control.html" %}</div>
-  <div class="collection-grid collection-grid--compact">
+  <div class="collection-grid collection-grid--compact" data-shelf>
     {% for f in franchises %}
       <article class="collection-card collection-card--compact">
         {% if f.small_poster %}

@@ -1246,6 +1246,418 @@
 }
 @keyframes sc-osd { 0%, 20%, 40%, 60% { opacity: 1; } 10%, 30%, 50% { opacity: 0.3; } 100% { opacity: 0; } }
 
+/* ================================================================ cinema (0.60.0) */
+/* showcase-cinema.js builds these; each colour that's the object's own (a bulb, a ticket's
+   paper, a shelf's wood) is set there, as a variable. Shade is the theme's opposite of its text,
+   not its background: a theme.park theme can leave --pico-background-color transparent (its
+   background is on the body), which made every shadow and mask built on it vanish. */
+[data-look="showcase"] { --sc-shade: var(--pico-contrast-inverse); }
+
+/* ---------------------------------------------------------------- ticket stub */
+/* Printed down out of the add dialog's header, then its stub tears off along the perforation. */
+[data-look="showcase"] .sc-ticket {
+  animation: sc-print 1.1s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+  color: var(--sc-paper-ink);
+  display: flex;
+  filter: drop-shadow(0 0.4rem 0.8rem color-mix(in srgb, var(--sc-shade) 70%, transparent));
+  font-family: Georgia, "Times New Roman", serif;
+  margin: 0 auto var(--pico-spacing);
+  max-width: 24rem;
+}
+[data-look="showcase"] .sc-ticket > div {
+  background: var(--sc-paper);
+  /* the notches at the ends of the perforation */
+  mask: radial-gradient(circle at 100% 0, transparent 0.55rem, var(--sc-shade) 0.58rem) top right / 51% 51% no-repeat,
+        radial-gradient(circle at 100% 100%, transparent 0.55rem, var(--sc-shade) 0.58rem) bottom right / 51% 51% no-repeat,
+        linear-gradient(var(--sc-shade) 0 0) left / 50% 100% no-repeat;
+  padding: 0.7rem 1rem;
+}
+[data-look="showcase"] .sc-ticket-main {
+  border-radius: 0.35rem 0 0 0.35rem;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+[data-look="showcase"] .sc-ticket-main small,
+[data-look="showcase"] .sc-ticket-stub small { font-size: 0.68rem; letter-spacing: 0.25em; text-transform: uppercase; }
+[data-look="showcase"] .sc-ticket-main strong { color: inherit; font-size: 1.2rem; line-height: 1.2; overflow-wrap: anywhere; }
+[data-look="showcase"] .sc-ticket-main span { font-size: 0.75rem; opacity: 0.8; }
+[data-look="showcase"] .sc-ticket-stub {
+  align-items: center;
+  border-left: 2px dashed color-mix(in srgb, var(--sc-paper-ink) 45%, transparent);
+  border-radius: 0 0.35rem 0.35rem 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  mask: none !important;
+  transform-origin: 0 100%;
+}
+[data-look="showcase"] .sc-ticket-stub b { font-size: 1.1rem; letter-spacing: 0.1em; text-transform: uppercase; }
+[data-look="showcase"] .sc-ticket.is-torn .sc-ticket-stub { animation: sc-tear 1.3s cubic-bezier(0.5, 0, 0.75, 0.4) forwards; }
+@keyframes sc-print {
+  from { clip-path: inset(0 0 100% 0); translate: 0 -1.2rem; }
+  to { clip-path: inset(0 0 0 0); translate: 0 0; }
+}
+@keyframes sc-tear {
+  0% { rotate: 0deg; translate: 0 0; }
+  15% { rotate: 5deg; translate: 0.15rem 0; }
+  70% { opacity: 0; }
+  100% { opacity: 0; rotate: 28deg; translate: 1.2rem 5rem; }
+}
+/* Gone: kept as a space so the ticket doesn't jump, and out of the dialog's scroll area. */
+[data-look="showcase"] .sc-ticket.is-gone .sc-ticket-stub { animation: none; opacity: 0; }
+
+/* ---------------------------------------------------------------- marquee */
+/* Bulbs round a finished set's banner, lit a third at a time so the light runs round. */
+[data-look="showcase"] .sc-marquee { inset: -0.35rem; pointer-events: none; position: absolute; z-index: 2; }
+[data-look="showcase"] .sc-marquee i {
+  animation: sc-chase 1.2s steps(1) calc(var(--sc-phase, 0) * 0.4s - 1.2s) infinite;
+  background: var(--sc-bulb);
+  border-radius: 50%;
+  box-shadow: 0 0 0.45rem var(--sc-bulb), 0 0 0.15rem var(--sc-bulb);
+  height: 0.42rem;
+  margin: -0.21rem 0 0 -0.21rem;
+  position: absolute;
+  width: 0.42rem;
+}
+@keyframes sc-chase {
+  0% { opacity: 1; }
+  33.3% { box-shadow: none; opacity: 0.28; }
+  100% { box-shadow: none; opacity: 0.28; }
+}
+
+/* ---------------------------------------------------------------- end credits */
+/* The set in release order, rolling up a dark window at a reading pace; The End stops in the
+   middle. Missing titles are there in a dimmer hand. Classic hides the section (app.css). */
+[data-look="showcase"] .end-credits { display: block; margin: calc(var(--pico-block-spacing-vertical) * 2) auto 0; max-width: 40rem; text-align: center; }
+[data-look="showcase"] .end-credits-window {
+  height: min(26rem, 70vh);
+  mask: linear-gradient(transparent, var(--sc-shade) 18%, var(--sc-shade) 82%, transparent);
+  overflow: hidden;
+  position: relative;
+}
+[data-look="showcase"] .end-credits-roll { position: relative; }
+[data-look="showcase"] .end-credits.is-waiting .end-credits-roll { translate: 0 min(26rem, 70vh); }
+[data-look="showcase"] .end-credits.is-rolling .end-credits-roll {
+  animation: sc-credits var(--sc-roll, 20s) linear forwards;
+}
+@keyframes sc-credits {
+  from { translate: 0 var(--sc-from); }
+  to { translate: 0 var(--sc-to); }
+}
+[data-look="showcase"] .end-credits.is-still .end-credits-window { height: auto; mask: none; }
+[data-look="showcase"] .end-credits-kicker {
+  color: var(--pico-muted-color);
+  font-size: 0.8rem;
+  letter-spacing: 0.35em;
+  margin: 6rem 0 2.5rem;
+  text-transform: uppercase;
+}
+[data-look="showcase"] .end-credits.is-still .end-credits-kicker { margin-top: 1rem; }
+[data-look="showcase"] .end-credits ol { list-style: none; margin: 0; padding: 0; }
+[data-look="showcase"] .end-credits li { display: flex; flex-direction: column; list-style: none; margin: 0 0 1.6rem; }
+[data-look="showcase"] .end-credits-title { color: var(--pico-h1-color); font-size: 1.15rem; font-weight: 600; letter-spacing: 0.04em; }
+[data-look="showcase"] .end-credits-year { color: var(--pico-muted-color); font-size: 0.8rem; }
+[data-look="showcase"] .end-credits-who { font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; }
+[data-look="showcase"] .end-credits-who small { color: var(--pico-muted-color); display: block; font-size: 0.65rem; letter-spacing: 0.3em; }
+[data-look="showcase"] .end-credits-missing,
+[data-look="showcase"] .end-credits-upcoming { opacity: 0.55; }
+[data-look="showcase"] .end-credits-missing .end-credits-title { font-style: italic; }
+[data-look="showcase"] .end-credits-end {
+  color: var(--pico-h1-color);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.6rem;
+  font-style: italic;
+  margin: 4rem 0 8rem;
+}
+[data-look="showcase"] .end-credits-end small { color: var(--pico-muted-color); display: block; font-family: var(--pico-font-family); font-size: 0.85rem; font-style: normal; }
+[data-look="showcase"] .end-credits.is-still .end-credits-end { margin: 2rem 0; }
+[data-look="showcase"] .end-credits-replay { display: block; margin: 0.5rem auto 0; }
+[data-look="showcase"] .end-credits-replay[hidden] { display: none; }
+
+/* ---------------------------------------------------------------- projector beam */
+/* A cone of light from the top corner of the home spotlight, flickering on as the page opens,
+   with dust turning in it. Over the picture, under the dots and the trailer button. */
+[data-look="showcase"] .sc-beam { inset: 0 calc(50% - 50vw); overflow: hidden; pointer-events: none; position: absolute; z-index: 1; }
+[data-look="showcase"] .sc-beam-cone {
+  animation: sc-beam-on 1.6s linear both, sc-beam-hum 0.3s steps(2) 1.6s infinite;
+  background: conic-gradient(from 110deg at 0 0, transparent 0deg,
+    color-mix(in srgb, var(--sc-beam) 16%, transparent) 8deg, color-mix(in srgb, var(--sc-beam) 34%, transparent) 19deg,
+    color-mix(in srgb, var(--sc-beam) 16%, transparent) 30deg, transparent 42deg);
+  filter: blur(12px);
+  height: 170%;
+  left: 2%;
+  mask: radial-gradient(circle at 0 0, var(--sc-shade) 30%, transparent 95%);
+  mix-blend-mode: screen;
+  position: absolute;
+  top: -30%;
+  width: 80%;
+}
+[data-look="showcase"] .sc-beam-dust { inset: 0 50% 0 4%; position: absolute; }
+[data-look="showcase"] .sc-beam-dust span {
+  animation: sc-dust-turn var(--sc-t, 14s) ease-in-out var(--sc-wait, 0s) infinite alternate;
+  background: var(--sc-beam);
+  border-radius: 50%;
+  height: var(--sc-size, 3px);
+  left: var(--sc-x, 50%);
+  opacity: 0.5;
+  position: absolute;
+  top: var(--sc-y, 50%);
+  width: var(--sc-size, 3px);
+}
+@keyframes sc-beam-on {
+  0% { opacity: 0; } 8% { opacity: 0.8; } 12% { opacity: 0.1; } 22% { opacity: 0.9; }
+  27% { opacity: 0.25; } 40% { opacity: 1; } 100% { opacity: 1; }
+}
+@keyframes sc-beam-hum { from { opacity: 1; } to { opacity: 0.88; } }
+@keyframes sc-dust-turn {
+  0% { opacity: 0.15; translate: 0 0; }
+  50% { opacity: 0.7; }
+  100% { opacity: 0.2; translate: var(--sc-dx, 2rem) -3rem; }
+}
+
+/* ---------------------------------------------------------------- genre moods */
+/* A set mostly of one genre: its banner's weather replaces the motes, and its picture is graded
+   to suit. --sc-mood-ink is the weather's colour, from showcase-cinema.js. */
+[data-look="showcase"] .sc-moody .sc-motes span { display: none; }   /* the watermark stays */
+[data-look="showcase"] .sc-mood { inset: 0; overflow: hidden; pointer-events: none; position: absolute; z-index: 0; }
+[data-look="showcase"] .sc-mood span { left: var(--sc-x, 50%); position: absolute; top: var(--sc-y, 50%); }
+[data-look="showcase"][data-mood="western"] .collection-backdrop { filter: sepia(0.4) saturate(1.15); }
+[data-look="showcase"][data-mood="crime"] .collection-backdrop { filter: grayscale(0.6) contrast(1.1); }
+[data-look="showcase"][data-mood="war"] .collection-backdrop { filter: saturate(0.7) contrast(1.05); }
+[data-look="showcase"][data-mood="scifi"] .collection-backdrop { filter: saturate(1.1) hue-rotate(-8deg); }
+[data-look="showcase"][data-mood="horror"] .collection-backdrop-frame { animation: sc-flicker 11s steps(1) 2s infinite; }
+/* horror: fog along the foot of the banner */
+[data-look="showcase"] .sc-mood--horror span {
+  animation: sc-fog var(--sc-t, 30s) ease-in-out var(--sc-wait, 0s) infinite alternate;
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--sc-mood-ink) 18%, transparent), transparent 70%);
+  filter: blur(14px);
+  height: 55%;
+  left: calc(var(--sc-x) - 40%);
+  top: auto;
+  bottom: -26%;
+  width: 90%;
+}
+@keyframes sc-fog { from { translate: -15% 0; } to { translate: 15% -6%; } }
+@keyframes sc-flicker { 0% { opacity: 1; } 92% { opacity: 0.4; } 93% { opacity: 1; } 95% { opacity: 0.55; } 96% { opacity: 1; } }
+/* animation: bubbles that wobble up and pop */
+[data-look="showcase"] .sc-mood--animation span {
+  animation: sc-bubble var(--sc-t, 9s) ease-in var(--sc-wait, 0s) infinite;
+  border: 2px solid color-mix(in srgb, var(--sc-mood-ink) 65%, transparent);
+  border-radius: 50%;
+  height: var(--sc-size); top: 100%; width: var(--sc-size);
+}
+@keyframes sc-bubble {
+  0% { opacity: 0; scale: 0.6; translate: 0 0; }
+  10% { opacity: 0.9; }
+  30% { translate: 0.8rem -6rem; }
+  55% { translate: -0.8rem -12rem; }
+  80% { opacity: 0.9; scale: 1; translate: 0.6rem -18rem; }
+  86% { opacity: 0; scale: 1.5; translate: 0.6rem -19rem; }
+  100% { opacity: 0; scale: 1.5; translate: 0.6rem -19rem; }
+}
+/* western: dust blown across */
+[data-look="showcase"] .sc-mood--western span,
+[data-look="showcase"] .sc-mood--war span {
+  background: var(--sc-mood-ink);
+  border-radius: 50%;
+  height: var(--sc-size); width: var(--sc-size);
+}
+[data-look="showcase"] .sc-mood--western span { animation: sc-blow var(--sc-t, 12s) linear var(--sc-wait, 0s) infinite; left: -5%; }
+@keyframes sc-blow {
+  0% { opacity: 0; translate: 0 0; }
+  15% { opacity: 0.7; }
+  85% { opacity: 0.5; }
+  100% { opacity: 0; translate: 110vw -2rem; }
+}
+/* war: embers rising and guttering */
+[data-look="showcase"] .sc-mood--war span {
+  animation: sc-ember var(--sc-t, 6s) ease-out var(--sc-wait, 0s) infinite;
+  box-shadow: 0 0 0.4rem var(--sc-mood-ink);
+  top: 100%;
+}
+@keyframes sc-ember {
+  0% { opacity: 0; translate: 0 0; }
+  10% { opacity: 1; }
+  40% { opacity: 0.6; }
+  55% { opacity: 1; }
+  100% { opacity: 0; translate: var(--sc-dx, 1rem) -16rem; }
+}
+/* sci-fi: a field of stars, and now and then one falls */
+[data-look="showcase"] .sc-mood--scifi span {
+  animation: sc-twinkle var(--sc-t, 4s) ease-in-out var(--sc-wait, 0s) infinite alternate;
+  background: var(--sc-mood-ink);
+  border-radius: 50%;
+  box-shadow: 0 0 0.3rem var(--sc-mood-ink);
+  height: var(--sc-size); width: var(--sc-size);
+}
+@keyframes sc-twinkle { from { opacity: 0.15; } to { opacity: 0.95; } }
+[data-look="showcase"] .sc-shooting {
+  animation: sc-shoot 9s ease-in 3s infinite;
+  background: linear-gradient(90deg, transparent, var(--sc-mood-ink));
+  height: 2px;
+  left: 70%;
+  opacity: 0;
+  position: absolute;
+  rotate: 160deg;
+  top: 10%;
+  width: 7rem;
+}
+@keyframes sc-shoot {
+  0% { opacity: 0; translate: 0 0; }
+  2% { opacity: 1; }
+  9% { opacity: 0; translate: -28rem 9rem; }
+  100% { opacity: 0; translate: -28rem 9rem; }
+}
+/* fantasy: sparkles that turn as they glint */
+[data-look="showcase"] .sc-mood--fantasy span {
+  animation: sc-sparkle var(--sc-t, 4s) ease-in-out var(--sc-wait, 0s) infinite;
+  color: var(--sc-mood-ink);
+  font-size: var(--sc-size);
+  line-height: 1;
+  text-shadow: 0 0 0.5rem var(--sc-mood-ink);
+}
+@keyframes sc-sparkle {
+  0%, 100% { opacity: 0; rotate: 0deg; scale: 0.2; }
+  50% { opacity: 1; rotate: 90deg; scale: 1; }
+}
+/* crime: rain on the window */
+[data-look="showcase"] .sc-mood--crime span {
+  animation: sc-rainfall var(--sc-t, 0.8s) linear var(--sc-wait, 0s) infinite;
+  background: linear-gradient(transparent, color-mix(in srgb, var(--sc-mood-ink) 55%, transparent));
+  height: var(--sc-size);
+  rotate: 12deg;
+  top: -15%;
+  width: 1px;
+}
+@keyframes sc-rainfall { from { translate: 0 0; } to { translate: -4rem 32rem; } }
+
+/* ---------------------------------------------------------------- shelf */
+/* Box sets on a shelf: rows of spines exactly 15rem tall standing on a plank in each row gap. */
+[data-look="showcase"] .sc-shelf-toggle { margin: 0 0 0 auto; padding: 0.3rem 0.8rem; width: auto; }
+[data-look="showcase"] .sc-shelf {
+  align-items: end;
+  background: repeating-linear-gradient(to bottom, transparent 0 15rem,
+    var(--sc-wood-hi) 15rem, var(--sc-wood) 15.35rem, color-mix(in srgb, var(--sc-wood) 60%, transparent) 16.2rem,
+    transparent 16.25rem);
+  display: grid;
+  gap: 1.25rem 0.3rem;
+  grid-auto-rows: 15rem;
+  grid-template-columns: repeat(auto-fill, minmax(2.7rem, max-content));
+  margin-bottom: var(--pico-block-spacing-vertical);
+  padding: 0 0.5rem 1.25rem;
+}
+[data-look="showcase"] .sc-shelf[hidden] { display: none; }
+[data-look="showcase"] .sc-spine {
+  align-items: flex-end;
+  background: var(--sc-art, none) center / cover, var(--pico-card-background-color);
+  border-radius: 3px 3px 1px 1px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pico-contrast) 12%, transparent), 0.15rem 0 0.4rem color-mix(in srgb, var(--sc-shade) 60%, transparent);
+  color: var(--pico-h1-color);
+  display: flex;
+  height: var(--sc-h, 92%);
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  text-decoration: none;
+  transition: translate 0.25s var(--sc-ease, ease), scale 0.25s var(--sc-ease, ease), box-shadow 0.25s;
+  width: var(--sc-w, 3rem);
+}
+/* the curve of the case, and enough shade for the name to read on any poster */
+/* The art shows clear across the top, like a box set's; below it the body darkens for the name,
+   and a sheen down the middle gives the case its curve. */
+[data-look="showcase"] .sc-spine::before {
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--sc-shade) 55%, transparent),
+      transparent 30%, color-mix(in srgb, var(--pico-contrast) 10%, transparent) 50%, transparent 70%,
+      color-mix(in srgb, var(--sc-shade) 55%, transparent)),
+    linear-gradient(transparent 0 26%, color-mix(in srgb, var(--sc-shade) 86%, transparent) 36%);
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+/* how complete it is, along the foot */
+[data-look="showcase"] .sc-spine::after {
+  background: linear-gradient(90deg, var(--pico-primary) var(--sc-pct, 0%), color-mix(in srgb, var(--pico-muted-color) 40%, transparent) var(--sc-pct, 0%));
+  bottom: 0.35rem;
+  content: "";
+  height: 0.22rem;
+  left: 0.35rem;
+  position: absolute;
+  right: 0.35rem;
+}
+[data-look="showcase"] .sc-spine-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  margin-bottom: 0.9rem;
+  max-height: 60%;
+  overflow: hidden;
+  position: relative;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 0.3rem var(--sc-shade);
+  text-transform: uppercase;
+  white-space: nowrap;
+  writing-mode: vertical-rl;
+}
+[data-look="showcase"] .sc-spine:is(:hover, :focus-visible) {
+  box-shadow: 0 0 0 2px var(--sc-glow, var(--pico-primary)), 0 0.8rem 1.4rem color-mix(in srgb, var(--sc-shade) 70%, transparent);
+  scale: 1.06;
+  translate: 0 -0.9rem;
+  z-index: 1;
+}
+
+/* ---------------------------------------------------------------- lightbox */
+[data-look="showcase"] :is(.film-tile:not([data-about]) .collection-poster img, img.collection-heading-poster) { cursor: zoom-in; }
+[data-look="showcase"] dialog.sc-lightbox { cursor: zoom-out; overflow: hidden; }
+[data-look="showcase"] .sc-lightbox-glow {
+  filter: blur(40px) saturate(1.4);
+  height: 100%;
+  inset: 0;
+  max-width: none;
+  object-fit: cover;
+  opacity: 0.45;
+  position: absolute;
+  scale: 1.2;
+  width: 100%;
+}
+[data-look="showcase"] .sc-lightbox figure {
+  animation: sc-lightbox-in 0.45s var(--sc-ease, ease) both;
+  margin: 0;
+  position: relative;
+  text-align: center;
+}
+[data-look="showcase"] .sc-lightbox-poster {
+  border-radius: var(--pico-border-radius);
+  box-shadow: 0 1.5rem 4rem color-mix(in srgb, var(--sc-shade) 85%, transparent);
+  max-height: 80vh;
+  max-width: min(90vw, 34rem);
+  transform: perspective(1000px) rotateX(var(--sc-lx, 0deg)) rotateY(var(--sc-ly, 0deg));
+  transition: transform 0.2s ease-out;
+}
+[data-look="showcase"] .sc-lightbox figcaption { margin-top: 0.8rem; text-shadow: 0 1px 0.5rem var(--sc-shade); }
+[data-look="showcase"] .sc-lightbox-close { padding: 0.2rem 0.6rem; position: absolute; right: 1rem; top: 1rem; width: auto; }
+@keyframes sc-lightbox-in { from { opacity: 0; scale: 0.85; translate: 0 1.5rem; } }
+
+/* ---------------------------------------------------------------- scenes */
+[data-look="showcase"] .sc-scene { color: var(--pico-muted-color); display: block; margin: 0.25rem 0 0.75rem; max-width: 15rem; }
+[data-look="showcase"] .sc-scene svg { display: block; height: auto; overflow: visible; width: 100%; }
+[data-look="showcase"] .sc-scene-light { fill: var(--sc-bulb); opacity: 0.22; }
+[data-look="showcase"] .sc-scene-lamp { fill: var(--sc-bulb); }
+[data-look="showcase"] .sc-scene-torch { animation: sc-torch 5s ease-in-out infinite alternate; transform-box: view-box; transform-origin: 192px 58px; }
+@keyframes sc-torch { from { rotate: -8deg; } to { rotate: 10deg; } }
+[data-look="showcase"] .sc-scene-halo { fill: var(--sc-bulb); filter: blur(10px); opacity: 0.18; animation: sc-hum 3s ease-in-out infinite alternate; }
+[data-look="showcase"] .sc-scene-bulb { fill: var(--sc-bulb); }
+@keyframes sc-hum { from { opacity: 0.12; } to { opacity: 0.3; } }
+[data-look="showcase"] .sc-scene-moth { animation: sc-moth 2.6s linear infinite; transform-box: view-box; transform-origin: 120px 29px; }
+@keyframes sc-moth { to { rotate: 360deg; } }
+[data-look="showcase"] .sc-scene-reel { animation: sc-reel 6s linear infinite; transform-box: view-box; transform-origin: 90px 52px; }
+@keyframes sc-reel { to { rotate: -360deg; } }
+[data-look="showcase"] .sc-scene-sprockets { stroke: var(--sc-shade); }
+
 /* Phones: no tilt (there's no pointer to follow) and a calmer banner. */
 @media (pointer: coarse), (max-width: 767px) {
   [data-look="showcase"] .collection-heading.has-backdrop { min-height: 22rem; }
@@ -1261,6 +1673,7 @@
   [data-look="showcase"] .poster-wall-row { animation: none !important; }   /* a still wall */
   [data-look="showcase"] .poster-wall-row:nth-child(n+3) { display: none; }
   [data-look="showcase"] .sc-holo-wrap { flex-basis: 6rem; width: 6rem; }
+  [data-look="showcase"] .sc-lightbox-close { right: 0.5rem; top: 0.5rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

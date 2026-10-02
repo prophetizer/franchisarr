@@ -22,7 +22,7 @@
 </div>
 
 {% if not gaps %}
-  <article>
+  <article data-scene="{{ 'reel' if not scanned else 'usher' }}">
     {% if not scanned %}
       <header>Nothing scanned yet</header>
       <p>Run a scan to find the gaps in your library.</p>
@@ -65,7 +65,7 @@
     </form>
     {% endif %}
   </div>
-  <div class="collection-grid collection-grid--compact">
+  <div class="collection-grid collection-grid--compact" data-shelf>
     {% for gap in gaps %}
       <article class="collection-card collection-card--compact">
         {% if gap.small_poster %}

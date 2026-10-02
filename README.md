@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.59.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.60.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -240,7 +240,14 @@ holographic foil; a running scan shows its progress in the browser tab; banners 
 and their name in huge outlined type behind them; the release strip becomes a strip of film;
 headline numbers roll like an odometer; a slim bar keeps a detail page's name in view as you
 scroll; pointing at a collection card fans its films out; a new Trophy case badge unlocks with a
-flourish; and nineteen franchises open with a nod to their films ([listed
+flourish; a set that's mostly one genre gets that genre's weather in its banner (stars for sci-fi,
+rain for crime, dust for westerns, embers for war films, fog for horror, sparkles for fantasy,
+bubbles for animation) and a complete one gets chasing marquee bulbs; a collection or franchise
+page ends with its **end credits** rolling up — each title, its year and who directed it — to *The
+End*, or *To be continued…* while titles are missing; adding a film prints you a ticket stub;
+**📚 Shelf** shows Collections or Franchises as box sets on a shelf; clicking an owned film's
+poster (or the page's own) opens it large; a projector beam shines across the home spotlight;
+empty and finished pages get a little scene; and nineteen franchises open with a nod to their films ([listed
 below](#franchise-intros)) (and there's a code for a retro VHS mode, if you know it); **Ctrl+K** (Cmd+K on a Mac) searches from anywhere; and in October horror sets glow
 pumpkin with a few falling leaves, in December the top bar frosts over. The release strip
 **plays** as it comes on screen (posters fly in in order, the ones you own light up, a ring fills

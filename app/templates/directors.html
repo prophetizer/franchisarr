@@ -13,7 +13,7 @@
       between them.
       {% if pending %}<br><small class="muted">{{ pending }} filmograph{{ 'y' if pending == 1 else 'ies' }} not fetched yet — the next scan will.</small>{% endif %}
     {% else %}
-      Nothing here yet — directors are read from each film's credits during a scan.
+      <span data-scene="reel" hidden></span>Nothing here yet — directors are read from each film's credits during a scan.
     {% endif %}
   </p>
 </hgroup>

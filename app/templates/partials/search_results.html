@@ -78,7 +78,7 @@
 {% if results.too_short %}
   {% if results.query %}<p class="muted">Type at least two letters.</p>{% endif %}
 {% elif results.empty %}
-  <p class="muted">Nothing matches “{{ results.query }}”. Search looks through what Franchisarr has
+  <p class="muted" data-scene="ghostlight">Nothing matches “{{ results.query }}”. Search looks through what Franchisarr has
     found — your library and the collections, franchises, directors and spin-offs around it — not
     all of TMDb.</p>
 {% else %}

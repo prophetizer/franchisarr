@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.60.0] — 2026-10-02
+
+### Added
+
+Showcase:
+
+- **Genre moods.** A collection or franchise that's mostly one genre gets that genre's weather in
+  its banner, in place of the drifting specks: stars (and the odd shooting star) for sci-fi, rain
+  for crime, blown dust for westerns, rising embers for war films, fog and a flickering picture
+  for horror, sparkles for fantasy, bubbles for animation. The picture is graded to suit.
+- **End credits** at the foot of a collection or franchise page: each title in release order with
+  its year and who directed it, rolling up when you reach them and stopping on *The End* — or *To
+  be continued…* while titles are missing. **↺ Roll again** replays them.
+- **Marquee lights**: chasing bulbs round the banner of a complete collection or franchise.
+- **Ticket stub**: adding (or requesting) a film prints a ticket in the dialog, and its stub tears
+  off.
+- **📚 Shelf** on Collections and Franchises: the sets as box-set spines on a wooden shelf, pulled
+  out as you point at one. Remembered in your browser.
+- **Poster lightbox**: click an owned, upcoming or folded film's poster, or the page's own, to see
+  it large over a blur of itself; click, Esc or a swipe down closes it.
+- **Projector beam** across the home page's spotlight, flickering on as the page opens.
+- **Scenes for empty pages**: an usher's torch over empty seats when a set is complete, a ghost
+  light on a bare stage when nothing's found, an empty reel turning when nothing's been scanned.
+
+"Reduce motion" keeps all of these still.
+
 ## [0.59.0] — 2026-10-01
 
 ### Added

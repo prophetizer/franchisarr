@@ -10,7 +10,7 @@
 {% include "partials/celebration.html" %}
 {#- Showcase's October touch looks for this (0.51.0). -#}
 {% if horror %}<span data-sc-horror hidden></span>{% endif %}
-<div class="collection-heading{% if gap.backdrop %} has-backdrop{% endif %}"{% if gap.owned and not gap.missing %} data-complete{% endif %}>
+<div class="collection-heading{% if gap.backdrop %} has-backdrop{% endif %}"{% if gap.owned and not gap.missing %} data-complete{% endif %}{% if mood %} data-mood="{{ mood }}"{% endif %}>
   {% if gap.backdrop %}
     <div class="collection-backdrop-frame" aria-hidden="true">
       <img class="collection-backdrop" src="{{ gap.backdrop }}" alt="" decoding="async"
@@ -51,7 +51,7 @@
     </div>
   </section>
 {% else %}
-  <p role="status" class="notice-good">You have every released film in this collection.</p>
+  <p role="status" class="notice-good" data-scene="usher">You have every released film in this collection.</p>
 {% endif %}
 
 {% if gap.upcoming %}
@@ -120,6 +120,8 @@
     </div>
   </section>
 {% endif %}
+
+{% with name = gap.name %}{% include "partials/end_credits.html" %}{% endwith %}
 
 <div id="add-dialog"></div>
 {% endblock %}

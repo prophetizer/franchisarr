@@ -1,0 +1,29 @@
+{#- Showcase's end credits (0.60.0): the set in release order, rolling up when it comes on screen
+    (showcase-cinema.js), then The End -- or To be continued, while titles are still missing.
+    Only Showcase's pages get `credits`, and app.css hides the section in Classic regardless. -#}
+{% if credits %}
+  {% set still_missing = credits | selectattr('status', 'equalto', 'missing') | list | length %}
+  <section class="end-credits" aria-label="End credits">
+    <div class="end-credits-window">
+      <div class="end-credits-roll">
+        <p class="end-credits-kicker">{{ name }}</p>
+        <ol>
+          {% for c in credits %}
+            <li class="end-credits-{{ c.status }}">
+              <span class="end-credits-title">{{ c.title }}</span>
+              <span class="end-credits-year">{{ c.year or '' }}{% if c.status == 'upcoming' %} · coming{% elif c.status == 'missing' %} · not yet yours{% endif %}</span>
+              {% if c.directors %}<span class="end-credits-who"><small>directed by</small> {{ c.directors | join(' & ') }}</span>
+              {% elif c.item_type == 'show' %}<span class="end-credits-who"><small>a series</small></span>{% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+        {% if still_missing %}
+          <p class="end-credits-end end-credits-end--more">To be continued…<small>{{ still_missing }} still to find</small></p>
+        {% else %}
+          <p class="end-credits-end">The End</p>
+        {% endif %}
+      </div>
+    </div>
+    <button type="button" class="end-credits-replay secondary outline" hidden>↺ Roll again</button>
+  </section>
+{% endif %}

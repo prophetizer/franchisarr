@@ -9,7 +9,7 @@
       <span data-count>{{ '{:,}'.format(pager.total) }}</span> announced film{{ '' if pager.total == 1 else 's' }} in collections
       you already have part of{% if soon %}, {{ soon }} due in the next 90 days{% endif %}.
     {% else %}
-      Nothing announced in any collection you own part of — or nothing scanned yet.
+      <span data-scene="ghostlight" hidden></span>Nothing announced in any collection you own part of — or nothing scanned yet.
     {% endif %}
   </p>
 </hgroup>

@@ -78,9 +78,19 @@ def about(session: Session, kind: str, tmdb_id: int, tmdb: TmdbClient | None) ->
     return found
 
 
-def is_horror(session: Session, *, collection_id: int | None = None, film_ids: list[int] | tuple[int, ...] = ()) -> bool:
-    """Whether most of a collection's -- or a franchise's -- films are horror, for Showcase's
-    October touch. Only films whose genres are known count; with none known, it isn't."""
+#: Showcase's genre moods (0.60.0), in the order they win when a set is more than one of them:
+#: an animated horror is horror, a space western is a western. Crime comes last because half of
+#: all action films are filed under it too.
+MOODS = (
+    (HORROR_GENRE, "horror"), (16, "animation"), (37, "western"), (10752, "war"),
+    (878, "scifi"), (14, "fantasy"), (80, "crime"),
+)
+
+
+def mood(session: Session, *, collection_id: int | None = None, film_ids: list[int] | tuple[int, ...] = ()) -> str | None:
+    """The genre most of a collection's -- or a franchise's -- films share, as one of MOODS'
+    names, for the page's atmosphere in Showcase; None when no genre covers more than half. Only
+    films whose genres are known count; with none known, there's no mood."""
     query = select(TmdbCollectionMovie.tmdb_movie_id, TmdbCollectionMovie.genre_ids).where(
         col(TmdbCollectionMovie.genre_ids).is_not(None))
     if collection_id is not None:
@@ -88,9 +98,19 @@ def is_horror(session: Session, *, collection_id: int | None = None, film_ids: l
     elif film_ids:
         query = query.where(col(TmdbCollectionMovie.tmdb_movie_id).in_(list(film_ids)))
     else:
-        return False
+        return None
+    # By film, not by row: a film in two collections is one film.
     genres = {tmdb_id: genre_ids(raw) for tmdb_id, raw in session.exec(query).all()}
-    return bool(genres) and sum(HORROR_GENRE in g for g in genres.values()) * 2 > len(genres)
+    for genre, name in MOODS:
+        if genres and sum(genre in g for g in genres.values()) * 2 > len(genres):
+            return name
+    return None
+
+
+def is_horror(session: Session, *, collection_id: int | None = None, film_ids: list[int] | tuple[int, ...] = ()) -> bool:
+    """Whether most of a collection's -- or a franchise's -- films are horror, for Showcase's
+    October touch. Horror is the first mood, so this is the same rule."""
+    return mood(session, collection_id=collection_id, film_ids=film_ids) == "horror"
 
 
 _trailers: OrderedDict[tuple[str, int], str | None] = OrderedDict()

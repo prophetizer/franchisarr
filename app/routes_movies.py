@@ -23,7 +23,7 @@ from app.auth.dependencies import AdminUser, DbSession, RequiredUser
 from app.clients.radarr_client import RadarrError
 from app.config import get_settings
 from app.models import CollectionExclude, DismissedItem, ItemType, TmdbCollection
-from app.services import about_service, add_service, instance_service, movie_gap_service, seerr_instance_service, surprise
+from app.services import about_service, add_service, end_credits, instance_service, movie_gap_service, seerr_instance_service, surprise
 from app.services.settings_service import SettingKey, get_setting
 from app.templating import get_templates
 
@@ -143,6 +143,8 @@ def collection_detail(
     from app.services import celebrations, franchisarr_playlists, media_server_service, playlist_service, sorting, timeline
 
     detail_sort = sorting.resolve(session, user.id, "detail", sort, dir)
+    steps = timeline.build(gap.owned, gap.missing, gap.upcoming)
+    mood = about_service.mood(session, collection_id=collection_id)
 
     return get_templates().TemplateResponse(
         request, "collection_detail.html",
@@ -151,8 +153,9 @@ def collection_detail(
          "can_playlist": playlist_service.available(session) and bool(gap.owned),
          "playlist_servers": playlist_service.targets(session),
          "playlist_kept": franchisarr_playlists.kept_on(session, "collections", str(collection_id)),
-         "timeline": timeline.build(gap.owned, gap.missing, gap.upcoming),
-         "horror": about_service.is_horror(session, collection_id=collection_id),
+         "timeline": steps,
+         "horror": mood == "horror", "mood": mood,
+         "credits": end_credits.for_page(session, user, steps),
          "celebrations": celebrations.for_page(session, user, collection_id),
          "detail_sort": detail_sort,
          "sort_ctl": sorting.control("detail", detail_sort, _url(f"/collections/{collection_id}"))}

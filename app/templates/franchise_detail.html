@@ -42,7 +42,7 @@
 
 {#- Showcase's October touch looks for this (0.51.0). -#}
 {% if horror %}<span data-sc-horror hidden></span>{% endif %}
-<div class="collection-heading{% if f.backdrop %} has-backdrop{% endif %}"{% if f.owned and not f.missing %} data-complete{% endif %}>
+<div class="collection-heading{% if f.backdrop %} has-backdrop{% endif %}"{% if f.owned and not f.missing %} data-complete{% endif %}{% if mood %} data-mood="{{ mood }}"{% endif %}>
   {% if f.backdrop %}
     <div class="collection-backdrop-frame" aria-hidden="true">
       <img class="collection-backdrop" src="{{ f.backdrop }}" alt="" decoding="async" aria-hidden="true">
@@ -114,7 +114,7 @@
   </details>
 {% endif %}
 {% if not f.missing and not f.upcoming_films %}
-  <p role="status" class="notice-good">Complete, as far as anything knows.</p>
+  <p role="status" class="notice-good" data-scene="usher">Complete, as far as anything knows.</p>
 {% endif %}
 
 {% if f.owned_films or f.owned_shows %}
@@ -125,6 +125,8 @@
     </div>
   </section>
 {% endif %}
+
+{% with name = f.name %}{% include "partials/end_credits.html" %}{% endwith %}
 
 <div id="add-dialog"></div>
 <div id="add-show-dialog"></div>
