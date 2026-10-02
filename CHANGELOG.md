@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.61.0] — 2026-10-02
+
+### Added
+
+- **Showcase marks the sets with an intro**: a small glowing clapperboard on the card of any
+  collection or franchise whose page opens with a franchise intro — in the Collections and
+  Franchises lists and their shelf, the home page's poster rows and spotlight, the Trophy case,
+  search results and Ctrl+K. Hidden for anyone who has intros switched off.
+
 ## [0.60.1] — 2026-10-02
 
 ### Fixed

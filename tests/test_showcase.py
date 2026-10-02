@@ -180,3 +180,15 @@ def test_the_readme_lists_every_franchise_intro() -> None:
         for name in names:
             plain = name.rstrip("…")
             assert any(p.search(plain) for p in patterns), f"README names {plain!r}, which no intro recognises"
+
+
+def test_cards_are_marked_on_every_page_not_only_pages_with_an_intro() -> None:
+    """0.61.0: the 🎬 marks are placed from the same patterns the intros play by, and on list pages
+    -- which have no banner -- so they must run before the script stops for want of one; and not
+    at all for someone who switched intros off."""
+    from pathlib import Path
+
+    js = (Path(__file__).resolve().parents[1] / "app" / "static" / "showcase-intros.js").read_text()
+    marks = js.index("markCards(document);")
+    assert js.index("var WHICH = [") < marks < js.index("if (!heading) { return; }")
+    assert "if (root.dataset.intros !== 'off') {" in js[marks - 200:marks]

@@ -11,6 +11,87 @@
   var root = document.documentElement;
   if (root.dataset.look !== 'showcase') { return; }
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Which franchise a page is, by its name. The first match wins, so the specific ones come first.
+  var WHICH = [
+    [/star wars/i, 'crawl'],
+    [/matrix/i, 'rain'],
+    [/harry potter|wizarding world|fantastic beasts/i, 'sparks'],
+    [/marvel cinematic universe|^the avengers collection$/i, 'flip'],
+    [/james bond/i, 'barrel'],
+    [/star trek/i, 'warp'],
+    [/jurassic (park|world)/i, 'ripple'],
+    [/back to the future/i, 'circuits'],
+    [/mission: impossible/i, 'fuse'],
+    [/^alien\b/i, 'tracker'],
+    [/batman|dark knight/i, 'signal'],
+    [/^jaws\b/i, 'fin'],
+    [/terminator/i, 'hud'],
+    [/indiana jones/i, 'map'],
+    [/lord of the rings|hobbit|middle-earth/i, 'ring'],
+    [/ghostbusters/i, 'slime'],
+    [/godzilla|monsterverse/i, 'footsteps'],
+    [/mad max|furiosa/i, 'storm'],
+    [/toy story/i, 'clouds'],
+  ];
+  function introFor(name) { return WHICH.filter(function (w) { return w[0].test(name); })[0]; }
+
+  // ------------------------------------------------------------ marks (0.61.0)
+  // A clapperboard on every card for a collection or franchise whose page opens with an intro: the lists'
+  // posters (and so their shelf spines), the home page's rows and spotlight, the Trophy case,
+  // search and Ctrl+K. Not for someone who switched intros off -- ▶ Intro still works for them.
+  var SET_PAGE = /\/(collections\/\d+|franchises\/Q\d+)\/?(?:[?#]|$)/;
+  var badge = function () {
+    var mark = document.createElement('span');
+    mark.className = 'sc-intro-mark';
+    // A drawn clapperboard, not the 🎬 emoji: not every system has a colour emoji font.
+    mark.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round">' +
+      '<path d="M4 11h16v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/>' +
+      '<path d="M4 11 3.3 7.6a1 1 0 0 1 .8-1.2l13.7-2.8a1 1 0 0 1 1.2.8L19.6 7.8z"/>' +
+      '<path d="m7.6 6.2 2.6 3.3M12.6 5.2l2.6 3.3"/></svg>';
+    mark.title = 'Opens with an intro';
+    mark.setAttribute('role', 'img');
+    mark.setAttribute('aria-label', 'opens with an intro');
+    return mark;
+  };
+  var flag = function (host, name, href) {
+    if (!host || host.querySelector(':scope > .sc-intro-mark') || !SET_PAGE.test(href || '') || !introFor(name || '')) { return; }
+    host.appendChild(badge());
+  };
+  var markCards = function (scope) {
+    // List and search cards: the poster carries it.
+    scope.querySelectorAll('.collection-card').forEach(function (card) {
+      var link = card.querySelector('header a');
+      if (link) { flag(card.querySelector('.collection-poster'), link.textContent.trim(), link.getAttribute('href')); }
+    });
+    // The home page's poster rows, and the spotlight (beside its kicker).
+    scope.querySelectorAll('a.poster-row-card').forEach(function (a) { flag(a, a.title, a.getAttribute('href')); });
+    scope.querySelectorAll('a.spotlight-slide').forEach(function (a) {
+      var logo = a.querySelector('.spotlight-logo');
+      var title = a.querySelector('.spotlight-title');
+      flag(a.querySelector('.spotlight-kicker'), logo ? logo.alt : (title ? title.textContent.trim() : ''), a.getAttribute('href'));
+    });
+    // The Trophy case.
+    scope.querySelectorAll('a.trophy').forEach(function (a) {
+      var name = a.querySelector(':scope > strong');
+      flag(a.querySelector('.trophy-frame'), name ? name.textContent.trim() : '', a.getAttribute('href'));
+    });
+    // Ctrl+K's lines, after the name: only the sets' own. A film's line links to its set's page
+    // too, but it's the set that has the intro, not the film.
+    scope.querySelectorAll('.sc-quick-list a').forEach(function (a) {
+      var name = a.querySelector('strong');
+      var kind = a.querySelector('small');
+      if (!kind || !/^(Collection|Franchise)\b/.test(kind.textContent.trim())) { return; }
+      flag(name, name ? name.textContent.trim() : '', a.getAttribute('href'));
+    });
+  };
+  if (root.dataset.intros !== 'off') {
+    markCards(document);
+    document.addEventListener('htmx:afterSwap', function (event) {
+      if (event.target && event.target.querySelectorAll) { markCards(event.target); }
+    });
+  }
+
   var heading = document.querySelector('.collection-heading');
   if (!heading) { return; }
 
@@ -709,29 +790,7 @@
     },
   };
 
-  // Which franchise this page is. The first match wins, so the specific ones come first.
-  var WHICH = [
-    [/star wars/i, 'crawl'],
-    [/matrix/i, 'rain'],
-    [/harry potter|wizarding world|fantastic beasts/i, 'sparks'],
-    [/marvel cinematic universe|^the avengers collection$/i, 'flip'],
-    [/james bond/i, 'barrel'],
-    [/star trek/i, 'warp'],
-    [/jurassic (park|world)/i, 'ripple'],
-    [/back to the future/i, 'circuits'],
-    [/mission: impossible/i, 'fuse'],
-    [/^alien\b/i, 'tracker'],
-    [/batman|dark knight/i, 'signal'],
-    [/^jaws\b/i, 'fin'],
-    [/terminator/i, 'hud'],
-    [/indiana jones/i, 'map'],
-    [/lord of the rings|hobbit|middle-earth/i, 'ring'],
-    [/ghostbusters/i, 'slime'],
-    [/godzilla|monsterverse/i, 'footsteps'],
-    [/mad max|furiosa/i, 'storm'],
-    [/toy story/i, 'clouds'],
-  ];
-  var which = WHICH.filter(function (w) { return w[0].test(name); })[0];
+  var which = introFor(name);
   if (!which || reduce) { return; }
   var play = INTROS[which[1]];
 

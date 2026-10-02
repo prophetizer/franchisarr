@@ -223,6 +223,8 @@
         spine.style.setProperty('--sc-w', (2.7 + (h % 9) / 10).toFixed(1) + 'rem');
         spine.style.setProperty('--sc-h', (88 + (h >> 4) % 13) + '%');
         spine.appendChild(make('span', 'sc-spine-name', name.replace(/\s+collection$/i, '')));   // the page says that
+        var mark = card.querySelector('.sc-intro-mark');   // showcase-intros.js marked the card first
+        if (mark) { spine.appendChild(mark.cloneNode(true)); }
         shelf.appendChild(spine);
       });
       grid.parentNode.insertBefore(shelf, grid.nextSibling);

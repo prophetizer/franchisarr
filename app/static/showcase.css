@@ -1251,6 +1251,39 @@
 }
 @keyframes sc-osd { 0%, 20%, 40%, 60% { opacity: 1; } 10%, 30%, 50% { opacity: 0.3; } 100% { opacity: 0; } }
 
+/* ---------------------------------------------------------------- intro marks (0.61.0) */
+/* A clapperboard on a card whose page opens with a franchise intro (showcase-intros.js places it): a small
+   round badge in a poster's corner, glowing in the page's colour; inline beside the spotlight's
+   kicker and a Ctrl+K line's name. */
+[data-look="showcase"] :is(.collection-poster, .poster-row-card, .trophy-frame):has(> .sc-intro-mark) { position: relative; }
+[data-look="showcase"] .sc-intro-mark {
+  align-items: center;
+  background: color-mix(in srgb, var(--sc-page) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sc-glow) 80%, transparent);
+  border-radius: 50%;
+  box-shadow: 0 0 0.55rem color-mix(in srgb, var(--sc-glow) 60%, transparent);
+  color: color-mix(in srgb, var(--sc-glow) 55%, var(--pico-h1-color));
+  display: inline-flex;
+  height: 1.6rem;
+  justify-content: center;
+  line-height: 1;
+  width: 1.6rem;
+}
+[data-look="showcase"] .sc-intro-mark svg { height: 62%; width: 62%; }
+[data-look="showcase"] :is(.collection-poster, .poster-row-card, .trophy-frame, .sc-spine) > .sc-intro-mark {
+  position: absolute;
+  right: 0.25rem;
+  top: 0.25rem;
+  z-index: 3;
+}
+[data-look="showcase"] .sc-spine > .sc-intro-mark { left: calc(50% - 0.8rem); right: auto; }
+[data-look="showcase"] :is(.spotlight-kicker, .sc-quick-list strong) > .sc-intro-mark {
+  height: 1.2rem;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+  width: 1.2rem;
+}
+
 /* ================================================================ cinema (0.60.0) */
 /* showcase-cinema.js builds these; each colour that's the object's own (a bulb, a ticket's
    paper, a shelf's wood) is set there, as a variable. Shading uses --sc-page (see the top). */

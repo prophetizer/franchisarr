@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.60.1`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.61.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -295,7 +295,9 @@ films — in this app's own words and drawing, with no logos, music or lines fro
 plays once per visit to a page; a click or any key skips it, **▶ Intro** on the page plays it
 again, **🎬 Franchise intros** in the menu under your name turns them off for you, and your
 device's "reduce motion" setting turns them off altogether. Completing one of these franchises
-also brings its own confetti.
+also brings its own confetti. A small clapperboard on a card — in the Collections and Franchises
+lists (and on the shelf), the home page's rows and spotlight, the Trophy case, search and Ctrl+K
+— marks a set whose page has one; it isn't shown to anyone who has intros switched off.
 
 | Franchise | Plays on pages named | What happens |
 |---|---|---|
