@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.67.0] — 2026-10-03
+
+### Added
+
+Showcase:
+
+- **Fifteen more franchise intros** (ninety-seven in all), each with its own confetti: Beverly
+  Hills Cop (a palm-lined boulevard), Kill Bill (a katana slicing the title), Taken (pins dropping
+  on a map for your missing films), The Expendables (silhouettes walking out of fire), Austin
+  Powers (a psychedelic swirl), The Mask (a green whirlwind and a pop), Zombieland (survival rules
+  for your library), Hotel Transylvania (bats round a castle hotel), Tomb Raider (a floor crumbling
+  away), Pacific Rim (a giant robot rising from the sea), National Treasure (hidden writing on a
+  map), Sherlock Holmes (a magnifying glass and clues), Knives Out (a ring of knives), the Ninja
+  Turtles (four masks) and Sonic (a blue streak collecting rings).
+
+### Changed
+
+- Prometheus plays the Alien intro, Man of Steel the Superman intro, and The Wolverine the X-Men
+  intro.
+
 ## [0.66.0] — 2026-10-03
 
 ### Added

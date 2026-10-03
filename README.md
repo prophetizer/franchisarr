@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.66.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.67.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -251,7 +251,7 @@ empty and finished pages get a little scene; a set's poster is black and white w
 up it as far as you own, and a detail page's poster stands as a 3D box set; coming-soon films
 count down their days on a split-flap board; a watched film's poster has its ticket punched; TV
 shows sit in old CRT screens; a trailer dims the house lights; a running scan plays on a
-projector; Activity's adds are a roll of ticket stubs; and eighty-two franchises open with a nod to their films ([listed
+projector; Activity's adds are a roll of ticket stubs; and ninety-seven franchises open with a nod to their films ([listed
 below](#franchise-intros)) (and there's a code for a retro VHS mode, if you know it); **Ctrl+K** (Cmd+K on a Mac) searches from anywhere; and in October horror sets glow
 pumpkin, in December the top bar frosts over. The release strip
 **plays** as it comes on screen (posters fly in in order, the ones you own light up, a ring fills
@@ -314,7 +314,7 @@ lists (and on the shelf), the home page's rows and spotlight, the Trophy case, s
 | Jurassic Park | *Jurassic Park*, *Jurassic World* | A glass of water ripples with each distant thud, and the page shakes (the page stays usable) |
 | Back to the Future | *Back to the Future* | A time-circuit display — latest film, today, first film — then twin fire trails |
 | Mission: Impossible | *Mission: Impossible* | A burning fuse and a briefing about your missing films, which then self-destructs |
-| Alien | *Alien…* | A motion tracker, one contact for each missing film, closing in |
+| Alien | *Alien…*, *Prometheus…* | A motion tracker, one contact for each missing film, closing in |
 | Batman | *Batman*, *Dark Knight* | A searchlight sweeps the clouds and settles into a bat signal |
 | Jaws | *Jaws* | The page under water, a fin cutting slowly across, then the water drains away |
 | Terminator | *Terminator* | A red targeting display frames the poster and lists your missing films as targets |
@@ -333,7 +333,7 @@ lists (and on the shelf), the home page's rows and spotlight, the Trophy case, s
 | Final Destination | *Final Destination* | A chain reaction of dominoes, one per film, until the last brings the curtain down |
 | Predator | *Predator* | The page in heat colours, a shimmering outline crossing it, three red dots settling on the title (the page stays usable) |
 | Dragon Ball Z | *Dragon Ball* | An aura builds round the title, crackling, the page shakes harder, then a blast of light (the page stays usable) |
-| X-Men | *X-Men*, *Wolverine…* | A dome of light scans a crowd of points and locks on to one for each film you own, then flashes outward |
+| X-Men | *X-Men*, *Wolverine…*, *The Wolverine…* | A dome of light scans a crowd of points and locks on to one for each film you own, then flashes outward |
 | Pirates of the Caribbean | *Pirates of the Caribbean* | A compass needle spins and settles, the sea rolls in, and the waves part to let the page through |
 | Resident Evil | *Resident Evil* | A red laser grid sweeps down a dark corridor, then a containment report lists your missing films |
 | Bourne | *Bourne* | A surveillance map: a dot hops from city to city, one per film, with readouts, until the signal is lost |
@@ -354,7 +354,7 @@ lists (and on the shelf), the home page's rows and spotlight, the Trophy case, s
 | Avatar | *Avatar Collection* | A dark forest lights up in blue and violet, ripple by ripple, with drifting seeds of light |
 | The Hunger Games | *Hunger Games* | An arena countdown, a cannon for each missing film, and three lights rising across the sky |
 | The Mummy | *The Mummy…* | Sand blows across a wall of carved symbols, gathers into a great face and crumbles away |
-| Superman | *Superman* | Clouds rush past as if climbing; a red-and-blue streak shoots up through them, and a flash |
+| Superman | *Superman*, *Man of Steel* | Clouds rush past as if climbing; a red-and-blue streak shoots up through them, and a flash |
 | Sharknado | *Sharknado* | A tornado spins up, sharks whirling round in it, then tears off sideways |
 | The Ring | *The Ring…* | Static, a stone well in a dark clearing, static again, and the set switches off to a line |
 | 28 Days Later | *28 Days…*, *28 Weeks…*, *28 Years…* | A red spread across an empty city map, a stage per film, as the days count up |
@@ -387,6 +387,21 @@ lists (and on the shelf), the home page's rows and spotlight, the Trophy case, s
 | Wreck-It Ralph | *Wreck-It Ralph* | The poster breaks into chunky 8-bit pixels that crumble away, then fly back and rebuild |
 | The Incredibles | *Incredibles* | Retro sixties title cards: bold colour blocks slide in and out, then the title |
 | Despicable Me | *Despicable Me*, *Minions…* | A shrink ray zaps the page down to nothing, then it pops back (the page stays usable) |
+| Beverly Hills Cop | *Beverly Hills Cop* | A sunny palm-lined boulevard rushing past, police lights flashing behind |
+| Kill Bill | *Kill Bill* | A stark yellow screen with the title in black; a katana stroke slices it in two and the halves slide apart |
+| Taken | *Taken…* | A city map zooming in, a pin dropping for each missing film, labelled |
+| The Expendables | *Expendables* | A wall of fire, and a row of silhouettes walking out of it toward you, one per film you own |
+| Austin Powers | *Austin Powers* | A psychedelic sixties swirl, bands of colour and flowers spinning out from the middle |
+| The Mask | *The Mask Collection*, *Son of the Mask* (not The Mask of Zorro) | A green whirlwind spins across the screen and stops dead with a cartoon pop (the page stays usable) |
+| Zombieland | *Zombieland* | Survival rules stamped on screen one at a time, in your library's own terms |
+| Hotel Transylvania | *Hotel Transylvania* | Bats swirling round a spooky castle hotel at night, its windows lighting up one by one |
+| Tomb Raider | *Tomb Raider* | A torch-lit tomb floor whose stone tiles crack and fall away, leaving the page beneath |
+| Pacific Rim | *Pacific Rim* | Rain over a dark sea; a giant robot's silhouette rises, and its chest lights up |
+| National Treasure | *National Treasure* | An old map warms, and hidden writing appears on it: your missing films, as clues |
+| Sherlock Holmes | *Sherlock Holmes* | A magnifying glass sweeps a foggy gaslit street, noting clues about your collection |
+| Knives Out | *Knives Out*, *Glass Onion*, *Wake Up Dead Man* | A sunburst ring of knives turns slowly; one is drawn out and the ring falls apart |
+| Teenage Mutant Ninja Turtles | *Ninja Turtles* | Sewer pipes, and four coloured masks flashing past one after another |
+| Sonic the Hedgehog | *Sonic the Hedgehog* | A blue streak loops around the screen collecting gold rings, then zooms off |
 
 ## Search
 

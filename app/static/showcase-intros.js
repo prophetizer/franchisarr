@@ -1,4 +1,4 @@
-// Showcase's franchise intros (0.57.0; their own file since 0.58.0; eighty-two since 0.66.0): a nod to a franchise's films
+// Showcase's franchise intros (0.57.0; their own file since 0.58.0; ninety-seven since 0.67.0): a nod to a franchise's films
 // when its page opens -- once per visit to each page, skipped by a click or any key, and replayed
 // from the ▶ Intro button. Off for anyone who turned them off in their menu (data-intros="off")
 // and with "reduce motion". The words are this app's own; the looks are the films'.
@@ -25,7 +25,7 @@
     [/jurassic (park|world)/i, 'ripple'],
     [/back to the future/i, 'circuits'],
     [/mission: impossible/i, 'fuse'],
-    [/^alien\b/i, 'tracker'],
+    [/^alien\b|^prometheus\b/i, 'tracker'],
     [/batman|dark knight/i, 'signal'],
     [/^jaws\b/i, 'fin'],
     [/terminator/i, 'hud'],
@@ -44,7 +44,7 @@
     [/final destination/i, 'dominoes'],
     [/predator/i, 'thermal'],
     [/dragon ball/i, 'powerup'],
-    [/x-men|^wolverine/i, 'dome'],
+    [/x-men|^(the )?wolverine/i, 'dome'],
     [/pirates of the caribbean/i, 'compass'],
     [/resident evil/i, 'lasers'],
     [/bourne/i, 'surveil'],
@@ -65,7 +65,7 @@
     [/^avatar( collection)?$/i, 'glow'],
     [/hunger games/i, 'arena'],
     [/^the mummy\b/i, 'sand'],
-    [/superman/i, 'flight'],
+    [/superman|man of steel/i, 'flight'],
     [/sharknado/i, 'twister'],
     [/^the ring\b/i, 'well'],
     [/28 (days|weeks|years)/i, 'outbreak'],
@@ -98,6 +98,21 @@
     [/wreck-it ralph/i, 'pixels'],
     [/incredibles/i, 'retro'],
     [/despicable me|^minions\b/i, 'shrink'],
+    [/beverly hills cop/i, 'boulevard'],
+    [/kill bill/i, 'katana'],
+    [/^taken\b/i, 'pinpoint'],
+    [/expendables/i, 'firewalk'],
+    [/austin powers/i, 'groovy'],
+    [/^the mask( collection)?$|son of the mask/i, 'whirlwind'],
+    [/zombieland/i, 'rules'],
+    [/hotel transylvania/i, 'bats'],
+    [/tomb raider/i, 'tomb'],
+    [/pacific rim/i, 'mech'],
+    [/national treasure/i, 'cipher'],
+    [/sherlock holmes/i, 'magnifier'],
+    [/knives out|glass onion|wake up dead man/i, 'knives'],
+    [/ninja turtles/i, 'masks'],
+    [/sonic the hedgehog/i, 'rings'],
   ];
   function introFor(name) { return WHICH.filter(function (w) { return w[0].test(name); })[0]; }
 
@@ -3135,6 +3150,449 @@
           g.beginPath(); g.arc(W / 2, H / 2, (t - 2.1) * W, 0, Math.PI * 2); g.stroke();
         }
         return t < 3.6;
+      });
+    },
+
+    // ---------------------------------------------------------------- 0.67.0
+
+    // Beverly Hills Cop: a sunny palm-lined boulevard rushing past, police lights flashing behind.
+    boulevard: function () {
+      var c = curtain({ max: 5000, background: 'linear-gradient(to bottom, rgb(80 170 240), rgb(180 225 250))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var hz = H * 0.42, palms = [];
+      for (var i = 0; i < 16; i++) { palms.push({ z: i / 16, side: i % 2 ? 1 : -1 }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        g.fillStyle = 'rgb(120 190 110)'; g.fillRect(0, hz, W, H - hz);
+        g.fillStyle = 'rgb(70 72 80)';
+        g.beginPath(); g.moveTo(W / 2 - 20, hz); g.lineTo(W / 2 + 20, hz); g.lineTo(W * 0.95, H); g.lineTo(W * 0.05, H); g.closePath(); g.fill();
+        g.fillStyle = 'rgb(250 220 90)';
+        for (var d = 0; d < 12; d++) {
+          var z = ((d / 12) + t * 0.9) % 1, z2 = z + 0.03;
+          var y1 = hz + Math.pow(z, 2) * (H - hz), y2 = hz + Math.pow(Math.min(1, z2), 2) * (H - hz);
+          g.fillRect(W / 2 - 2 - z * 6, y1, 4 + z * 12, y2 - y1);
+        }
+        palms.forEach(function (p) {
+          var z = (p.z + t * 0.45) % 1, e = Math.pow(z, 2), x = W / 2 + p.side * (30 + e * W * 0.6), base = hz + e * (H - hz), h = 20 + e * H * 0.8;
+          g.strokeStyle = 'rgb(110 80 50)'; g.lineWidth = 2 + e * 10;
+          g.beginPath(); g.moveTo(x, base); g.quadraticCurveTo(x + p.side * h * 0.1, base - h * 0.5, x + p.side * h * 0.05, base - h); g.stroke();
+          g.fillStyle = 'rgb(40 120 50)';
+          for (var f = 0; f < 6; f++) { var a = -Math.PI / 2 + (f - 2.5) * 0.55; g.beginPath(); g.ellipse(x + p.side * h * 0.05 + Math.cos(a) * h * 0.2, base - h + Math.sin(a) * h * 0.08 + h * 0.06, h * 0.24, h * 0.05, a, 0, Math.PI * 2); g.fill(); }
+        });
+        var phase = Math.floor(t * 5) % 2;
+        var lamp = g.createRadialGradient(phase ? W * 0.1 : W * 0.9, H, 0, phase ? W * 0.1 : W * 0.9, H, W * 0.5);
+        lamp.addColorStop(0, phase ? 'rgba(255, 40, 40, 0.5)' : 'rgba(40, 90, 255, 0.5)'); lamp.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        g.fillStyle = lamp; g.fillRect(0, 0, W, H);
+        if (t > 3.0) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.0) / 0.6)); }
+        return t < 3.7;
+      });
+    },
+
+    // Kill Bill: a stark yellow screen with the title in black; a katana stroke slices it in two
+    // and the halves slide apart.
+    katana: function () {
+      var c = curtain({ max: 5000, background: 'rgb(250 210 30)' });
+      var halves = [['polygon(0 0, 100% 0, 100% 42%, 0 58%)', '-3vw -4vh'], ['polygon(0 58%, 100% 42%, 100% 100%, 0 100%)', '3vw 4vh']].map(function (h) {
+        var copy = text('p', 'sc-katana-title', page.short, c.el);
+        copy.style.color = 'rgb(16 14 12)';
+        copy.style.clipPath = h[0];
+        return [copy, h[1]];
+      });
+      window.setTimeout(function () {
+        var cut = document.createElement('span');
+        cut.className = 'sc-slash';
+        cut.style.background = 'rgb(200 20 20)';
+        cut.style.rotate = '-2deg';   // along the line the title is cut on
+        c.el.appendChild(cut);
+        halves.forEach(function (h) { if (h[0].animate) { h[0].animate([{ translate: '-50% -50%' }, { translate: 'calc(-50% + ' + h[1].split(' ')[0] + ') calc(-50% + ' + h[1].split(' ')[1] + ')' }], { duration: 700, delay: 200, easing: 'ease-out', fill: 'forwards' }); } });
+      }, 1300);
+      window.setTimeout(c.finish, 3200);
+    },
+
+    // Taken: a city map zooming in, a pin dropping for each missing film, tracking them down.
+    pinpoint: function () {
+      var c = curtain({ max: 6000, background: 'rgb(10 12 16)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var streets = [];
+      for (var i = 0; i < 70; i++) { var a = Math.random() * Math.PI; streets.push([Math.random() * W, Math.random() * H, Math.cos(a), Math.sin(a), 80 + Math.random() * 300]); }
+      var targets = (page.missing.length ? page.missing : ['(nothing missing)']).slice(0, 5).map(function (title) { return { title: title, x: W * (0.2 + Math.random() * 0.6), y: H * (0.2 + Math.random() * 0.6) }; });
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var zoom = 1 + Math.min(1, t / 3) * 0.5;
+        g.save(); g.translate(W / 2, H / 2); g.scale(zoom, zoom); g.translate(-W / 2, -H / 2);
+        g.strokeStyle = 'rgba(120, 160, 190, 0.25)'; g.lineWidth = 1.5;
+        streets.forEach(function (s) { g.beginPath(); g.moveTo(s[0] - s[2] * s[4], s[1] - s[3] * s[4]); g.lineTo(s[0] + s[2] * s[4], s[1] + s[3] * s[4]); g.stroke(); });
+        g.fillStyle = 'rgba(40, 80, 120, 0.25)'; g.beginPath(); g.ellipse(W * 0.5, H * 0.6, W * 0.4, H * 0.06, 0.2, 0, Math.PI * 2); g.fill();
+        g.restore();
+        targets.forEach(function (p, i) {
+          var at = 0.6 + i * 0.6;
+          if (t < at) { return; }
+          var drop = Math.min(1, (t - at) / 0.25), x = W / 2 + (p.x - W / 2) * zoom, y = H / 2 + (p.y - H / 2) * zoom - (1 - drop) * 60;
+          g.strokeStyle = 'rgba(255, 60, 50, ' + Math.max(0, 1 - ((t - at) % 1)) + ')'; g.lineWidth = 2;
+          g.beginPath(); g.arc(x, y, ((t - at) % 1) * 40, 0, Math.PI * 2); g.stroke();
+          g.fillStyle = 'rgb(255 60 50)'; g.beginPath(); g.arc(x, y - 14, 8, 0, Math.PI * 2); g.fill();
+          g.beginPath(); g.moveTo(x - 6, y - 10); g.lineTo(x + 6, y - 10); g.lineTo(x, y); g.closePath(); g.fill();
+          g.fillStyle = 'rgb(230 235 240)'; g.font = '600 14px ui-monospace, monospace'; g.textAlign = 'left';
+          g.fillText(p.title, x + 14, y - 10);
+        });
+        if (t > 4.0) { c.el.style.opacity = String(Math.max(0, 1 - (t - 4.0) / 0.6)); }
+        return t < 4.7;
+      });
+    },
+
+    // The Expendables: a wall of fire, and a row of silhouettes walking out of it toward you --
+    // one for each film you own.
+    firewalk: function () {
+      var c = curtain({ max: 5500, background: 'black' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var crew = Math.max(3, Math.min(7, parseInt(page.have, 10) || 5)), flames = [];
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        for (var f = 0; f < 40; f++) { flames.push({ x: Math.random() * W, y: H * 0.75, v: 3 + Math.random() * 5, life: 1, r: 20 + Math.random() * 40 }); }
+        flames.forEach(function (p) {
+          p.y -= p.v; p.life -= 0.02; p.r *= 0.99;
+          if (p.life > 0) {
+            var fire = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+            fire.addColorStop(0, 'rgba(255, 220, 120, ' + p.life * 0.7 + ')'); fire.addColorStop(0.5, 'rgba(255, 110, 20, ' + p.life * 0.5 + ')'); fire.addColorStop(1, 'rgba(120, 20, 0, 0)');
+            g.fillStyle = fire; g.fillRect(p.x - p.r, p.y - p.r, p.r * 2, p.r * 2);
+          }
+        });
+        flames = flames.filter(function (p) { return p.life > 0; });
+        var walk = Math.min(1, t / 3.2), s = H * (0.18 + walk * 0.35), base = H * (0.78 + walk * 0.18);
+        for (var k = 0; k < crew; k++) {
+          var x = W / 2 + (k - (crew - 1) / 2) * s * 0.55, sway = Math.sin(t * 6 + k) * s * 0.04;
+          g.fillStyle = 'rgb(6 4 4)';
+          g.beginPath(); g.arc(x, base - s * 0.92, s * 0.08, 0, Math.PI * 2); g.fill();
+          g.beginPath(); g.moveTo(x - s * 0.17, base - s * 0.8); g.lineTo(x + s * 0.17, base - s * 0.8); g.lineTo(x + s * 0.12, base - s * 0.42); g.lineTo(x - s * 0.12, base - s * 0.42); g.closePath(); g.fill();
+          g.fillRect(x - s * 0.1 + sway, base - s * 0.42, s * 0.08, s * 0.42); g.fillRect(x + s * 0.02 - sway, base - s * 0.42, s * 0.08, s * 0.42);
+        }
+        if (t > 3.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.6) / 0.6)); }
+        return t < 4.3;
+      });
+    },
+
+    // Austin Powers: a psychedelic sixties swirl -- bands of colour and flowers spinning out from
+    // the middle.
+    groovy: function () {
+      var c = curtain({ max: 5000, background: 'rgb(250 230 90)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var palette = ['rgb(240 60 140)', 'rgb(250 150 30)', 'rgb(60 200 120)', 'rgb(80 120 240)', 'rgb(250 230 90)', 'rgb(160 70 200)'];
+      var flowers = [];
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var cx = W / 2, cy = H / 2, R = Math.hypot(W, H) * 0.6, spin = t * 1.8;
+        for (var b = 0; b < 24; b++) {
+          g.fillStyle = palette[b % palette.length];
+          g.beginPath(); g.moveTo(cx, cy);
+          for (var s = 0; s <= 20; s++) { var q = s / 20, a = spin + b / 24 * Math.PI * 2 + q * 2.2; g.lineTo(cx + Math.cos(a) * R * q, cy + Math.sin(a) * R * q); }
+          for (var s2 = 20; s2 >= 0; s2--) { var q2 = s2 / 20, a2 = spin + (b + 1) / 24 * Math.PI * 2 + q2 * 2.2; g.lineTo(cx + Math.cos(a2) * R * q2, cy + Math.sin(a2) * R * q2); }
+          g.closePath(); g.fill();
+        }
+        if (Math.random() < 0.4) { flowers.push({ a: Math.random() * Math.PI * 2, d: 0, c: palette[Math.floor(Math.random() * 6)] }); }
+        flowers.forEach(function (f) {
+          f.d += 6; var x = cx + Math.cos(f.a) * f.d, y = cy + Math.sin(f.a) * f.d, r = 6 + f.d * 0.05;
+          g.fillStyle = 'rgb(255 255 255)';
+          for (var p = 0; p < 5; p++) { var pa = p / 5 * Math.PI * 2 + t * 3; g.beginPath(); g.arc(x + Math.cos(pa) * r, y + Math.sin(pa) * r, r * 0.7, 0, Math.PI * 2); g.fill(); }
+          g.fillStyle = f.c; g.beginPath(); g.arc(x, y, r * 0.6, 0, Math.PI * 2); g.fill();
+        });
+        if (t > 3.0) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.0) / 0.6)); }
+        return t < 3.7;
+      });
+    },
+
+    // The Mask: a green whirlwind spins across the screen and stops dead with a cartoon pop.
+    // The page stays usable.
+    whirlwind: function () {
+      var c = curtain({ max: 4500, through: true });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var bits = [];
+      for (var i = 0; i < 400; i++) { bits.push({ a: Math.random() * Math.PI * 2, h: Math.random(), s: 2 + Math.random() * 4 }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var go = Math.min(1, t / 2.0), cx = -W * 0.2 + go * W * 0.7, stopped = t > 2.1;
+        if (!stopped) {
+          bits.forEach(function (b) {
+            var r = 30 + (1 - b.h) * 140, a = b.a + t * 12;
+            g.fillStyle = 'rgba(' + Math.round(60 + Math.random() * 60) + ', 210, 60, 0.85)';
+            g.fillRect(cx + Math.cos(a) * r, H * 0.1 + b.h * H * 0.8 + Math.sin(a) * r * 0.15, b.s, b.s);
+          });
+        } else if (t < 3.1) {
+          var pop = Math.min(1, (t - 2.1) / 0.2), fade = t > 2.6 ? Math.max(0, 1 - (t - 2.6) / 0.5) : 1, cy = H / 2, R = Math.min(W, H) * 0.3 * pop;
+          g.fillStyle = 'rgba(255, 230, 40, ' + fade + ')'; g.strokeStyle = 'rgba(20, 20, 20, ' + fade + ')'; g.lineWidth = 5;
+          g.beginPath();
+          for (var k = 0; k < 24; k++) { var a = k / 24 * Math.PI * 2, rr = k % 2 ? R * 0.6 : R; if (!k) { g.moveTo(W / 2 + Math.cos(a) * rr, cy + Math.sin(a) * rr); } else { g.lineTo(W / 2 + Math.cos(a) * rr, cy + Math.sin(a) * rr); } }
+          g.closePath(); g.fill(); g.stroke();
+          g.fillStyle = 'rgba(40, 170, 50, ' + fade + ')'; g.font = '900 ' + Math.round(R * 0.32) + 'px Impact, system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+          g.fillText('POP!', W / 2, cy);
+        }
+        return t < 3.2;
+      });
+    },
+
+    // Zombieland: survival rules stamped on screen one at a time, in this library's own terms.
+    rules: function () {
+      var c = curtain({ max: 7000, background: 'linear-gradient(to bottom, rgb(40 46 36), rgb(18 20 16))' });
+      var n = page.missing.length;
+      var stack = document.createElement('div');
+      stack.className = 'sc-rules';
+      c.el.appendChild(stack);
+      [['#1', 'Check the missing list.'], ['#2', 'Double-tap the Add button.'],
+       ['#3', page.total ? 'Enjoy the little things — like owning ' + page.have + ' of ' + page.total + '.' : 'Enjoy the little things.'],
+       ['#4', n ? 'Never leave ' + plural(n, 'film') + ' behind.' : 'Leave no film behind. (You didn’t.)']].forEach(function (rule, i) {
+        window.setTimeout(function () {
+          var line = document.createElement('p');
+          line.className = 'sc-rule';
+          line.style.color = 'rgb(240 236 220)';
+          var num = text('span', 'sc-rule-num', 'Rule ' + rule[0] + ' ', line);
+          num.style.color = 'rgb(220 50 40)';
+          line.appendChild(document.createTextNode(rule[1]));
+          stack.appendChild(line);
+          if (line.animate) { line.animate([{ scale: 2.2, opacity: 0 }, { scale: 1, opacity: 1 }], { duration: 260, easing: 'cubic-bezier(.3, 1.4, .6, 1)', fill: 'both' }); }
+          shakePage(3, 160);
+        }, 300 + i * 1000);
+      });
+      window.setTimeout(c.finish, 5600);
+    },
+
+    // Hotel Transylvania: bats swirling round a spooky castle hotel at night, its windows lighting
+    // up one by one.
+    bats: function () {
+      var c = curtain({ max: 5500, background: 'linear-gradient(to bottom, rgb(30 20 60), rgb(70 40 90))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var cx = W / 2, base = H * 0.92, flock = [], windows = [];
+      for (var i = 0; i < 26; i++) { flock.push({ a: Math.random() * Math.PI * 2, r: W * (0.15 + Math.random() * 0.25), h: H * (0.15 + Math.random() * 0.4), v: 1 + Math.random() * 1.5, s: 8 + Math.random() * 10 }); }
+      for (var w = 0; w < 18; w++) { windows.push({ x: cx + (Math.random() - 0.5) * W * 0.3, y: base - Math.random() * H * 0.45, at: Math.random() * 2.5 }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        g.fillStyle = 'rgba(240, 235, 210, 0.95)'; g.beginPath(); g.arc(W * 0.78, H * 0.2, Math.min(W, H) * 0.08, 0, Math.PI * 2); g.fill();
+        g.fillStyle = 'rgb(16 10 26)';
+        [[-0.18, 0.3, 0.05], [-0.08, 0.5, 0.07], [0, 0.6, 0.09], [0.1, 0.45, 0.07], [0.19, 0.32, 0.05]].forEach(function (tw) {
+          var x = cx + tw[0] * W, h = tw[1] * H, w2 = tw[2] * W;
+          g.fillRect(x - w2 / 2, base - h, w2, h);
+          g.beginPath(); g.moveTo(x - w2 * 0.65, base - h); g.lineTo(x, base - h - w2 * 1.4); g.lineTo(x + w2 * 0.65, base - h); g.closePath(); g.fill();
+        });
+        g.fillRect(cx - W * 0.22, base - H * 0.25, W * 0.44, H * 0.25);
+        windows.forEach(function (wn) { if (t > wn.at) { g.fillStyle = 'rgba(255, 210, 110, 0.9)'; g.fillRect(wn.x - 4, wn.y - 6, 8, 12); } });
+        flock.forEach(function (b) {
+          var a = b.a + t * b.v, x = cx + Math.cos(a) * b.r, y = H * 0.25 + Math.sin(a) * b.r * 0.25 + b.h * 0.3, flap = Math.sin(t * 18 + b.a) * b.s * 0.6;
+          g.fillStyle = 'rgb(10 6 16)';
+          g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x - b.s * 0.6, y - flap, x - b.s, y + 2); g.quadraticCurveTo(x - b.s * 0.5, y + 1, x, y + 3);
+          g.quadraticCurveTo(x + b.s * 0.5, y + 1, x + b.s, y + 2); g.quadraticCurveTo(x + b.s * 0.6, y - flap, x, y); g.fill();
+        });
+        if (t > 3.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.6) / 0.6)); }
+        return t < 4.3;
+      });
+    },
+
+    // Tomb Raider: a torch-lit tomb floor whose stone tiles crack and fall away one by one,
+    // leaving the page beneath.
+    tomb: function () {
+      var c = curtain({ max: 5500, background: 'transparent' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var size = Math.max(70, Math.min(W, H) / 7), tiles = [];
+      for (var y = 0; y < H; y += size) { for (var x = 0; x < W; x += size) { tiles.push({ x: x, y: y, at: 1.0 + Math.random() * 2.2, shade: 80 + Math.random() * 40 }); } }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        tiles.forEach(function (tl) {
+          var fall = Math.max(0, t - tl.at);
+          if (fall > 0.6) { return; }
+          var s = size * (1 - fall / 0.6), off = (size - s) / 2, d = Math.round(tl.shade * (1 - fall));
+          g.fillStyle = 'rgb(' + d + ' ' + Math.round(d * 0.8) + ' ' + Math.round(d * 0.6) + ')';
+          g.fillRect(tl.x + off + 2, tl.y + off + 2, s - 4, s - 4);
+          if (t > tl.at - 0.5 && fall === 0) {
+            g.strokeStyle = 'rgba(30, 20, 10, 0.8)'; g.lineWidth = 2;
+            g.beginPath(); g.moveTo(tl.x + size * 0.2, tl.y + size * 0.3); g.lineTo(tl.x + size * 0.5, tl.y + size * 0.55); g.lineTo(tl.x + size * 0.8, tl.y + size * 0.4); g.stroke();
+          }
+        });
+        var flick = 0.85 + Math.random() * 0.15;
+        var torch = g.createRadialGradient(W * 0.15, H * 0.2, 0, W * 0.15, H * 0.2, Math.max(W, H) * 0.9);
+        torch.addColorStop(0, 'rgba(255, 170, 70, ' + 0.35 * flick + ')'); torch.addColorStop(0.5, 'rgba(60, 30, 10, 0.2)'); torch.addColorStop(1, 'rgba(0, 0, 0, 0.55)');
+        g.fillStyle = torch; g.fillRect(0, 0, W, H);
+        return t < 3.9;
+      });
+    },
+
+    // Pacific Rim: rain over a dark sea; a giant robot's silhouette rises, and its chest lights up.
+    mech: function () {
+      var c = curtain({ max: 5500, background: 'linear-gradient(to bottom, rgb(14 20 30), rgb(26 36 50))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var drops = [];
+      for (var i = 0; i < 320; i++) { drops.push({ x: Math.random() * W, y: Math.random() * H, v: 14 + Math.random() * 10 }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var rise = Math.min(1, t / 2.2), cx = W / 2, s = H * 0.5, top = H * 0.95 - rise * s * 1.15;
+        g.fillStyle = 'rgb(8 12 18)';
+        g.beginPath(); g.moveTo(cx - s * 0.12, top); g.lineTo(cx + s * 0.12, top); g.lineTo(cx + s * 0.1, top + s * 0.14); g.lineTo(cx - s * 0.1, top + s * 0.14); g.closePath(); g.fill();
+        g.beginPath(); g.moveTo(cx - s * 0.5, top + s * 0.2); g.lineTo(cx + s * 0.5, top + s * 0.2); g.lineTo(cx + s * 0.32, top + s * 0.75); g.lineTo(cx - s * 0.32, top + s * 0.75); g.closePath(); g.fill();
+        g.fillRect(cx - s * 0.62, top + s * 0.2, s * 0.16, s * 0.6); g.fillRect(cx + s * 0.46, top + s * 0.2, s * 0.16, s * 0.6);
+        g.fillRect(cx - s * 0.25, top + s * 0.75, s * 0.18, s * 0.6); g.fillRect(cx + s * 0.07, top + s * 0.75, s * 0.18, s * 0.6);
+        g.fillStyle = 'rgba(120, 200, 255, ' + (0.4 + rise * 0.4) + ')'; g.fillRect(cx - s * 0.08, top + s * 0.05, s * 0.16, s * 0.025);
+        if (t > 2.3) {
+          var glow = Math.min(1, (t - 2.3) / 0.4);
+          var core = g.createRadialGradient(cx, top + s * 0.38, 0, cx, top + s * 0.38, s * 0.5 * glow);
+          core.addColorStop(0, 'rgba(160, 230, 255, 0.95)'); core.addColorStop(0.2, 'rgba(80, 180, 255, 0.6)'); core.addColorStop(1, 'rgba(80, 180, 255, 0)');
+          g.fillStyle = core; g.fillRect(0, 0, W, H);
+        }
+        g.fillStyle = 'rgba(20, 40, 60, 0.95)';
+        g.beginPath(); g.moveTo(0, H);
+        for (var x = 0; x <= W; x += 20) { g.lineTo(x, H * 0.86 + Math.sin(x / 60 + t * 2) * 8); }
+        g.lineTo(W, H); g.closePath(); g.fill();
+        g.strokeStyle = 'rgba(160, 190, 220, 0.35)'; g.lineWidth = 1; g.beginPath();
+        drops.forEach(function (d) { d.y += d.v; d.x -= 3; if (d.y > H) { d.y = -20; d.x = Math.random() * W * 1.2; } g.moveTo(d.x, d.y); g.lineTo(d.x + 3, d.y - 14); });
+        g.stroke();
+        if (t > 1.2 && t < 1.3) { g.fillStyle = 'rgba(220, 230, 255, 0.5)'; g.fillRect(0, 0, W, H); }
+        if (t > 3.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.6) / 0.6)); }
+        return t < 4.3;
+      });
+    },
+
+    // National Treasure: an old map warms, and hidden writing appears on it -- the missing films,
+    // as clues.
+    cipher: function () {
+      var c = curtain({ max: 7000, background: 'rgb(222 200 160)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var clues = (page.missing.length ? page.missing.slice(0, 5) : ['Every film is accounted for']).map(function (title, i) {
+        return { words: title, x: W * (0.2 + (i % 2) * 0.35 + Math.random() * 0.1), y: H * (0.22 + i * 0.13) };
+      });
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        g.strokeStyle = 'rgba(110, 80, 40, 0.5)'; g.lineWidth = 2;
+        g.beginPath(); g.moveTo(W * 0.05, H * 0.6);
+        for (var x = W * 0.05; x < W * 0.95; x += 30) { g.lineTo(x, H * 0.6 + Math.sin(x / 70) * 30 + Math.sin(x / 23) * 8); }
+        g.stroke();
+        var rx = W * 0.85, ry = H * 0.78, rr = Math.min(W, H) * 0.08;
+        g.beginPath(); for (var k = 0; k < 8; k++) { var a = k / 8 * Math.PI * 2; g.moveTo(rx, ry); g.lineTo(rx + Math.cos(a) * rr * (k % 2 ? 0.5 : 1), ry + Math.sin(a) * rr * (k % 2 ? 0.5 : 1)); } g.stroke();
+        var hx = W * (-0.1 + Math.min(1.2, t / 3) * 1.1), hy = H * 0.45 + Math.sin(t * 2) * H * 0.2;
+        var heat = g.createRadialGradient(hx, hy, 0, hx, hy, Math.min(W, H) * 0.35);
+        heat.addColorStop(0, 'rgba(255, 150, 40, 0.35)'); heat.addColorStop(1, 'rgba(255, 150, 40, 0)');
+        g.fillStyle = heat; g.fillRect(0, 0, W, H);
+        g.font = 'italic 600 ' + Math.round(Math.min(W, H) * 0.03) + 'px Georgia, serif'; g.textAlign = 'left';
+        clues.forEach(function (cl) {
+          cl.seen = Math.max(cl.seen || 0, Math.max(0, 1 - Math.abs(hx - cl.x - 80) / (W * 0.25)));
+          g.fillStyle = 'rgba(100, 50, 20, ' + cl.seen + ')';
+          g.fillText(cl.words, cl.x, cl.y);
+        });
+        if (t > 4.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 4.6) / 0.6)); }
+        return t < 5.3;
+      });
+    },
+
+    // Sherlock Holmes: a magnifying glass sweeps a foggy gaslit street, noting clues about the
+    // collection.
+    magnifier: function () {
+      var c = curtain({ max: 6500, background: 'linear-gradient(to bottom, rgb(40 44 48), rgb(70 72 70))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var n = page.missing.length;
+      var notes = [page.total ? 'Owned: ' + page.have + ' of ' + page.total : 'A collection, much loved', n ? 'Missing: ' + n : 'Missing: none', n ? 'Conclusion: a trip to Radarr' : 'Conclusion: elementary'];
+      var scene = function (sharp) {
+        g.fillStyle = sharp ? 'rgb(60 50 44)' : 'rgba(30, 30, 30, 0.6)';
+        for (var b = 0; b < 6; b++) { g.fillRect(b * W / 6 + 10, H * (0.25 + (b % 3) * 0.05), W / 6 - 20, H); }
+        for (var l = 0; l < 3; l++) {
+          var lx = W * (0.2 + l * 0.3);
+          g.fillStyle = sharp ? 'rgb(30 30 30)' : 'rgba(20, 20, 20, 0.7)'; g.fillRect(lx - 3, H * 0.45, 6, H * 0.4);
+          g.fillStyle = sharp ? 'rgba(255, 220, 140, 0.95)' : 'rgba(255, 220, 140, 0.4)'; g.beginPath(); g.arc(lx, H * 0.44, 10, 0, Math.PI * 2); g.fill();
+        }
+        g.fillStyle = sharp ? 'rgb(90 86 80)' : 'rgba(60, 60, 60, 0.6)'; g.fillRect(0, H * 0.85, W, H * 0.15);
+      };
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        scene(false);
+        g.fillStyle = 'rgba(180, 185, 190, 0.25)'; g.fillRect(0, 0, W, H);
+        var mx = W * (0.15 + Math.min(1, t / 3.6) * 0.7), my = H * 0.5 + Math.sin(t * 1.7) * H * 0.15, R = Math.min(W, H) * 0.14;
+        g.save(); g.beginPath(); g.arc(mx, my, R, 0, Math.PI * 2); g.clip(); g.fillStyle = 'rgb(70 70 74)'; g.fillRect(0, 0, W, H); scene(true); g.restore();
+        g.strokeStyle = 'rgb(160 120 60)'; g.lineWidth = 8; g.beginPath(); g.arc(mx, my, R, 0, Math.PI * 2); g.stroke();
+        g.strokeStyle = 'rgb(70 40 20)'; g.lineWidth = 14; g.beginPath(); g.moveTo(mx + R * 0.7, my + R * 0.7); g.lineTo(mx + R * 1.5, my + R * 1.5); g.stroke();
+        g.fillStyle = 'rgb(240 230 210)'; g.font = 'italic 600 ' + Math.round(Math.min(W, H) * 0.028) + 'px Georgia, serif'; g.textAlign = 'left';
+        notes.forEach(function (note, i) { if (t > 0.8 + i * 1.1) { g.fillText(note, W * 0.06, H * (0.12 + i * 0.06)); } });
+        if (t > 4.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 4.6) / 0.6)); }
+        return t < 5.3;
+      });
+    },
+
+    // Knives Out: a sunburst ring of knives turns slowly; one is drawn out, and the ring falls
+    // apart.
+    knives: function () {
+      var c = curtain({ max: 5500, background: 'radial-gradient(circle at 50% 50%, rgb(60 40 30), rgb(20 14 10))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.34, count = 18, knives = [];
+      for (var i = 0; i < count; i++) { knives.push({ a: i / count * Math.PI * 2, vx: 0, vy: 0, x: 0, y: 0, spin: 0 }); }
+      var knife = function (len) {
+        g.fillStyle = 'rgb(200 205 215)'; g.beginPath(); g.moveTo(0, 0); g.lineTo(len * 0.62, -len * 0.05); g.lineTo(len * 0.62, len * 0.05); g.closePath(); g.fill();
+        g.fillStyle = 'rgb(40 30 24)'; g.fillRect(len * 0.62, -len * 0.045, len * 0.38, len * 0.09);
+      };
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var turn = t * 0.25, fallen = t > 2.5;
+        knives.forEach(function (k, i) {
+          var a = k.a + turn, pull = i === 0 ? Math.min(1, Math.max(0, (t - 1.8) / 0.6)) * R * 0.8 : 0;
+          if (fallen && i) { if (!k.vy) { k.vy = -2 - Math.random() * 3; k.vx = (Math.random() - 0.5) * 4; } k.vy += 0.5; k.x += k.vx; k.y += k.vy; k.spin += 0.08; }
+          g.save(); g.translate(cx + Math.cos(a) * (R * 0.35 + pull) + k.x, cy + Math.sin(a) * (R * 0.35 + pull) + k.y); g.rotate(a + k.spin);
+          knife(R * 0.75);
+          g.restore();
+        });
+        if (t > 3.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.6) / 0.6)); }
+        return t < 4.3;
+      });
+    },
+
+    // Teenage Mutant Ninja Turtles: sewer pipes, and four coloured masks flashing past one after
+    // another.
+    masks: function () {
+      var c = curtain({ max: 5500, background: 'linear-gradient(to bottom, rgb(20 34 26), rgb(10 18 14))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var colours = ['rgb(40 110 230)', 'rgb(220 40 40)', 'rgb(150 70 200)', 'rgb(250 140 30)'], drips = [];
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        g.strokeStyle = 'rgb(50 70 56)'; g.lineWidth = 30;
+        [[0, H * 0.18, W, H * 0.22], [W * 0.15, 0, W * 0.12, H], [W * 0.85, 0, W * 0.88, H]].forEach(function (p) { g.beginPath(); g.moveTo(p[0], p[1]); g.lineTo(p[2], p[3]); g.stroke(); });
+        if (Math.random() < 0.3) { drips.push({ x: Math.random() * W, y: H * 0.2, v: 2 }); }
+        g.fillStyle = 'rgba(140, 200, 120, 0.7)';
+        drips.forEach(function (d) { d.v += 0.3; d.y += d.v; g.fillRect(d.x, d.y, 2, 6); });
+        colours.forEach(function (col, i) {
+          var at = 0.4 + i * 0.6, q = Math.min(1, Math.max(0, (t - at) / 0.45)), settle = 1 - Math.pow(1 - q, 3);
+          if (q <= 0) { return; }
+          var y = H * (0.3 + i * 0.13), x = -W * 0.6 + settle * W * 1.1, w = W * 0.5, h = H * 0.09;
+          g.fillStyle = col;
+          g.beginPath(); g.moveTo(x - w / 2, y - h / 2); g.lineTo(x + w / 2, y - h / 2); g.lineTo(x + w / 2 + h * 0.8, y + h * 0.8); g.lineTo(x + w / 2 + h * 0.4, y + h); g.lineTo(x + w / 2, y + h / 2); g.lineTo(x - w / 2, y + h / 2); g.closePath(); g.fill();
+          g.fillStyle = 'rgb(255 255 255)';
+          g.beginPath(); g.ellipse(x - w * 0.12, y, h * 0.32, h * 0.22, 0.15, 0, Math.PI * 2); g.ellipse(x + w * 0.12, y, h * 0.32, h * 0.22, -0.15, 0, Math.PI * 2); g.fill();
+        });
+        if (t > 3.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.6) / 0.6)); }
+        return t < 4.3;
+      });
+    },
+
+    // Sonic the Hedgehog: a blue streak loops around the screen collecting gold rings, then zooms
+    // off.
+    rings: function () {
+      var c = curtain({ max: 5000, background: 'linear-gradient(to bottom, rgb(60 140 240), rgb(150 210 250))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var path = function (q) {
+        if (q < 0.35) { return [W * 0.05 + q / 0.35 * W * 0.4, H * 0.72]; }
+        if (q < 0.75) { var a = (q - 0.35) / 0.4 * Math.PI * 2; return [W * 0.5 + Math.sin(a) * H * 0.22, H * 0.5 + Math.cos(a) * H * 0.22]; }
+        return [W * 0.5 + (q - 0.75) / 0.25 * W * 0.7, H * 0.72];
+      };
+      var rings = [];
+      for (var i = 0; i < 20; i++) { var q = 0.05 + i / 20 * 0.85, p = path(q); rings.push({ q: q, x: p[0], y: p[1] - 24, got: false }); }
+      var counter = text('p', 'sc-hud sc-hud--left', 'RINGS 0', c.el);
+      counter.style.color = 'rgb(255 220 60)';
+      var got = 0;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        for (var x = 0; x < W; x += 40) { g.fillStyle = (Math.floor(x / 40) % 2) ? 'rgb(60 160 60)' : 'rgb(80 190 70)'; g.fillRect(x, H * 0.78, 40, H * 0.22); }
+        g.fillStyle = 'rgb(150 100 50)'; g.fillRect(0, H * 0.86, W, H * 0.14);
+        var at = Math.min(1, t / 2.6), me = path(at);
+        rings.forEach(function (r) {
+          if (!r.got && r.q <= at) { r.got = true; got++; }
+          if (r.got) { return; }
+          var wide = Math.abs(Math.cos(t * 6 + r.q * 10));
+          g.strokeStyle = 'rgb(255 210 40)'; g.lineWidth = 4; g.beginPath(); g.ellipse(r.x, r.y, 10 * Math.max(0.15, wide), 10, 0, 0, Math.PI * 2); g.stroke();
+        });
+        counter.textContent = 'RINGS ' + got;
+        for (var k = 0; k < 8; k++) { var tq = Math.max(0, at - k * 0.015), tp = path(tq); g.fillStyle = 'rgba(40, 90, 230, ' + (0.6 - k * 0.07) + ')'; g.beginPath(); g.arc(tp[0], tp[1] - 20, 18 - k, 0, Math.PI * 2); g.fill(); }
+        g.fillStyle = 'rgb(30 80 220)'; g.beginPath(); g.arc(me[0], me[1] - 20, 18, 0, Math.PI * 2); g.fill();
+        if (t > 3.0) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.0) / 0.6)); }
+        return t < 3.7;
       });
     },
   };
