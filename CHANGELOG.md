@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.65.0] — 2026-10-03
+
+### Added
+
+Showcase:
+
+- **Sixteen more franchise intros** (sixty-six in all), each with its own confetti: Sharknado (a
+  tornado full of sharks), The Ring (static and a well), 28 Days Later (a red spread over a city
+  map), Blair Witch (torchlight in the woods), Deadpool (captions that comment on your collection),
+  Blade (a red strobe and a silver arc), RoboCop (a robotic display and three directives), Kingsman
+  (an umbrella spinning open and shut), Men in Black (dark glasses and a flash), TRON (light trails
+  on a neon grid), The Godfather (a sepia room and an elegant title), Planet of the Apes (ruins at
+  sunset), How to Train Your Dragon (a dragon through dusk clouds), Cars (stripes and a checkered
+  flag), Night at the Museum (a skeleton that turns its head) and Narnia (wardrobe doors onto snowy
+  woods).
+
 ## [0.64.0] — 2026-10-02
 
 ### Added

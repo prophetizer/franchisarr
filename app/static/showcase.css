@@ -1291,6 +1291,45 @@
   translate: -50% 0;
   white-space: nowrap;
 }
+/* The 0.65.0 intros' pieces. */
+[data-look="showcase"] .sc-captions {
+  display: grid;
+  gap: 1.2rem;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  translate: -50% -50%;
+  width: min(34rem, 88vw);
+}
+[data-look="showcase"] .sc-caption-box {
+  border: 3px solid;
+  box-shadow: 0.4rem 0.4rem 0 color-mix(in srgb, var(--sc-page) 80%, transparent);
+  font-family: "Comic Sans MS", "Chalkboard SE", system-ui, sans-serif;
+  font-size: clamp(1rem, 2.6vw, 1.35rem);
+  font-weight: 700;
+  margin: 0;
+  padding: 0.8rem 1rem;
+  text-transform: uppercase;
+}
+[data-look="showcase"] .sc-slash--down { rotate: 34deg; top: 50%; }
+[data-look="showcase"] .sc-glasses { left: 50%; position: absolute; top: 40%; width: min(70vw, 26rem); }
+[data-look="showcase"] .sc-glasses svg { display: block; width: 100%; }
+[data-look="showcase"] .sc-sepia-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.2rem, 7vw, 4.8rem);
+  font-style: italic;
+  left: 50%;
+  margin: 0;
+  position: absolute;
+  text-align: center;
+  top: 42%;
+  translate: -50% -50%;
+  white-space: nowrap;
+}
+[data-look="showcase"] .sc-doors { display: grid; grid-template-columns: 1fr 1fr; inset: 0; perspective: 1400px; position: absolute; }
+[data-look="showcase"] .sc-door { display: block; height: 100%; }
+[data-look="showcase"] .sc-door--left { transform-origin: left center; }
+[data-look="showcase"] .sc-door--right { transform-origin: right center; }
 [data-look="showcase"] .sc-intro-replay { font-size: 0.85rem; margin: 0 0 0.4rem; padding: 0.25rem 0.75rem; width: auto; }
 [data-look="showcase"] .sc-intro canvas { height: 100%; width: 100%; }
 [data-look="showcase"] .sc-intro-skip {

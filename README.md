@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.64.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.65.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -251,7 +251,7 @@ empty and finished pages get a little scene; a set's poster is black and white w
 up it as far as you own, and a detail page's poster stands as a 3D box set; coming-soon films
 count down their days on a split-flap board; a watched film's poster has its ticket punched; TV
 shows sit in old CRT screens; a trailer dims the house lights; a running scan plays on a
-projector; Activity's adds are a roll of ticket stubs; and fifty franchises open with a nod to their films ([listed
+projector; Activity's adds are a roll of ticket stubs; and sixty-six franchises open with a nod to their films ([listed
 below](#franchise-intros)) (and there's a code for a retro VHS mode, if you know it); **Ctrl+K** (Cmd+K on a Mac) searches from anywhere; and in October horror sets glow
 pumpkin, in December the top bar frosts over. The release strip
 **plays** as it comes on screen (posters fly in in order, the ones you own light up, a ring fills
@@ -355,6 +355,22 @@ lists (and on the shelf), the home page's rows and spotlight, the Trophy case, s
 | The Hunger Games | *Hunger Games* | An arena countdown, a cannon for each missing film, and three lights rising across the sky |
 | The Mummy | *The Mummy…* | Sand blows across a wall of carved symbols, gathers into a great face and crumbles away |
 | Superman | *Superman* | Clouds rush past as if climbing; a red-and-blue streak shoots up through them, and a flash |
+| Sharknado | *Sharknado* | A tornado spins up, sharks whirling round in it, then tears off sideways |
+| The Ring | *The Ring…* | Static, a stone well in a dark clearing, static again, and the set switches off to a line |
+| 28 Days Later | *28 Days…*, *28 Weeks…*, *28 Years…* | A red spread across an empty city map, a stage per film, as the days count up |
+| Blair Witch | *Blair Witch* | Shaky torchlight in dark woods, twig figures hanging from the branches, and the camera drops |
+| Deadpool | *Deadpool* | Comic captions that know they're in an intro and comment on your collection, then two slashes |
+| Blade | *Blade…* (but not Blade Runner) | A red strobe in the dark, then a silver blade arcs across and the page appears in its wake |
+| RoboCop | *RoboCop* | A robotic display boots, states three directives about your library, and scans the title |
+| Kingsman | *Kingsman* | A black umbrella spins open to fill the screen, then snaps shut on the page (the page stays usable) |
+| Men in Black | *Men in Black* | Dark glasses slide down, then a flash — and you never saw how many films are missing |
+| TRON | *TRON* | Light trails race across a neon grid, turning square corners, then the grid flies off |
+| The Godfather | *Godfather* | A dim, sepia room with smoke under one lamp; the title fades up in an elegant hand and dissolves |
+| Planet of the Apes | *Planet of the Apes* | A red sunset over overgrown ruins, and an ape's silhouette with a spear rising on the skyline |
+| How to Train Your Dragon | *How to Train Your Dragon* | A dragon silhouette swoops past through dusk clouds, wings beating, and banks away |
+| Cars | *Cars…* | Racing stripes zoom past, then a checkered flag waves and sweeps the page in |
+| Night at the Museum | *Night at the Museum* | A dark hall, the lights flicker on, and a dinosaur skeleton turns its head to look at you |
+| The Chronicles of Narnia | *Narnia* | Wardrobe doors open on snowy woods, a lamp-post glowing in the snow |
 
 ## Search
 

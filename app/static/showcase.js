@@ -360,6 +360,22 @@
     [/hunger games/i, ['rgb(230 200 120)', 'rgb(200 60 30)', 'rgb(40 40 40)'], 'spark'],
     [/^the mummy\b/i, ['rgb(235 200 140)', 'rgb(150 110 60)', 'rgb(60 120 160)'], 'spark'],
     [/superman/i, ['rgb(30 80 220)', 'rgb(220 30 40)', 'rgb(255 210 40)'], 'rect'],
+    [/sharknado/i, ['rgb(70 85 100)', 'rgb(160 175 180)', 'rgb(200 40 40)'], 'rect'],
+    [/^the ring\b/i, ['rgb(200 200 200)', 'rgb(60 60 60)', 'rgb(40 70 60)'], 'rect'],
+    [/28 (days|weeks|years)/i, ['rgb(200 20 20)', 'rgb(150 160 170)'], 'spark'],
+    [/blair witch/i, ['rgb(200 180 150)', 'rgb(90 70 50)'], 'rod'],
+    [/deadpool/i, ['rgb(190 20 30)', 'rgb(20 10 10)', 'rgb(255 236 120)'], 'rect'],
+    [/^blade\b(?! runner)/i, ['rgb(190 0 0)', 'rgb(230 235 245)'], 'rod'],
+    [/robocop/i, ['rgb(190 225 255)', 'rgb(120 130 150)'], 'rect'],
+    [/kingsman/i, ['rgb(20 20 24)', 'rgb(160 130 70)', 'rgb(240 240 240)'], 'rect'],
+    [/men in black/i, ['rgb(16 16 18)', 'rgb(255 255 255)', 'rgb(120 220 120)'], 'rect'],
+    [/^tron\b/i, ['rgb(80 230 255)', 'rgb(255 150 40)', 'rgb(240 250 255)'], 'rod'],
+    [/godfather/i, ['rgb(232 210 170)', 'rgb(120 20 20)', 'rgb(40 30 20)'], 'rect'],
+    [/planet of the apes/i, ['rgb(230 110 50)', 'rgb(120 30 30)', 'rgb(250 170 80)'], 'rect'],
+    [/how to train your dragon/i, ['rgb(60 50 110)', 'rgb(220 120 110)', 'rgb(250 180 120)'], 'spark'],
+    [/^cars\b/i, ['rgb(220 30 30)', 'rgb(255 210 30)', 'rgb(20 20 20)', 'rgb(245 245 245)'], 'rect'],
+    [/night at the museum/i, ['rgb(230 220 195)', 'rgb(255 230 180)', 'rgb(120 90 60)'], 'rect'],
+    [/narnia/i, ['rgb(255 255 255)', 'rgb(255 220 140)', 'rgb(40 60 56)'], 'spark'],
   ];
 
   // ------------------------------------------------------------ confetti (0.49.0)
