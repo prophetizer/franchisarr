@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.61.1`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.62.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -247,7 +247,11 @@ page ends with its **end credits** rolling up — each title, its year and who d
 End*, or *To be continued…* while titles are missing; adding a film prints you a ticket stub;
 **📚 Shelf** shows Collections or Franchises as box sets on a shelf; clicking an owned film's
 poster (or the page's own) opens it large; a projector beam shines across the home spotlight;
-empty and finished pages get a little scene; and nineteen franchises open with a nod to their films ([listed
+empty and finished pages get a little scene; a set's poster is black and white with colour risen
+up it as far as you own, and a detail page's poster stands as a 3D box set; coming-soon films
+count down their days on a split-flap board; a watched film's poster has its ticket punched; TV
+shows sit in old CRT screens; a trailer dims the house lights; a running scan plays on a
+projector; Activity's adds are a roll of ticket stubs; and nineteen franchises open with a nod to their films ([listed
 below](#franchise-intros)) (and there's a code for a retro VHS mode, if you know it); **Ctrl+K** (Cmd+K on a Mac) searches from anywhere; and in October horror sets glow
 pumpkin, in December the top bar frosts over. The release strip
 **plays** as it comes on screen (posters fly in in order, the ones you own light up, a ring fills

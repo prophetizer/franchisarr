@@ -1685,6 +1685,194 @@
 @keyframes sc-reel { to { rotate: -360deg; } }
 [data-look="showcase"] .sc-scene-sprockets { stroke: var(--sc-page); }
 
+/* ================================================================ more cinema (0.62.0) */
+
+/* ---------------------------------------------------------------- colour fills as you collect */
+/* A set's poster in black and white, a colour copy over it cut off at the owned share. */
+[data-look="showcase"] .sc-filling { position: relative; }
+[data-look="showcase"] .sc-grey { filter: grayscale(1) brightness(0.8); }
+/* Sized like the poster itself, not its box: a list card's poster box stretches to the card. */
+[data-look="showcase"] .sc-colour {
+  aspect-ratio: 2 / 3;
+  border-radius: inherit;
+  clip-path: inset(calc(100% - var(--sc-fill, 0%)) 0 0 0);
+  height: auto;
+  inset: 0 0 auto 0;
+  max-width: none;
+  object-fit: cover;
+  position: absolute;
+  transition: clip-path 1.8s var(--sc-ease) 0.3s;
+  width: 100%;
+  z-index: 1;
+}
+[data-look="showcase"] .sc-box-front .sc-colour { animation: none; box-shadow: none; view-transition-name: none; }
+
+/* ---------------------------------------------------------------- 3D box set */
+[data-look="showcase"] .sc-box { display: block; flex: 0 0 8rem; perspective: 900px; width: 8rem; }
+[data-look="showcase"] .sc-box-turn {
+  display: block;
+  position: relative;
+  transform: rotateY(var(--sc-by, 16deg)) rotateX(var(--sc-bx, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 0.6s var(--sc-ease);
+}
+[data-look="showcase"] .sc-box-front { display: block; position: relative; }
+[data-look="showcase"] .sc-box-front > :is(img, .sc-holo-wrap, .poster-mosaic) { flex: none; width: 100%; }
+/* the spine: the same art, darker, standing back from the poster's left edge */
+[data-look="showcase"] .sc-box-spine {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--sc-page) 55%, transparent), color-mix(in srgb, var(--sc-page) 20%, transparent)),
+    var(--sc-art, none) left center / auto 100%, var(--pico-card-background-color);
+  border-radius: 2px 0 0 2px;
+  bottom: 0;
+  left: 0;
+  position: absolute;
+  top: 0;
+  transform: rotateY(90deg);
+  transform-origin: left center;
+  width: 1.4rem;
+}
+
+/* ---------------------------------------------------------------- split-flap countdowns */
+[data-look="showcase"] .sc-flap { align-items: center; display: flex; gap: 0.15rem; margin: 0.15rem 0 0.4rem; }
+[data-look="showcase"] .sc-flap-cell {
+  background: linear-gradient(var(--sc-dark, var(--sc-page)) 0 49%, color-mix(in srgb, var(--pico-contrast) 30%, var(--sc-page)) 49% 51%, var(--sc-dark, var(--sc-page)) 51%);
+  border-radius: 0.2rem;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pico-contrast) 15%, transparent);
+  color: var(--sc-gold);
+  display: inline-block;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.6rem;
+  min-width: 1.15rem;
+  text-align: center;
+}
+[data-look="showcase"] .sc-flap-cell.is-flipping { animation: sc-flap 0.07s linear; }
+@keyframes sc-flap {
+  from { rotate: x 0deg; }
+  50% { rotate: x 80deg; }
+  to { rotate: x 0deg; }
+}
+[data-look="showcase"] .sc-flap-unit { color: var(--pico-muted-color); margin-left: 0.25rem; text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* ---------------------------------------------------------------- punched tickets */
+[data-look="showcase"] .collection-poster:has(> .sc-punch) { position: relative; }
+[data-look="showcase"] .sc-punch {
+  background: var(--pico-card-background-color);
+  border-radius: 50%;
+  box-shadow: inset 0 0.1rem 0.2rem color-mix(in srgb, var(--sc-dark, var(--sc-page)) 80%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--pico-contrast) 30%, transparent);
+  height: 0.85rem;
+  left: 0.35rem;
+  position: absolute;
+  top: 0.35rem;
+  width: 0.85rem;
+  z-index: 4;
+}
+
+/* ---------------------------------------------------------------- old TV screens */
+/* A show's poster in a rounded CRT: a bezel round it, scanlines and a curved-glass shine over it. */
+[data-look="showcase"] .collection-card.is-show .collection-poster {
+  border-radius: 14% / 10%;
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--pico-contrast) 14%, var(--sc-page)),
+    0 0 0 0.32rem color-mix(in srgb, var(--pico-contrast) 30%, transparent);
+  overflow: hidden;
+  position: relative;
+}
+[data-look="showcase"] .collection-card.is-show .collection-poster img { border-radius: inherit; }
+[data-look="showcase"] .sc-crt {
+  background:
+    radial-gradient(ellipse at 30% 20%, color-mix(in srgb, var(--pico-contrast) 18%, transparent), transparent 45%),
+    repeating-linear-gradient(to bottom, transparent 0 2px, color-mix(in srgb, var(--sc-dark, var(--sc-page)) 28%, transparent) 2px 3px),
+    radial-gradient(ellipse at center, transparent 60%, color-mix(in srgb, var(--sc-dark, var(--sc-page)) 55%, transparent) 100%);
+  border-radius: inherit;
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 3;
+}
+
+/* ---------------------------------------------------------------- house lights */
+[data-look="showcase"] .sc-house {
+  background: var(--sc-dark);
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: fixed;
+  transition: opacity 1.4s ease;
+  z-index: 998;   /* under the trailer's dialog (Pico's 999) */
+}
+[data-look="showcase"] .sc-house.is-down { opacity: 0.88; }
+
+/* ---------------------------------------------------------------- scan projector */
+[data-look="showcase"] #scan-status article:has(.sc-projector) .sc-reel { display: none; }
+[data-look="showcase"] .sc-projector { align-items: center; display: flex; gap: 0.5rem; margin-bottom: var(--pico-spacing); }
+[data-look="showcase"] .sc-projector-art { flex: 0 0 9rem; height: auto; width: 9rem; }
+[data-look="showcase"] .sc-projector-art circle { fill: none; stroke: var(--pico-muted-color); stroke-width: 2.5; }
+[data-look="showcase"] .sc-projector-art .sc-hole { fill: var(--pico-muted-color); stroke: none; }
+[data-look="showcase"] .sc-projector-reel { animation: sc-reel 2.4s linear infinite; }
+[data-look="showcase"] .sc-projector-film { fill: none; stroke: var(--pico-muted-color); stroke-dasharray: 2 2; stroke-width: 2; }
+[data-look="showcase"] .sc-projector-body { fill: color-mix(in srgb, var(--pico-muted-color) 45%, transparent); stroke: var(--pico-muted-color); stroke-width: 1.5; }
+[data-look="showcase"] .sc-projector-beam { fill: color-mix(in srgb, var(--sc-glow) 30%, transparent); animation: sc-beam-hum 0.3s steps(2) infinite; }
+/* the countdown leader: crosshairs, two rings, and the sweep filled to the scan's progress */
+[data-look="showcase"] .sc-leader {
+  align-items: center;
+  background:
+    linear-gradient(var(--pico-muted-color), var(--pico-muted-color)) center / 1px 100% no-repeat,
+    linear-gradient(var(--pico-muted-color), var(--pico-muted-color)) center / 100% 1px no-repeat,
+    radial-gradient(circle, transparent 58%, var(--pico-muted-color) 59% 61%, transparent 62%),
+    conic-gradient(color-mix(in srgb, var(--sc-glow) 55%, transparent) calc(var(--sc-p, 0) * 1%), color-mix(in srgb, var(--pico-contrast) 6%, transparent) 0);
+  border: 2px solid var(--pico-muted-color);
+  border-radius: 50%;
+  display: inline-flex;
+  flex: 0 0 5rem;
+  height: 5rem;
+  justify-content: center;
+  width: 5rem;
+}
+[data-look="showcase"] .sc-leader b { color: var(--pico-h1-color); font-size: 1.15rem; text-shadow: 0 0 0.4rem var(--sc-page); }
+[data-look="showcase"] .sc-leader.is-unknown { animation: sc-leader-sweep 1.2s linear infinite; }
+@keyframes sc-leader-sweep {
+  from { --sc-p: 0; }
+  to { --sc-p: 100; }
+}
+
+/* ---------------------------------------------------------------- ticket stubs (Activity) */
+[data-look="showcase"] .sc-stubs { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); list-style: none; margin: 0 0 var(--pico-block-spacing-vertical); padding: 0; }
+[data-look="showcase"] .sc-stub {
+  animation: sc-rise 0.6s var(--sc-ease) calc(var(--i, 0) * 0.04s) both;
+  color: var(--sc-paper-ink);
+  display: flex;
+  font-family: Georgia, "Times New Roman", serif;
+  list-style: none;
+  margin: 0;
+  rotate: calc((var(--i, 0) - 6) * 0.15deg);
+}
+[data-look="showcase"] .sc-stub > div { background: var(--sc-paper); padding: 0.6rem 0.8rem; }
+[data-look="showcase"] .sc-stub-main { border-radius: 0.3rem 0 0 0.3rem; display: flex; flex: 1; flex-direction: column; min-width: 0; }
+[data-look="showcase"] .sc-stub-main strong { color: inherit; font-size: 1.05rem; overflow-wrap: anywhere; }
+[data-look="showcase"] .sc-stub-main strong small { color: inherit; opacity: 0.65; }
+[data-look="showcase"] .sc-stub-kicker { font-size: 0.65rem; letter-spacing: 0.25em; text-transform: uppercase; }
+[data-look="showcase"] .sc-stub-where { font-size: 0.78rem; opacity: 0.8; }
+[data-look="showcase"] .sc-stub-side {
+  align-items: center;
+  border-left: 2px dashed color-mix(in srgb, var(--sc-paper-ink) 45%, transparent);
+  border-radius: 0 0.3rem 0.3rem 0;
+  display: flex;
+  flex: 0 0 5.5rem;
+  justify-content: center;
+  text-align: center;
+}
+[data-look="showcase"] .sc-stub-stamp {
+  border: 2px solid color-mix(in srgb, var(--sc-paper-ink) 70%, transparent);
+  border-radius: 0.25rem;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  padding: 0.15rem 0.3rem;
+  rotate: -8deg;
+}
+
 /* Phones: no tilt (there's no pointer to follow) and a calmer banner. */
 @media (pointer: coarse), (max-width: 767px) {
   [data-look="showcase"] .collection-heading.has-backdrop { min-height: 22rem; }
@@ -1700,6 +1888,7 @@
   [data-look="showcase"] .poster-wall-row { animation: none !important; }   /* a still wall */
   [data-look="showcase"] .poster-wall-row:nth-child(n+3) { display: none; }
   [data-look="showcase"] .sc-holo-wrap { flex-basis: 6rem; width: 6rem; }
+  [data-look="showcase"] .sc-box { flex-basis: 6rem; margin-bottom: var(--pico-spacing); width: 6rem; }
   [data-look="showcase"] .sc-lightbox-close { right: 0.5rem; top: 0.5rem; }
 }
 

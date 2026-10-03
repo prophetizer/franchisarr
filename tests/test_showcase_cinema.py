@@ -196,3 +196,44 @@ def test_nothing_falls_in_october_or_december() -> None:
     js = (HERE / "app" / "static" / "showcase.js").read_text()
     assert not any(mark in js for mark in ("🍂", "🍁", "❄", "❅", "❆", "sc-sky"))
     assert "root.classList.add('sc-october');" in js and "root.classList.add('sc-december');" in js
+
+
+# ------------------------------------------------------------------ 0.62.0
+
+
+def _render(source: str) -> str:
+    from app.templating import get_templates
+
+    return get_templates().env.from_string(source).render()
+
+
+def test_a_show_tile_is_marked_for_its_tv_screen_and_a_film_tile_is_not() -> None:
+    show = _render('{% from "partials/tile.html" import tile %}{% call tile("/p.jpg", "owned", show=True) %}x{% endcall %}')
+    film = _render('{% from "partials/tile.html" import tile %}{% call tile("/p.jpg", "owned") %}x{% endcall %}')
+    assert 'film-tile owned is-show"' in show and "is-show" not in film
+
+
+def test_films_on_the_spin_offs_page_stay_out_of_the_tv_frame() -> None:
+    page = (HERE / "app" / "templates" / "shows.html").read_text()
+    films = page[page.index("films_from_shows %}"):]
+    assert "'#add-dialog', none, show=False) }}" in films
+
+
+def test_release_dates_are_machine_readable_for_the_countdown(client: TestClient) -> None:  # noqa: F811
+    _seed_collection(with_upcoming=True)
+    page = client.get(f"{BASE}/collections/{COLLECTION}").text
+    assert 'expected <time datetime="2099-01-01">2099-01-01</time>' in page
+    for name in ("franchise_detail.html", "director_detail.html", "upcoming.html"):
+        assert '<time datetime="{{' in (HERE / "app" / "templates" / name).read_text(), name
+
+
+def test_the_banner_says_how_much_is_owned_for_the_colour_fill(client: TestClient) -> None:  # noqa: F811
+    _seed_collection()
+    assert 'data-have="1" data-of="3"' in client.get(f"{BASE}/collections/{COLLECTION}").text
+    assert 'data-have="{{ f.owned }}" data-of="{{ f.total }}"' in (HERE / "app" / "templates" / "franchise_detail.html").read_text()
+
+
+def test_activity_marks_its_table_for_the_stubs() -> None:
+    assert "<table data-stubs>" in (HERE / "app" / "templates" / "activity.html").read_text()
+    js = (HERE / "app" / "static" / "showcase-cinema.js").read_text()
+    assert "document.querySelector('table[data-stubs]')" in js and "ledger.hidden = true;" in js

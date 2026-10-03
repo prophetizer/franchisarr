@@ -42,7 +42,7 @@
               <strong class="month-label">{{ film.month_label }}</strong>
               {% if film.release_date %}
                 {% set days = film.days_until(today) %}
-                · {{ film.release_date }}
+                · <time datetime="{{ film.release_date }}">{{ film.release_date }}</time>
                 {% if days is not none %}
                   {% if days == 0 %}· <strong>today</strong>
                   {% elif days == 1 %}· tomorrow

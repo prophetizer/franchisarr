@@ -21,7 +21,7 @@
     </small></p>
     <div class="collection-grid collection-grid--compact">
       {% for candidate in candidates %}
-        {% call tile(candidate.poster, 'candidate') %}
+        {% call tile(candidate.poster, 'candidate', show=True) %}
           <header>
             <strong class="film-title">{{ candidate.spinoff_name }}</strong>
             {% if candidate.first_air_year %}<small class="muted">({{ candidate.first_air_year }})</small>{% endif %}

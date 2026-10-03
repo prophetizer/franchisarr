@@ -10,7 +10,7 @@
 {% include "partials/celebration.html" %}
 {#- Showcase's October touch looks for this (0.51.0). -#}
 {% if horror %}<span data-sc-horror hidden></span>{% endif %}
-<div class="collection-heading{% if gap.backdrop %} has-backdrop{% endif %}"{% if gap.owned and not gap.missing %} data-complete{% endif %}{% if mood %} data-mood="{{ mood }}"{% endif %}>
+<div class="collection-heading{% if gap.backdrop %} has-backdrop{% endif %}"{% if gap.owned and not gap.missing %} data-complete{% endif %}{% if mood %} data-mood="{{ mood }}"{% endif %} data-have="{{ gap.owned | length }}" data-of="{{ gap.total }}">
   {% if gap.backdrop %}
     <div class="collection-backdrop-frame" aria-hidden="true">
       <img class="collection-backdrop" src="{{ gap.backdrop }}" alt="" decoding="async"
@@ -68,7 +68,7 @@
         {% call tile(movie.poster, 'upcoming') %}
           <header><strong class="film-title">{{ movie.title }}</strong></header>
           <p class="collection-counts muted"><span>
-            {% if movie.release_date %}expected {{ movie.release_date }}{% else %}no release date announced{% endif %}
+            {% if movie.release_date %}expected <time datetime="{{ movie.release_date }}">{{ movie.release_date }}</time>{% else %}no release date announced{% endif %}
           </span></p>
           {% if user and user.is_admin %}
           <p class="card-actions">

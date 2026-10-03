@@ -13,7 +13,8 @@
     <p>Adds you make will be listed here.</p>
   </article>
 {% else %}
-  <table>
+  {#- Showcase prints these as ticket stubs (0.62.0); the table stays for Classic. -#}
+  <table data-stubs>
     <thead>
       <tr><th>When</th><th>What</th><th>Where</th><th>Triggered by</th></tr>
     </thead>

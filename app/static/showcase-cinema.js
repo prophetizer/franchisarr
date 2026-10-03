@@ -7,6 +7,15 @@
 //   shelf      -- the Collections and Franchises grids can be shown as box-set spines on a shelf
 //   lightbox   -- an owned or upcoming film's poster, or the page's own, opens large
 //   scenes     -- empty and finished pages get a small scene instead of bare words
+// and since 0.62.0:
+//   colour     -- a set's poster is black and white, colour risen up it as far as you own
+//   box        -- a detail page's poster stands as a 3D box set, turning with the pointer
+//   flaps      -- a coming-soon film counts down its days on a split-flap board
+//   punch      -- a watched film's poster has a ticket-punch hole where the tag was
+//   screens    -- a TV show's poster sits in an old CRT screen
+//   house      -- playing a trailer dims the room; closing it brings the lights back up
+//   projector  -- a running scan plays on a projector into a countdown leader
+//   stubs      -- Activity's adds as a roll of ticket stubs
 // "Reduce motion" keeps them all still: no printing, chasing, rolling, flicker or drifting.
 (function () {
   'use strict';
@@ -366,11 +375,250 @@
   };
   stage();
 
-  // htmx brings new content -- a result dialog, a re-rendered list, search results.
+  // ------------------------------------------------------------ colour fills as you collect (0.62.0)
+  // A set's poster is black and white with colour risen up it as far as you own: a coloured copy
+  // over a greyscale one, cut off at the owned share, rising into place as the page opens. A
+  // complete set's poster is all colour.
+  var fillPoster = function (img, host, share) {
+    if (!img || img.tagName !== 'IMG' || !(share < 1) || host.querySelector(':scope > .sc-colour')) { return; }
+    var colour = img.cloneNode(false);
+    colour.className = 'sc-colour';
+    colour.alt = '';
+    colour.removeAttribute('loading');
+    colour.setAttribute('aria-hidden', 'true');
+    host.classList.add('sc-filling');
+    img.classList.add('sc-grey');
+    host.appendChild(colour);
+    var pct = (Math.max(0, share) * 100).toFixed(1) + '%';
+    if (reduce) { colour.style.setProperty('--sc-fill', pct); return; }
+    setTimeout(function () { colour.style.setProperty('--sc-fill', pct); }, 60);   // after a first paint at none
+  };
+  var fillCards = function (scope) {
+    scope.querySelectorAll('.collection-card:not(.film-tile)').forEach(function (card) {
+      var bar = card.querySelector('progress.completeness');
+      var poster = card.querySelector('.collection-poster');
+      if (bar && poster) { fillPoster(poster.querySelector(':scope > img'), poster, bar.value / (bar.max || 1)); }
+    });
+  };
+  fillCards(document);
+
+  // ------------------------------------------------------------ 3D box set (0.62.0)
+  // A detail page's poster stands as a box set: the poster its front, a darker strip of the same
+  // art its spine, turned a little and following the pointer. It holds the colour fill too.
+  var heading = document.querySelector('.collection-heading');
+  var face = heading && (heading.querySelector('.sc-holo-wrap') || heading.querySelector('.collection-heading-poster'));
+  if (face) {
+    var art = face.tagName === 'IMG' ? face : face.querySelector('img');
+    var boxSet = make('span', 'sc-box');
+    var turn = make('span', 'sc-box-turn');
+    var spine = make('span', 'sc-box-spine');
+    var front = make('span', 'sc-box-front');
+    spine.setAttribute('aria-hidden', 'true');
+    if (art) { spine.style.setProperty('--sc-art', 'url("' + (art.currentSrc || art.src).replace(/"/g, '%22') + '")'); }
+    face.parentNode.insertBefore(boxSet, face);
+    boxSet.appendChild(turn);
+    turn.appendChild(spine);
+    turn.appendChild(front);
+    front.appendChild(face);
+    var have = parseInt(heading.getAttribute('data-have'), 10), of = parseInt(heading.getAttribute('data-of'), 10);
+    if (face.tagName === 'IMG' && of > 0) { fillPoster(face, front, have / of); }
+    if (!reduce && !phone) {
+      heading.addEventListener('pointermove', function (event) {
+        var rect = heading.getBoundingClientRect();
+        var x = (event.clientX - rect.left) / rect.width, y = (event.clientY - rect.top) / rect.height;
+        turn.style.setProperty('--sc-by', (6 + x * 26).toFixed(1) + 'deg');
+        turn.style.setProperty('--sc-bx', ((0.5 - y) * 8).toFixed(1) + 'deg');
+      });
+      heading.addEventListener('pointerleave', function () {
+        turn.style.removeProperty('--sc-by');
+        turn.style.removeProperty('--sc-bx');
+      });
+    }
+  }
+
+  // ------------------------------------------------------------ split-flap countdowns (0.62.0)
+  // A film that isn't out yet counts down on a station board: the days to its release flick
+  // through the digits and settle, when the board comes on screen.
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  var flipTo = function (cell, final, delay) {
+    if (reduce) { cell.textContent = final; return; }
+    var spins = 4 + Math.floor(delay / 90);
+    var tick = function () {
+      cell.classList.remove('is-flipping');
+      void cell.offsetWidth;
+      cell.classList.add('is-flipping');
+      if (spins-- > 0) {
+        cell.textContent = /\d/.test(final) ? String(Math.floor(Math.random() * 10)) : final;
+        setTimeout(tick, 70);
+      } else {
+        cell.textContent = final;
+      }
+    };
+    setTimeout(tick, delay);
+  };
+  var boards = [];
+  var playBoard = function (board) {
+    if (board.dataset.played) { return; }
+    board.dataset.played = 'yes';
+    board.querySelectorAll('.sc-flap-cell').forEach(function (cell, i) { flipTo(cell, cell.dataset.final, i * 140); });
+  };
+  var boardWatch = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) { boardWatch.unobserve(e.target); playBoard(e.target); } });
+  }, { threshold: 0.6 }) : null;
+  // An on-screen check behind the observer, which the browser pane has been known to skip.
+  var boardsOnScreen = function () {
+    boards.forEach(function (board) {
+      var r = board.getBoundingClientRect();
+      if (r.top < window.innerHeight && r.bottom > 0 && r.width) { playBoard(board); }
+    });
+  };
+  window.addEventListener('scroll', boardsOnScreen, { passive: true });
+  window.addEventListener('load', boardsOnScreen);
+  var countdowns = function (scope) {
+    scope.querySelectorAll('.film-tile time[datetime]').forEach(function (time) {
+      var tile = time.closest('.film-tile');
+      if (tile.querySelector('.sc-flap')) { return; }
+      var day = new Date(time.getAttribute('datetime') + 'T00:00:00');
+      var days = Math.round((day - today) / 864e5);
+      if (isNaN(days) || days < 0) { return; }
+      var text = days === 0 ? 'TODAY' : (days > 999 ? '999' : ('00' + days).slice(-3));
+      var board = make('span', 'sc-flap');
+      board.setAttribute('aria-hidden', 'true');   // the date beside it says the same
+      text.split('').forEach(function (ch) {
+        var cell = make('span', 'sc-flap-cell', ch);   // right from the start: the flip is a flourish
+        cell.dataset.final = ch;
+        board.appendChild(cell);
+      });
+      if (days !== 0) { board.appendChild(make('small', 'sc-flap-unit', (days > 999 ? '+ ' : '') + (days === 1 ? 'day' : 'days'))); }
+      var line = time.closest('p') || time.parentNode;
+      line.parentNode.insertBefore(board, line.nextSibling);
+      if (boardWatch) { boardWatch.observe(board); } else { playBoard(board); }
+      boards.push(board);
+    });
+  };
+  countdowns(document);
+
+  // ------------------------------------------------------------ punched tickets (0.62.0)
+  // A film you've watched has its ticket punched: a hole in the poster's corner, where the
+  // "watched" tag was (the tag stays for screen readers, and as the hole's tooltip).
+  var punch = function (scope) {
+    scope.querySelectorAll('.film-tile .watched-mark').forEach(function (mark) {
+      var poster = mark.closest('.film-tile').querySelector('.collection-poster');
+      if (!poster || poster.querySelector('.sc-punch')) { return; }
+      var hole = make('span', 'sc-punch');
+      hole.title = mark.title || 'Watched';
+      hole.setAttribute('aria-hidden', 'true');
+      poster.appendChild(hole);
+      mark.classList.add('sc-sr');
+    });
+  };
+  punch(document);
+
+  // ------------------------------------------------------------ old TV screens (0.62.0)
+  // A show's poster sits in a rounded CRT screen, with faint scanlines across it.
+  var screens = function (scope) {
+    scope.querySelectorAll('.collection-card.is-show .collection-poster').forEach(function (poster) {
+      if (poster.querySelector('.sc-crt')) { return; }
+      var glass = make('span', 'sc-crt');
+      glass.setAttribute('aria-hidden', 'true');
+      poster.appendChild(glass);
+    });
+  };
+  screens(document);
+
+  // ------------------------------------------------------------ house lights (0.62.0)
+  // Playing a trailer dims the room like a cinema before the film; closing it brings the lights
+  // back up. The trailer arrives in #trailer and leaves by being emptied.
+  root.style.setProperty('--sc-dark', 'rgb(0 0 0)');
+  var screenRoom = document.getElementById('trailer');
+  if (screenRoom) {
+    var house = null;
+    new MutationObserver(function () {
+      var playing = !!screenRoom.firstElementChild;
+      if (playing && !house) {
+        house = make('div', 'sc-house');
+        house.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(house);
+        setTimeout(function () { if (house) { house.classList.add('is-down'); } }, 30);
+      } else if (!playing && house) {
+        var leaving = house;
+        house = null;
+        leaving.classList.remove('is-down');
+        setTimeout(function () { leaving.remove(); }, reduce ? 0 : 1500);
+      }
+    }).observe(screenRoom, { childList: true });
+  }
+
+  // ------------------------------------------------------------ scan projector (0.62.0)
+  // A running scan is shown on a projector: reels turning, film running into a countdown leader
+  // that fills to the scan's progress, with the percentage in its middle.
+  var PROJECTOR = '<svg class="sc-projector-art" viewBox="0 0 130 74">' +
+    '<g class="sc-projector-reel" style="transform-origin: 30px 20px"><circle cx="30" cy="20" r="17"/>' +
+    '<circle cx="30" cy="9" r="4" class="sc-hole"/><circle cx="40" cy="25" r="4" class="sc-hole"/><circle cx="20" cy="25" r="4" class="sc-hole"/></g>' +
+    '<g class="sc-projector-reel" style="transform-origin: 70px 20px"><circle cx="70" cy="20" r="17"/>' +
+    '<circle cx="70" cy="9" r="4" class="sc-hole"/><circle cx="80" cy="25" r="4" class="sc-hole"/><circle cx="60" cy="25" r="4" class="sc-hole"/></g>' +
+    '<path d="M30 37 L44 37 M70 37 L56 37" class="sc-projector-film"/>' +
+    '<rect x="16" y="36" width="70" height="28" rx="5" class="sc-projector-body"/>' +
+    '<rect x="86" y="43" width="12" height="14" rx="2" class="sc-projector-body"/>' +
+    '<polygon points="98,46 130,30 130,70 98,54" class="sc-projector-beam"/></svg>';
+  var projector = function () {
+    var article = document.querySelector('#scan-status article[aria-busy="true"]');
+    if (!article || article.querySelector('.sc-projector')) { return; }
+    var bar = article.querySelector('progress');
+    var known = bar && bar.hasAttribute('value') && bar.max;
+    var pct = known ? Math.min(100, Math.round(bar.value / bar.max * 100)) : null;
+    var rig = make('div', 'sc-projector');
+    rig.setAttribute('aria-hidden', 'true');   // the words and the progress bar say it for a reader
+    rig.innerHTML = PROJECTOR;
+    var leader = make('span', 'sc-leader' + (known ? '' : ' is-unknown'));
+    leader.style.setProperty('--sc-p', String(pct || 0));
+    leader.appendChild(make('b', null, known ? pct + '%' : '…'));
+    rig.appendChild(leader);
+    var header = article.querySelector('header');
+    article.insertBefore(rig, header ? header.nextSibling : article.firstChild);
+  };
+  projector();
+
+  // ------------------------------------------------------------ ticket stubs (0.62.0)
+  // Activity's adds as a roll of torn ticket stubs, newest first: the title and where it went on
+  // the ticket, the moment it happened stamped on the stub. The table stays for Classic.
+  var ledger = document.querySelector('table[data-stubs]');
+  if (ledger) {
+    var stubRoll = make('ol', 'sc-stubs');
+    ledger.querySelectorAll('tbody tr').forEach(function (row, i) {
+      var cells = row.querySelectorAll('td');
+      if (cells.length < 4) { return; }
+      var stub = make('li', 'sc-stub');
+      stub.style.setProperty('--i', String(i % 12));
+      var main = make('div', 'sc-stub-main');
+      main.appendChild(make('small', 'sc-stub-kicker', 'Admit one'));
+      var title = make('strong');
+      Array.prototype.forEach.call(cells[1].childNodes, function (n) { title.appendChild(n.cloneNode(true)); });
+      main.appendChild(title);
+      var where = [plain(cells[2]), plain(cells[3])].filter(function (w) { return w && w !== '—'; });
+      main.appendChild(make('span', 'sc-stub-where', where.join(' · ')));
+      var side = make('div', 'sc-stub-side');
+      side.appendChild(make('span', 'sc-stub-stamp', plain(cells[0])));
+      stub.appendChild(main);
+      stub.appendChild(side);
+      stubRoll.appendChild(stub);
+    });
+    ledger.parentNode.insertBefore(stubRoll, ledger);
+    ledger.hidden = true;
+  }
+
+  // htmx brings new content -- a result dialog, a re-rendered list, search results, the scan's
+  // status every two seconds (which replaces itself, so the projector is looked for page-wide).
   document.addEventListener('htmx:afterSwap', function (event) {
     var target = event.target;
     if (!target || !target.querySelectorAll) { return; }
     target.querySelectorAll('dialog[data-ticket]').forEach(printTicket);
     stage(target);
+    fillCards(target);
+    countdowns(target);
+    punch(target);
+    screens(target);
+    projector();
   });
 })();

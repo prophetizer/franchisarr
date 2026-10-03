@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.62.0] — 2026-10-02
+
+### Added
+
+Showcase:
+
+- **Colour fills as you collect**: a set's poster (on the Collections and Franchises cards and on
+  its own page) is black and white, with colour rising up it as far as you own — half a set, colour
+  halfway up. A complete set is in full colour.
+- **3D box set**: a collection's or franchise's poster stands on its banner as a box set with a
+  spine, turning as you move the pointer.
+- **Split-flap countdowns**: a film that isn't out yet shows its days to release on a station-style
+  board that flips through the digits as it comes on screen.
+- **Punched tickets**: a film you've watched has a ticket-punch hole in its poster's corner in place
+  of the "watched" tag.
+- **Old TV screens**: TV shows' posters sit in a rounded CRT screen with faint scanlines, so shows
+  and films tell apart at a glance.
+- **House lights**: playing a trailer slowly dims the page, and closing it brings the lights back.
+- **Scan projector**: a running scan plays on a projector, its reels turning, into a countdown
+  leader that fills to the scan's progress.
+- **Ticket stubs**: the Activity page's adds as a roll of torn ticket stubs, date-stamped.
+
 ## [0.61.1] — 2026-10-02
 
 ### Changed

@@ -32,7 +32,7 @@
       <div class="collection-grid collection-grid--compact">
         {% for r in results[group] %}
           {% set film = r.item_type == 'movie' %}
-          {% call tile(r.poster, r.status if r.status in ('missing', 'upcoming') else '') %}
+          {% call tile(r.poster, r.status if r.status in ('missing', 'upcoming') else '', show=r.item_type == 'show') %}
             <header><strong class="film-title">{{ r.title }}</strong></header>
             <p class="collection-counts muted"><span>
               {{ r.year or '' }}{% if r.year %} · {% endif %}

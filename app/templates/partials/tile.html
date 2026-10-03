@@ -5,9 +5,10 @@
 
    Used inside <div class="collection-grid collection-grid--compact">, or --owned for the smaller
    tiles of titles already in the library. #}
-{% macro tile(poster, css='', about=None) -%}
-  {#- about ("movie/603", "show/1399"): Showcase flips the poster over to its plot (0.51.0). -#}
-  <article class="collection-card collection-card--compact film-tile {{ css }}"{% if about %} data-about="{{ about }}"{% endif %}>
+{% macro tile(poster, css='', about=None, show=False) -%}
+  {#- about ("movie/603", "show/1399"): Showcase flips the poster over to its plot (0.51.0).
+      show: a TV show, which Showcase frames as an old TV screen (0.62.0). -#}
+  <article class="collection-card collection-card--compact film-tile {{ css }}{% if show %} is-show{% endif %}"{% if about %} data-about="{{ about }}"{% endif %}>
     {% if poster %}
       <div class="collection-poster">
         <img src="{{ poster }}" alt="" loading="lazy" decoding="async" width="92" height="138">

@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% from "partials/tile.html" import tile %}
-{% macro suggestion_card(poster, title, year, links, relationships, heuristic, add_url, add_target, dismiss_url) -%}
-  <article class="collection-card collection-card--compact">
+{% macro suggestion_card(poster, title, year, links, relationships, heuristic, add_url, add_target, dismiss_url, show=True) -%}
+  {#- is-show: Showcase frames a show as an old TV screen (0.62.0). -#}
+  <article class="collection-card collection-card--compact{% if show %} is-show{% endif %}">
     {% if poster %}
       <div class="collection-poster">
         <img src="{{ poster }}" alt="" loading="lazy" decoding="async" width="92" height="138">
@@ -103,7 +104,7 @@
         {% for item in films_from_shows %}
           {% set links %}<span class="show-links"><a href="{{ item.tmdb_url }}" target="_blank" rel="noopener noreferrer">TMDb</a></span>{% endset %}
           {{ suggestion_card(item.poster, item.target_title, item.target_year, links, item.relationships,
-                             item.confidence == 'heuristic', url('/add/' ~ item.target_tmdb_id), '#add-dialog', none) }}
+                             item.confidence == 'heuristic', url('/add/' ~ item.target_tmdb_id), '#add-dialog', none, show=False) }}
         {% endfor %}
       </div>
       <div id="add-dialog"></div>
@@ -122,7 +123,7 @@
     </small></p>
     <div class="collection-grid collection-grid--compact collection-grid--owned">
       {% for show in shows %}
-        {% call tile(show_posters.get(show.tmdb_id), 'library-show') %}
+        {% call tile(show_posters.get(show.tmdb_id), 'library-show', show=True) %}
           <header><strong class="film-title">{{ show.title }}</strong></header>
           <p class="collection-counts muted"><span>{{ show.year or '' }}</span></p>
           <p class="card-actions">
