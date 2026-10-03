@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.69.0] — 2026-10-03
+
+### Added
+
+Showcase:
+
+- **Sixteen more franchise intros** (a hundred and twenty-eight in all), each with its own
+  confetti: A Nightmare on Elm Street (a boiler room and claw marks), Saw (a flickering bulb and a
+  countdown), Psycho (a shower curtain and a drain), World War Z (a swarm over a wall), 300 (a
+  volley of arrows), The Karate Kid (a crane stance at sunset), The Meg (a shadow under a boat),
+  Mortal Kombat (fire meets ice), Airplane! (a seat-belt sign), Ace Ventura (an animal parade),
+  Anchorman (a news card about your collection), Spaceballs (a very long spaceship), The
+  NeverEnding Story (pages swirling from a book), The Polar Express (a train in the snow), Moana (a
+  wall of water) and Paddington (a luggage label).
+
+### Changed
+
+- AVP plays the Alien intro.
+
 ## [0.68.0] — 2026-10-03
 
 ### Added

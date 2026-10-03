@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.68.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.69.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -251,7 +251,7 @@ empty and finished pages get a little scene; a set's poster is black and white w
 up it as far as you own, and a detail page's poster stands as a 3D box set; coming-soon films
 count down their days on a split-flap board; a watched film's poster has its ticket punched; TV
 shows sit in old CRT screens; a trailer dims the house lights; a running scan plays on a
-projector; Activity's adds are a roll of ticket stubs; and a hundred and twelve franchises open with a nod to their films ([listed
+projector; Activity's adds are a roll of ticket stubs; and a hundred and twenty-eight franchises open with a nod to their films ([listed
 below](#franchise-intros)) (and there's a code for a retro VHS mode, if you know it); **Ctrl+K** (Cmd+K on a Mac) searches from anywhere; and in October horror sets glow
 pumpkin, in December the top bar frosts over. The release strip
 **plays** as it comes on screen (posters fly in in order, the ones you own light up, a ring fills
@@ -314,7 +314,7 @@ lists (and on the shelf), the home page's rows and spotlight, the Trophy case, s
 | Jurassic Park | *Jurassic Park*, *Jurassic World* | A glass of water ripples with each distant thud, and the page shakes (the page stays usable) |
 | Back to the Future | *Back to the Future* | A time-circuit display — latest film, today, first film — then twin fire trails |
 | Mission: Impossible | *Mission: Impossible* | A burning fuse and a briefing about your missing films, which then self-destructs |
-| Alien | *Alien…*, *Prometheus…* | A motion tracker, one contact for each missing film, closing in |
+| Alien | *Alien…*, *Prometheus…*, *AVP…* | A motion tracker, one contact for each missing film, closing in |
 | Batman | *Batman*, *Dark Knight* | A searchlight sweeps the clouds and settles into a bat signal |
 | Jaws | *Jaws* | The page under water, a fin cutting slowly across, then the water drains away |
 | Terminator | *Terminator* | A red targeting display frames the poster and lists your missing films as targets |
@@ -417,6 +417,22 @@ lists (and on the shelf), the home page's rows and spotlight, the Trophy case, s
 | The Hangover | *The Hangover…* | Morning-after camera flashes: blurry snapshots, ending on your collection's poster |
 | Scooby-Doo | *Scooby-Doo* | A groovy flower-painted van drives across, then a sheet ghost is unmasked |
 | Joker | *Joker…* | A playing card spins in purple and green light and lands face up on the joker |
+| A Nightmare on Elm Street | *Elm Street* | A hot red boiler room hissing steam, then four claw marks slash across the screen |
+| Saw | *Saw…* | A flickering bulb over grimy tiles, a jigsaw-piece timer counting down, then the light dies |
+| Psycho | *Psycho…* | In black and white, a shower curtain is torn aside, its rings snapping, and the water spirals down the drain |
+| World War Z | *World War Z* | A swarm of figures pours up and over a high wall like a wave |
+| 300 | *300…* | A sepia sky over a wall of shields, then a volley of arrows that blots out the sun |
+| The Karate Kid | *Karate Kid*, *Cobra Kai* | A silhouette balancing in a crane stance on a post by the sea at sunset |
+| The Meg | *The Meg…*, *Meg…* | A tiny boat on calm water, and a colossal shark's shadow gliding underneath |
+| Mortal Kombat | *Mortal Kombat* | Fire from one side, ice from the other; they meet in the middle in a flash |
+| Airplane! | *Airplane…* | A propeller plane bobbing through clouds as a "fasten seat belts" sign flickers |
+| Ace Ventura | *Ace Ventura* | A parade of jungle animal silhouettes trotting across a tropical sunset |
+| Anchorman | *Anchorman* | A seventies TV news card — "Breaking news" — with your collection as the headline |
+| Spaceballs | *Spaceballs* | A ridiculously long spaceship takes forever to scroll past overhead |
+| The NeverEnding Story | *NeverEnding Story* | An old book glows and its pages fly out, swirling into a vortex |
+| The Polar Express | *Polar Express* | A steam train's headlight cutting through falling snow, steam billowing |
+| Moana | *Moana…* | Ocean waves rise into a towering wall of sparkling water, which then parts |
+| Paddington | *Paddington* | A little suitcase and hat, and a luggage label tied on with a note about your collection |
 
 ## Search
 

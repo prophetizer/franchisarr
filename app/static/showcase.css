@@ -1379,6 +1379,48 @@
   width: min(46vw, 15rem);
 }
 [data-look="showcase"] .sc-snapshot-image { aspect-ratio: 2 / 3; display: block; }
+/* The 0.69.0 intros' pieces. */
+[data-look="showcase"] .sc-seatbelt {
+  border-radius: 0.4rem;
+  font-family: system-ui, sans-serif;
+  font-size: clamp(0.9rem, 2.4vw, 1.3rem);
+  font-weight: 800;
+  left: 50%;
+  letter-spacing: 0.15em;
+  margin: 0;
+  padding: 0.5rem 1.1rem;
+  position: absolute;
+  top: 8%;
+  translate: -50% 0;
+}
+[data-look="showcase"] .sc-newscard {
+  border-radius: 0.3rem;
+  left: 50%;
+  padding: 1.2rem 1.6rem;
+  position: absolute;
+  top: 45%;
+  width: min(36rem, 88vw);
+}
+[data-look="showcase"] .sc-newscard p { color: inherit; margin: 0; }
+[data-look="showcase"] .sc-newscard-kicker { font-size: 0.9rem; font-weight: 800; letter-spacing: 0.3em; text-transform: uppercase; }
+[data-look="showcase"] .sc-newscard-head { font-family: Georgia, serif; font-size: clamp(1.8rem, 6vw, 3.4rem); font-weight: 800; line-height: 1.1; margin: 0.3rem 0 !important; }
+[data-look="showcase"] .sc-newscard-sub { font-size: clamp(0.95rem, 2.4vw, 1.2rem); font-weight: 600; }
+[data-look="showcase"] .sc-luggage { left: 50%; position: absolute; top: 42%; translate: -50% -50%; width: min(70vw, 26rem); }
+[data-look="showcase"] .sc-luggage svg { display: block; width: 100%; }
+[data-look="showcase"] .sc-tag {
+  border-radius: 0.3rem;
+  box-shadow: 0 0.6rem 1.2rem color-mix(in srgb, var(--sc-page) 70%, transparent);
+  font-family: "Segoe Print", "Bradley Hand", cursive;
+  font-size: clamp(0.95rem, 2.4vw, 1.2rem);
+  left: 50%;
+  padding: 0.9rem 1.2rem;
+  position: absolute;
+  top: 72%;
+  transform-origin: 50% 0;
+  translate: -50% 0;
+  width: min(80vw, 22rem);
+}
+[data-look="showcase"] .sc-tag p { color: inherit; margin: 0 0 0.3rem; }
 [data-look="showcase"] .sc-intro-replay { font-size: 0.85rem; margin: 0 0 0.4rem; padding: 0.25rem 0.75rem; width: auto; }
 [data-look="showcase"] .sc-intro canvas { height: 100%; width: 100%; }
 [data-look="showcase"] .sc-intro-skip {

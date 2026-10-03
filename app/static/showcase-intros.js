@@ -1,4 +1,4 @@
-// Showcase's franchise intros (0.57.0; their own file since 0.58.0; a hundred and twelve since 0.68.0): a nod to a franchise's films
+// Showcase's franchise intros (0.57.0; their own file since 0.58.0; a hundred and twenty-eight since 0.69.0): a nod to a franchise's films
 // when its page opens -- once per visit to each page, skipped by a click or any key, and replayed
 // from the ▶ Intro button. Off for anyone who turned them off in their menu (data-intros="off")
 // and with "reduce motion". The words are this app's own; the looks are the films'.
@@ -25,7 +25,7 @@
     [/jurassic (park|world)/i, 'ripple'],
     [/back to the future/i, 'circuits'],
     [/mission: impossible/i, 'fuse'],
-    [/^alien\b|^prometheus\b/i, 'tracker'],
+    [/^alien\b|^prometheus\b|^avp\b/i, 'tracker'],
     [/batman|dark knight/i, 'signal'],
     [/^jaws\b/i, 'fin'],
     [/terminator/i, 'hud'],
@@ -128,6 +128,22 @@
     [/^the hangover\b/i, 'snapshots'],
     [/scooby-doo/i, 'van'],
     [/^joker\b/i, 'card'],
+    [/elm street/i, 'claws'],
+    [/^saw\b/i, 'jigsaw'],
+    [/^psycho\b/i, 'shower'],
+    [/world war z/i, 'swarm'],
+    [/^300\b/i, 'arrows'],
+    [/karate kid|cobra kai/i, 'crane'],
+    [/^(the )?meg\b/i, 'shadow'],
+    [/mortal kombat/i, 'fireice'],
+    [/^airplane/i, 'seatbelt'],
+    [/ace ventura/i, 'parade'],
+    [/anchorman/i, 'newsdesk'],
+    [/spaceballs/i, 'longship'],
+    [/neverending story/i, 'pages'],
+    [/polar express/i, 'train'],
+    [/^moana\b/i, 'wave'],
+    [/paddington/i, 'label'],
   ];
   function introFor(name) { return WHICH.filter(function (w) { return w[0].test(name); })[0]; }
 
@@ -4098,6 +4114,440 @@
         if (t > 3.2) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.2) / 0.6)); }
         return t < 3.9;
       });
+    },
+
+    // ---------------------------------------------------------------- 0.69.0
+
+    // A Nightmare on Elm Street: a hot red boiler room hissing steam, then four claw marks slash
+    // across the screen.
+    claws: function () {
+      var c = curtain({ max: 5000, background: 'linear-gradient(to bottom, rgb(60 10 6), rgb(20 4 2))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var steam = [], pipes = [];
+      for (var i = 0; i < 6; i++) { pipes.push({ y: H * (0.15 + i * 0.13), h: 18 + Math.random() * 14 }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        pipes.forEach(function (p) { g.fillStyle = 'rgb(70 30 20)'; g.fillRect(0, p.y, W, p.h); g.fillStyle = 'rgba(255, 120, 60, 0.25)'; g.fillRect(0, p.y, W, 3); });
+        var glow = g.createRadialGradient(W / 2, H, 0, W / 2, H, H);
+        glow.addColorStop(0, 'rgba(255, 90, 20, ' + (0.4 + Math.sin(t * 6) * 0.08) + ')'); glow.addColorStop(1, 'rgba(255, 90, 20, 0)');
+        g.fillStyle = glow; g.fillRect(0, 0, W, H);
+        if (Math.random() < 0.5) { steam.push({ x: Math.random() * W, y: pipes[Math.floor(Math.random() * pipes.length)].y, r: 10, a: 0.35 }); }
+        steam.forEach(function (s) { s.y -= 1.5; s.r += 1.8; s.a *= 0.96; g.fillStyle = 'rgba(220, 210, 200, ' + s.a + ')'; g.beginPath(); g.arc(s.x, s.y, s.r, 0, Math.PI * 2); g.fill(); });
+        if (t > 1.8) {
+          var cut = Math.min(1, (t - 1.8) / 0.25);
+          for (var k = 0; k < 4; k++) {
+            var x0 = W * (0.2 + k * 0.12), y0 = H * 0.15, x1 = x0 + W * 0.3, y1 = H * 0.85;
+            g.strokeStyle = 'rgba(10, 2, 2, 0.95)'; g.lineWidth = 14; g.lineCap = 'round';
+            g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + (x1 - x0) * cut, y0 + (y1 - y0) * cut); g.stroke();
+            g.strokeStyle = 'rgba(255, 200, 160, 0.6)'; g.lineWidth = 2;
+            g.beginPath(); g.moveTo(x0 + 6, y0); g.lineTo(x0 + 6 + (x1 - x0) * cut, y0 + (y1 - y0) * cut); g.stroke();
+          }
+          if (cut >= 1 && t < 2.1) { shakePage(5, 200); }
+        }
+        if (t > 3.0) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.0) / 0.6)); }
+        return t < 3.7;
+      });
+    },
+
+    // Saw: a flickering bulb over grimy tiles, a jigsaw-piece timer counting down, then the light
+    // dies.
+    jigsaw: function () {
+      var c = curtain({ max: 5500, background: 'rgb(20 22 16)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var on = t < 3.4 && (Math.random() > 0.08) ? 1 : 0.15;
+        var lamp = g.createRadialGradient(W / 2, H * 0.12, 0, W / 2, H * 0.3, H * 0.9);
+        lamp.addColorStop(0, 'rgba(220, 230, 170, ' + 0.5 * on + ')'); lamp.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        g.strokeStyle = 'rgba(80, 90, 70, ' + (0.3 + on * 0.4) + ')'; g.lineWidth = 2;
+        for (var x = 0; x < W; x += 50) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
+        for (var y = 0; y < H; y += 50) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+        g.fillStyle = lamp; g.fillRect(0, 0, W, H);
+        g.fillStyle = 'rgba(240, 240, 200, ' + on + ')'; g.beginPath(); g.arc(W / 2, H * 0.12, 10, 0, Math.PI * 2); g.fill();
+        g.strokeStyle = 'rgb(40 40 40)'; g.beginPath(); g.moveTo(W / 2, 0); g.lineTo(W / 2, H * 0.12 - 10); g.stroke();
+        var s = Math.min(W, H) * 0.28, cx = W / 2, cy = H * 0.55;
+        g.fillStyle = 'rgba(150, 40, 30, ' + (0.4 + on * 0.6) + ')';
+        g.beginPath(); g.moveTo(cx - s / 2, cy - s / 2); g.lineTo(cx - s * 0.12, cy - s / 2); g.arc(cx, cy - s / 2, s * 0.12, Math.PI, 0); g.lineTo(cx + s / 2, cy - s / 2);
+        g.lineTo(cx + s / 2, cy - s * 0.12); g.arc(cx + s / 2, cy, s * 0.12, -Math.PI / 2, Math.PI / 2); g.lineTo(cx + s / 2, cy + s / 2); g.lineTo(cx - s / 2, cy + s / 2); g.closePath(); g.fill();
+        var left = Math.max(0, 9.9 - t * 3);
+        g.fillStyle = 'rgba(255, 70, 50, ' + (0.5 + on * 0.5) + ')'; g.font = '700 ' + Math.round(s * 0.28) + 'px ui-monospace, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText('00:0' + left.toFixed(1), cx, cy);
+        if (t > 3.4) { g.fillStyle = 'rgba(0, 0, 0, ' + Math.min(1, (t - 3.4) / 0.3) + ')'; g.fillRect(0, 0, W, H); }
+        if (t > 3.8) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.8) / 0.5)); }
+        return t < 4.4;
+      });
+    },
+
+    // Psycho: in black and white, a shower curtain is torn aside, its rings snapping, and the
+    // water spirals down the drain.
+    shower: function () {
+      var c = curtain({ max: 5500, background: 'rgb(30 30 30)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var rings = 14;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        if (t < 2.4) {
+          var pull = Math.min(1, Math.max(0, (t - 0.9) / 0.4));
+          g.fillStyle = 'rgb(210 210 210)'; g.fillRect(0, 0, W, H);
+          g.strokeStyle = 'rgba(120, 120, 120, 0.6)'; g.lineWidth = 1;
+          for (var y = 0; y < H; y += 30) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+          g.strokeStyle = 'rgb(60 60 60)'; g.lineWidth = 6; g.beginPath(); g.moveTo(0, H * 0.06); g.lineTo(W, H * 0.06); g.stroke();
+          var right = W * (1 - pull * 0.92);
+          for (var f = 0; f < 18; f++) {
+            var x = f / 18 * right;
+            g.fillStyle = f % 2 ? 'rgb(235 235 235)' : 'rgb(200 200 200)';
+            g.fillRect(x, H * 0.08, right / 18 + 1, H);
+          }
+          for (var r = 0; r < rings; r++) {
+            var rx = r / (rings - 1) * right, popped = pull > 0 && r > rings * (1 - pull);
+            g.strokeStyle = 'rgb(40 40 40)'; g.lineWidth = 3;
+            g.beginPath(); g.arc(rx + (popped ? (r - rings / 2) * 6 * pull : 0), H * 0.06 + (popped ? pull * 40 : 0), 8, 0, Math.PI * 2); g.stroke();
+          }
+        } else {
+          var swirl = (t - 2.4) * 4, cx = W / 2, cy = H / 2;
+          g.fillStyle = 'rgb(180 180 180)'; g.beginPath(); g.arc(cx, cy, Math.min(W, H) * 0.42, 0, Math.PI * 2); g.fill();
+          g.strokeStyle = 'rgba(60, 60, 60, 0.8)'; g.lineWidth = 3;
+          for (var a = 0; a < 6; a++) {
+            g.beginPath();
+            for (var s = 0; s < 40; s++) { var q = s / 40, ang = a / 6 * Math.PI * 2 + swirl + q * 6, rr = Math.min(W, H) * 0.4 * (1 - q); if (!s) { g.moveTo(cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr); } else { g.lineTo(cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr); } }
+            g.stroke();
+          }
+          g.fillStyle = 'rgb(20 20 20)'; g.beginPath(); g.arc(cx, cy, Math.min(W, H) * 0.05, 0, Math.PI * 2); g.fill();
+          if (t > 3.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.6) / 0.6)); }
+        }
+        return t < 4.3;
+      });
+    },
+
+    // World War Z: a swarm of figures pours up and over a high wall like a wave.
+    swarm: function () {
+      var c = curtain({ max: 5500, background: 'linear-gradient(to bottom, rgb(150 140 120), rgb(90 80 70))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var wallTop = H * 0.35, crowd = [];
+      for (var i = 0; i < 700; i++) { crowd.push({ x: Math.random() * W, base: H + Math.random() * H * 0.3, d: Math.random() }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        g.fillStyle = 'rgb(140 130 110)'; g.fillRect(0, wallTop, W, H - wallTop);
+        g.strokeStyle = 'rgba(90, 80, 70, 0.6)'; g.lineWidth = 2;
+        for (var y = wallTop; y < H; y += 26) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+        var surge = Math.min(1.25, t / 2.6);
+        g.fillStyle = 'rgb(30 26 24)';
+        crowd.forEach(function (p) {
+          var peak = W / 2 + Math.sin(p.x / 120) * W * 0.05, hump = Math.max(0, 1 - Math.abs(p.x - peak) / (W * 0.6));
+          var level = H + 20 - surge * (H - wallTop + 80) * (0.5 + hump * 0.8) * (0.6 + p.d * 0.4);
+          var y = Math.max(level, -20) + Math.sin(t * 8 + p.x) * 3;
+          if (y > H + 10) { return; }
+          g.fillRect(p.x, y, 4, 8); g.beginPath(); g.arc(p.x + 2, y - 3, 2.5, 0, Math.PI * 2); g.fill();
+        });
+        if (t > 3.4) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.4) / 0.6)); }
+        return t < 4.1;
+      });
+    },
+
+    // 300: a sepia sky over a wall of shields, then a volley of arrows that blots out the sun.
+    arrows: function () {
+      var c = curtain({ max: 5500, background: 'linear-gradient(to bottom, rgb(200 150 90), rgb(120 80 50))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var volley = [];
+      for (var i = 0; i < 400; i++) { volley.push({ x: Math.random() * W * 1.4 - W * 0.4, y: -Math.random() * H, v: 6 + Math.random() * 4 }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        g.fillStyle = 'rgba(255, 230, 170, 0.9)'; g.beginPath(); g.arc(W * 0.7, H * 0.3, Math.min(W, H) * 0.1, 0, Math.PI * 2); g.fill();
+        var count = Math.floor(W / 70) + 1;
+        for (var s = 0; s < count; s++) {
+          var x = s * 70 + 35, y = H * 0.82;
+          g.fillStyle = 'rgb(140 60 30)'; g.beginPath(); g.arc(x, y, 34, 0, Math.PI * 2); g.fill();
+          g.strokeStyle = 'rgb(80 34 16)'; g.lineWidth = 4; g.beginPath(); g.arc(x, y, 34, 0, Math.PI * 2); g.stroke();
+          g.strokeStyle = 'rgb(60 50 40)'; g.lineWidth = 3; g.beginPath(); g.moveTo(x + 20, y - 34); g.lineTo(x + 34, y - 110); g.stroke();
+        }
+        if (t > 1.0) {
+          var dark = Math.min(0.75, (t - 1.0) / 1.6);
+          g.fillStyle = 'rgba(30, 20, 10, ' + dark + ')'; g.fillRect(0, 0, W, H * 0.7);
+          g.strokeStyle = 'rgba(20, 14, 10, 0.95)'; g.lineWidth = 2; g.beginPath();
+          volley.forEach(function (a) { a.y += a.v; a.x += a.v * 0.5; g.moveTo(a.x, a.y); g.lineTo(a.x - 12, a.y - 22); });
+          g.stroke();
+        }
+        if (t > 3.5) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.5) / 0.6)); }
+        return t < 4.2;
+      });
+    },
+
+    // The Karate Kid: a silhouette balancing in a crane stance on a post by the sea at sunset.
+    crane: function () {
+      var c = curtain({ max: 5000, background: 'linear-gradient(to bottom, rgb(250 160 80), rgb(230 100 90) 55%, rgb(60 70 110))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var sea = H * 0.68;
+        g.fillStyle = 'rgba(255, 210, 120, 0.9)'; g.beginPath(); g.arc(W * 0.5, sea, Math.min(W, H) * 0.16, Math.PI, 0); g.fill();
+        g.fillStyle = 'rgb(50 50 90)'; g.fillRect(0, sea, W, H - sea);
+        g.strokeStyle = 'rgba(255, 210, 140, 0.5)'; g.lineWidth = 2;
+        for (var w = 0; w < 8; w++) { var y = sea + 10 + w * 16; g.beginPath(); g.moveTo(W * 0.5 - 80 + w * 6 + Math.sin(t * 2 + w) * 10, y); g.lineTo(W * 0.5 + 80 - w * 6 + Math.sin(t * 2 + w) * 10, y); g.stroke(); }
+        var px = W * 0.5, top = sea - H * 0.04, s = H * 0.16, rise = Math.min(1, t / 1.4), wob = Math.sin(t * 3) * 0.03;
+        g.fillStyle = 'rgb(30 20 30)'; g.fillRect(px - 6, top, 12, H - top);
+        g.save(); g.translate(px, top); g.rotate(wob);
+        g.strokeStyle = 'rgb(30 20 30)'; g.fillStyle = 'rgb(30 20 30)'; g.lineWidth = s * 0.08; g.lineCap = 'round';
+        g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -s * 0.5); g.stroke();
+        g.beginPath(); g.moveTo(0, -s * 0.5); g.lineTo(-s * 0.2, -s * 0.35 * rise - s * 0.2); g.lineTo(-s * 0.05, -s * 0.15 - s * 0.2 * rise); g.stroke();
+        g.beginPath(); g.moveTo(0, -s * 0.5); g.lineTo(0, -s * 1.05); g.stroke();
+        g.beginPath(); g.arc(0, -s * 1.18, s * 0.11, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.moveTo(0, -s * 0.95); g.lineTo(-s * 0.45 * rise - s * 0.1, -s * 0.95 - s * 0.35 * rise); g.moveTo(0, -s * 0.95); g.lineTo(s * 0.45 * rise + s * 0.1, -s * 0.95 - s * 0.35 * rise); g.stroke();
+        g.restore();
+        if (t > 3.2) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.2) / 0.6)); }
+        return t < 3.9;
+      });
+    },
+
+    // The Meg: a tiny boat on calm water, and a colossal shark's shadow gliding underneath.
+    shadow: function () {
+      var c = curtain({ max: 5500, background: 'linear-gradient(to bottom, rgb(40 120 170), rgb(10 40 80))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        g.strokeStyle = 'rgba(200, 235, 255, 0.25)'; g.lineWidth = 2;
+        for (var r = 0; r < 14; r++) { var y = H * 0.1 + r * H * 0.06; g.beginPath(); for (var x = 0; x <= W; x += 20) { var yy = y + Math.sin(x / 60 + t * 2 + r) * 3; if (!x) { g.moveTo(x, yy); } else { g.lineTo(x, yy); } } g.stroke(); }
+        var q = Math.min(1, t / 3.2), sx = W * 1.3 - q * W * 1.6, sy = H * 0.55, L = W * 0.9;
+        g.fillStyle = 'rgba(4, 12, 24, 0.6)';
+        g.beginPath(); g.moveTo(sx, sy); g.quadraticCurveTo(sx + L * 0.4, sy - L * 0.16, sx + L * 0.85, sy - L * 0.03);
+        g.lineTo(sx + L, sy - L * 0.15); g.lineTo(sx + L * 0.95, sy); g.lineTo(sx + L, sy + L * 0.12); g.lineTo(sx + L * 0.85, sy + L * 0.03);
+        g.quadraticCurveTo(sx + L * 0.4, sy + L * 0.14, sx, sy); g.fill();
+        g.beginPath(); g.moveTo(sx + L * 0.35, sy - L * 0.1); g.lineTo(sx + L * 0.5, sy - L * 0.32); g.lineTo(sx + L * 0.56, sy - L * 0.1); g.fill();
+        var bx = W * 0.5, by = H * 0.4 + Math.sin(t * 2) * 4;
+        g.fillStyle = 'rgb(240 240 235)'; g.beginPath(); g.moveTo(bx - 30, by); g.lineTo(bx + 30, by); g.lineTo(bx + 20, by + 10); g.lineTo(bx - 20, by + 10); g.closePath(); g.fill();
+        g.fillStyle = 'rgb(220 70 50)'; g.fillRect(bx - 6, by - 14, 12, 14);
+        if (t > 3.5) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.5) / 0.6)); }
+        return t < 4.2;
+      });
+    },
+
+    // Mortal Kombat: fire from one side, ice from the other; they meet in the middle in a flash.
+    fireice: function () {
+      var c = curtain({ max: 5000, background: 'rgb(10 10 14)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var bits = [];
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var reach = Math.min(1, t / 1.8), meet = t > 1.8;
+        for (var k = 0; k < 18; k++) {
+          bits.push({ x: 0, y: H / 2 + (Math.random() - 0.5) * 60, vx: 10 + Math.random() * 8, vy: (Math.random() - 0.5) * 2, hot: true, life: 1 });
+          bits.push({ x: W, y: H / 2 + (Math.random() - 0.5) * 60, vx: -10 - Math.random() * 8, vy: (Math.random() - 0.5) * 2, hot: false, life: 1 });
+        }
+        bits.forEach(function (b) {
+          b.x += b.vx; b.y += b.vy; b.life -= 0.012;
+          if ((b.hot && b.x > W / 2) || (!b.hot && b.x < W / 2)) { b.life = 0; }
+          if (b.life <= 0) { return; }
+          g.fillStyle = b.hot ? 'rgba(255, ' + Math.round(120 + Math.random() * 100) + ', 30, ' + b.life + ')' : 'rgba(150, 220, 255, ' + b.life + ')';
+          g.beginPath(); g.arc(b.x, b.y, b.hot ? 6 : 4, 0, Math.PI * 2); g.fill();
+        });
+        bits = bits.filter(function (b) { return b.life > 0; });
+        if (meet) {
+          var f = Math.min(1, (t - 1.8) / 0.25), fade = t > 2.2 ? Math.max(0, 1 - (t - 2.2) / 0.6) : 1;
+          var flash = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W * 0.6 * f);
+          flash.addColorStop(0, 'rgba(255, 255, 255, ' + fade + ')'); flash.addColorStop(1, 'rgba(255, 255, 255, 0)');
+          g.fillStyle = flash; g.fillRect(0, 0, W, H);
+          if (t < 2.0) { shakePage(6, 200); }
+        }
+        if (t > 2.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 2.6) / 0.6)); }
+        return t < 3.3 && (reach >= 0);
+      });
+    },
+
+    // Airplane!: a propeller plane bobbing through clouds as a 'fasten seat belts' sign flickers.
+    seatbelt: function () {
+      var c = curtain({ max: 5000, background: 'linear-gradient(to bottom, rgb(110 170 230), rgb(200 230 250))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var clouds = [];
+      for (var i = 0; i < 12; i++) { clouds.push({ x: Math.random() * W, y: Math.random() * H, s: 40 + Math.random() * 70, v: 3 + Math.random() * 4 }); }
+      var sign = text('p', 'sc-seatbelt', 'FASTEN SEAT BELTS', c.el);
+      sign.style.color = 'rgb(255 220 120)'; sign.style.background = 'rgb(30 30 34)';
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        clouds.forEach(function (cl) {
+          cl.x -= cl.v; if (cl.x + cl.s * 2 < 0) { cl.x = W + cl.s; cl.y = Math.random() * H; }
+          g.fillStyle = 'rgba(255, 255, 255, 0.9)';
+          for (var b = 0; b < 4; b++) { g.beginPath(); g.arc(cl.x + b * cl.s * 0.5, cl.y + (b % 2) * cl.s * 0.15, cl.s * 0.4, 0, Math.PI * 2); g.fill(); }
+        });
+        var px = W * 0.45, py = H * 0.5 + Math.sin(t * 2.4) * 18, s = Math.min(W, H) * 0.12, tilt = Math.sin(t * 2.4) * 0.08;
+        g.save(); g.translate(px, py); g.rotate(tilt);
+        g.fillStyle = 'rgb(245 245 240)'; g.beginPath(); g.ellipse(0, 0, s, s * 0.18, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = 'rgb(200 60 50)'; g.fillRect(-s, -s * 0.04, s * 2, s * 0.06);
+        g.fillStyle = 'rgb(230 230 225)'; g.beginPath(); g.moveTo(-s * 0.1, 0); g.lineTo(-s * 0.4, s * 0.6); g.lineTo(-s * 0.2, s * 0.6); g.lineTo(s * 0.2, 0); g.closePath(); g.fill();
+        g.beginPath(); g.moveTo(-s * 0.85, 0); g.lineTo(-s, -s * 0.4); g.lineTo(-s * 0.8, -s * 0.4); g.lineTo(-s * 0.65, 0); g.closePath(); g.fill();
+        g.strokeStyle = 'rgba(60, 60, 60, 0.6)'; g.lineWidth = 3; g.beginPath(); g.moveTo(s * 1.02, -s * 0.3 * Math.cos(t * 40)); g.lineTo(s * 1.02, s * 0.3 * Math.cos(t * 40)); g.stroke();
+        g.restore();
+        sign.style.opacity = Math.floor(t * 2.5) % 2 ? '0.25' : '1';
+        if (t > 3.2) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.2) / 0.6)); }
+        return t < 3.9;
+      });
+    },
+
+    // Ace Ventura: a parade of jungle animal silhouettes trotting across a tropical sunset.
+    parade: function () {
+      var c = curtain({ max: 5500, background: 'linear-gradient(to bottom, rgb(250 120 80), rgb(250 200 100) 60%, rgb(60 110 70))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var ground = H * 0.8;
+      var animals = [
+        function (x, s, b) { g.beginPath(); g.ellipse(x, ground - s * 0.6 + b, s * 0.7, s * 0.35, 0, 0, Math.PI * 2); g.fill(); g.fillRect(x + s * 0.4, ground - s * 1.3 + b, s * 0.16, s * 0.7); g.beginPath(); g.arc(x + s * 0.5, ground - s * 1.35 + b, s * 0.14, 0, Math.PI * 2); g.fill(); },
+        function (x, s, b) { g.beginPath(); g.ellipse(x, ground - s * 0.55 + b, s * 0.8, s * 0.45, 0, 0, Math.PI * 2); g.fill(); g.beginPath(); g.arc(x + s * 0.75, ground - s * 0.65 + b, s * 0.28, 0, Math.PI * 2); g.fill(); g.fillRect(x + s * 0.95, ground - s * 0.6 + b, s * 0.1, s * 0.5); },
+        function (x, s, b) { g.beginPath(); g.ellipse(x, ground - s * 0.5 + b, s * 0.5, s * 0.25, 0, 0, Math.PI * 2); g.fill(); g.beginPath(); g.arc(x + s * 0.45, ground - s * 0.7 + b, s * 0.2, 0, Math.PI * 2); g.fill(); g.beginPath(); g.moveTo(x - s * 0.45, ground - s * 0.55 + b); g.quadraticCurveTo(x - s * 0.9, ground - s * 1.1 + b, x - s * 0.6, ground - s * 1.2 + b); g.lineWidth = s * 0.08; g.strokeStyle = 'rgb(30 20 20)'; g.stroke(); },
+        function (x, s, b) { g.beginPath(); g.ellipse(x, ground - s * 0.9 + b, s * 0.2, s * 0.32, 0, 0, Math.PI * 2); g.fill(); g.beginPath(); g.moveTo(x - s * 0.15, ground - s * 0.9 + b); g.lineTo(x - s * 0.5, ground - s * 0.7 + b); g.lineTo(x - s * 0.15, ground - s * 0.75 + b); g.fill(); g.fillRect(x - 2, ground - s * 0.6 + b, 3, s * 0.6); }
+      ];
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        g.fillStyle = 'rgba(255, 230, 150, 0.9)'; g.beginPath(); g.arc(W * 0.5, H * 0.55, Math.min(W, H) * 0.15, 0, Math.PI * 2); g.fill();
+        g.fillStyle = 'rgb(30 40 30)'; g.fillRect(0, ground, W, H - ground);
+        g.fillStyle = 'rgb(30 20 20)';
+        for (var i = 0; i < 9; i++) { var x = -W * 0.2 + ((t * 160 + i * W * 0.17) % (W * 1.5)) - W * 0.1, s = H * (0.12 + (i % 3) * 0.03); animals[i % animals.length](x, s, -Math.abs(Math.sin(t * 8 + i)) * 6); }
+        if (t > 3.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.6) / 0.6)); }
+        return t < 4.3;
+      });
+    },
+
+    // Anchorman: a seventies TV news card -- 'Breaking news', with the collection as the headline.
+    newsdesk: function () {
+      var c = curtain({ max: 6500, background: 'linear-gradient(to bottom, rgb(30 60 110), rgb(14 30 60))' });
+      var n = page.missing.length;
+      var card = document.createElement('div');
+      card.className = 'sc-newscard';
+      card.style.background = 'rgb(230 140 40)'; card.style.color = 'rgb(20 20 30)';
+      text('p', 'sc-newscard-kicker', 'Breaking news', card);
+      text('p', 'sc-newscard-head', page.short, card);
+      text('p', 'sc-newscard-sub', page.total ? page.have + ' of ' + page.total + ' in the library' + (n ? ' — ' + plural(n, 'film') + ' still at large' : ' — the full set') : 'Exclusive report', card);
+      c.el.appendChild(card);
+      if (card.animate) { card.animate([{ translate: '-50% 120vh', rotate: '-6deg' }, { translate: '-50% -50%', rotate: '-2deg' }], { duration: 800, easing: 'cubic-bezier(.2, .9, .3, 1.1)', fill: 'both' }); }
+      var ticker = text('p', 'sc-ticker', 'TOP STORY TONIGHT · ' + (n ? page.missing.join(' · ') + ' · ' : '') + 'MORE AT ELEVEN · ', c.el);
+      ticker.style.color = 'rgb(255 255 255)'; ticker.style.background = 'rgb(160 30 30)';
+      if (ticker.animate) { ticker.animate([{ translate: '100vw 0' }, { translate: '-100% 0' }], { duration: 8000, easing: 'linear', fill: 'both' }); }
+      window.setTimeout(c.finish, 4800);
+    },
+
+    // Spaceballs: a ridiculously long spaceship takes forever to scroll past overhead.
+    longship: function () {
+      var c = curtain({ max: 7000, background: 'radial-gradient(1px 1px at 20% 30%, white, transparent), radial-gradient(1px 1px at 70% 60%, white, transparent), radial-gradient(1px 1px at 40% 80%, white, transparent) 0 0 / 200px 200px, black' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var length = W * 6;
+      var caption = text('p', 'sc-intro-caption', '', c.el);
+      caption.style.color = 'rgb(230 230 240)'; caption.style.top = '80%';
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var x = W - t * W * 1.4, y = H * 0.35, hh = H * 0.22;
+        g.fillStyle = 'rgb(150 155 165)'; g.fillRect(Math.max(-10, x), y, Math.min(length, W + 20), hh);
+        g.fillStyle = 'rgb(110 115 125)';
+        for (var p = Math.max(0, Math.floor(-x / 80)); p < Math.min(length / 80, (W - x) / 80 + 1); p++) {
+          var px = x + p * 80;
+          g.fillRect(px, y + hh * 0.2, 50, hh * 0.15); g.fillRect(px + 20, y + hh * 0.6, 40, hh * 0.12);
+          g.fillStyle = 'rgba(255, 230, 150, 0.8)'; g.fillRect(px + 8, y + hh * 0.45, 6, 4); g.fillStyle = 'rgb(110 115 125)';
+        }
+        if (x > 0) { g.fillStyle = 'rgb(170 175 185)'; g.beginPath(); g.moveTo(x, y); g.lineTo(x - hh * 0.8, y + hh / 2); g.lineTo(x, y + hh); g.closePath(); g.fill(); }
+        caption.textContent = t > 1.5 ? (t > 3.5 ? 'Still going…' : 'Any second now…') : '';
+        if (t > 4.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 4.6) / 0.6)); }
+        return t < 5.3;
+      });
+    },
+
+    // The NeverEnding Story: an old book glows and its pages fly out, swirling into a vortex.
+    pages: function () {
+      var c = curtain({ max: 5500, background: 'radial-gradient(circle at 50% 55%, rgb(70 50 30), rgb(14 10 6))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var cx = W / 2, cy = H * 0.62, leaves = [];
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var glow = g.createRadialGradient(cx, cy, 0, cx, cy, H * 0.5);
+        glow.addColorStop(0, 'rgba(255, 220, 140, ' + Math.min(0.6, t / 2) + ')'); glow.addColorStop(1, 'rgba(255, 220, 140, 0)');
+        g.fillStyle = glow; g.fillRect(0, 0, W, H);
+        var bw = Math.min(W, H) * 0.42, bh = bw * 0.62;
+        g.fillStyle = 'rgb(110 40 30)'; g.fillRect(cx - bw / 2 - 8, cy - bh / 2 - 6, bw + 16, bh + 12);
+        g.fillStyle = 'rgb(240 225 190)'; g.fillRect(cx - bw / 2, cy - bh / 2, bw, bh);
+        g.strokeStyle = 'rgb(150 120 80)'; g.beginPath(); g.moveTo(cx, cy - bh / 2); g.lineTo(cx, cy + bh / 2); g.stroke();
+        if (t > 0.8 && Math.random() < 0.7) { leaves.push({ a: Math.random() * Math.PI * 2, r: 0, spin: Math.random() * 6 }); }
+        leaves.forEach(function (l) {
+          l.r += 4; l.a += 0.06; l.spin += 0.2;
+          var x = cx + Math.cos(l.a) * l.r, y = cy - bh / 2 - l.r * 0.5 + Math.sin(l.a) * l.r * 0.4;
+          g.save(); g.translate(x, y); g.rotate(l.spin); g.scale(Math.cos(l.spin), 1);
+          g.fillStyle = 'rgba(245, 232, 200, 0.95)'; g.fillRect(-14, -18, 28, 36);
+          g.strokeStyle = 'rgba(120, 90, 60, 0.5)'; g.beginPath(); for (var k = 0; k < 4; k++) { g.moveTo(-10, -10 + k * 7); g.lineTo(10, -10 + k * 7); } g.stroke();
+          g.restore();
+        });
+        if (t > 3.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.6) / 0.6)); }
+        return t < 4.3;
+      });
+    },
+
+    // The Polar Express: a steam train's headlight cutting through falling snow, steam billowing.
+    train: function () {
+      var c = curtain({ max: 5500, background: 'linear-gradient(to bottom, rgb(14 20 40), rgb(30 40 70))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var flakes = [], steam = [];
+      for (var i = 0; i < 260; i++) { flakes.push({ x: Math.random() * W, y: Math.random() * H, v: 1 + Math.random() * 2, r: 1 + Math.random() * 2.5 }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var near = Math.min(1, t / 3.0), cx = W / 2, cy = H * 0.6, s = Math.min(W, H) * (0.08 + near * 0.32);
+        var beam = g.createRadialGradient(cx, cy - s * 0.3, 0, cx, cy - s * 0.3, W * (0.3 + near * 0.6));
+        beam.addColorStop(0, 'rgba(255, 245, 210, ' + (0.5 + near * 0.4) + ')'); beam.addColorStop(1, 'rgba(255, 245, 210, 0)');
+        g.fillStyle = beam; g.fillRect(0, 0, W, H);
+        g.fillStyle = 'rgb(16 16 22)';
+        g.beginPath(); g.arc(cx, cy, s * 0.6, 0, Math.PI * 2); g.fill();
+        g.fillRect(cx - s * 0.75, cy - s * 0.2, s * 1.5, s * 0.9);
+        g.fillRect(cx - s * 0.15, cy - s * 1.1, s * 0.3, s * 0.5);
+        g.fillStyle = 'rgba(255, 250, 220, 0.95)'; g.beginPath(); g.arc(cx, cy - s * 0.3, s * 0.16, 0, Math.PI * 2); g.fill();
+        if (Math.random() < 0.6) { steam.push({ x: cx + (Math.random() - 0.5) * s * 0.2, y: cy - s * 1.1, r: s * 0.12, a: 0.5 }); }
+        steam.forEach(function (p) { p.y -= 2; p.x += (Math.random() - 0.5) * 2 + 1; p.r += 1.5; p.a *= 0.97; g.fillStyle = 'rgba(220, 225, 235, ' + p.a + ')'; g.beginPath(); g.arc(p.x, p.y, p.r, 0, Math.PI * 2); g.fill(); });
+        g.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        flakes.forEach(function (f) { f.y += f.v; f.x += Math.sin(f.y / 40) * 0.5; if (f.y > H) { f.y = -5; f.x = Math.random() * W; } g.beginPath(); g.arc(f.x, f.y, f.r, 0, Math.PI * 2); g.fill(); });
+        if (t > 3.4) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.4) / 0.6)); }
+        return t < 4.1;
+      });
+    },
+
+    // Moana: ocean waves rise into a towering wall of sparkling water, which then parts.
+    wave: function () {
+      var c = curtain({ max: 5500, background: 'linear-gradient(to bottom, rgb(120 200 240), rgb(250 220 170))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var glints = [];
+      for (var i = 0; i < 60; i++) { glints.push({ x: Math.random(), y: Math.random(), p: Math.random() * 6 }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var rise = Math.min(1, t / 1.8), part = t > 2.4 ? Math.min(1, (t - 2.4) / 1.0) : 0, top = H * (0.85 - rise * 0.8);
+        if (part) { c.el.style.background = 'rgba(250, 220, 170, ' + (1 - part) + ')'; }
+        [-1, 1].forEach(function (side) {
+          var shift = side * part * W * 0.6, from = side < 0 ? 0 : W / 2, to = side < 0 ? W / 2 : W;
+          var water = g.createLinearGradient(0, top, 0, H);
+          water.addColorStop(0, 'rgba(60, 180, 200, 0.95)'); water.addColorStop(1, 'rgba(10, 70, 120, 0.98)');
+          g.fillStyle = water;
+          g.beginPath(); g.moveTo(from + shift, H);
+          for (var x = from; x <= to; x += 12) { g.lineTo(x + shift, top + Math.sin(x / 50 + t * 3) * 12); }
+          g.lineTo(to + shift, H); g.closePath(); g.fill();
+        });
+        glints.forEach(function (gl) {
+          var x = gl.x * W + (gl.x < 0.5 ? -1 : 1) * part * W * 0.6, y = top + gl.y * (H - top);
+          g.fillStyle = 'rgba(255, 255, 255, ' + Math.max(0, Math.sin(t * 5 + gl.p)) * 0.8 + ')'; g.fillRect(x, y, 3, 3);
+        });
+        return t < 3.6;
+      });
+    },
+
+    // Paddington: a little suitcase and hat, and a luggage label tied on with a note about the
+    // collection.
+    label: function () {
+      var c = curtain({ max: 6500, background: 'linear-gradient(to bottom, rgb(130 110 90), rgb(80 64 50))' });
+      var n = page.missing.length;
+      var scene = document.createElement('div');
+      scene.className = 'sc-luggage';
+      scene.innerHTML = '<svg viewBox="0 0 300 220" aria-hidden="true">' +
+        '<rect x="40" y="90" width="220" height="120" rx="12" fill="rgb(150 90 50)" stroke="rgb(90 50 24)" stroke-width="5"/>' +
+        '<rect x="125" y="70" width="50" height="24" rx="8" fill="none" stroke="rgb(90 50 24)" stroke-width="7"/>' +
+        '<rect x="40" y="140" width="220" height="10" fill="rgb(110 66 34)"/>' +
+        '<path d="M90 92 Q130 40 170 40 Q210 40 230 70 L240 92 Z" fill="rgb(200 30 40)"/>' +
+        '<ellipse cx="160" cy="92" rx="100" ry="12" fill="rgb(170 20 30)"/></svg>';
+      c.el.appendChild(scene);
+      var tag = document.createElement('div');
+      tag.className = 'sc-tag';
+      tag.style.background = 'rgb(240 225 190)'; tag.style.color = 'rgb(60 40 20)';
+      text('p', null, 'Handle with care: one collection, travelling.', tag);
+      text('p', null, page.total ? 'It has ' + page.have + ' of its ' + page.total + ' films' + (n ? ' and would like the other ' + n + '.' : ', and is very content.') : 'Thank you.', tag);
+      c.el.appendChild(tag);
+      if (tag.animate) { tag.animate([{ rotate: '-20deg', opacity: 0 }, { rotate: '8deg', opacity: 1, offset: 0.5 }, { rotate: '-4deg' }, { rotate: '2deg' }], { duration: 1600, delay: 600, easing: 'ease-out', fill: 'both' }); }
+      window.setTimeout(c.finish, 5200);
     },
   };
 
