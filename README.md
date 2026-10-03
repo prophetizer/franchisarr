@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.63.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.64.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -251,7 +251,7 @@ empty and finished pages get a little scene; a set's poster is black and white w
 up it as far as you own, and a detail page's poster stands as a 3D box set; coming-soon films
 count down their days on a split-flap board; a watched film's poster has its ticket punched; TV
 shows sit in old CRT screens; a trailer dims the house lights; a running scan plays on a
-projector; Activity's adds are a roll of ticket stubs; and thirty-five franchises open with a nod to their films ([listed
+projector; Activity's adds are a roll of ticket stubs; and fifty franchises open with a nod to their films ([listed
 below](#franchise-intros)) (and there's a code for a retro VHS mode, if you know it); **Ctrl+K** (Cmd+K on a Mac) searches from anywhere; and in October horror sets glow
 pumpkin, in December the top bar frosts over. The release strip
 **plays** as it comes on screen (posters fly in in order, the ones you own light up, a ring fills
@@ -308,7 +308,7 @@ lists (and on the shelf), the home page's rows and spotlight, the Trophy case, s
 | Star Wars | *Star Wars* | "A short while ago, in a library not so far away…", then a crawl about your collection — how many films you have and the rest still at large — receding into the stars |
 | The Matrix | *Matrix* | Falling green code |
 | Harry Potter | *Harry Potter*, *Wizarding World*, *Fantastic Beasts* | Gold sparks thrown from the title, as from a wand (the page stays usable) |
-| Marvel Cinematic Universe | *Marvel Cinematic Universe*, *The Avengers Collection* | Your own posters flick past like comic pages, faster and faster, then a red flash |
+| Marvel Cinematic Universe | *Marvel Cinematic Universe*, *The Avengers Collection*, *Iron Man Collection*, *Thor Collection*, *Captain America Collection*, *Spider-Man (MCU)…*, *Guardians of the Galaxy Collection* and the other MCU solo series | Your own posters flick past like comic pages, faster and faster, then a red flash |
 | James Bond | *James Bond* | Dots across a black screen, a gun barrel opening onto the page, a red wash, then the circle widens |
 | Star Trek | *Star Trek* | Stars stretch into streaks, the jump to warp, a white flash |
 | Jurassic Park | *Jurassic Park*, *Jurassic World* | A glass of water ripples with each distant thud, and the page shakes (the page stays usable) |
@@ -340,6 +340,21 @@ lists (and on the shelf), the home page's rows and spotlight, the Trophy case, s
 | Ice Age | *Ice Age…* | Frost creeps in from the edges and freezes the screen, then cracks and falls away (the page stays usable) |
 | Twilight | *Twilight Collection*, *The Twilight Saga* | A misty blue-grey forest; a shaft of sunlight breaks through and the title sparkles |
 | Shrek | *Shrek* | A storybook opens on your collection's tale; a page turns, then one is torn out |
+| Halloween | *Halloween…* | A carved pumpkin flickers in the dark, its candle guttering, until it blows out |
+| The Conjuring | *Conjuring*, *Annabelle…* | An instant photo slides in and develops into your poster — with a shadow in it that wasn't there before |
+| The Exorcist | *Exorcist* | A foggy street at night, a lone figure under a streetlamp, the light flickering as the fog rolls in |
+| The Purge | *The Purge…* | An emergency broadcast: alert bars, a notice about your missing films, a ticker and a red siren sweep |
+| John Wick | *John Wick* | Neon rain on a dark street, and a gold coin spinning down to land on the title |
+| Bad Boys | *Bad Boys…* | The title turns a slow full circle against a hot sunset and palm trees |
+| Rambo | *Rambo*, *First Blood…* | Dense jungle fills the screen, rustling, then is slashed apart |
+| Starship Troopers | *Starship Troopers* | An old newsreel: a service bulletin tallying your films, and a swarm massing on the horizon |
+| Home Alone | *Home Alone* | A snowy house at night with its lights on, and a paint can on a rope swinging down across the screen |
+| Kung Fu Panda | *Kung Fu Panda* | Ink brush strokes on rice paper paint the title, with peach blossom drifting |
+| Jumanji | *Jumanji* | Two dice roll across a board — landing on the number still missing — then jungle vines cover the screen |
+| Avatar | *Avatar Collection* | A dark forest lights up in blue and violet, ripple by ripple, with drifting seeds of light |
+| The Hunger Games | *Hunger Games* | An arena countdown, a cannon for each missing film, and three lights rising across the sky |
+| The Mummy | *The Mummy…* | Sand blows across a wall of carved symbols, gathers into a great face and crumbles away |
+| Superman | *Superman* | Clouds rush past as if climbing; a red-and-blue streak shoots up through them, and a flash |
 
 ## Search
 

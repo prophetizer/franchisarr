@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.64.0] — 2026-10-02
+
+### Added
+
+Showcase:
+
+- **Fifteen more franchise intros** (fifty in all), each with its own confetti: Halloween (a
+  pumpkin whose candle gutters out), The Conjuring (a developing instant photo with an extra shadow),
+  The Exorcist (a foggy street and a figure under a streetlamp), The Purge (an emergency broadcast),
+  John Wick (neon rain and a spinning gold coin), Bad Boys (the title turning against a sunset),
+  Rambo (jungle slashed apart), Starship Troopers (a newsreel and a swarm on the horizon), Home
+  Alone (a snowy house and a swinging paint can), Kung Fu Panda (ink brush strokes and blossom),
+  Jumanji (dice landing on the number you're missing, then vines), Avatar (a forest lighting up),
+  The Hunger Games (a countdown and a cannon per missing film), The Mummy (sand gathering into a
+  face) and Superman (a streak up through the clouds).
+
+### Changed
+
+- **The MCU intro also plays on its solo series' collections** — Iron Man, Thor, Captain America,
+  Spider-Man (MCU), Guardians of the Galaxy, Ant-Man, Black Panther and Doctor Strange.
+
 ## [0.63.0] — 2026-10-02
 
 ### Added

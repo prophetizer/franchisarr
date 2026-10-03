@@ -157,7 +157,7 @@ def test_every_franchise_pattern_has_an_intro_to_play() -> None:
     js = (Path(__file__).resolve().parents[1] / "app" / "static" / "showcase-intros.js").read_text()
     defined = set(re.findall(r"^    (\w+): function \(\) \{", js, re.M))
     wanted = set(re.findall(r"^    \[/.*/i, '(\w+)'\],$", js, re.M))
-    assert len(wanted) == 35 and wanted <= defined, wanted - defined
+    assert len(wanted) == 50 and wanted <= defined, wanted - defined
 
 
 def test_the_readme_lists_every_franchise_intro() -> None:

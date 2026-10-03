@@ -1244,6 +1244,53 @@
 [data-look="showcase"] .sc-book-front,
 [data-look="showcase"] .sc-book-back { border-radius: 0 0.4rem 0.4rem 0; inset: 0; position: absolute; }
 [data-look="showcase"] .sc-book-back { border-radius: 0.4rem 0 0 0.4rem; transform: rotateY(180deg); }
+/* The 0.64.0 intros' pieces. */
+[data-look="showcase"] .sc-polaroid {
+  box-shadow: 0 1.5rem 3rem color-mix(in srgb, var(--sc-page) 80%, transparent);
+  left: 50%;
+  padding: 0.9rem 0.9rem 3.2rem;
+  position: absolute;
+  top: 50%;
+  width: min(70vw, 20rem);
+}
+[data-look="showcase"] .sc-polaroid-photo { aspect-ratio: 1; overflow: hidden; position: relative; }
+[data-look="showcase"] .sc-polaroid-ghost { bottom: 0; height: 75%; position: absolute; right: 8%; width: 35%; }
+[data-look="showcase"] .sc-polaroid-note {
+  bottom: 0.7rem;
+  font-family: "Segoe Print", "Bradley Hand", cursive;
+  font-size: 1.1rem;
+  left: 0;
+  margin: 0;
+  position: absolute;
+  right: 0;
+  text-align: center;
+}
+[data-look="showcase"] .sc-ticker {
+  bottom: 12%;
+  font-family: ui-monospace, "Courier New", monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  left: 0;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  position: absolute;
+  white-space: nowrap;
+}
+[data-look="showcase"] .sc-spin-stage { inset: 0; perspective: 900px; position: absolute; }
+[data-look="showcase"] .sc-spin-title {
+  font-size: clamp(2.4rem, 9vw, 6rem);
+  font-style: italic;
+  font-weight: 900;
+  left: 50%;
+  letter-spacing: 0.04em;
+  margin: 0;
+  position: absolute;
+  text-align: center;
+  text-transform: uppercase;
+  top: 32%;
+  translate: -50% 0;
+  white-space: nowrap;
+}
 [data-look="showcase"] .sc-intro-replay { font-size: 0.85rem; margin: 0 0 0.4rem; padding: 0.25rem 0.75rem; width: auto; }
 [data-look="showcase"] .sc-intro canvas { height: 100%; width: 100%; }
 [data-look="showcase"] .sc-intro-skip {
