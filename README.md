@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.70.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.70.1`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -234,15 +234,14 @@ set one film from done; pausing on a collection or franchise card previews its b
 films it's missing. Click a missing film's poster (or rest the pointer on it) and the card turns
 over to its plot, genres and score. The page's artwork lights the whole page, blurred, behind
 everything; your own posters drift in a wall behind the home page's heading; banners open like a
-film's title card, with specks of light drifting through them; cards glide in as you scroll and
+film's title card; cards glide in as you scroll and
 the rest dim around the one you point at; a complete collection's poster and every trophy get a
-holographic foil; a running scan shows its progress in the browser tab; banners get film grain
-and their name in huge outlined type behind them; the release strip becomes a strip of film;
+holographic foil; a running scan shows its progress in the browser tab; banners get darkened
+corners and their name in huge outlined type behind them; the release strip becomes a strip of film;
 headline numbers roll like an odometer; a slim bar keeps a detail page's name in view as you
 scroll; pointing at a collection card fans its films out; a new Trophy case badge unlocks with a
-flourish; a set that's mostly one genre gets that genre's weather in its banner (stars for sci-fi,
-rain for crime, dust for westerns, embers for war films, fog for horror, sparkles for fantasy,
-bubbles for animation) and a complete one gets chasing marquee bulbs; a collection or franchise
+flourish; a set that's mostly one genre has its banner's picture graded to suit (sepia for
+westerns, grey for crime, a flicker for horror); a collection or franchise
 page ends with its **end credits** rolling up — each title, its year and who directed it — to *The
 End*, or *To be continued…* while titles are missing; adding a film prints you a ticket stub;
 **📚 Shelf** shows Collections or Franchises as box sets on a shelf; clicking an owned film's

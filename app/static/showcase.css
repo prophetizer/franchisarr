@@ -829,28 +829,10 @@
 }
 @keyframes sc-pan { from { translate: 0 0; } to { translate: calc(100vw - 100%) 0; } }
 
-/* ---------------------------------------------------------------- light motes (0.56.0) */
-/* Specks of the page's colour drifting up through a banner, like dust in a projector beam.
-   showcase.js places them; the banner's own content sits above them. */
+/* ---------------------------------------------------------------- banner layer (0.56.0) */
+/* Between a banner's picture and its text: the outlined name (the drifting motes went in 0.70.1). */
 [data-look="showcase"] .collection-heading.has-backdrop .collection-heading-inner { position: relative; z-index: 1; }
 [data-look="showcase"] .sc-motes { inset: 0; overflow: hidden; pointer-events: none; position: absolute; z-index: 0; }
-[data-look="showcase"] .sc-motes span {
-  animation: sc-mote var(--sc-t, 12s) linear var(--sc-wait, 0s) infinite;
-  background: radial-gradient(circle, color-mix(in srgb, var(--sc-glow) 70%, var(--pico-contrast)) 0, transparent 70%);
-  border-radius: 50%;
-  height: var(--sc-size, 4px);
-  left: var(--sc-x, 50%);
-  opacity: 0;
-  position: absolute;
-  top: var(--sc-y, 80%);
-  width: var(--sc-size, 4px);
-}
-@keyframes sc-mote {
-  0% { opacity: 0; translate: 0 0; }
-  20% { opacity: 0.85; }
-  80% { opacity: 0.6; }
-  100% { opacity: 0; translate: var(--sc-dx, 2rem) -14rem; }
-}
 
 /* ---------------------------------------------------------------- focus dimming (0.56.0) */
 /* Pointing at one card in a grid or row quietens the rest. filter, not opacity: the cards'
@@ -983,15 +965,12 @@
   white-space: nowrap;
 }
 
-/* ---------------------------------------------------------------- grain and vignette (0.57.0) */
-/* A projected-film finish over banners and the spotlight: a fine moving grain and darkened
-   corners. The grain is SVG noise, grey; its colour comes from nowhere but the noise. */
+/* ---------------------------------------------------------------- vignette (0.57.0) */
+/* Darkened corners over banners and the spotlight. The moving film grain that came with it went
+   in 0.70.1, michael's call. */
 [data-look="showcase"] .collection-backdrop-frame::after,
 [data-look="showcase"] .spotlight-band::after {
-  animation: sc-grain 0.8s steps(5) infinite;
-  background:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0.9 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>") 0 0 / 180px 180px,
-    radial-gradient(ellipse at center, transparent 55%, color-mix(in srgb, var(--sc-page) 55%, transparent) 100%);
+  background: radial-gradient(ellipse at center, transparent 55%, color-mix(in srgb, var(--sc-page) 55%, transparent) 100%);
   content: "";
   inset: 0;
   mix-blend-mode: overlay;
@@ -1000,14 +979,6 @@
   position: absolute;
 }
 [data-look="showcase"] .spotlight-band::after { inset: 0 calc(50% - 50vw); z-index: -1; }
-@keyframes sc-grain {
-  0% { background-position: 0 0, 0 0; }
-  20% { background-position: -40px 25px, 0 0; }
-  40% { background-position: 30px -50px, 0 0; }
-  60% { background-position: -70px -15px, 0 0; }
-  80% { background-position: 55px 60px, 0 0; }
-  100% { background-position: 0 0, 0 0; }
-}
 
 /* ---------------------------------------------------------------- poster fan (0.57.0) */
 /* Pointing at a collection card fans three of its films out from behind its poster. */
@@ -1645,25 +1616,6 @@
 /* Gone: kept as a space so the ticket doesn't jump, and out of the dialog's scroll area. */
 [data-look="showcase"] .sc-ticket.is-gone .sc-ticket-stub { animation: none; opacity: 0; }
 
-/* ---------------------------------------------------------------- marquee */
-/* Bulbs round a finished set's banner, lit a third at a time so the light runs round. */
-[data-look="showcase"] .sc-marquee { inset: -0.35rem; pointer-events: none; position: absolute; z-index: 2; }
-[data-look="showcase"] .sc-marquee i {
-  animation: sc-chase 1.2s steps(1) calc(var(--sc-phase, 0) * 0.4s - 1.2s) infinite;
-  background: var(--sc-bulb);
-  border-radius: 50%;
-  box-shadow: 0 0 0.45rem var(--sc-bulb), 0 0 0.15rem var(--sc-bulb);
-  height: 0.42rem;
-  margin: -0.21rem 0 0 -0.21rem;
-  position: absolute;
-  width: 0.42rem;
-}
-@keyframes sc-chase {
-  0% { opacity: 1; }
-  33.3% { box-shadow: none; opacity: 0.28; }
-  100% { box-shadow: none; opacity: 0.28; }
-}
-
 /* ---------------------------------------------------------------- end credits */
 /* The set in release order, rolling up a dark window at a reading pace; The End stops in the
    middle. Missing titles are there in a dimmer hand. Classic hides the section (app.css). */
@@ -1714,8 +1666,8 @@
 [data-look="showcase"] .end-credits-replay[hidden] { display: none; }
 
 /* ---------------------------------------------------------------- projector beam */
-/* A cone of light from the top corner of the home spotlight, flickering on as the page opens,
-   with dust turning in it. Over the picture, under the dots and the trailer button. */
+/* A cone of light from the top corner of the home spotlight, flickering on as the page opens:
+   over the picture, under the dots and the trailer button. */
 [data-look="showcase"] .sc-beam { inset: 0 calc(50% - 50vw); overflow: hidden; pointer-events: none; position: absolute; z-index: 1; }
 [data-look="showcase"] .sc-beam-cone {
   animation: sc-beam-on 1.6s linear both, sc-beam-hum 0.3s steps(2) 1.6s infinite;
@@ -1731,144 +1683,26 @@
   top: -30%;
   width: 80%;
 }
-[data-look="showcase"] .sc-beam-dust { inset: 0 50% 0 4%; position: absolute; }
-[data-look="showcase"] .sc-beam-dust span {
-  animation: sc-dust-turn var(--sc-t, 14s) ease-in-out var(--sc-wait, 0s) infinite alternate;
-  background: var(--sc-beam);
-  border-radius: 50%;
-  height: var(--sc-size, 3px);
-  left: var(--sc-x, 50%);
-  opacity: 0.5;
-  position: absolute;
-  top: var(--sc-y, 50%);
-  width: var(--sc-size, 3px);
-}
 @keyframes sc-beam-on {
   0% { opacity: 0; } 8% { opacity: 0.8; } 12% { opacity: 0.1; } 22% { opacity: 0.9; }
   27% { opacity: 0.25; } 40% { opacity: 1; } 100% { opacity: 1; }
 }
 @keyframes sc-beam-hum { from { opacity: 1; } to { opacity: 0.88; } }
-@keyframes sc-dust-turn {
-  0% { opacity: 0.15; translate: 0 0; }
-  50% { opacity: 0.7; }
-  100% { opacity: 0.2; translate: var(--sc-dx, 2rem) -3rem; }
-}
-
 /* ---------------------------------------------------------------- genre moods */
-/* A set mostly of one genre: its banner's weather replaces the motes, and its picture is graded
-   to suit. --sc-mood-ink is the weather's colour, from showcase-cinema.js. */
-[data-look="showcase"] .sc-moody .sc-motes span { display: none; }   /* the watermark stays */
-[data-look="showcase"] .sc-mood { inset: 0; overflow: hidden; pointer-events: none; position: absolute; z-index: 0; }
-[data-look="showcase"] .sc-mood span { left: var(--sc-x, 50%); position: absolute; top: var(--sc-y, 50%); }
+/* A set mostly of one genre has its picture graded to suit. (Its banner weather -- fog, bubbles,
+   dust, embers, stars, sparkles, rain -- went in 0.70.1, michael's call.) */
 [data-look="showcase"][data-mood="western"] .collection-backdrop { filter: sepia(0.4) saturate(1.15); }
 [data-look="showcase"][data-mood="crime"] .collection-backdrop { filter: grayscale(0.6) contrast(1.1); }
 [data-look="showcase"][data-mood="war"] .collection-backdrop { filter: saturate(0.7) contrast(1.05); }
 [data-look="showcase"][data-mood="scifi"] .collection-backdrop { filter: saturate(1.1) hue-rotate(-8deg); }
 [data-look="showcase"][data-mood="horror"] .collection-backdrop-frame { animation: sc-flicker 11s steps(1) 2s infinite; }
-/* horror: fog along the foot of the banner */
-[data-look="showcase"] .sc-mood--horror span {
-  animation: sc-fog var(--sc-t, 30s) ease-in-out var(--sc-wait, 0s) infinite alternate;
-  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--sc-mood-ink) 18%, transparent), transparent 70%);
-  filter: blur(14px);
-  height: 55%;
-  left: calc(var(--sc-x) - 40%);
-  top: auto;
-  bottom: -26%;
-  width: 90%;
+@keyframes sc-flicker {
+  0% { opacity: 1; }
+  92% { opacity: 0.4; }
+  93% { opacity: 1; }
+  95% { opacity: 0.55; }
+  96% { opacity: 1; }
 }
-@keyframes sc-fog { from { translate: -15% 0; } to { translate: 15% -6%; } }
-@keyframes sc-flicker { 0% { opacity: 1; } 92% { opacity: 0.4; } 93% { opacity: 1; } 95% { opacity: 0.55; } 96% { opacity: 1; } }
-/* animation: bubbles that wobble up and pop */
-[data-look="showcase"] .sc-mood--animation span {
-  animation: sc-bubble var(--sc-t, 9s) ease-in var(--sc-wait, 0s) infinite;
-  border: 2px solid color-mix(in srgb, var(--sc-mood-ink) 65%, transparent);
-  border-radius: 50%;
-  height: var(--sc-size); top: 100%; width: var(--sc-size);
-}
-@keyframes sc-bubble {
-  0% { opacity: 0; scale: 0.6; translate: 0 0; }
-  10% { opacity: 0.9; }
-  30% { translate: 0.8rem -6rem; }
-  55% { translate: -0.8rem -12rem; }
-  80% { opacity: 0.9; scale: 1; translate: 0.6rem -18rem; }
-  86% { opacity: 0; scale: 1.5; translate: 0.6rem -19rem; }
-  100% { opacity: 0; scale: 1.5; translate: 0.6rem -19rem; }
-}
-/* western: dust blown across */
-[data-look="showcase"] .sc-mood--western span,
-[data-look="showcase"] .sc-mood--war span {
-  background: var(--sc-mood-ink);
-  border-radius: 50%;
-  height: var(--sc-size); width: var(--sc-size);
-}
-[data-look="showcase"] .sc-mood--western span { animation: sc-blow var(--sc-t, 12s) linear var(--sc-wait, 0s) infinite; left: -5%; }
-@keyframes sc-blow {
-  0% { opacity: 0; translate: 0 0; }
-  15% { opacity: 0.7; }
-  85% { opacity: 0.5; }
-  100% { opacity: 0; translate: 110vw -2rem; }
-}
-/* war: embers rising and guttering */
-[data-look="showcase"] .sc-mood--war span {
-  animation: sc-ember var(--sc-t, 6s) ease-out var(--sc-wait, 0s) infinite;
-  box-shadow: 0 0 0.4rem var(--sc-mood-ink);
-  top: 100%;
-}
-@keyframes sc-ember {
-  0% { opacity: 0; translate: 0 0; }
-  10% { opacity: 1; }
-  40% { opacity: 0.6; }
-  55% { opacity: 1; }
-  100% { opacity: 0; translate: var(--sc-dx, 1rem) -16rem; }
-}
-/* sci-fi: a field of stars, and now and then one falls */
-[data-look="showcase"] .sc-mood--scifi span {
-  animation: sc-twinkle var(--sc-t, 4s) ease-in-out var(--sc-wait, 0s) infinite alternate;
-  background: var(--sc-mood-ink);
-  border-radius: 50%;
-  box-shadow: 0 0 0.3rem var(--sc-mood-ink);
-  height: var(--sc-size); width: var(--sc-size);
-}
-@keyframes sc-twinkle { from { opacity: 0.15; } to { opacity: 0.95; } }
-[data-look="showcase"] .sc-shooting {
-  animation: sc-shoot 9s ease-in 3s infinite;
-  background: linear-gradient(90deg, transparent, var(--sc-mood-ink));
-  height: 2px;
-  left: 70%;
-  opacity: 0;
-  position: absolute;
-  rotate: 160deg;
-  top: 10%;
-  width: 7rem;
-}
-@keyframes sc-shoot {
-  0% { opacity: 0; translate: 0 0; }
-  2% { opacity: 1; }
-  9% { opacity: 0; translate: -28rem 9rem; }
-  100% { opacity: 0; translate: -28rem 9rem; }
-}
-/* fantasy: sparkles that turn as they glint */
-[data-look="showcase"] .sc-mood--fantasy span {
-  animation: sc-sparkle var(--sc-t, 4s) ease-in-out var(--sc-wait, 0s) infinite;
-  color: var(--sc-mood-ink);
-  font-size: var(--sc-size);
-  line-height: 1;
-  text-shadow: 0 0 0.5rem var(--sc-mood-ink);
-}
-@keyframes sc-sparkle {
-  0%, 100% { opacity: 0; rotate: 0deg; scale: 0.2; }
-  50% { opacity: 1; rotate: 90deg; scale: 1; }
-}
-/* crime: rain on the window */
-[data-look="showcase"] .sc-mood--crime span {
-  animation: sc-rainfall var(--sc-t, 0.8s) linear var(--sc-wait, 0s) infinite;
-  background: linear-gradient(transparent, color-mix(in srgb, var(--sc-mood-ink) 55%, transparent));
-  height: var(--sc-size);
-  rotate: 12deg;
-  top: -15%;
-  width: 1px;
-}
-@keyframes sc-rainfall { from { translate: 0 0; } to { translate: -4rem 32rem; } }
 
 /* ---------------------------------------------------------------- shelf */
 /* Box sets on a shelf: rows of spines exactly 15rem tall standing on a plank in each row gap. */
@@ -2192,7 +2026,6 @@
   [data-look="showcase"] .sc-row-nav { display: none; }
   [data-look="showcase"] body::before { display: none; }       /* no ambient light: a big blur costs a phone */
   [data-look="showcase"] .spotlight-trailer { bottom: auto; top: 0.25rem; }   /* clear of the text below */
-  [data-look="showcase"] :is(.collection-backdrop-frame, .spotlight-band)::after { animation: none; }   /* still grain */
   [data-look="showcase"] .sc-watermark { font-size: 5rem; }
   [data-look="showcase"] .poster-wall-row { animation: none !important; }   /* a still wall */
   [data-look="showcase"] .poster-wall-row:nth-child(n+3) { display: none; }

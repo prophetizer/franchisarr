@@ -59,12 +59,20 @@ def test_horror_wins_a_tie_and_crime_loses_one(session: Session) -> None:
     assert about_service.mood(session, collection_id=51) == "war"
 
 
-def test_every_mood_has_weather_and_a_name_the_script_knows() -> None:
+def test_nothing_drifts_or_chases_over_a_banner() -> None:
+    """michael, 2026-10-03: "get rid of the snow type specs, get rid of the flashing lights on
+    completed" -- the motes, the film grain, the genre weather, the beam's dust and the marquee
+    bulbs all went in 0.70.1. The genre grades and the vignette stay."""
     js = (HERE / "app" / "static" / "showcase-cinema.js").read_text()
     css = (HERE / "app" / "static" / "showcase.css").read_text()
-    for _, name in about_service.MOODS:
-        assert re.search(rf"^\s+{name}: \{{ ink:", js, re.M), f"{name} has no entry in MOODS"
-        assert f".sc-mood--{name} span" in css, f"{name} has no weather"
+    main = (HERE / "app" / "static" / "showcase.js").read_text()
+    for gone in ("sc-marquee", "sc-chase", "sc-mood--", "sc-shooting", "sc-beam-dust", "sc-grain", "@keyframes sc-mote",
+                 "feTurbulence"):
+        assert gone not in js + css + main, gone
+    assert "mote.style" not in main
+    assert "root.dataset.mood = moody.dataset.mood;" in js
+    assert '[data-look="showcase"][data-mood="western"] .collection-backdrop' in css
+    assert "radial-gradient(ellipse at center, transparent 55%" in css, "the vignette stays"
 
 
 def test_the_detail_page_carries_its_mood(client: TestClient) -> None:  # noqa: F811

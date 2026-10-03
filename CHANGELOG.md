@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.70.1] — 2026-10-03
+
+### Removed
+
+Showcase:
+
+- **The drifting specks and the flashing bulbs.** Banners no longer have specks of light rising
+  through them, the moving film grain, or a genre's weather (stars, rain, dust, embers, fog,
+  sparkles, bubbles); the home spotlight's projector beam has no dust in it; and a complete
+  collection or franchise no longer has chasing marquee bulbs round its banner. The darkened
+  corners, the genre colour grades and the complete set's holographic poster stay.
+
 ## [0.70.0] — 2026-10-03
 
 ### Added

@@ -20,7 +20,6 @@
 //   quick find -- Ctrl+K (or Cmd+K) searches from anywhere
 //   surprise   -- Surprise me's pick lands after a slot-machine spin of posters
 //   reveal     -- cards glide up as they scroll into view, with a glint across each poster
-//   motes      -- specks of light drift up through a banner (fewer on phones)
 //   holo       -- rainbow foil on a complete collection's poster and on trophies
 //   tab        -- a running scan's progress in the browser tab's icon and title
 //   watermark  -- a banner's name, huge and outlined, behind it
@@ -871,8 +870,8 @@
   }
 
   // ------------------------------------------------------------ banner layer (0.56.0, 0.57.0)
-  // Between a banner's picture and its text: the name, huge and outlined (0.57.0), and a few
-  // specks of light rising and fading at their own pace (0.56.0; not with reduce motion).
+  // Between a banner's picture and its text: the name, huge and outlined (0.57.0). The specks of
+  // light that rose through it (0.56.0) went in 0.70.1, michael's call.
   document.querySelectorAll('.collection-heading.has-backdrop').forEach(function (band) {
     var layer = document.createElement('div');
     layer.className = 'sc-motes';
@@ -885,17 +884,6 @@
       mark.className = 'sc-watermark';
       mark.textContent = name.replace(/\s+collection$/i, '');
       layer.appendChild(mark);
-    }
-    for (var n = 0; n < (reduce ? 0 : phone ? 6 : 16); n++) {
-      var mote = document.createElement('span');
-      var t = 9 + Math.random() * 10;
-      mote.style.setProperty('--sc-x', (Math.random() * 100).toFixed(1) + '%');
-      mote.style.setProperty('--sc-y', (45 + Math.random() * 55).toFixed(1) + '%');
-      mote.style.setProperty('--sc-size', (2 + Math.random() * 5).toFixed(1) + 'px');
-      mote.style.setProperty('--sc-t', t.toFixed(1) + 's');
-      mote.style.setProperty('--sc-wait', (-Math.random() * t).toFixed(1) + 's');   // already on its way
-      mote.style.setProperty('--sc-dx', ((Math.random() - 0.5) * 6).toFixed(1) + 'rem');
-      layer.appendChild(mote);
     }
     band.appendChild(layer);   // under the content (z-index 1), over the picture and its shading
   });

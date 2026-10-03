@@ -1,9 +1,8 @@
 // Showcase's cinema pieces (0.60.0), loaded after showcase.js and showcase-intros.js:
 //   ticket     -- adding a film prints a ticket stub in the dialog, and its stub tears off
-//   marquee    -- a complete collection's or franchise's banner gets chasing marquee bulbs
 //   credits    -- the foot of a detail page rolls up like end credits (The End / To be continued)
 //   beam       -- a projector's cone of light over the home spotlight, flickering on at load
-//   moods      -- the set's main genre sets the banner's atmosphere (stars, rain, dust, fog...)
+//   moods      -- the set's main genre grades the banner's picture
 //   shelf      -- the Collections and Franchises grids can be shown as box-set spines on a shelf
 //   lightbox   -- an owned or upcoming film's poster, or the page's own, opens large
 //   scenes     -- empty and finished pages get a small scene instead of bare words
@@ -16,7 +15,8 @@
 //   house      -- playing a trailer dims the room; closing it brings the lights back up
 //   projector  -- a running scan plays on a projector into a countdown leader
 //   stubs      -- Activity's adds as a roll of ticket stubs
-// "Reduce motion" keeps them all still: no printing, chasing, rolling, flicker or drifting.
+// "Reduce motion" keeps them all still: no printing, rolling or flicker.
+// The marquee bulbs, the banner weather and the beam's dust went in 0.70.1, michael's call.
 (function () {
   'use strict';
 
@@ -46,23 +46,6 @@
     copy.querySelectorAll('.sc-odo').forEach(function (odo) { odo.remove(); });
     return copy.textContent.replace(/\s+/g, ' ').trim();
   }
-  function random(from, to) { return from + Math.random() * (to - from); }
-  // Specks for a layer: each with its own place, size, pace and head start.
-  function specks(layer, count, size, pace) {
-    for (var n = 0; n < count; n++) {
-      var s = make('span');
-      var t = random(pace[0], pace[1]);
-      s.style.setProperty('--sc-x', random(0, 100).toFixed(1) + '%');
-      s.style.setProperty('--sc-y', random(0, 100).toFixed(1) + '%');
-      s.style.setProperty('--sc-size', random(size[0], size[1]).toFixed(1) + 'px');
-      s.style.setProperty('--sc-t', t.toFixed(2) + 's');
-      s.style.setProperty('--sc-wait', (-Math.random() * t).toFixed(2) + 's');   // already on its way
-      s.style.setProperty('--sc-dx', random(-3, 3).toFixed(1) + 'rem');
-      layer.appendChild(s);
-    }
-    return layer;
-  }
-
   // ------------------------------------------------------------ ticket
   // The add dialog says "Added"; Showcase hands you a ticket for it. It prints down out of the
   // dialog's header, and a moment later its stub tears along the perforation and drops away.
@@ -90,45 +73,6 @@
     }
   };
   document.querySelectorAll('dialog[data-ticket]').forEach(printTicket);
-
-  // ------------------------------------------------------------ marquee
-  // Bulbs round a complete set's banner, in three groups lit in turn: the classic chase. Laid
-  // out along its edges by count, so they're redrawn (cheaply) when the banner changes size.
-  var bulbsFor = function (band) {
-    var frame = make('span', 'sc-marquee');
-    frame.setAttribute('aria-hidden', 'true');
-    band.appendChild(frame);
-    var lay = function () {
-      var w = band.offsetWidth, h = band.offsetHeight;
-      if (!w || !h) { return; }
-      var gap = phone ? 30 : 24;
-      var across = Math.max(2, Math.round(w / gap)), down = Math.max(2, Math.round(h / gap));
-      // A banner that runs from edge to edge of the window has no sides to light.
-      var sides = band.getBoundingClientRect().left > 4;
-      var spots = [], i;
-      for (i = 0; i < across; i++) { spots.push([i / across * 100, 0]); }
-      for (i = 0; sides && i < down; i++) { spots.push([100, i / down * 100]); }
-      for (i = 0; i < across; i++) { spots.push([100 - i / across * 100, 100]); }
-      for (i = 0; sides && i < down; i++) { spots.push([0, 100 - i / down * 100]); }
-      frame.textContent = '';
-      spots.forEach(function (spot, n) {
-        var bulb = make('i');
-        bulb.style.left = spot[0].toFixed(2) + '%';
-        bulb.style.top = spot[1].toFixed(2) + '%';
-        bulb.style.setProperty('--sc-phase', String(n % 3));
-        frame.appendChild(bulb);
-      });
-    };
-    lay();
-    if ('ResizeObserver' in window) {
-      var last = '';
-      new ResizeObserver(function () {
-        var size = band.offsetWidth + 'x' + band.offsetHeight;
-        if (size !== last) { last = size; lay(); }
-      }).observe(band);
-    }
-  };
-  document.querySelectorAll('.collection-heading[data-complete]').forEach(bulbsFor);
 
   // ------------------------------------------------------------ end credits
   // They roll when they come on screen, at a reading pace, and stop with The End (or To be
@@ -164,46 +108,20 @@
   }
 
   // ------------------------------------------------------------ projector beam
-  // A cone of light from the top corner over the home page's spotlight, with dust turning in it.
+  // A cone of light from the top corner over the home page's spotlight.
   var band = document.querySelector('.spotlight-band');
   if (band) {
     var beam = make('div', 'sc-beam' + (reduce ? ' is-still' : ''));
     beam.setAttribute('aria-hidden', 'true');
     beam.appendChild(make('span', 'sc-beam-cone'));
-    if (!reduce) { beam.appendChild(specks(make('span', 'sc-beam-dust'), phone ? 8 : 18, [1.5, 4], [10, 20])); }
     band.insertBefore(beam, band.querySelector('.spotlight-trailer, .spotlight-dots'));
   }
 
   // ------------------------------------------------------------ genre moods
-  // A set that's mostly one genre (the server decides: data-mood) gives its banner that genre's
-  // weather, in place of the plain motes; the picture's grade changes to suit (showcase.css).
-  var MOODS = {
-    horror: { ink: 'rgb(205 214 224)', count: [3, 3], size: [0, 0], pace: [26, 44] },       // fog
-    animation: { ink: 'rgb(255 255 255)', count: [12, 6], size: [8, 22], pace: [7, 12] },  // bubbles
-    western: { ink: 'rgb(236 198 140)', count: [26, 10], size: [1.5, 3.5], pace: [9, 16] },  // dust
-    war: { ink: 'rgb(255 132 52)', count: [22, 10], size: [2, 4.5], pace: [4, 8] },          // embers
-    scifi: { ink: 'rgb(226 238 255)', count: [56, 24], size: [1, 2.6], pace: [2.5, 6] },      // stars
-    fantasy: { ink: 'rgb(255 226 150)', count: [16, 8], size: [8, 16], pace: [3, 6] },        // sparkles
-    crime: { ink: 'rgb(186 202 224)', count: [44, 20], size: [14, 30], pace: [0.6, 1.1] },    // rain
-  };
+  // A set that's mostly one genre (the server decides: data-mood) has its banner's picture graded
+  // to suit (showcase.css).
   var moody = document.querySelector('.collection-heading[data-mood]');
-  var mood = moody && MOODS[moody.dataset.mood];
-  if (mood) {
-    root.dataset.mood = moody.dataset.mood;
-    root.style.setProperty('--sc-mood-ink', mood.ink);
-    if (!reduce && moody.classList.contains('has-backdrop')) {
-      var weather = specks(make('div', 'sc-mood sc-mood--' + moody.dataset.mood), mood.count[phone ? 1 : 0], mood.size, mood.pace);
-      weather.setAttribute('aria-hidden', 'true');
-      if (moody.dataset.mood === 'fantasy') {
-        weather.querySelectorAll('span').forEach(function (s) { s.textContent = '✦'; });
-      }
-      if (moody.dataset.mood === 'scifi' && !phone) {
-        weather.appendChild(make('b', 'sc-shooting'));   // now and then, a shooting star
-      }
-      moody.classList.add('sc-moody');
-      moody.appendChild(weather);
-    }
-  }
+  if (moody) { root.dataset.mood = moody.dataset.mood; }
 
   // ------------------------------------------------------------ shelf
   // Collections and Franchises as box sets on a shelf: one spine per card, its poster as the
