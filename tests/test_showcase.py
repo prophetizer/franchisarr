@@ -192,3 +192,18 @@ def test_cards_are_marked_on_every_page_not_only_pages_with_an_intro() -> None:
     marks = js.index("markCards(document);")
     assert js.index("var WHICH = [") < marks < js.index("if (!heading) { return; }")
     assert "if (root.dataset.intros !== 'off') {" in js[marks - 200:marks]
+
+
+def test_every_other_set_gets_a_genre_intro() -> None:
+    """michael, 2026-10-03: "make intros for everything". A collection or franchise without its
+    own intro plays its genre's -- one for every mood the server can set, and a plain one."""
+    import re
+    from pathlib import Path
+
+    from app.services.about_service import MOODS
+
+    js = (Path(__file__).resolve().parents[1] / "app" / "static" / "showcase-intros.js").read_text()
+    block = js[js.index("var GENRE = {"):js.index("// A collection's or franchise's own intro if it has one")]
+    genres = set(re.findall(r"^    (\w+): function \(\) \{", block, re.M))
+    assert genres == {name for _, name in MOODS} | {"cinema"}
+    assert "SET_PAGE.test(window.location.pathname) ? GENRE[GENRE[mood] ? mood : 'cinema']" in js, "sets only, not directors"

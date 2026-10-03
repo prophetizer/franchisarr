@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.69.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.70.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -302,6 +302,12 @@ device's "reduce motion" setting turns them off altogether. Completing one of th
 also brings its own confetti. A small gold clapperboard on a card — in the Collections and Franchises
 lists (and on the shelf), the home page's rows and spotlight, the Trophy case, search and Ctrl+K
 — marks a set whose page has one; it isn't shown to anyone who has intros switched off.
+
+Every other collection and franchise gets a shorter **genre intro** (about two and a half seconds),
+built from its own name, counts and poster: a 3-2-1 countdown leader for most, and for a set that's
+mostly one genre, flickering red for horror, hyperspace for sci-fi, bouncing colour for animation,
+a wanted poster for westerns, searchlights for war, swirling sparkles for fantasy, or rain and
+venetian blinds for crime. Only the franchises below carry the gold clapperboard on their cards.
 
 | Franchise | Plays on pages named | What happens |
 |---|---|---|

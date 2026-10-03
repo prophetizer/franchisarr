@@ -1,4 +1,5 @@
-// Showcase's franchise intros (0.57.0; their own file since 0.58.0; a hundred and twenty-eight since 0.69.0): a nod to a franchise's films
+// Showcase's franchise intros (0.57.0; their own file since 0.58.0; a hundred and twenty-eight since 0.69.0, and a
+// genre intro for every other collection and franchise since 0.70.0): a nod to a franchise's films
 // when its page opens -- once per visit to each page, skipped by a click or any key, and replayed
 // from the ▶ Intro button. Off for anyone who turned them off in their menu (data-intros="off")
 // and with "reduce motion". The words are this app's own; the looks are the films'.
@@ -4551,9 +4552,181 @@
     },
   };
 
+
+  // ------------------------------------------------------------ genre intros (0.70.0)
+  // Every collection or franchise page without an intro of its own gets a short one in the style
+  // of its main genre (the server's data-mood, 0.60.0), or a plain cinema one -- built from the
+  // page's own name, counts and posters. About two and a half seconds, so browsing doesn't drag.
+  // (michael, 2026-10-03: "make intros for everything".)
+  function genreTitle(c, cls, colour, sub) {
+    var box = document.createElement('div');
+    box.className = 'sc-gtitle ' + cls;
+    box.style.color = colour;
+    text('p', 'sc-gtitle-name', page.short, box);
+    if (sub !== false) { text('p', 'sc-gtitle-sub', page.total ? page.have + ' of ' + page.total + ' in your library' : 'In your library', box); }
+    c.el.appendChild(box);
+    return box;
+  }
+  var GENRE = {
+    // A cinema countdown leader, 3-2-1, then the title card.
+    cinema: function () {
+      var c = curtain({ max: 3600, background: 'rgb(16 14 12)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var title = null;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        if (t < 1.5) {
+          var n = 3 - Math.floor(t / 0.5), sweep = (t % 0.5) / 0.5, cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.3;
+          g.fillStyle = 'rgba(200, 190, 170, 0.15)'; g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + sweep * Math.PI * 2); g.closePath(); g.fill();
+          g.strokeStyle = 'rgba(220, 210, 190, 0.8)'; g.lineWidth = 3;
+          g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke(); g.beginPath(); g.arc(cx, cy, R * 0.85, 0, Math.PI * 2); g.stroke();
+          g.beginPath(); g.moveTo(cx - R * 1.3, cy); g.lineTo(cx + R * 1.3, cy); g.moveTo(cx, cy - R * 1.3); g.lineTo(cx, cy + R * 1.3); g.stroke();
+          g.fillStyle = 'rgb(235 225 205)'; g.font = '700 ' + Math.round(R * 0.9) + 'px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+          g.fillText(String(n), cx, cy);
+        } else if (!title) {
+          title = genreTitle(c, 'sc-gtitle--cinema', 'rgb(240 230 210)');
+        }
+        g.fillStyle = 'rgba(255, 240, 210, ' + (Math.random() * 0.05) + ')'; g.fillRect(0, 0, W, H);
+        return t < 2.8;
+      });
+    },
+    // Horror: flickering dark and a scratchy blood-red title, with a heartbeat thump.
+    horror: function () {
+      var c = curtain({ max: 3600, background: 'black' });
+      var title = genreTitle(c, 'sc-gtitle--horror', 'rgb(190 20 20)');
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height, beat = 0;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        title.style.opacity = Math.random() > 0.15 ? String(Math.min(1, t / 0.6)) : '0.1';
+        if (Math.floor(t / 0.8) > beat) { beat = Math.floor(t / 0.8); shakePage(4, 160); }
+        g.strokeStyle = 'rgba(200, 200, 200, 0.12)'; g.lineWidth = 1;
+        for (var s = 0; s < 4; s++) { var x = Math.random() * W; g.beginPath(); g.moveTo(x, 0); g.lineTo(x + (Math.random() - 0.5) * 20, H); g.stroke(); }
+        var edge = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.2, W / 2, H / 2, Math.max(W, H) * 0.7);
+        edge.addColorStop(0, 'rgba(0, 0, 0, 0)'); edge.addColorStop(1, 'rgba(60, 0, 0, 0.6)');
+        g.fillStyle = edge; g.fillRect(0, 0, W, H);
+        return t < 2.6;
+      });
+    },
+    // Sci-fi: a burst of hyperspace streaks, then the title glowing with a scanline.
+    scifi: function () {
+      var c = curtain({ max: 3600, background: 'rgb(2 4 12)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var stars = [], title = null;
+      for (var i = 0; i < 220; i++) { stars.push({ a: Math.random() * Math.PI * 2, d: Math.random() * 0.2 }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var speed = t < 1.0 ? t : Math.max(0, 2 - t);
+        g.strokeStyle = 'rgba(200, 225, 255, 0.85)'; g.lineWidth = 1.5; g.beginPath();
+        stars.forEach(function (s) {
+          s.d += 0.004 + speed * 0.05;
+          if (s.d > 1.2) { s.d = Math.random() * 0.1; }
+          var r1 = s.d * Math.hypot(W, H) * 0.6, r2 = r1 * (1 - speed * 0.25);
+          g.moveTo(W / 2 + Math.cos(s.a) * r2, H / 2 + Math.sin(s.a) * r2); g.lineTo(W / 2 + Math.cos(s.a) * r1, H / 2 + Math.sin(s.a) * r1);
+        });
+        g.stroke();
+        if (t > 1.0 && !title) { title = genreTitle(c, 'sc-gtitle--scifi', 'rgb(160 220 255)'); }
+        if (title) { g.fillStyle = 'rgba(160, 220, 255, 0.08)'; g.fillRect(0, (t * 400) % H, W, 3); }
+        return t < 2.6;
+      });
+    },
+    // Animation: bright circles pop in, then the title bounces in.
+    animation: function () {
+      var c = curtain({ max: 3600, background: 'rgb(255 236 170)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var palette = ['rgb(255 100 120)', 'rgb(80 180 255)', 'rgb(120 220 120)', 'rgb(255 180 60)', 'rgb(180 120 255)'], dots = [];
+      for (var i = 0; i < 24; i++) { dots.push({ x: Math.random() * W, y: Math.random() * H, r: 20 + Math.random() * 60, at: Math.random() * 0.8, c: palette[i % 5] }); }
+      var title = genreTitle(c, 'sc-gtitle--animation', 'rgb(60 40 120)');
+      if (title.animate) { title.animate([{ scale: 0, rotate: '-10deg' }, { scale: 1.2, rotate: '4deg', offset: 0.6 }, { scale: 0.95, offset: 0.8 }, { scale: 1, rotate: '0deg' }], { duration: 700, delay: 600, easing: 'ease-out', fill: 'both' }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        dots.forEach(function (d) {
+          var p = Math.min(1, Math.max(0, (t - d.at) / 0.3)), s = p < 1 ? p * 1.2 : 1 + Math.sin((t - d.at) * 6) * 0.05;
+          g.fillStyle = d.c; g.beginPath(); g.arc(d.x, d.y, d.r * s, 0, Math.PI * 2); g.fill();
+        });
+        return t < 2.6;
+      });
+    },
+    // Western: a wanted poster -- the collection's poster, and the reward in films.
+    western: function () {
+      var c = curtain({ max: 3800, background: 'linear-gradient(to bottom, rgb(150 100 60), rgb(90 56 30))' });
+      var n = page.missing.length;
+      var bill = document.createElement('div');
+      bill.className = 'sc-wanted';
+      bill.style.background = 'rgb(232 210 160)'; bill.style.color = 'rgb(70 40 20)';
+      text('p', 'sc-wanted-head', 'Wanted', bill);
+      var pic = document.createElement('span');
+      pic.className = 'sc-wanted-pic';
+      pic.style.background = page.posters.length ? 'url("' + bigger(page.posters[0]).replace(/"/g, '%22') + '") center / cover' : 'rgb(120 90 60)';
+      pic.style.filter = 'sepia(0.8) contrast(1.1)';
+      bill.appendChild(pic);
+      text('p', 'sc-wanted-name', page.short, bill);
+      text('p', 'sc-wanted-reward', n ? 'Reward: ' + plural(n, 'film') : 'Captured: every one', bill);
+      c.el.appendChild(bill);
+      if (bill.animate) { bill.animate([{ translate: '-50% -150%', rotate: '-8deg' }, { translate: '-50% -50%', rotate: '-2deg' }], { duration: 600, easing: 'cubic-bezier(.2, .9, .3, 1.2)', fill: 'both' }); }
+      window.setTimeout(c.finish, 2800);
+    },
+    // War: smoke and crossing searchlights, and a stencilled title.
+    war: function () {
+      var c = curtain({ max: 3600, background: 'linear-gradient(to bottom, rgb(30 32 30), rgb(60 58 50))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var title = genreTitle(c, 'sc-gtitle--war', 'rgb(220 210 180)');
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        [[0.2, 1], [0.8, -1]].forEach(function (l) {
+          var a = -Math.PI / 2 + Math.sin(t * 1.5) * 0.5 * l[1], x = W * l[0];
+          var beam = g.createLinearGradient(x, H, x + Math.cos(a) * H, H + Math.sin(a) * H);
+          beam.addColorStop(0, 'rgba(255, 250, 220, 0.35)'); beam.addColorStop(1, 'rgba(255, 250, 220, 0)');
+          g.fillStyle = beam; g.beginPath(); g.moveTo(x - 10, H); g.lineTo(x + Math.cos(a - 0.08) * H * 1.3, H + Math.sin(a - 0.08) * H * 1.3); g.lineTo(x + Math.cos(a + 0.08) * H * 1.3, H + Math.sin(a + 0.08) * H * 1.3); g.lineTo(x + 10, H); g.closePath(); g.fill();
+        });
+        for (var s = 0; s < 6; s++) { var puff = g.createRadialGradient(W * (s / 5), H * 0.85, 0, W * (s / 5), H * 0.85, 160); puff.addColorStop(0, 'rgba(120, 115, 100, 0.3)'); puff.addColorStop(1, 'rgba(120, 115, 100, 0)'); g.fillStyle = puff; g.fillRect(0, 0, W, H); }
+        title.style.opacity = String(Math.min(1, t / 0.5));
+        return t < 2.6;
+      });
+    },
+    // Fantasy: sparkles swirl inward and the title glows gold.
+    fantasy: function () {
+      var c = curtain({ max: 3600, background: 'radial-gradient(circle at 50% 45%, rgb(50 30 80), rgb(10 6 20))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var sparks = [], title = null;
+      for (var i = 0; i < 160; i++) { sparks.push({ a: Math.random() * Math.PI * 2, r: Math.max(W, H) * (0.4 + Math.random() * 0.4) }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var pull = Math.min(1, t / 1.2);
+        sparks.forEach(function (s) {
+          var a = s.a + t * 2, r = s.r * (1 - pull * 0.92);
+          g.fillStyle = 'rgba(255, 225, 140, ' + (0.4 + Math.random() * 0.6) + ')'; g.fillRect(W / 2 + Math.cos(a) * r, H / 2 + Math.sin(a) * r * 0.6, 2.5, 2.5);
+        });
+        if (t > 1.1 && !title) { title = genreTitle(c, 'sc-gtitle--fantasy', 'rgb(255 225 150)'); }
+        return t < 2.6;
+      });
+    },
+    // Crime: rain and venetian-blind shadows, the title typed out.
+    crime: function () {
+      var c = curtain({ max: 3800, background: 'rgb(18 20 24)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var drops = [];
+      for (var i = 0; i < 200; i++) { drops.push({ x: Math.random() * W, y: Math.random() * H, v: 10 + Math.random() * 8 }); }
+      var title = genreTitle(c, 'sc-gtitle--crime', 'rgb(230 225 210)', false);
+      var nameEl = title.querySelector('.sc-gtitle-name');
+      typeOut(nameEl, page.short, 60);
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        g.fillStyle = 'rgba(255, 240, 210, 0.08)';
+        for (var b = 0; b < 12; b++) { g.fillRect(0, H * 0.1 + b * H * 0.07, W, H * 0.035); }
+        g.strokeStyle = 'rgba(170, 185, 210, 0.35)'; g.lineWidth = 1; g.beginPath();
+        drops.forEach(function (d) { d.y += d.v; if (d.y > H) { d.y = -20; d.x = Math.random() * W; } g.moveTo(d.x, d.y); g.lineTo(d.x - 2, d.y - 14); });
+        g.stroke();
+        return t < 2.8;
+      });
+    },
+  };
+
+  // A collection's or franchise's own intro if it has one, else its genre's; nothing on other
+  // pages with a banner (a director's).
   var which = introFor(name);
-  if (!which || reduce) { return; }
-  var play = INTROS[which[1]];
+  var mood = heading.getAttribute('data-mood');
+  var play = which ? INTROS[which[1]] : (SET_PAGE.test(window.location.pathname) ? GENRE[GENRE[mood] ? mood : 'cinema'] : null);
+  if (!play || reduce) { return; }
 
   // ▶ Intro: watch it again, whatever the menu says.
   var again = document.createElement('button');

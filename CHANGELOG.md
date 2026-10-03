@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.70.0] — 2026-10-03
+
+### Added
+
+Showcase:
+
+- **An intro for every collection and franchise.** Those without one of their own get a short
+  genre intro — about two and a half seconds, once per visit like the others — made from their
+  name, counts and poster: a 3-2-1 countdown leader by default, or, for a set that's mostly one
+  genre, a horror flicker, a sci-fi jump, bouncing animation colours, a western wanted poster,
+  war-time searchlights, fantasy sparkles or noir rain. The hundred and twenty-eight franchises
+  with their own intros keep them, and only they carry the gold clapperboard on their cards.
+
 ## [0.69.0] — 2026-10-03
 
 ### Added

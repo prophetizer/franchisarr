@@ -1421,6 +1421,41 @@
   width: min(80vw, 22rem);
 }
 [data-look="showcase"] .sc-tag p { color: inherit; margin: 0 0 0.3rem; }
+/* Genre intros (0.70.0): the page's name and counts as a title card, styled per genre. */
+[data-look="showcase"] .sc-gtitle {
+  left: 50%;
+  position: absolute;
+  text-align: center;
+  top: 50%;
+  translate: -50% -50%;
+  width: min(44rem, 90vw);
+  z-index: 1;
+}
+[data-look="showcase"] .sc-gtitle p { color: inherit; margin: 0; }
+[data-look="showcase"] .sc-gtitle-name { font-size: clamp(2rem, 7vw, 4.4rem); font-weight: 800; line-height: 1.1; }
+[data-look="showcase"] .sc-gtitle-sub { font-size: clamp(0.9rem, 2.2vw, 1.2rem); letter-spacing: 0.2em; margin-top: 0.6rem !important; opacity: 0.8; text-transform: uppercase; }
+[data-look="showcase"] .sc-gtitle--cinema .sc-gtitle-name { animation: sc-rise 0.8s var(--sc-ease) both; font-family: Georgia, "Times New Roman", serif; font-style: italic; }
+[data-look="showcase"] .sc-gtitle--horror .sc-gtitle-name { font-family: "Chiller", "Creepster", Georgia, serif; letter-spacing: 0.06em; text-shadow: 0 0 1.2rem currentColor; }
+[data-look="showcase"] .sc-gtitle--scifi .sc-gtitle-name { animation: sc-rise 0.6s var(--sc-ease) both; font-family: "Orbitron", "Eurostile", system-ui, sans-serif; letter-spacing: 0.12em; text-shadow: 0 0 1rem currentColor; text-transform: uppercase; }
+[data-look="showcase"] .sc-gtitle--animation .sc-gtitle-name { font-family: "Comic Sans MS", "Chalkboard SE", system-ui, sans-serif; }
+[data-look="showcase"] .sc-gtitle--war .sc-gtitle-name { font-family: "Stencil", Impact, system-ui, sans-serif; letter-spacing: 0.15em; text-transform: uppercase; }
+[data-look="showcase"] .sc-gtitle--fantasy .sc-gtitle-name { animation: sc-rise 0.8s var(--sc-ease) both; font-family: "Palatino Linotype", Palatino, Georgia, serif; text-shadow: 0 0 1.4rem currentColor; }
+[data-look="showcase"] .sc-gtitle--crime .sc-gtitle-name { font-family: ui-monospace, "Courier New", monospace; font-weight: 700; min-height: 1.2em; }
+[data-look="showcase"] .sc-wanted {
+  box-shadow: 0 1rem 2rem color-mix(in srgb, var(--sc-page) 80%, transparent);
+  font-family: Georgia, "Times New Roman", serif;
+  left: 50%;
+  padding: 1rem 1.2rem 1.2rem;
+  position: absolute;
+  text-align: center;
+  top: 50%;
+  width: min(70vw, 18rem);
+}
+[data-look="showcase"] .sc-wanted p { color: inherit; margin: 0; }
+[data-look="showcase"] .sc-wanted-head { font-size: 2.4rem; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; }
+[data-look="showcase"] .sc-wanted-pic { aspect-ratio: 2 / 3; display: block; margin: 0.4rem auto 0.6rem; width: 70%; }
+[data-look="showcase"] .sc-wanted-name { font-size: 1.15rem; font-weight: 700; text-transform: uppercase; }
+[data-look="showcase"] .sc-wanted-reward { font-size: 1rem; font-style: italic; margin-top: 0.3rem !important; }
 [data-look="showcase"] .sc-intro-replay { font-size: 0.85rem; margin: 0 0 0.4rem; padding: 0.25rem 0.75rem; width: auto; }
 [data-look="showcase"] .sc-intro canvas { height: 100%; width: 100%; }
 [data-look="showcase"] .sc-intro-skip {
