@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.68.0] — 2026-10-03
+
+### Added
+
+Showcase:
+
+- **Fifteen more franchise intros** (a hundred and twelve in all), each with its own confetti: It
+  (a red balloon from a storm drain), Evil Dead (a rush through the woods to a cabin), Beetlejuice
+  (a striped spiral and a model town), Hocus Pocus (a black-flame candle and witches across the
+  moon), Dune (a ripple under the sand), Blade Runner (a neon city in the rain), Hellboy (a stone
+  fist cracking the screen), Gladiator (wheat at sunset, then arena gates), Frozen (a snowflake
+  that shatters), Finding Nemo (a reef and a little orange fish), Monsters, Inc. (doors on a rail),
+  Inside Out (memory orbs, one per film), The Hangover (morning-after snapshots), Scooby-Doo (a van
+  and an unmasking) and Joker (a card landing on the joker).
+
+### Changed
+
+- Captain Marvel plays the MCU intro, and Puss in Boots the Shrek storybook.
+
 ## [0.67.0] — 2026-10-03
 
 ### Added

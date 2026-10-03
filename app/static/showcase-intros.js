@@ -1,4 +1,4 @@
-// Showcase's franchise intros (0.57.0; their own file since 0.58.0; ninety-seven since 0.67.0): a nod to a franchise's films
+// Showcase's franchise intros (0.57.0; their own file since 0.58.0; a hundred and twelve since 0.68.0): a nod to a franchise's films
 // when its page opens -- once per visit to each page, skipped by a click or any key, and replayed
 // from the ▶ Intro button. Off for anyone who turned them off in their menu (data-intros="off")
 // and with "reduce motion". The words are this app's own; the looks are the films'.
@@ -19,7 +19,7 @@
     [/star wars/i, 'crawl'],
     [/matrix/i, 'rain'],
     [/harry potter|wizarding world|fantastic beasts/i, 'sparks'],
-    [/marvel cinematic universe|^the avengers collection$|^(iron man|thor|captain america|ant-man|guardians of the galaxy|black panther|doctor strange) collection$|^spider-man \(mcu\)/i, 'flip'],
+    [/marvel cinematic universe|^the avengers collection$|^(iron man|thor|captain america|captain marvel|ant-man|guardians of the galaxy|black panther|doctor strange) collection$|^spider-man \(mcu\)/i, 'flip'],
     [/james bond/i, 'barrel'],
     [/star trek/i, 'warp'],
     [/jurassic (park|world)/i, 'ripple'],
@@ -50,7 +50,7 @@
     [/bourne/i, 'surveil'],
     [/^ice age\b/i, 'freeze'],
     [/^(the )?twilight( saga| collection|$)/i, 'forest'],
-    [/shrek/i, 'storybook'],
+    [/shrek|puss in boots/i, 'storybook'],
     [/^halloween\b/i, 'pumpkin'],
     [/conjuring|^annabelle/i, 'polaroid'],
     [/exorcist/i, 'streetlamp'],
@@ -113,6 +113,21 @@
     [/knives out|glass onion|wake up dead man/i, 'knives'],
     [/ninja turtles/i, 'masks'],
     [/sonic the hedgehog/i, 'rings'],
+    [/^it( collection|$| chapter)/i, 'balloon'],
+    [/evil dead/i, 'cabin'],
+    [/beetlejuice/i, 'stripes'],
+    [/hocus pocus/i, 'witches'],
+    [/^dune\b/i, 'worm'],
+    [/blade runner/i, 'neon'],
+    [/hellboy/i, 'fist'],
+    [/^gladiator\b/i, 'wheat'],
+    [/^frozen\b/i, 'snowflake'],
+    [/finding (nemo|dory)/i, 'reef'],
+    [/monsters,? inc|monsters university/i, 'doors'],
+    [/inside out/i, 'orbs'],
+    [/^the hangover\b/i, 'snapshots'],
+    [/scooby-doo/i, 'van'],
+    [/^joker\b/i, 'card'],
   ];
   function introFor(name) { return WHICH.filter(function (w) { return w[0].test(name); })[0]; }
 
@@ -3593,6 +3608,495 @@
         g.fillStyle = 'rgb(30 80 220)'; g.beginPath(); g.arc(me[0], me[1] - 20, 18, 0, Math.PI * 2); g.fill();
         if (t > 3.0) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.0) / 0.6)); }
         return t < 3.7;
+      });
+    },
+
+    // ---------------------------------------------------------------- 0.68.0
+
+    // It: rain on a dark street, and a single red balloon floating up out of a storm drain.
+    balloon: function () {
+      var c = curtain({ max: 5500, background: 'linear-gradient(to bottom, rgb(30 34 38), rgb(14 16 18))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var drops = [];
+      for (var i = 0; i < 300; i++) { drops.push({ x: Math.random() * W, y: Math.random() * H, v: 12 + Math.random() * 8 }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        g.fillStyle = 'rgb(40 42 44)'; g.fillRect(0, H * 0.8, W, H * 0.2);
+        g.fillStyle = 'rgb(70 72 74)'; g.fillRect(0, H * 0.79, W, 8);
+        var dx = W * 0.5;
+        g.fillStyle = 'rgb(6 6 8)'; g.fillRect(dx - W * 0.08, H * 0.8, W * 0.16, H * 0.05);
+        g.strokeStyle = 'rgb(60 60 62)'; g.lineWidth = 3;
+        for (var b = 0; b < 6; b++) { g.beginPath(); g.moveTo(dx - W * 0.07 + b * W * 0.028, H * 0.8); g.lineTo(dx - W * 0.07 + b * W * 0.028, H * 0.85); g.stroke(); }
+        var rise = Math.min(1, Math.max(0, (t - 0.8) / 2.4)), bx = dx + Math.sin(t * 1.5) * 30, by = H * 0.82 - rise * H * 0.55, r = Math.min(W, H) * (0.05 + rise * 0.03);
+        if (t > 0.8) {
+          g.strokeStyle = 'rgba(230, 230, 230, 0.7)'; g.lineWidth = 1.5;
+          g.beginPath(); g.moveTo(bx, by + r * 1.2); g.quadraticCurveTo(bx + 20, by + r * 3, bx - 10, by + r * 5); g.stroke();
+          var red = g.createRadialGradient(bx - r * 0.35, by - r * 0.4, r * 0.1, bx, by, r * 1.2);
+          red.addColorStop(0, 'rgb(255 120 110)'); red.addColorStop(0.4, 'rgb(210 20 20)'); red.addColorStop(1, 'rgb(110 0 0)');
+          g.fillStyle = red; g.beginPath(); g.ellipse(bx, by, r, r * 1.2, 0, 0, Math.PI * 2); g.fill();
+          g.fillStyle = 'rgb(150 0 0)'; g.beginPath(); g.moveTo(bx - 5, by + r * 1.2 + 6); g.lineTo(bx + 5, by + r * 1.2 + 6); g.lineTo(bx, by + r * 1.15); g.closePath(); g.fill();
+        }
+        g.strokeStyle = 'rgba(170, 180, 190, 0.35)'; g.lineWidth = 1; g.beginPath();
+        drops.forEach(function (d) { d.y += d.v; if (d.y > H) { d.y = -20; d.x = Math.random() * W; } g.moveTo(d.x, d.y); g.lineTo(d.x - 2, d.y - 14); });
+        g.stroke();
+        if (t > 3.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.6) / 0.6)); }
+        return t < 4.3;
+      });
+    },
+
+    // Evil Dead: the camera rushes low and fast through dark woods to a lone cabin, whose door
+    // bursts open.
+    cabin: function () {
+      var c = curtain({ max: 5500, background: 'rgb(8 10 8)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var trees = [];
+      for (var i = 0; i < 40; i++) { trees.push({ x: (Math.random() - 0.5) * 2, z: Math.random() }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var hz = H * 0.5, rush = Math.min(1, t / 2.6);
+        g.fillStyle = 'rgba(30, 40, 30, 0.5)'; g.fillRect(0, hz, W, H - hz);
+        var cz = 0.08 + rush * 0.85, cs = cz * Math.min(W, H) * 0.9, cx = W / 2, cy = hz + cz * H * 0.2;
+        g.fillStyle = 'rgb(30 22 16)'; g.fillRect(cx - cs * 0.6, cy - cs * 0.5, cs * 1.2, cs * 0.5);
+        g.beginPath(); g.moveTo(cx - cs * 0.7, cy - cs * 0.5); g.lineTo(cx, cy - cs * 0.85); g.lineTo(cx + cs * 0.7, cy - cs * 0.5); g.closePath(); g.fill();
+        var open = t > 2.6 ? Math.min(1, (t - 2.6) / 0.15) : 0;
+        g.fillStyle = 'rgba(255, 200, 120, ' + (0.4 + open * 0.6) + ')'; g.fillRect(cx - cs * 0.42, cy - cs * 0.38, cs * 0.16, cs * 0.12);
+        g.fillStyle = open ? 'rgb(255 240 200)' : 'rgb(50 36 24)'; g.fillRect(cx - cs * 0.08, cy - cs * 0.32, cs * 0.16, cs * 0.32);
+        trees.forEach(function (tr) {
+          var z = (tr.z + t * 0.6) % 1, s = 1 / (1.2 - z), x = W / 2 + tr.x * W * 0.5 * s, w = 6 * s;
+          if (Math.abs(x - W / 2) < cs * 0.8 && z > 0.6) { return; }
+          g.fillStyle = 'rgba(14, 18, 14, ' + Math.min(1, z * 1.5) + ')'; g.fillRect(x - w / 2, 0, w, H);
+        });
+        if (open) { g.fillStyle = 'rgba(255, 245, 220, ' + Math.min(0.9, (t - 2.6) * 2) + ')'; g.fillRect(0, 0, W, H); }
+        if (t > 3.2) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.2) / 0.5)); }
+        return t < 3.8;
+      });
+    },
+
+    // Beetlejuice: black-and-white stripes swirl into a spiral, a little model town spinning in
+    // the middle.
+    stripes: function () {
+      var c = curtain({ max: 5000, background: 'rgb(240 240 236)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var cx = W / 2, cy = H / 2, R = Math.hypot(W, H) * 0.6, spin = t * 1.4;
+        g.fillStyle = 'rgb(18 18 20)';
+        for (var b = 0; b < 16; b += 2) {
+          g.beginPath(); g.moveTo(cx, cy);
+          for (var s = 0; s <= 24; s++) { var q = s / 24, a = spin + b / 16 * Math.PI * 2 + q * 3.4; g.lineTo(cx + Math.cos(a) * R * q, cy + Math.sin(a) * R * q); }
+          for (var s2 = 24; s2 >= 0; s2--) { var q2 = s2 / 24, a2 = spin + (b + 1) / 16 * Math.PI * 2 + q2 * 3.4; g.lineTo(cx + Math.cos(a2) * R * q2, cy + Math.sin(a2) * R * q2); }
+          g.closePath(); g.fill();
+        }
+        var r = Math.min(W, H) * 0.14;
+        g.save(); g.translate(cx, cy); g.rotate(-t * 0.8);
+        g.fillStyle = 'rgb(110 160 80)'; g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.fill();
+        [[-0.5, -0.2, 0.3], [0.1, -0.45, 0.25], [0.35, 0.15, 0.28], [-0.25, 0.35, 0.22]].forEach(function (hs, i) {
+          g.fillStyle = i % 2 ? 'rgb(230 220 200)' : 'rgb(200 120 90)';
+          g.fillRect(hs[0] * r, hs[1] * r, hs[2] * r, hs[2] * r * 0.8);
+          g.fillStyle = 'rgb(90 40 40)'; g.beginPath(); g.moveTo(hs[0] * r - 2, hs[1] * r); g.lineTo(hs[0] * r + hs[2] * r / 2, hs[1] * r - hs[2] * r * 0.5); g.lineTo(hs[0] * r + hs[2] * r + 2, hs[1] * r); g.closePath(); g.fill();
+        });
+        g.restore();
+        if (t > 3.0) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.0) / 0.6)); }
+        return t < 3.7;
+      });
+    },
+
+    // Hocus Pocus: a black-flame candle lights, green fog rolls, and three witches on brooms
+    // cross a full moon.
+    witches: function () {
+      var c = curtain({ max: 5500, background: 'linear-gradient(to bottom, rgb(20 16 40), rgb(40 30 60))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var fog = [];
+      for (var i = 0; i < 10; i++) { fog.push({ x: Math.random() * W, y: H * (0.7 + Math.random() * 0.3), r: 120 + Math.random() * 120, v: 0.4 + Math.random() * 0.6 }); }
+      var witch = function (x, y, s) {
+        g.fillStyle = 'rgb(8 6 12)';
+        g.fillRect(x - s * 1.2, y, s * 2.4, s * 0.08);
+        g.beginPath(); g.moveTo(x + s * 1.2, y - s * 0.1); g.lineTo(x + s * 1.6, y + s * 0.04); g.lineTo(x + s * 1.2, y + s * 0.18); g.closePath(); g.fill();
+        g.beginPath(); g.moveTo(x - s * 0.4, y); g.lineTo(x + s * 0.3, y); g.lineTo(x, y - s * 0.7); g.closePath(); g.fill();
+        g.beginPath(); g.arc(x, y - s * 0.75, s * 0.15, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.moveTo(x - s * 0.3, y - s * 0.85); g.lineTo(x + s * 0.3, y - s * 0.85); g.lineTo(x + s * 0.05, y - s * 1.35); g.closePath(); g.fill();
+      };
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var mx = W * 0.6, my = H * 0.3, mr = Math.min(W, H) * 0.18;
+        g.fillStyle = 'rgba(245, 240, 210, 0.95)'; g.beginPath(); g.arc(mx, my, mr, 0, Math.PI * 2); g.fill();
+        if (t > 1.2) {
+          [0, 0.35, 0.7].forEach(function (lag) {
+            var q = Math.min(1.3, Math.max(0, (t - 1.2 - lag) / 1.8));
+            witch(-W * 0.1 + q * W * 1.1, my + (lag - 0.35) * mr * 1.2 + Math.sin(q * 6) * 10, Math.min(W, H) * 0.05);
+          });
+        }
+        var cx = W * 0.2, cy = H * 0.85;
+        g.fillStyle = 'rgb(230 220 200)'; g.fillRect(cx - 10, cy - 50, 20, 50);
+        if (t > 0.4) {
+          var flick = 0.8 + Math.random() * 0.2;
+          g.fillStyle = 'rgb(10 10 14)'; g.beginPath(); g.ellipse(cx, cy - 62 * flick, 7, 14 * flick, 0, 0, Math.PI * 2); g.fill();
+          var aura = g.createRadialGradient(cx, cy - 62, 0, cx, cy - 62, 60);
+          aura.addColorStop(0, 'rgba(120, 255, 120, 0.4)'); aura.addColorStop(1, 'rgba(120, 255, 120, 0)');
+          g.fillStyle = aura; g.fillRect(0, 0, W, H);
+        }
+        fog.forEach(function (f) {
+          f.x += f.v; if (f.x - f.r > W) { f.x = -f.r; }
+          var puff = g.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r);
+          puff.addColorStop(0, 'rgba(110, 230, 120, ' + 0.22 * Math.min(1, t) + ')'); puff.addColorStop(1, 'rgba(110, 230, 120, 0)');
+          g.fillStyle = puff; g.fillRect(f.x - f.r, f.y - f.r, f.r * 2, f.r * 2);
+        });
+        if (t > 3.8) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.8) / 0.6)); }
+        return t < 4.5;
+      });
+    },
+
+    // Dune: golden dunes shimmering in the heat, and a vast ripple travelling under the sand
+    // toward you.
+    worm: function () {
+      var c = curtain({ max: 5500, background: 'linear-gradient(to bottom, rgb(230 170 100), rgb(250 210 150))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var dunes = [['rgb(210 150 80)', 0.55, 40], ['rgb(195 135 70)', 0.66, 30], ['rgb(180 120 60)', 0.8, 22]];
+        var near = Math.min(1, t / 3.0), rx = W * (0.15 + near * 0.35), ry = H * (0.6 + near * 0.32), rr = 30 + near * Math.min(W, H) * 0.4;
+        dunes.forEach(function (d, i) {
+          g.fillStyle = d[0]; g.beginPath(); g.moveTo(0, H);
+          for (var x = 0; x <= W; x += 10) {
+            var y = H * d[1] + Math.sin(x / (120 + i * 60) + i) * d[2] + Math.sin(x / 37 + t * 3) * 1.5;
+            var dist = Math.hypot(x - rx, (y - ry) * 2);
+            if (dist < rr && i === 2) { y -= Math.cos(dist / rr * Math.PI / 2) * 40 * near; }
+            g.lineTo(x, y);
+          }
+          g.lineTo(W, H); g.closePath(); g.fill();
+        });
+        g.strokeStyle = 'rgba(255, 230, 180, ' + 0.4 * near + ')'; g.lineWidth = 2;
+        for (var k = 0; k < 3; k++) { g.beginPath(); g.ellipse(rx, ry, rr * (0.5 + k * 0.25), rr * (0.12 + k * 0.06), 0, Math.PI, Math.PI * 2); g.stroke(); }
+        g.fillStyle = 'rgba(255, 240, 210, 0.08)';
+        for (var s = 0; s < 6; s++) { g.fillRect(0, H * 0.45 + s * 6 + Math.sin(t * 5 + s) * 3, W, 2); }
+        if (t > 3.0) { shakePage(2, 120); }
+        if (t > 3.4) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.4) / 0.6)); }
+        return t < 4.1;
+      });
+    },
+
+    // Blade Runner: a neon city in the rain at night, flying cars drifting past glowing towers.
+    neon: function () {
+      var c = curtain({ max: 5500, background: 'linear-gradient(to bottom, rgb(10 8 20), rgb(30 20 40))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var towers = [], cars = [], drops = [];
+      for (var i = 0; i < 18; i++) { towers.push({ x: i / 18 * W, w: W / 18 + 8, h: H * (0.3 + Math.random() * 0.6), lit: Math.random() }); }
+      for (var k = 0; k < 6; k++) { cars.push({ x: Math.random() * W, y: H * (0.2 + Math.random() * 0.4), v: (Math.random() > 0.5 ? 1 : -1) * (1 + Math.random() * 2) }); }
+      for (var d = 0; d < 260; d++) { drops.push({ x: Math.random() * W, y: Math.random() * H, v: 10 + Math.random() * 8 }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        towers.forEach(function (tw, i) {
+          g.fillStyle = 'rgb(14 12 22)'; g.fillRect(tw.x, H - tw.h, tw.w, tw.h);
+          for (var y = H - tw.h + 10; y < H; y += 14) { for (var x = tw.x + 4; x < tw.x + tw.w - 4; x += 8) { if (Math.sin(x * 13 + y * 7 + i) > 0.6) { g.fillStyle = 'rgba(255, 200, 120, 0.55)'; g.fillRect(x, y, 3, 5); } } }
+        });
+        [['rgba(255, 40, 160, 0.8)', 0.22, 0.45], ['rgba(40, 220, 255, 0.8)', 0.72, 0.38]].forEach(function (ad) {
+          var flick = Math.random() > 0.05 ? 1 : 0.3;
+          g.fillStyle = ad[0].replace('0.8', String(0.8 * flick)); g.fillRect(W * ad[1], H * ad[2], W * 0.1, H * 0.16);
+          var glow = g.createRadialGradient(W * (ad[1] + 0.05), H * (ad[2] + 0.08), 0, W * (ad[1] + 0.05), H * (ad[2] + 0.08), W * 0.2);
+          glow.addColorStop(0, ad[0].replace('0.8', '0.25')); glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          g.fillStyle = glow; g.fillRect(0, 0, W, H);
+        });
+        cars.forEach(function (car) {
+          car.x += car.v; if (car.x > W + 40) { car.x = -40; } if (car.x < -40) { car.x = W + 40; }
+          g.fillStyle = 'rgb(20 20 28)'; g.fillRect(car.x - 16, car.y - 4, 32, 8);
+          g.fillStyle = 'rgba(255, 240, 220, 0.9)'; g.fillRect(car.x + (car.v > 0 ? 14 : -18), car.y - 2, 4, 3);
+          g.fillStyle = 'rgba(255, 60, 60, 0.9)'; g.fillRect(car.x + (car.v > 0 ? -18 : 14), car.y - 2, 4, 3);
+        });
+        g.strokeStyle = 'rgba(170, 160, 210, 0.3)'; g.lineWidth = 1; g.beginPath();
+        drops.forEach(function (dr) { dr.y += dr.v; if (dr.y > H) { dr.y = -20; dr.x = Math.random() * W; } g.moveTo(dr.x, dr.y); g.lineTo(dr.x - 1, dr.y - 12); });
+        g.stroke();
+        if (t > 3.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.6) / 0.6)); }
+        return t < 4.3;
+      });
+    },
+
+    // Hellboy: red flames lick up the edges, then a great stone fist punches in and the screen
+    // cracks.
+    fist: function () {
+      var c = curtain({ max: 5000, background: 'rgb(16 6 4)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var flames = [], hit = false, cracks = [];
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        for (var f = 0; f < 20; f++) { var side = Math.random(); flames.push({ x: side < 0.5 ? Math.random() * W * 0.15 : W - Math.random() * W * 0.15, y: H, v: 3 + Math.random() * 5, life: 1, r: 20 + Math.random() * 30 }); }
+        flames.forEach(function (p) {
+          p.y -= p.v; p.life -= 0.015;
+          if (p.life <= 0) { return; }
+          var fire = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r);
+          fire.addColorStop(0, 'rgba(255, 200, 80, ' + p.life * 0.6 + ')'); fire.addColorStop(1, 'rgba(200, 30, 0, 0)');
+          g.fillStyle = fire; g.fillRect(p.x - p.r, p.y - p.r, p.r * 2, p.r * 2);
+        });
+        flames = flames.filter(function (p) { return p.life > 0; });
+        var punch = Math.min(1, Math.max(0, (t - 1.2) / 0.35)), fx = W * 1.2 - punch * W * 0.75, fy = H * 0.5, s = Math.min(W, H) * 0.32;
+        if (punch > 0) {
+          g.fillStyle = 'rgb(120 40 30)';
+          g.fillRect(fx, fy - s * 0.25, W, s * 0.5);
+          g.fillStyle = 'rgb(150 50 36)'; g.beginPath(); g.ellipse(fx, fy, s * 0.5, s * 0.45, 0, 0, Math.PI * 2); g.fill();
+          g.strokeStyle = 'rgb(80 24 18)'; g.lineWidth = 4;
+          for (var k = -1; k <= 2; k++) { g.beginPath(); g.moveTo(fx - s * 0.45, fy + k * s * 0.18); g.lineTo(fx - s * 0.1, fy + k * s * 0.18); g.stroke(); }
+        }
+        if (punch >= 1 && !hit) {
+          hit = true; shakePage(12, 400);
+          for (var cr = 0; cr < 9; cr++) { var a = Math.random() * Math.PI * 2, pts = [[fx - s * 0.5, fy]]; for (var p2 = 1; p2 < 6; p2++) { pts.push([pts[p2 - 1][0] + Math.cos(a) * 60 + (Math.random() - 0.5) * 40, pts[p2 - 1][1] + Math.sin(a) * 60 + (Math.random() - 0.5) * 40]); } cracks.push(pts); }
+        }
+        g.strokeStyle = 'rgba(255, 255, 255, 0.85)'; g.lineWidth = 2;
+        cracks.forEach(function (pts) { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); pts.forEach(function (p) { g.lineTo(p[0], p[1]); }); g.stroke(); });
+        if (t > 2.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 2.6) / 0.6)); }
+        return t < 3.3;
+      });
+    },
+
+    // Gladiator: a hand brushing through golden wheat at sunset, then arena gates grinding open.
+    wheat: function () {
+      var c = curtain({ max: 6000, background: 'linear-gradient(to bottom, rgb(200 140 70), rgb(240 200 120))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var stalks = [];
+      for (var i = 0; i < 160; i++) { stalks.push({ x: Math.random() * W, h: H * (0.25 + Math.random() * 0.2), p: Math.random() * 6 }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        if (t < 2.4) {
+          var hx = W * (0.1 + t / 2.4 * 0.8);
+          g.strokeStyle = 'rgb(200 150 60)'; g.lineWidth = 2;
+          stalks.forEach(function (s) {
+            var bend = Math.sin(t * 2 + s.p) * 6 + (Math.abs(s.x - hx) < 70 ? (s.x - hx) * 0.4 : 0);
+            g.beginPath(); g.moveTo(s.x, H); g.quadraticCurveTo(s.x, H - s.h * 0.5, s.x + bend, H - s.h); g.stroke();
+            g.fillStyle = 'rgb(220 170 70)'; g.beginPath(); g.ellipse(s.x + bend, H - s.h - 8, 3, 10, bend * 0.02, 0, Math.PI * 2); g.fill();
+          });
+          g.fillStyle = 'rgba(60, 40, 20, 0.85)'; g.beginPath(); g.ellipse(hx, H * 0.62, 26, 14, 0.3, 0, Math.PI * 2); g.fill();
+          g.fillRect(hx - 10, H * 0.62, 20, H * 0.4);
+        } else {
+          var open = Math.min(1, (t - 2.4) / 1.2);
+          g.fillStyle = 'rgb(120 100 80)'; g.fillRect(0, 0, W, H);
+          g.fillStyle = 'rgb(250 230 180)'; g.fillRect(W * 0.3, H * 0.2, W * 0.4, H * 0.8);
+          g.fillStyle = 'rgb(40 34 30)';
+          var gw = W * 0.2 * (1 - open);
+          g.fillRect(W * 0.3, H * 0.2, gw, H * 0.8); g.fillRect(W * 0.7 - gw, H * 0.2, gw, H * 0.8);
+          g.strokeStyle = 'rgb(20 16 14)'; g.lineWidth = 6;
+          for (var b = 0; b < 5; b++) { g.beginPath(); g.moveTo(W * 0.3 + b * gw / 5, H * 0.2); g.lineTo(W * 0.3 + b * gw / 5, H); g.moveTo(W * 0.7 - b * gw / 5, H * 0.2); g.lineTo(W * 0.7 - b * gw / 5, H); g.stroke(); }
+          if (open > 0.6) { c.el.style.opacity = String(Math.max(0, 1 - (open - 0.6) / 0.4)); }
+        }
+        return t < 3.7;
+      });
+    },
+
+    // Frozen: ice crystals spread from the centre into a great snowflake, then shatter into
+    // sparkles.
+    snowflake: function () {
+      var c = curtain({ max: 5000, background: 'radial-gradient(circle at 50% 50%, rgb(60 110 170), rgb(14 30 60))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.4, sparks = [], burst = false;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var grow = Math.min(1, t / 2.0);
+        if (t < 2.5) {
+          g.strokeStyle = 'rgba(220, 240, 255, 0.95)'; g.lineCap = 'round'; g.shadowColor = 'rgb(180 220 255)'; g.shadowBlur = 12;
+          for (var arm = 0; arm < 6; arm++) {
+            g.save(); g.translate(cx, cy); g.rotate(arm / 6 * Math.PI * 2 + t * 0.2);
+            g.lineWidth = 5; g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -R * grow); g.stroke();
+            g.lineWidth = 3;
+            [0.35, 0.6, 0.82].forEach(function (k) {
+              if (grow < k) { return; }
+              var len = R * 0.22 * (1 - k * 0.5) * Math.min(1, (grow - k) * 5);
+              g.beginPath(); g.moveTo(0, -R * k); g.lineTo(-len, -R * k - len); g.moveTo(0, -R * k); g.lineTo(len, -R * k - len); g.stroke();
+            });
+            g.restore();
+          }
+          g.shadowBlur = 0;
+        }
+        if (t >= 2.5 && !burst) {
+          burst = true;
+          for (var s = 0; s < 260; s++) { var a = Math.random() * Math.PI * 2, d = Math.random() * R; sparks.push({ x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d, vx: Math.cos(a) * (2 + Math.random() * 6), vy: Math.sin(a) * (2 + Math.random() * 6), a: 1 }); }
+        }
+        sparks.forEach(function (p) { p.x += p.vx; p.y += p.vy; p.a *= 0.95; g.fillStyle = 'rgba(230, 245, 255, ' + p.a + ')'; g.fillRect(p.x, p.y, 3, 3); });
+        if (t > 2.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 2.6) / 0.7)); }
+        return t < 3.4;
+      });
+    },
+
+    // Finding Nemo: underwater -- rays of light, bubbles, coral, and a small orange fish darting
+    // across.
+    reef: function () {
+      var c = curtain({ max: 5500, background: 'linear-gradient(to bottom, rgb(40 150 200), rgb(10 50 100))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var bubbles = [], corals = [];
+      for (var i = 0; i < 40; i++) { bubbles.push({ x: Math.random() * W, y: H + Math.random() * H, r: 2 + Math.random() * 6, v: 1 + Math.random() * 2 }); }
+      for (var k = 0; k < 16; k++) { corals.push({ x: k / 16 * W + Math.random() * 30, h: H * (0.08 + Math.random() * 0.14), c: ['rgb(240 110 140)', 'rgb(250 170 60)', 'rgb(160 90 200)', 'rgb(90 200 160)'][k % 4] }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        for (var r = 0; r < 5; r++) {
+          g.fillStyle = 'rgba(255, 255, 255, ' + (0.06 + Math.sin(t + r) * 0.03) + ')';
+          g.beginPath(); g.moveTo(W * (0.1 + r * 0.2), 0); g.lineTo(W * (0.16 + r * 0.2), 0); g.lineTo(W * (0.26 + r * 0.2), H); g.lineTo(W * (0.14 + r * 0.2), H); g.closePath(); g.fill();
+        }
+        corals.forEach(function (co) {
+          g.fillStyle = co.c;
+          for (var b = 0; b < 5; b++) { g.beginPath(); g.ellipse(co.x + (b - 2) * 8, H - co.h * (0.4 + (b % 3) * 0.3), 6, co.h * 0.35, (b - 2) * 0.2 + Math.sin(t * 2 + co.x) * 0.05, 0, Math.PI * 2); g.fill(); }
+        });
+        var q = Math.min(1, t / 3.0), fx = -60 + q * (W + 120), fy = H * 0.5 + Math.sin(t * 4) * 30, s = Math.min(W, H) * 0.05, wag = Math.sin(t * 20) * 0.3;
+        g.save(); g.translate(fx, fy);
+        g.fillStyle = 'rgb(255 120 30)';
+        g.beginPath(); g.ellipse(0, 0, s, s * 0.55, 0, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.moveTo(-s * 0.8, 0); g.lineTo(-s * 1.4, -s * 0.5 + wag * s); g.lineTo(-s * 1.4, s * 0.5 + wag * s); g.closePath(); g.fill();
+        g.fillStyle = 'rgb(255 255 255)'; g.fillRect(-s * 0.15, -s * 0.52, s * 0.18, s * 1.04); g.fillRect(s * 0.35, -s * 0.4, s * 0.14, s * 0.8);
+        g.fillStyle = 'rgb(20 20 20)'; g.beginPath(); g.arc(s * 0.65, -s * 0.12, s * 0.09, 0, Math.PI * 2); g.fill();
+        g.restore();
+        bubbles.forEach(function (b) {
+          b.y -= b.v; b.x += Math.sin(b.y / 30) * 0.5; if (b.y < -10) { b.y = H + 10; }
+          g.strokeStyle = 'rgba(220, 245, 255, 0.6)'; g.lineWidth = 1.5; g.beginPath(); g.arc(b.x, b.y, b.r, 0, Math.PI * 2); g.stroke();
+        });
+        if (t > 3.3) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.3) / 0.6)); }
+        return t < 4.0;
+      });
+    },
+
+    // Monsters, Inc.: doors whizz past on a factory rail; one stops, opens, and light spills out.
+    doors: function () {
+      var c = curtain({ max: 5000, background: 'linear-gradient(to bottom, rgb(40 50 70), rgb(20 24 34))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var palette = ['rgb(220 80 80)', 'rgb(80 160 220)', 'rgb(240 200 70)', 'rgb(130 200 110)', 'rgb(200 120 220)', 'rgb(250 150 60)'];
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        g.strokeStyle = 'rgb(120 130 150)'; g.lineWidth = 6; g.beginPath(); g.moveTo(0, H * 0.18); g.lineTo(W, H * 0.18); g.stroke();
+        var speed = t < 1.6 ? 1 : Math.max(0, 1 - (t - 1.6) / 0.5), dw = Math.min(W, H) * 0.22, dh = dw * 1.9, gap = dw * 1.4;
+        var shift = (t < 2.1 ? t * 1400 - Math.max(0, t - 1.6) * 700 : 1600 * 1 + 0) % gap;
+        for (var i = -1; i < W / gap + 2; i++) {
+          var x = i * gap - shift + (t >= 2.1 ? 0 : 0), cxDoor = W / 2;
+          if (t >= 2.1) { x = cxDoor - dw / 2 + (i - Math.round(W / gap / 2)) * gap; }
+          var col = palette[(i + 60) % palette.length];
+          g.strokeStyle = 'rgb(90 100 120)'; g.lineWidth = 3; g.beginPath(); g.moveTo(x + dw / 2, H * 0.18); g.lineTo(x + dw / 2, H * 0.3); g.stroke();
+          var isCentre = t >= 2.1 && Math.abs(x + dw / 2 - cxDoor) < 2;
+          var open = isCentre ? Math.min(1, (t - 2.3) / 0.5) : 0;
+          if (open > 0) {
+            var light = g.createRadialGradient(cxDoor, H * 0.3 + dh / 2, 0, cxDoor, H * 0.3 + dh / 2, W * 0.6);
+            light.addColorStop(0, 'rgba(255, 245, 210, ' + open * 0.9 + ')'); light.addColorStop(1, 'rgba(255, 245, 210, 0)');
+            g.fillStyle = light; g.fillRect(0, 0, W, H);
+            g.fillStyle = 'rgb(255 250 230)'; g.fillRect(x, H * 0.3, dw, dh);
+          }
+          g.fillStyle = col; g.fillRect(x + dw * open * 0.85, H * 0.3, dw * (1 - open * 0.85), dh);
+          g.fillStyle = 'rgba(255, 255, 255, 0.25)'; g.fillRect(x + dw * 0.15 + dw * open * 0.85, H * 0.3 + dh * 0.1, dw * 0.7 * (1 - open * 0.85), dh * 0.35);
+          g.fillStyle = 'rgb(240 220 120)'; g.beginPath(); g.arc(x + dw * 0.85, H * 0.3 + dh * 0.55, 6, 0, Math.PI * 2); g.fill();
+        }
+        if (t > 3.1) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.1) / 0.6)); }
+        return t < 3.8;
+      });
+    },
+
+    // Inside Out: glowing memory orbs in five colours roll in and line up -- one for each film.
+    orbs: function () {
+      var c = curtain({ max: 5500, background: 'radial-gradient(circle at 50% 40%, rgb(60 50 110), rgb(16 12 34))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var hues = ['255, 220, 60', '80, 140, 255', '230, 60, 60', '170, 90, 230', '110, 210, 90'];
+      var count = Math.max(4, Math.min(12, page.steps.length || 6)), orbs = [];
+      for (var i = 0; i < count; i++) { orbs.push({ hue: hues[i % 5], at: 0.3 + i * 0.22, owned: page.steps[i] ? page.steps[i].owned : true }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var r = Math.min(W / (count * 2.6), H * 0.07), row = H * 0.55;
+        g.fillStyle = 'rgba(200, 190, 255, 0.15)'; g.fillRect(W * 0.05, row + r + 4, W * 0.9, 6);
+        orbs.forEach(function (o, i) {
+          var q = Math.min(1, Math.max(0, (t - o.at) / 0.6)), e = 1 - Math.pow(1 - q, 3);
+          if (q <= 0) { return; }
+          var tx = W / 2 + (i - (count - 1) / 2) * r * 2.4, x = -r + (tx + r) * e, y = row - Math.abs(Math.sin(e * Math.PI * 2)) * r * (1 - e);
+          var glow = g.createRadialGradient(x, y, 0, x, y, r * 2.2);
+          glow.addColorStop(0, 'rgba(' + o.hue + ', ' + (o.owned ? 0.5 : 0.15) + ')'); glow.addColorStop(1, 'rgba(' + o.hue + ', 0)');
+          g.fillStyle = glow; g.fillRect(x - r * 2.2, y - r * 2.2, r * 4.4, r * 4.4);
+          var ball = g.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
+          ball.addColorStop(0, 'rgba(255, 255, 255, ' + (o.owned ? 0.95 : 0.4) + ')'); ball.addColorStop(0.4, 'rgba(' + o.hue + ', ' + (o.owned ? 0.95 : 0.35) + ')'); ball.addColorStop(1, 'rgba(' + o.hue + ', ' + (o.owned ? 0.7 : 0.2) + ')');
+          g.fillStyle = ball; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+        });
+        if (t > 4.0) { c.el.style.opacity = String(Math.max(0, 1 - (t - 4.0) / 0.6)); }
+        return t < 4.7;
+      });
+    },
+
+    // The Hangover: morning-after camera flashes -- a slideshow of blurry snapshots, ending on the
+    // collection's own poster.
+    snapshots: function () {
+      var backdrop = document.querySelector('.collection-backdrop');
+      var srcs = page.posters.map(bigger).slice(0, 5);
+      if (!srcs.length && backdrop) { srcs = [backdrop.currentSrc || backdrop.src]; }
+      var c = curtain({ max: 6000, background: 'rgb(16 14 12)' });
+      var flash = document.createElement('span');
+      flash.className = 'sc-flip-flash';
+      flash.style.background = 'rgb(255 255 255)';
+      c.el.appendChild(flash);
+      var shots = srcs.length ? srcs : [null, null, null];
+      shots.forEach(function (src, i) {
+        window.setTimeout(function () {
+          flash.classList.add('is-on'); window.setTimeout(function () { flash.classList.remove('is-on'); }, 120);
+          var photo = document.createElement('div');
+          photo.className = 'sc-snapshot';
+          photo.style.background = 'rgb(246 244 238)';
+          var img = document.createElement('span');
+          img.className = 'sc-snapshot-image';
+          img.style.background = src ? 'url("' + src.replace(/"/g, '%22') + '") center / cover' : 'rgb(80 70 60)';
+          img.style.filter = i < shots.length - 1 ? 'blur(3px) saturate(1.3)' : 'none';
+          photo.appendChild(img);
+          photo.style.rotate = ((Math.random() - 0.5) * 24) + 'deg';
+          photo.style.left = (30 + Math.random() * 40) + '%'; photo.style.top = (30 + Math.random() * 30) + '%';
+          c.el.appendChild(photo);
+        }, 300 + i * 700);
+      });
+      window.setTimeout(c.finish, 300 + shots.length * 700 + 900);
+    },
+
+    // Scooby-Doo: a groovy flower-painted van drives across, then a sheet ghost is unmasked.
+    van: function () {
+      var c = curtain({ max: 6000, background: 'linear-gradient(to bottom, rgb(40 30 70), rgb(90 60 110))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var n = page.missing.length;
+      var caption = text('p', 'sc-intro-caption', '', c.el);
+      caption.style.color = 'rgb(250 220 120)';
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        g.fillStyle = 'rgb(30 24 40)'; g.fillRect(0, H * 0.78, W, H * 0.22);
+        if (t < 2.4) {
+          var x = -W * 0.3 + Math.min(1, t / 2.2) * W * 1.5, y = H * 0.78, s = Math.min(W, H) * 0.18;
+          g.fillStyle = 'rgb(80 180 170)'; g.fillRect(x - s, y - s * 0.75, s * 2, s * 0.6);
+          g.beginPath(); g.moveTo(x + s, y - s * 0.75); g.lineTo(x + s * 1.3, y - s * 0.45); g.lineTo(x + s * 1.3, y - s * 0.15); g.lineTo(x + s, y - s * 0.15); g.closePath(); g.fill();
+          g.fillStyle = 'rgb(90 140 220)'; g.fillRect(x - s, y - s * 0.4, s * 2.3, s * 0.12);
+          g.fillStyle = 'rgb(250 140 40)';
+          [[-0.6, -0.55], [-0.1, -0.6], [0.45, -0.52]].forEach(function (p) { for (var k = 0; k < 5; k++) { var a = k / 5 * Math.PI * 2; g.beginPath(); g.arc(x + p[0] * s + Math.cos(a) * 8, y + p[1] * s + Math.sin(a) * 8, 6, 0, Math.PI * 2); g.fill(); } });
+          g.fillStyle = 'rgb(20 20 24)'; g.beginPath(); g.arc(x - s * 0.6, y - s * 0.12, s * 0.16, 0, Math.PI * 2); g.arc(x + s * 0.8, y - s * 0.12, s * 0.16, 0, Math.PI * 2); g.fill();
+        } else {
+          var off = Math.min(1, (t - 2.4) / 0.6), gx = W / 2, gy = H * 0.5, gs = Math.min(W, H) * 0.22;
+          g.fillStyle = 'rgba(240, 240, 245, 0.95)';
+          g.beginPath(); g.moveTo(gx - gs * 0.5, gy + gs - off * gs * 2); g.quadraticCurveTo(gx - gs * 0.55, gy - gs * 0.6 - off * gs * 2, gx, gy - gs * 0.7 - off * gs * 2);
+          g.quadraticCurveTo(gx + gs * 0.55, gy - gs * 0.6 - off * gs * 2, gx + gs * 0.5, gy + gs - off * gs * 2); g.closePath(); g.fill();
+          if (off > 0.4) {
+            g.fillStyle = 'rgb(250 220 120)'; g.font = '700 ' + Math.round(gs * 0.18) + 'px system-ui, sans-serif'; g.textAlign = 'center';
+            caption.textContent = n ? 'And it was ' + plural(n, 'missing film') + ' all along!' : 'And it was a complete collection all along!';
+          }
+        }
+        if (t > 4.6) { c.el.style.opacity = String(Math.max(0, 1 - (t - 4.6) / 0.6)); }
+        return t < 5.3;
+      });
+    },
+
+    // Joker: a playing card spins in purple and green light and lands face up on the joker.
+    card: function () {
+      var c = curtain({ max: 5000, background: 'radial-gradient(circle at 50% 50%, rgb(70 30 90), rgb(14 6 20))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var glow = g.createRadialGradient(W * 0.3, H * 0.3, 0, W * 0.3, H * 0.3, W * 0.5);
+        glow.addColorStop(0, 'rgba(90, 220, 90, 0.25)'); glow.addColorStop(1, 'rgba(90, 220, 90, 0)');
+        g.fillStyle = glow; g.fillRect(0, 0, W, H);
+        var settle = Math.min(1, t / 2.2), spin = (1 - settle) * 16 + settle * 0, face = Math.cos(t * (1 - settle) * 14);
+        var cw = Math.min(W, H) * 0.22, ch = cw * 1.45, x = W / 2, y = H / 2 - (1 - settle) * H * 0.2;
+        g.save(); g.translate(x, y); g.rotate(spin * 0.15); g.scale(settle >= 1 ? 1 : Math.max(0.05, Math.abs(face)), 1);
+        var up = settle >= 1 || face > 0;
+        g.fillStyle = up ? 'rgb(248 246 240)' : 'rgb(120 30 40)';
+        g.fillRect(-cw / 2, -ch / 2, cw, ch);
+        g.strokeStyle = up ? 'rgb(90 40 110)' : 'rgb(240 220 200)'; g.lineWidth = 3; g.strokeRect(-cw / 2 + 6, -ch / 2 + 6, cw - 12, ch - 12);
+        if (up) {
+          g.fillStyle = 'rgb(90 40 110)'; g.font = '800 ' + Math.round(cw * 0.16) + 'px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+          g.fillText('JOKER', 0, ch * 0.3);
+          g.fillStyle = 'rgb(60 160 60)'; g.beginPath(); g.moveTo(-cw * 0.25, -ch * 0.05); g.lineTo(0, -ch * 0.32); g.lineTo(cw * 0.25, -ch * 0.05); g.closePath(); g.fill();
+          g.fillStyle = 'rgb(200 40 60)'; g.beginPath(); g.arc(0, -ch * 0.32, cw * 0.05, 0, Math.PI * 2); g.fill();
+          g.beginPath(); g.arc(0, ch * 0.05, cw * 0.18, 0.15 * Math.PI, 0.85 * Math.PI); g.lineWidth = 4; g.strokeStyle = 'rgb(200 40 60)'; g.stroke();
+        }
+        g.restore();
+        if (t > 3.2) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.2) / 0.6)); }
+        return t < 3.9;
       });
     },
   };

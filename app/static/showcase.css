@@ -1370,6 +1370,15 @@
   text-transform: uppercase;
 }
 [data-look="showcase"] .sc-rule-num { margin-right: 0.3em; }
+/* The 0.68.0 intros' pieces. */
+[data-look="showcase"] .sc-snapshot {
+  box-shadow: 0 0.8rem 1.6rem color-mix(in srgb, var(--sc-page) 80%, transparent);
+  padding: 0.6rem 0.6rem 2rem;
+  position: absolute;
+  translate: -50% -50%;
+  width: min(46vw, 15rem);
+}
+[data-look="showcase"] .sc-snapshot-image { aspect-ratio: 2 / 3; display: block; }
 [data-look="showcase"] .sc-intro-replay { font-size: 0.85rem; margin: 0 0 0.4rem; padding: 0.25rem 0.75rem; width: auto; }
 [data-look="showcase"] .sc-intro canvas { height: 100%; width: 100%; }
 [data-look="showcase"] .sc-intro-skip {
