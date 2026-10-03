@@ -376,6 +376,22 @@
     [/^cars\b/i, ['rgb(220 30 30)', 'rgb(255 210 30)', 'rgb(20 20 20)', 'rgb(245 245 245)'], 'rect'],
     [/night at the museum/i, ['rgb(230 220 195)', 'rgb(255 230 180)', 'rgb(120 90 60)'], 'rect'],
     [/narnia/i, ['rgb(255 255 255)', 'rgb(255 220 140)', 'rgb(40 60 56)'], 'spark'],
+    [/insidious/i, ['rgb(170 10 10)', 'rgb(30 0 0)', 'rgb(180 170 170)'], 'spark'],
+    [/^the shining\b|doctor sleep/i, ['rgb(190 70 30)', 'rgb(110 40 20)', 'rgb(230 140 40)'], 'rect'],
+    [/^the thing\b/i, ['rgb(240 245 255)', 'rgb(255 50 40)', 'rgb(20 24 32)'], 'spark'],
+    [/^underworld\b/i, ['rgb(150 180 220)', 'rgb(215 228 245)', 'rgb(20 34 56)'], 'rod'],
+    [/top gun/i, ['rgb(250 140 60)', 'rgb(255 250 240)', 'rgb(30 24 34)'], 'rect'],
+    [/^ocean'?s\b/i, ['rgb(220 200 140)', 'rgb(150 152 158)', 'rgb(40 120 70)'], 'rect'],
+    [/equalizer/i, ['rgb(220 60 40)', 'rgb(200 200 205)', 'rgb(255 200 120)'], 'spark'],
+    [/lethal weapon/i, ['rgb(255 60 60)', 'rgb(60 220 90)', 'rgb(80 140 255)', 'rgb(255 210 60)'], 'spark'],
+    [/space odyssey|^2001\b/i, ['rgb(255 245 225)', 'rgb(160 190 255)', 'rgb(20 20 24)'], 'spark'],
+    [/^venom\b/i, ['rgb(8 8 12)', 'rgb(240 240 245)', 'rgb(200 20 30)'], 'rect'],
+    [/wonder woman/i, ['rgb(240 190 70)', 'rgb(200 30 40)', 'rgb(30 60 160)'], 'spark'],
+    [/^(the amazing )?spider-man\b|spider-verse/i, ['rgb(220 30 40)', 'rgb(30 70 180)', 'rgb(240 240 245)'], 'rect'],
+    [/lion king/i, ['rgb(255 210 90)', 'rgb(240 110 40)', 'rgb(120 40 30)'], 'spark'],
+    [/wreck-it ralph/i, ['rgb(240 120 60)', 'rgb(90 60 160)', 'rgb(60 200 230)'], 'rect'],
+    [/incredibles/i, ['rgb(200 40 40)', 'rgb(250 190 60)', 'rgb(30 30 40)'], 'rect'],
+    [/despicable me|^minions\b/i, ['rgb(250 220 50)', 'rgb(40 90 180)', 'rgb(120 220 255)'], 'rect'],
   ];
 
   // ------------------------------------------------------------ confetti (0.49.0)

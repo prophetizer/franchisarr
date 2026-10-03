@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.65.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.66.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -251,7 +251,7 @@ empty and finished pages get a little scene; a set's poster is black and white w
 up it as far as you own, and a detail page's poster stands as a 3D box set; coming-soon films
 count down their days on a split-flap board; a watched film's poster has its ticket punched; TV
 shows sit in old CRT screens; a trailer dims the house lights; a running scan plays on a
-projector; Activity's adds are a roll of ticket stubs; and sixty-six franchises open with a nod to their films ([listed
+projector; Activity's adds are a roll of ticket stubs; and eighty-two franchises open with a nod to their films ([listed
 below](#franchise-intros)) (and there's a code for a retro VHS mode, if you know it); **Ctrl+K** (Cmd+K on a Mac) searches from anywhere; and in October horror sets glow
 pumpkin, in December the top bar frosts over. The release strip
 **plays** as it comes on screen (posters fly in in order, the ones you own light up, a ring fills
@@ -371,6 +371,22 @@ lists (and on the shelf), the home page's rows and spotlight, the Trophy case, s
 | Cars | *Cars…* | Racing stripes zoom past, then a checkered flag waves and sweeps the page in |
 | Night at the Museum | *Night at the Museum* | A dark hall, the lights flicker on, and a dinosaur skeleton turns its head to look at you |
 | The Chronicles of Narnia | *Narnia* | Wardrobe doors open on snowy woods, a lamp-post glowing in the snow |
+| Insidious | *Insidious* | Pitch dark; a red door glows at the far end, creaks open, and something breathes out of it |
+| The Shining | *The Shining…*, *Doctor Sleep…* | A long hotel corridor with a bold patterned carpet rushes past, down to a door at the end |
+| The Thing | *The Thing…* | An Antarctic blizzard at night, a lone outpost light blinking, the snow thickening to white-out |
+| Underworld | *Underworld…* | Blue moonlit rain over gothic rooftops, the full moon behind cloud, lightning |
+| Top Gun | *Top Gun* | Jets streak across a sunset trailing contrails, a flare of sun as they bank away |
+| Ocean's | *Ocean's…* | A vault dial spins to a combination — what you have, how many there are, how many are missing — and the door swings open |
+| The Equalizer | *Equalizer* | A stopwatch races while the room blurs past, then stops with a click |
+| Lethal Weapon | *Lethal Weapon* | Red and blue lights sweep a dark street strung with Christmas lights |
+| 2001: A Space Odyssey | *Space Odyssey*, *2001…* | A black monolith, and a sunrise climbing over a planet's edge into alignment above it |
+| Venom | *Venom…* | Glossy black tendrils creep in from the edges, writhing, then snap back (the page stays usable) |
+| Wonder Woman | *Wonder Woman* | A golden lasso spins and widens into a ring of light that sweeps the screen |
+| Spider-Man | *Spider-Man…*, *The Amazing Spider-Man…*, *Spider-Verse* (the MCU's Spider-Man plays the MCU intro) | A line of web shoots in from a corner, a web spreads from the middle, and the title is caught in it |
+| The Lion King | *Lion King* | A savanna sunrise: a huge orange sun, acacia trees, and herds crossing the horizon |
+| Wreck-It Ralph | *Wreck-It Ralph* | The poster breaks into chunky 8-bit pixels that crumble away, then fly back and rebuild |
+| The Incredibles | *Incredibles* | Retro sixties title cards: bold colour blocks slide in and out, then the title |
+| Despicable Me | *Despicable Me*, *Minions…* | A shrink ray zaps the page down to nothing, then it pops back (the page stays usable) |
 
 ## Search
 

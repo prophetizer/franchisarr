@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.66.0] — 2026-10-03
+
+### Added
+
+Showcase:
+
+- **Sixteen more franchise intros** (eighty-two in all), each with its own confetti: Insidious (a
+  red door opening in the dark), The Shining (a patterned hotel corridor), The Thing (a blizzard to
+  white-out), Underworld (moonlit rain and lightning), Top Gun (jets at sunset), Ocean's (a vault
+  dial spinning to your collection's numbers), The Equalizer (a racing stopwatch), Lethal Weapon
+  (police lights and Christmas lights), 2001: A Space Odyssey (a monolith and an aligned sunrise),
+  Venom (black tendrils), Wonder Woman (a golden lasso), Spider-Man (a web catching the title), The
+  Lion King (a savanna sunrise), Wreck-It Ralph (the poster in 8-bit pixels), The Incredibles
+  (sixties title cards) and Despicable Me (a shrink ray).
+
 ## [0.65.0] — 2026-10-03
 
 ### Added
