@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.63.0] — 2026-10-02
+
+### Added
+
+Showcase:
+
+- **Sixteen more franchise intros** (thirty-five in all), each with its own confetti for when you
+  complete it: Fast & Furious (a speedometer into the red, then a streak of speed), Rocky (a run up
+  the steps at dawn, a step per film), Die Hard (a tower lighting up floor by floor, then glass),
+  Transformers (the poster in panels that lock back together), Scream (a phone call from "Unknown"
+  about your missing films), Paranormal Activity (night-vision footage), Final Destination (a chain
+  of dominoes), Predator (heat vision and three red dots), Dragon Ball Z (a power-up), X-Men (a
+  dome scanning for your films), Pirates of the Caribbean (a compass and the sea), Resident Evil (a
+  laser corridor and a containment report), Bourne (a surveillance map), Ice Age (frost that cracks
+  and falls), Twilight (a misty forest and a sparkle) and Shrek (a storybook with a page torn out).
+  The README's table lists them all.
+
 ## [0.62.0] — 2026-10-02
 
 ### Added

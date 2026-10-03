@@ -329,6 +329,22 @@
     [/godzilla|monsterverse/i, ['rgb(80 190 255)', 'rgb(160 220 255)', 'rgb(90 90 100)'], 'spark'],
     [/mad max|furiosa/i, ['rgb(220 120 40)', 'rgb(255 200 120)', 'rgb(140 60 20)'], 'rect'],
     [/toy story/i, ['rgb(90 170 240)', 'rgb(255 255 255)', 'rgb(240 60 50)', 'rgb(255 210 40)'], 'rect'],
+    [/fast (and|&) (the )?furious|fast saga|hobbs (and|&) shaw/i, ['rgb(255 140 20)', 'rgb(90 170 255)', 'rgb(230 230 235)'], 'rod'],
+    [/^(rocky|creed)\b/i, ['rgb(200 30 40)', 'rgb(255 255 255)', 'rgb(30 70 170)'], 'rect'],
+    [/^die hard/i, ['rgb(255 214 120)', 'rgb(200 230 255)', 'rgb(200 40 30)'], 'rect'],
+    [/transformers|^bumblebee/i, ['rgb(200 40 40)', 'rgb(40 90 200)', 'rgb(190 195 205)', 'rgb(255 200 30)'], 'rect'],
+    [/^scream\b/i, ['rgb(240 240 240)', 'rgb(20 20 20)', 'rgb(190 20 30)'], 'rect'],
+    [/paranormal activity/i, ['rgb(120 255 140)', 'rgb(40 120 50)'], 'spark'],
+    [/final destination/i, ['rgb(235 233 226)', 'rgb(205 40 40)', 'rgb(40 40 44)'], 'rect'],
+    [/predator/i, ['rgb(255 30 20)', 'rgb(255 200 60)', 'rgb(150 20 170)'], 'spark'],
+    [/dragon ball/i, ['rgb(255 150 0)', 'rgb(255 230 90)', 'rgb(40 90 220)'], 'spark'],
+    [/x-men|^wolverine/i, ['rgb(255 210 30)', 'rgb(30 60 160)', 'rgb(200 225 255)'], 'rect'],
+    [/pirates of the caribbean/i, ['rgb(205 165 85)', 'rgb(40 110 160)', 'rgb(240 240 240)'], 'rect'],
+    [/resident evil/i, ['rgb(255 40 30)', 'rgb(240 240 240)'], 'rod'],
+    [/bourne/i, ['rgb(120 230 220)', 'rgb(255 70 60)'], 'rect'],
+    [/^ice age\b/i, ['rgb(200 235 255)', 'rgb(255 255 255)', 'rgb(120 180 230)'], 'spark'],
+    [/^(the )?twilight( saga| collection|$)/i, ['rgb(255 255 255)', 'rgb(160 175 185)', 'rgb(150 20 30)'], 'spark'],
+    [/shrek/i, ['rgb(130 180 50)', 'rgb(242 230 198)', 'rgb(90 60 30)'], 'rect'],
   ];
 
   // ------------------------------------------------------------ confetti (0.49.0)

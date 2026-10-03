@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.62.0`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.63.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -251,7 +251,7 @@ empty and finished pages get a little scene; a set's poster is black and white w
 up it as far as you own, and a detail page's poster stands as a 3D box set; coming-soon films
 count down their days on a split-flap board; a watched film's poster has its ticket punched; TV
 shows sit in old CRT screens; a trailer dims the house lights; a running scan plays on a
-projector; Activity's adds are a roll of ticket stubs; and nineteen franchises open with a nod to their films ([listed
+projector; Activity's adds are a roll of ticket stubs; and thirty-five franchises open with a nod to their films ([listed
 below](#franchise-intros)) (and there's a code for a retro VHS mode, if you know it); **Ctrl+K** (Cmd+K on a Mac) searches from anywhere; and in October horror sets glow
 pumpkin, in December the top bar frosts over. The release strip
 **plays** as it comes on screen (posters fly in in order, the ones you own light up, a ring fills
@@ -324,6 +324,22 @@ lists (and on the shelf), the home page's rows and spotlight, the Trophy case, s
 | Godzilla | *Godzilla*, *MonsterVerse* | Footsteps shake the page, dust falls, a vast shadow passes and a blue glow rises (the page stays usable) |
 | Mad Max | *Mad Max*, *Furiosa* | A sandstorm tears across the screen, then blows itself out (the page stays usable) |
 | Toy Story | *Toy Story* | A blue sky of fluffy clouds, which part to let the page through |
+| Fast & Furious | *Fast and the Furious*, *Fast & Furious*, *Hobbs & Shaw* | A speedometer swings into the red, a blue flash, then the page tears past in streaks and tyre smoke |
+| Rocky | *Rocky…*, *Creed…* | A bell, then a run up a long flight of steps at dawn — a step for each film — to arms raised at the top |
+| Die Hard | *Die Hard…* | A tower block's windows light up floor by floor, then glass bursts out across the screen |
+| Transformers | *Transformers*, *Bumblebee…* | The poster in mechanical panels, flung apart, that slide, turn and lock back together |
+| Scream | *Scream…* | A phone rings in the dark — caller unknown — with a question about your missing films, then a slash cuts the dark in two |
+| Paranormal Activity | *Paranormal Activity* | The page as night-vision footage with a running timestamp; it flickers and the frame jolts (the page stays usable) |
+| Final Destination | *Final Destination* | A chain reaction of dominoes, one per film, until the last brings the curtain down |
+| Predator | *Predator* | The page in heat colours, a shimmering outline crossing it, three red dots settling on the title (the page stays usable) |
+| Dragon Ball Z | *Dragon Ball* | An aura builds round the title, crackling, the page shakes harder, then a blast of light (the page stays usable) |
+| X-Men | *X-Men*, *Wolverine…* | A dome of light scans a crowd of points and locks on to one for each film you own, then flashes outward |
+| Pirates of the Caribbean | *Pirates of the Caribbean* | A compass needle spins and settles, the sea rolls in, and the waves part to let the page through |
+| Resident Evil | *Resident Evil* | A red laser grid sweeps down a dark corridor, then a containment report lists your missing films |
+| Bourne | *Bourne* | A surveillance map: a dot hops from city to city, one per film, with readouts, until the signal is lost |
+| Ice Age | *Ice Age…* | Frost creeps in from the edges and freezes the screen, then cracks and falls away (the page stays usable) |
+| Twilight | *Twilight Collection*, *The Twilight Saga* | A misty blue-grey forest; a shaft of sunlight breaks through and the title sparkles |
+| Shrek | *Shrek* | A storybook opens on your collection's tale; a page turns, then one is torn out |
 
 ## Search
 

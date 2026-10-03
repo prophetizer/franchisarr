@@ -1147,6 +1147,103 @@
   top: 18%;
   width: min(26rem, 80vw);
 }
+/* The 0.63.0 intros' pieces; colours are set by showcase-intros.js. */
+[data-look="showcase"] .sc-intro-caption {
+  font-size: clamp(1.1rem, 3vw, 1.8rem);
+  font-weight: 700;
+  left: 50%;
+  letter-spacing: 0.06em;
+  position: absolute;
+  text-align: center;
+  text-shadow: 0 0 1rem var(--sc-page);
+  top: 10%;
+  translate: -50% 0;
+  width: min(40rem, 90vw);
+  z-index: 1;
+}
+[data-look="showcase"] .sc-brief--centre { text-align: center; }
+[data-look="showcase"] .sc-brief--report { text-align: left; top: 72%; white-space: pre-line; }
+[data-look="showcase"] .sc-hud--left { left: 4vw; right: auto; top: 6%; }
+[data-look="showcase"] .sc-call {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  left: 50%;
+  position: absolute;
+  top: 34%;
+  translate: -50% -50%;
+}
+[data-look="showcase"] .sc-call svg { height: 4.5rem; width: 4.5rem; }
+[data-look="showcase"] .sc-call strong { color: inherit; font-size: 1.4rem; letter-spacing: 0.1em; }
+[data-look="showcase"] .sc-call small { color: inherit; letter-spacing: 0.3em; opacity: 0.7; text-transform: uppercase; }
+[data-look="showcase"] .sc-slash {
+  animation: sc-slash 0.25s ease-out both;
+  height: 4px;
+  left: -20vw;
+  position: absolute;
+  rotate: -12deg;
+  top: 51%;
+  width: 140vw;
+}
+@keyframes sc-slash {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+[data-look="showcase"] .sc-half { inset: 0; position: absolute; }
+[data-look="showcase"] .sc-panels {
+  aspect-ratio: 2 / 3;
+  display: grid;
+  gap: 3px;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  height: min(78vh, 46rem, 135vw);   /* a phone: no wider than the screen */
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  translate: -50% -50%;
+}
+[data-look="showcase"] .sc-panels.is-locked { gap: 0; transition: gap 0.25s ease; }
+[data-look="showcase"] .sc-panel { border-radius: 2px; display: block; }
+[data-look="showcase"] .sc-book {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: min(60vh, 26rem);
+  left: 50%;
+  perspective: 1600px;
+  position: absolute;
+  top: 50%;
+  translate: -50% -50%;
+  width: min(92vw, 44rem);
+}
+[data-look="showcase"] .sc-book-page {
+  align-items: center;
+  backface-visibility: hidden;
+  box-shadow: inset 0 0 2rem color-mix(in srgb, var(--sc-page) 25%, transparent);
+  display: flex;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1rem, 2.4vw, 1.35rem);
+  justify-content: center;
+  line-height: 1.5;
+  padding: 1.5rem;
+  text-align: center;
+}
+[data-look="showcase"] .sc-book-page p { color: inherit; margin: 0; }   /* Pico colours every <p> */
+[data-look="showcase"] .sc-book-left { border-radius: 0.4rem 0 0 0.4rem; }
+[data-look="showcase"] .sc-book-right { border-radius: 0 0.4rem 0.4rem 0; }
+[data-look="showcase"] .sc-book-big { font-size: 1.6em; font-style: italic; }
+[data-look="showcase"] .sc-book-leaf {
+  height: 100%;
+  left: 50%;
+  position: absolute;
+  top: 0;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  width: 50%;
+}
+[data-look="showcase"] .sc-book-front,
+[data-look="showcase"] .sc-book-back { border-radius: 0 0.4rem 0.4rem 0; inset: 0; position: absolute; }
+[data-look="showcase"] .sc-book-back { border-radius: 0.4rem 0 0 0.4rem; transform: rotateY(180deg); }
 [data-look="showcase"] .sc-intro-replay { font-size: 0.85rem; margin: 0 0 0.4rem; padding: 0.25rem 0.75rem; width: auto; }
 [data-look="showcase"] .sc-intro canvas { height: 100%; width: 100%; }
 [data-look="showcase"] .sc-intro-skip {

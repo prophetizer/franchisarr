@@ -1,4 +1,4 @@
-// Showcase's franchise intros (0.57.0; their own file since 0.58.0; nineteen since 0.59.0): a nod to a franchise's films
+// Showcase's franchise intros (0.57.0; their own file since 0.58.0; thirty-five since 0.63.0): a nod to a franchise's films
 // when its page opens -- once per visit to each page, skipped by a click or any key, and replayed
 // from the ▶ Intro button. Off for anyone who turned them off in their menu (data-intros="off")
 // and with "reduce motion". The words are this app's own; the looks are the films'.
@@ -35,6 +35,22 @@
     [/godzilla|monsterverse/i, 'footsteps'],
     [/mad max|furiosa/i, 'storm'],
     [/toy story/i, 'clouds'],
+    [/fast (and|&) (the )?furious|fast saga|hobbs (and|&) shaw/i, 'nitro'],
+    [/^(rocky|creed)\b/i, 'steps'],
+    [/^die hard/i, 'tower'],
+    [/transformers|^bumblebee/i, 'panels'],
+    [/^scream\b/i, 'phone'],
+    [/paranormal activity/i, 'nightvision'],
+    [/final destination/i, 'dominoes'],
+    [/predator/i, 'thermal'],
+    [/dragon ball/i, 'powerup'],
+    [/x-men|^wolverine/i, 'dome'],
+    [/pirates of the caribbean/i, 'compass'],
+    [/resident evil/i, 'lasers'],
+    [/bourne/i, 'surveil'],
+    [/^ice age\b/i, 'freeze'],
+    [/^(the )?twilight( saga| collection|$)/i, 'forest'],
+    [/shrek/i, 'storybook'],
   ];
   function introFor(name) { return WHICH.filter(function (w) { return w[0].test(name); })[0]; }
 
@@ -120,6 +136,7 @@
   var years = steps.map(function (s) { return s.year; }).filter(Boolean);
   var page = {
     name: name, have: counts[1] || '', total: counts[2] || '', missing: missing, steps: steps,
+    short: name.replace(/\s+collection$/i, ''),   // "Scream", for a sentence that already says what it is
     first: years.length ? Math.min.apply(null, years) : null, latest: years.length ? Math.max.apply(null, years) : null,
     posters: steps.map(function (s) { return s.poster; }).filter(Boolean),
   };
@@ -189,6 +206,13 @@
   }
   function bigger(src) { return src ? src.replace(/\/t\/p\/w\d+\//, '/t/p/w342/') : src; }
   function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); }
+  // A jolt of the page under an intro: a quake, an impact, a power surging.
+  function shakePage(px, ms) {
+    var main = document.querySelector('main');
+    if (!main || !main.animate) { return; }
+    main.animate([{ translate: '0 0' }, { translate: px + 'px ' + (px * 0.5) + 'px' }, { translate: (-px * 0.8) + 'px ' + (-px * 0.3) + 'px' },
+                  { translate: (px * 0.4) + 'px 0' }, { translate: '0 0' }], { duration: ms || 350 });
+  }
 
   // ------------------------------------------------------------ the intros
   var INTROS = {
@@ -789,6 +813,675 @@
         });
         return t < 3.4;
       });
+    },
+
+    // ---------------------------------------------------------------- 0.63.0
+
+    // Fast & Furious: a speedometer swings into the red, a blue flash, and the page tears past in
+    // streaks of speed and tyre smoke.
+    nitro: function () {
+      var c = curtain({ max: 5000, background: 'rgb(8 8 12)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var cx = W / 2, cy = H * 0.6, R = Math.min(W, H) * 0.27;
+      var streaks = [], smoke = [];
+      for (var i = 0; i < 170; i++) { streaks.push({ x: Math.random() * W, y: Math.random() * H, l: 40 + Math.random() * 220, v: 18 + Math.random() * 40 }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var swing = Math.min(1, t / 1.6), ease = 1 - Math.pow(1 - swing, 3);
+        if (t < 2.0) {
+          g.lineCap = 'round';
+          g.lineWidth = 7; g.strokeStyle = 'rgb(70 70 82)';
+          g.beginPath(); g.arc(cx, cy, R, Math.PI * 0.75, Math.PI * 2.25); g.stroke();
+          g.strokeStyle = 'rgb(230 40 30)';
+          g.beginPath(); g.arc(cx, cy, R, Math.PI * 1.95, Math.PI * 2.25); g.stroke();
+          for (var k = 0; k <= 10; k++) {
+            var a = Math.PI * 0.75 + k / 10 * Math.PI * 1.5;
+            g.strokeStyle = k >= 8 ? 'rgb(230 40 30)' : 'rgb(205 205 215)'; g.lineWidth = 3;
+            g.beginPath(); g.moveTo(cx + Math.cos(a) * R * 0.8, cy + Math.sin(a) * R * 0.8);
+            g.lineTo(cx + Math.cos(a) * R * 0.93, cy + Math.sin(a) * R * 0.93); g.stroke();
+          }
+          var needle = Math.PI * 0.75 + ease * Math.PI * 1.45 + (swing === 1 ? Math.sin(t * 70) * 0.02 : 0);
+          g.strokeStyle = 'rgb(255 140 20)'; g.lineWidth = 5;
+          g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(needle) * R * 0.88, cy + Math.sin(needle) * R * 0.88); g.stroke();
+          g.fillStyle = 'rgb(240 240 245)'; g.textAlign = 'center';
+          g.font = '700 ' + Math.round(R * 0.3) + 'px ui-monospace, monospace';
+          g.fillText(String(Math.round(ease * 210)), cx, cy + R * 0.5);
+        }
+        if (t > 1.7 && t < 2.1) { g.fillStyle = 'rgba(90, 170, 255, ' + (1 - Math.abs(t - 1.9) / 0.2) * 0.85 + ')'; g.fillRect(0, 0, W, H); }
+        if (t > 1.9) {
+          var speed = Math.min(1, (t - 1.9) / 0.6);
+          g.strokeStyle = 'rgba(255, 255, 255, 0.5)'; g.lineWidth = 2; g.beginPath();
+          streaks.forEach(function (s) {
+            s.x -= s.v * (1 + speed * 2);
+            if (s.x + s.l * 2 < 0) { s.x = W + Math.random() * 200; s.y = Math.random() * H; }
+            g.moveTo(s.x, s.y); g.lineTo(s.x + s.l * (1 + speed), s.y);
+          });
+          g.stroke();
+          if (t < 3.0) { for (var p = 0; p < 3; p++) { smoke.push({ x: W * (Math.random() > 0.5 ? 0.25 : 0.75), y: H * 0.97, r: 12, a: 0.45 }); } }
+          smoke.forEach(function (puff) {
+            puff.x -= 6 + Math.random() * 4; puff.y -= 0.6; puff.r += 2.2; puff.a *= 0.965;
+            g.fillStyle = 'rgba(200, 200, 205, ' + puff.a + ')';
+            g.beginPath(); g.arc(puff.x, puff.y, puff.r, 0, Math.PI * 2); g.fill();
+          });
+          c.el.style.background = 'rgba(8, 8, 12, ' + Math.max(0, 1 - (t - 2.6)) + ')';
+        }
+        return t < 3.8;
+      });
+    },
+
+    // Rocky: a bell, then a run up a long flight of steps at dawn -- a step for each film -- to
+    // arms raised at the top.
+    steps: function () {
+      var c = curtain({ max: 6000, background: 'linear-gradient(to top, rgb(255 150 70), rgb(120 70 120) 55%, rgb(30 30 60))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var n = Math.max(6, Math.min(16, page.steps.length * 2 || 8));
+      var x0 = W * 0.16, y0 = H * 0.92, sw = (W * 0.6) / n, sh = (H * 0.52) / n, u = Math.max(14, H * 0.03);
+      var caption = text('p', 'sc-intro-caption', '', c.el);
+      caption.style.color = 'rgb(255 236 200)';
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        if (t < 0.9) {
+          g.strokeStyle = 'rgba(255, 230, 160, ' + (1 - t / 0.9) + ')'; g.lineWidth = 6;
+          g.beginPath(); g.arc(W / 2, H * 0.25, t * Math.max(W, H) * 0.6, 0, Math.PI * 2); g.stroke();
+        }
+        var rise = Math.min(1, t / 3.6), sunY = H * 0.55 - rise * H * 0.18;
+        var glow = g.createRadialGradient(W * 0.8, sunY, 0, W * 0.8, sunY, H * 0.45);
+        glow.addColorStop(0, 'rgba(255, 225, 150, ' + (0.45 + rise * 0.45) + ')'); glow.addColorStop(1, 'rgba(255, 200, 120, 0)');
+        g.fillStyle = glow; g.fillRect(0, 0, W, H);
+        g.fillStyle = 'rgb(42 30 46)';
+        g.beginPath(); g.moveTo(x0, y0);
+        for (var i = 0; i < n; i++) { g.lineTo(x0 + i * sw, y0 - (i + 1) * sh); g.lineTo(x0 + (i + 1) * sw, y0 - (i + 1) * sh); }
+        g.lineTo(x0 + n * sw, y0); g.closePath(); g.fill();
+        var climb = Math.min(n, Math.max(0, (t - 0.7) / 2.5 * n)), step = Math.floor(climb), hop = climb - step;
+        var top = climb >= n;
+        var fx = x0 + Math.min(climb + 0.5, n - 0.5) * sw, fy = y0 - Math.min(n, step + 1) * sh - (top ? 0 : Math.sin(hop * Math.PI) * sh * 0.5);
+        g.strokeStyle = 'rgb(20 14 22)'; g.fillStyle = 'rgb(20 14 22)'; g.lineWidth = u * 0.28; g.lineCap = 'round';
+        g.beginPath(); g.arc(fx, fy - u * 3.3, u * 0.5, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.moveTo(fx, fy - u * 2.8); g.lineTo(fx, fy - u * 1.3); g.stroke();
+        var stride = top ? 0 : Math.sin(climb * Math.PI) * u * 0.7;
+        g.beginPath(); g.moveTo(fx, fy - u * 1.3); g.lineTo(fx + stride, fy); g.moveTo(fx, fy - u * 1.3); g.lineTo(fx - stride, fy); g.stroke();
+        g.beginPath();
+        if (top) { g.moveTo(fx, fy - u * 2.6); g.lineTo(fx - u * 0.9, fy - u * 3.9); g.moveTo(fx, fy - u * 2.6); g.lineTo(fx + u * 0.9, fy - u * 3.9); }
+        else { g.moveTo(fx, fy - u * 2.5); g.lineTo(fx + stride * 0.8, fy - u * 1.7); g.moveTo(fx, fy - u * 2.5); g.lineTo(fx - stride * 0.8, fy - u * 1.7); }
+        g.stroke();
+        if (top && !caption.textContent) {
+          caption.textContent = page.total ? (page.have === page.total ? 'All ' + page.total + ' — the whole way up' : page.have + ' of ' + page.total + ' — still climbing') : 'The top';
+        }
+        if (t > 3.8) { c.el.style.opacity = String(Math.max(0, 1 - (t - 3.8) / 0.6)); }
+        return t < 4.5;
+      });
+    },
+
+    // Die Hard: a tower block's windows light up floor by floor, then glass bursts out across the
+    // screen.
+    tower: function () {
+      var c = curtain({ max: 6000, background: 'linear-gradient(to bottom, rgb(6 8 20), rgb(20 24 44))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var floors = Math.max(12, Math.min(32, (page.steps.length || 5) * 5)), cols = 8;
+      var bw = Math.min(W * 0.32, 340), bh = H * 0.82, bx = W / 2 - bw / 2, by = H - bh, fh = bh / floors, ww = bw / cols;
+      var windows = [];
+      for (var f = 0; f < floors; f++) { var row = []; for (var k = 0; k < cols; k++) { row.push(Math.random() > 0.25); } windows.push(row); }
+      var shards = [], burst = false;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var fade = t > 3.3 ? Math.max(0, 1 - (t - 3.3) / 0.9) : 1;
+        c.el.style.background = fade < 1 ? 'rgba(10, 12, 28, ' + fade + ')' : '';
+        g.globalAlpha = fade;
+        g.fillStyle = 'rgb(14 16 30)';
+        g.fillRect(bx - bw * 0.9, by + bh * 0.45, bw * 0.6, bh); g.fillRect(bx + bw * 1.25, by + bh * 0.3, bw * 0.55, bh);
+        g.fillStyle = 'rgb(26 28 44)'; g.fillRect(bx, by, bw, bh);
+        var up = t / 2.4 * floors;
+        for (var f = 0; f < floors; f++) {
+          for (var k = 0; k < cols; k++) {
+            g.fillStyle = f < up && windows[f][k] ? 'rgb(255 214 120)' : 'rgb(42 46 62)';
+            g.fillRect(bx + k * ww + ww * 0.2, by + bh - (f + 1) * fh + fh * 0.25, ww * 0.6, fh * 0.5);
+          }
+        }
+        if (t > 2.7 && !burst) {
+          burst = true;
+          shakePage(7, 420);
+          for (var s = 0; s < 140; s++) {
+            var ang = Math.random() * Math.PI * 2, v = 4 + Math.random() * 12;
+            shards.push({ x: bx + Math.random() * bw, y: by + bh * (0.15 + Math.random() * 0.2), vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - 3,
+                          a: Math.random() * 6, va: (Math.random() - 0.5) * 0.4, s: 6 + Math.random() * 16 });
+          }
+        }
+        shards.forEach(function (p) {
+          p.vy += 0.3; p.x += p.vx; p.y += p.vy; p.a += p.va;
+          g.save(); g.translate(p.x, p.y); g.rotate(p.a);
+          g.fillStyle = 'rgba(200, 230, 255, 0.7)';
+          g.beginPath(); g.moveTo(0, -p.s); g.lineTo(p.s * 0.6, p.s * 0.5); g.lineTo(-p.s * 0.5, p.s * 0.3); g.closePath(); g.fill();
+          g.restore();
+        });
+        g.globalAlpha = 1;
+        return t < 4.3;
+      });
+    },
+
+    // Transformers: the poster in mechanical panels, flung apart, that slide, turn and lock back
+    // together.
+    panels: function () {
+      var backdrop = document.querySelector('.collection-backdrop');
+      var src = page.posters.length ? bigger(page.posters[0]) : (backdrop ? backdrop.currentSrc || backdrop.src : null);
+      var c = curtain({ max: 5000, background: 'radial-gradient(circle at 50% 40%, rgb(60 66 76), rgb(12 14 18))' });
+      var board = document.createElement('div');
+      board.className = 'sc-panels';
+      var cols = 4, rows = 6, n = 0;
+      for (var r = 0; r < rows; r++) {
+        for (var k = 0; k < cols; k++) {
+          var tile = document.createElement('span');
+          tile.className = 'sc-panel';
+          tile.style.background = src ? 'url("' + src.replace(/"/g, '%22') + '") ' + (k / (cols - 1) * 100) + '% ' + (r / (rows - 1) * 100) + '% / ' +
+            (cols * 100) + '% ' + (rows * 100) + '%' : 'linear-gradient(135deg, rgb(150 156 168), rgb(70 74 84))';
+          tile.style.boxShadow = 'inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.6)';
+          board.appendChild(tile);
+          if (tile.animate) {
+            tile.animate([
+              { translate: ((Math.random() - 0.5) * 140) + 'vw ' + ((Math.random() - 0.5) * 120) + 'vh', rotate: ((Math.random() - 0.5) * 540) + 'deg', opacity: 0 },
+              { translate: '0 0', rotate: '0deg', opacity: 1 },
+            ], { duration: 700, delay: 200 + n * 55 + Math.random() * 200, easing: 'cubic-bezier(.2, 1.35, .45, 1)', fill: 'both' });
+          }
+          n++;
+        }
+      }
+      c.el.appendChild(board);
+      window.setTimeout(function () { board.classList.add('is-locked'); shakePage(3, 200); }, 200 + n * 55 + 900);
+      window.setTimeout(c.finish, 200 + n * 55 + 1900);
+    },
+
+    // Scream: a phone rings in the dark -- caller unknown -- with a question about the missing
+    // films, then a slash cuts the dark in two.
+    phone: function () {
+      var c = curtain({ max: 7500, background: 'black' });
+      var call = document.createElement('div');
+      call.className = 'sc-call';
+      call.style.color = 'rgb(235 235 240)';
+      call.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>';
+      text('strong', null, 'Incoming call', call);
+      text('small', null, 'Unknown', call);
+      c.el.appendChild(call);
+      var ring = function () {
+        if (call.animate) {
+          call.animate([{ rotate: '0deg' }, { rotate: '-6deg' }, { rotate: '6deg' }, { rotate: '-6deg' }, { rotate: '0deg' }], { duration: 360, iterations: 3 });
+        }
+      };
+      ring(); window.setTimeout(ring, 1300);
+      var line = text('p', 'sc-brief sc-brief--centre', '', c.el);
+      line.style.top = '70%';
+      var n = page.missing.length;
+      window.setTimeout(function () {
+        typeOut(line, n ? 'Do you know how many ' + page.short + ' films you still don’t have? … ' + n + '.'
+                        : 'You have every last one of them. For now.', 32);
+      }, 1700);
+      window.setTimeout(function () {
+        call.remove(); line.remove();
+        var slash = document.createElement('span');
+        slash.className = 'sc-slash';
+        slash.style.background = 'rgb(255 255 255)';
+        c.el.appendChild(slash);
+        window.setTimeout(function () {
+          slash.remove();
+          c.el.style.background = 'transparent';
+          [['polygon(0 0, 100% 0, 100% 40%, 0 62%)', '0 -70vh'], ['polygon(0 62%, 100% 40%, 100% 100%, 0 100%)', '0 70vh']].forEach(function (half) {
+            var part = document.createElement('span');
+            part.className = 'sc-half';
+            part.style.background = 'black';
+            part.style.clipPath = half[0];
+            c.el.appendChild(part);
+            if (part.animate) { part.animate([{ translate: '0 0' }, { translate: half[1] }], { duration: 800, easing: 'cubic-bezier(.6, 0, .8, .4)', fill: 'forwards' }); }
+          });
+          window.setTimeout(c.finish, 700);
+        }, 260);
+      }, 5200);
+    },
+
+    // Paranormal Activity: the page as night-vision footage with a running timestamp; it
+    // flickers, and the frame jolts. The page stays usable.
+    nightvision: function () {
+      var c = curtain({ max: 6000, through: true });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var stamp = text('p', 'sc-hud sc-hud--left', '', c.el);
+      stamp.style.color = 'rgb(220 255 220)';
+      var rec = text('p', 'sc-hud', '● REC', c.el);
+      rec.style.color = 'rgb(255 70 70)';
+      rec.style.top = '6%';
+      var start = 3 * 3600 + 12 * 60 + 7, jolted = false;
+      var two = function (v) { return (v < 10 ? '0' : '') + v; };
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var fade = t > 3.6 ? Math.max(0, 1 - (t - 3.6) / 0.6) : 1;
+        g.globalAlpha = fade;
+        g.fillStyle = 'rgba(16, 52, 22, 0.55)'; g.fillRect(0, 0, W, H);
+        g.fillStyle = 'rgba(200, 255, 200, 0.16)';
+        for (var i = 0; i < 1100; i++) { g.fillRect(Math.random() * W, Math.random() * H, 1.5, 1.5); }
+        var edge = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.max(W, H) * 0.7);
+        edge.addColorStop(0, 'rgba(0, 0, 0, 0)'); edge.addColorStop(1, 'rgba(0, 0, 0, 0.75)');
+        g.fillStyle = edge; g.fillRect(0, 0, W, H);
+        if (t > 2.3 && t < 2.62) { g.fillStyle = 'rgba(0, 0, 0, 0.92)'; g.fillRect(0, 0, W, H); }
+        if (t > 2.62 && !jolted) { jolted = true; shakePage(12, 320); }
+        g.globalAlpha = 1;
+        var secs = start + Math.floor(t * 41);
+        stamp.textContent = 'NIGHT #' + Math.max(1, page.missing.length) + '   ' + two(Math.floor(secs / 3600)) + ':' +
+          two(Math.floor(secs / 60) % 60) + ':' + two(secs % 60) + ' AM';
+        stamp.style.opacity = rec.style.opacity = String(fade);
+        if (Math.floor(t * 2) % 2) { rec.style.opacity = String(0.2 * fade); }
+        return t < 4.2;
+      });
+    },
+
+    // Final Destination: a chain reaction -- a domino for each film -- until the last one brings
+    // the whole curtain down.
+    dominoes: function () {
+      var c = curtain({ max: 6500, background: 'rgb(10 10 12)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var n = Math.max(6, Math.min(16, page.steps.length * 2 || 8));
+      var gap = Math.min(72, W * 0.7 / n), dw = gap * 0.3, dh = gap * 1.35, x0 = W / 2 - gap * (n - 1) / 2, base = H * 0.66;
+      var begin = 0.5, each = 0.19, dropped = false;
+      var left = page.missing.length;
+      var caption = text('p', 'sc-intro-caption', left ? 'One thing leads to another… ' + plural(left, 'film') + ' still out there' : 'One thing leads to another…', c.el);
+      caption.style.color = 'rgb(220 220 225)';
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        g.fillStyle = 'rgba(255, 255, 255, 0.08)'; g.fillRect(0, base, W, 2);
+        for (var i = 0; i < n; i++) {
+          var lean = Math.max(0, Math.min(1, (t - begin - i * each) / 0.22)) * (i === n - 1 ? Math.PI / 2 : 0.95);
+          g.save(); g.translate(x0 + i * gap + dw / 2, base); g.rotate(lean);
+          g.fillStyle = i === n - 1 ? 'rgb(205 40 40)' : 'rgb(235 233 226)';
+          g.fillRect(-dw, -dh, dw, dh);
+          g.fillStyle = 'rgb(20 20 24)';
+          g.beginPath(); g.arc(-dw / 2, -dh * 0.72, dw * 0.12, 0, Math.PI * 2); g.arc(-dw / 2, -dh * 0.28, dw * 0.12, 0, Math.PI * 2); g.fill();
+          g.restore();
+        }
+        if (t > begin + n * each + 0.35 && !dropped) {
+          dropped = true;
+          shakePage(5, 300);
+          if (c.el.animate) { c.el.animate([{ translate: '0 0' }, { translate: '0 110vh' }], { duration: 750, easing: 'cubic-bezier(.5, 0, .75, 0)', fill: 'forwards' }); }
+          window.setTimeout(c.finish, 700);
+        }
+        return true;
+      });
+    },
+
+    // Predator: the page in heat colours, a shimmering outline crossing it, and three red dots
+    // that settle on the title. The page stays usable.
+    thermal: function () {
+      var c = curtain({ max: 6000, through: true });
+      var marks = c.canvas(), heat = c.canvas();   // heat is underneath (the later one goes first)
+      var W = heat.width, H = heat.height, h = heat.getContext('2d'), g = marks.getContext('2d');
+      heat.style.mixBlendMode = 'color';
+      var hot = h.createRadialGradient(W / 2, H * 0.45, 0, W / 2, H * 0.45, Math.max(W, H) * 0.65);
+      hot.addColorStop(0, 'rgb(255 255 140)'); hot.addColorStop(0.25, 'rgb(255 90 20)');
+      hot.addColorStop(0.55, 'rgb(150 20 170)'); hot.addColorStop(1, 'rgb(20 30 150)');
+      h.fillStyle = hot; h.fillRect(0, 0, W, H);
+      var box = h1 ? h1.getBoundingClientRect() : { left: W / 2, top: H / 3, width: 0, height: 0 };
+      var aim = { x: box.left + Math.min(box.width, 300) / 2, y: box.top + box.height / 2 };
+      var dots = [0, 1, 2].map(function (i) { return { x: Math.random() * W, y: Math.random() * H, ox: Math.cos(i * 2.094 - 1.57) * 14, oy: Math.sin(i * 2.094 - 1.57) * 14 }; });
+      run(c, function (t) {
+        var fade = t > 3.7 ? Math.max(0, 1 - (t - 3.7) / 0.6) : Math.min(1, t / 0.4);
+        heat.style.opacity = String(0.85 * fade);
+        g.clearRect(0, 0, W, H);
+        var walk = Math.min(1, t / 2.6), sx = W * 0.1 + walk * W * 0.35, sy = H * 0.55, s = H * 0.28;
+        g.strokeStyle = 'rgba(255, 255, 255, ' + 0.4 * fade + ')'; g.lineWidth = 2;
+        g.beginPath();
+        for (var a = 0; a <= Math.PI * 2 + 0.01; a += 0.12) {
+          var wob = Math.sin(a * 7 + t * 9) * 4;
+          var px = sx + Math.cos(a) * (s * 0.18 + wob) * (a > Math.PI ? 1.6 : 0.9), py = sy + Math.sin(a) * (s * 0.5 + wob);
+          if (a === 0) { g.moveTo(px, py); } else { g.lineTo(px, py); }
+        }
+        g.stroke();
+        var lock = Math.min(1, Math.max(0, (t - 1.6) / 1.4)), e = 1 - Math.pow(1 - lock, 3);
+        dots.forEach(function (d) {
+          var x = d.x + (aim.x + d.ox - d.x) * e + (lock < 1 ? (Math.random() - 0.5) * 3 : 0);
+          var y = d.y + (aim.y + d.oy - d.y) * e + (lock < 1 ? (Math.random() - 0.5) * 3 : 0);
+          g.fillStyle = 'rgba(255, 30, 20, ' + fade + ')';
+          g.shadowColor = 'rgb(255 30 20)'; g.shadowBlur = 10;
+          g.beginPath(); g.arc(x, y, 4, 0, Math.PI * 2); g.fill();
+          g.shadowBlur = 0;
+        });
+        return t < 4.3;
+      });
+    },
+
+    // Dragon Ball Z: an aura builds round the title, crackling, the page shakes harder and harder,
+    // and a blast of light whites it all out. The page stays usable.
+    powerup: function () {
+      var c = curtain({ max: 5000, through: true });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var box = h1 ? h1.getBoundingClientRect() : { left: W * 0.3, top: H * 0.4, width: W * 0.4, height: 60 };
+      var wide = Math.min(box.width, W * 0.8), flames = [], lastShake = 0;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var k = Math.min(1, t / 2.6);
+        var aura = g.createRadialGradient(box.left + wide / 2, box.top + box.height / 2, 0, box.left + wide / 2, box.top + box.height / 2, wide * (0.5 + k * 0.5));
+        aura.addColorStop(0, 'rgba(255, 230, 90, ' + 0.35 * k + ')'); aura.addColorStop(1, 'rgba(255, 200, 40, 0)');
+        g.fillStyle = aura; g.fillRect(0, 0, W, H);
+        for (var f = 0; f < 6 + k * 18; f++) {
+          flames.push({ x: box.left + Math.random() * wide, y: box.top + box.height + 10, v: 2 + Math.random() * 5 * (0.5 + k), life: 1 });
+        }
+        flames.forEach(function (p) {
+          p.y -= p.v; p.x += (Math.random() - 0.5) * 2; p.life -= 0.03;
+          if (p.life > 0) {
+            g.fillStyle = 'rgba(255, ' + Math.round(200 + Math.random() * 55) + ', 80, ' + p.life * 0.8 + ')';
+            g.fillRect(p.x, p.y, 3, 7);
+          }
+        });
+        flames = flames.filter(function (p) { return p.life > 0; });
+        if (Math.random() < k * 0.45) {
+          g.strokeStyle = 'rgba(200, 230, 255, 0.95)'; g.lineWidth = 2;
+          var x = box.left + Math.random() * wide, y = box.top - 30;
+          g.beginPath(); g.moveTo(x, y);
+          for (var j = 0; j < 6; j++) { x += (Math.random() - 0.5) * 40; y += box.height / 3 + Math.random() * 20; g.lineTo(x, y); }
+          g.stroke();
+        }
+        if (t - lastShake > 0.28 && t < 2.8) { lastShake = t; shakePage(2 + k * 8, 240); }
+        if (t > 2.7) {
+          var w = t < 3.0 ? (t - 2.7) / 0.3 : Math.max(0, 1 - (t - 3.0) / 0.9);
+          c.el.style.background = 'rgba(255, 255, 255, ' + w + ')';
+        }
+        return t < 3.95;
+      });
+    },
+
+    // X-Men: a dome of light scans a crowd of points and locks on to one for each film you own,
+    // then flashes outward.
+    dome: function () {
+      var c = curtain({ max: 6000, background: 'radial-gradient(circle at 50% 50%, rgb(20 32 78), rgb(4 6 18))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.4;
+      var have = parseInt(page.have, 10) || 6, dots = [];
+      for (var i = 0; i < 180; i++) {
+        var a = Math.random() * Math.PI * 2, d = Math.sqrt(Math.random()) * R * 0.92;
+        dots.push({ x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d, a: a, found: false, pick: false });
+      }
+      dots.slice(0, Math.min(have, 30)).forEach(function (dot) { dot.pick = true; });
+      var label = text('p', 'sc-tracker-label', 'Searching…', c.el);
+      label.style.color = 'rgb(170 205 255)';
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var beam = (t * 2.4) % (Math.PI * 2);
+        g.strokeStyle = 'rgba(120, 180, 255, 0.35)'; g.lineWidth = 1.5;
+        for (var ring = 1; ring <= 3; ring++) { g.beginPath(); g.arc(cx, cy, R * ring / 3, 0, Math.PI * 2); g.stroke(); }
+        g.fillStyle = 'rgba(120, 180, 255, 0.16)';
+        g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R, beam - 0.45, beam); g.closePath(); g.fill();
+        var count = 0;
+        dots.forEach(function (dot) {
+          var diff = (beam - ((dot.a % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) + Math.PI * 4) % (Math.PI * 2);
+          if (dot.pick && diff < 0.3 && t > 0.6) { dot.found = true; }
+          if (dot.found) {
+            count++;
+            g.fillStyle = 'rgb(255 255 255)'; g.beginPath(); g.arc(dot.x, dot.y, 3.5, 0, Math.PI * 2); g.fill();
+            g.strokeStyle = 'rgba(255, 70, 70, 0.9)'; g.beginPath(); g.arc(dot.x, dot.y, 8, 0, Math.PI * 2); g.stroke();
+          } else {
+            g.fillStyle = 'rgba(150, 190, 255, 0.4)'; g.fillRect(dot.x - 1, dot.y - 1, 2, 2);
+          }
+        });
+        label.textContent = count ? 'Located ' + count + (page.total ? ' of ' + page.total : '') : 'Searching…';
+        if (t > 3.3) {
+          var grow = (t - 3.3) / 0.9;
+          g.strokeStyle = 'rgba(200, 225, 255, ' + Math.max(0, 1 - grow) + ')'; g.lineWidth = 10;
+          g.beginPath(); g.arc(cx, cy, R * (1 + grow * 2.5), 0, Math.PI * 2); g.stroke();
+          c.el.style.opacity = String(Math.max(0, 1 - grow));
+        }
+        return t < 4.2;
+      });
+    },
+
+    // Pirates of the Caribbean: a compass needle spins and settles, the sea rolls in, and the
+    // waves part to let the page through.
+    compass: function () {
+      var c = curtain({ max: 6000, background: 'linear-gradient(to bottom, rgb(10 20 40), rgb(14 42 62))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var cx = W / 2, cy = H * 0.4, Rc = Math.min(W, H) * 0.18, settle = Math.PI * 12 + 0.5;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var part = t > 3.0 ? Math.min(1, (t - 3.0) / 1.0) : 0;
+        c.el.style.background = part ? 'rgba(12, 30, 50, ' + (1 - part) + ')' : '';
+        g.globalAlpha = 1 - part;
+        g.strokeStyle = 'rgb(205 165 85)'; g.lineWidth = 5;
+        g.beginPath(); g.arc(cx, cy, Rc, 0, Math.PI * 2); g.stroke();
+        g.fillStyle = 'rgb(205 165 85)'; g.font = '700 ' + Math.round(Rc * 0.22) + 'px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        [['N', 0], ['E', 0.5], ['S', 1], ['W', 1.5]].forEach(function (p) {
+          var a = p[1] * Math.PI - Math.PI / 2;
+          g.fillText(p[0], cx + Math.cos(a) * Rc * 0.75, cy + Math.sin(a) * Rc * 0.75);
+        });
+        var damp = Math.exp(-t * 1.5), na = settle * (1 - damp) + Math.sin(t * 9) * damp * 0.5 - Math.PI / 2;
+        g.fillStyle = 'rgb(200 50 40)';
+        g.beginPath(); g.moveTo(cx + Math.cos(na) * Rc * 0.62, cy + Math.sin(na) * Rc * 0.62);
+        g.lineTo(cx + Math.cos(na + 1.57) * Rc * 0.07, cy + Math.sin(na + 1.57) * Rc * 0.07);
+        g.lineTo(cx + Math.cos(na - 1.57) * Rc * 0.07, cy + Math.sin(na - 1.57) * Rc * 0.07); g.closePath(); g.fill();
+        g.globalAlpha = 1;
+        if (t > 1.5) {
+          var level = H * (1 - Math.min(0.85, (t - 1.5) / 1.3 * 0.85));
+          [['rgba(25, 80, 130, 0.92)', 0, 30], ['rgba(35, 105, 155, 0.85)', 1.3, 22], ['rgba(50, 130, 175, 0.8)', 2.6, 16]].forEach(function (wave, i) {
+            var shift = (i % 2 ? -1 : 1) * part * W * 0.6;
+            g.fillStyle = wave[0];
+            [-1, 1].forEach(function (side) {
+              g.beginPath();
+              var from = side < 0 ? 0 : W / 2, to = side < 0 ? W / 2 : W, dx = side * Math.abs(shift);
+              g.moveTo(from + dx, H);
+              for (var x = from; x <= to; x += 12) { g.lineTo(x + dx, level + i * 26 + Math.sin(x / 70 + t * 2.4 + wave[1]) * wave[2]); }
+              g.lineTo(to + dx, H); g.closePath(); g.fill();
+            });
+          });
+        }
+        return t < 4.2;
+      });
+    },
+
+    // Resident Evil: a red laser grid sweeps down a dark corridor, then a containment report
+    // lists your missing films as unaccounted for.
+    lasers: function () {
+      var c = curtain({ max: 8000, background: 'black' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var cx = W / 2, cy = H / 2, w0 = W * 0.08, h0 = H * 0.08, reported = false;
+      var report = text('p', 'sc-brief sc-brief--report', '', c.el);
+      report.style.color = 'rgb(255 95 85)';
+      var at = function (d) { return { l: cx - w0 - (cx - w0) * d, r: cx + w0 + (W - cx - w0) * d, t: cy - h0 - (cy - h0) * d, b: cy + h0 + (H - cy - h0) * d }; };
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        g.strokeStyle = 'rgba(120, 130, 140, 0.35)'; g.lineWidth = 1;
+        var far = at(0);
+        g.strokeRect(far.l, far.t, far.r - far.l, far.b - far.t);
+        [[0, 0, far.l, far.t], [W, 0, far.r, far.t], [0, H, far.l, far.b], [W, H, far.r, far.b]].forEach(function (s) { g.beginPath(); g.moveTo(s[0], s[1]); g.lineTo(s[2], s[3]); g.stroke(); });
+        for (var d = 0.2; d < 1; d += 0.2) { var q = at(d); g.strokeRect(q.l, q.t, q.r - q.l, q.b - q.t); }
+        var pass = function (start, grid) {
+          var d = Math.min(1, Math.max(0, (t - start) / 1.1));
+          if (d <= 0 || d >= 1) { return; }
+          var q = at(d * d);
+          g.strokeStyle = 'rgba(255, 40, 30, 0.95)'; g.lineWidth = 2 + d * 2; g.shadowColor = 'rgb(255 40 30)'; g.shadowBlur = 12;
+          g.beginPath();
+          var lines = grid ? 6 : 1;
+          for (var i = 1; i <= lines; i++) { var y = q.t + (q.b - q.t) * i / (lines + 1); g.moveTo(q.l, y); g.lineTo(q.r, y); }
+          if (grid) { for (var j = 1; j <= 6; j++) { var x = q.l + (q.r - q.l) * j / 7; g.moveTo(x, q.t); g.lineTo(x, q.b); } }
+          g.stroke(); g.shadowBlur = 0;
+        };
+        pass(0.3, false); pass(1.4, true);
+        if (t > 2.6 && !reported) {
+          reported = true;
+          var gone = page.missing;
+          typeOut(report, 'CONTAINMENT REPORT — ' + page.name.toUpperCase() + '\n' +
+            (page.total ? 'In the library: ' + page.have + ' of ' + page.total + '\n' : '') +
+            (gone.length ? 'Unaccounted for: ' + gone.slice(0, 4).join(', ') + (gone.length > 4 ? ' and ' + (gone.length - 4) + ' more' : '') : 'All specimens contained.'), 22);
+        }
+        return t < 6.8;
+      });
+    },
+
+    // Bourne: a surveillance map; a dot hops from city to city, a city for each film, with
+    // readouts updating, until the feed is lost.
+    surveil: function () {
+      var c = curtain({ max: 7000, background: 'rgb(6 12 16)' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var cities = [], route = [], hops = Math.max(3, Math.min(8, page.steps.length || 4));
+      for (var i = 0; i < 46; i++) { cities.push({ x: W * (0.08 + Math.random() * 0.62), y: H * (0.15 + Math.random() * 0.7) }); }
+      for (var h = 0; h < hops; h++) { route.push(cities[Math.floor(Math.random() * cities.length)]); }
+      var feed = text('p', 'sc-hud', '', c.el);
+      feed.style.color = 'rgb(120 230 220)';
+      feed.style.whiteSpace = 'pre-line';
+      var each = 0.5, lostAt = hops * each + 0.6;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        g.strokeStyle = 'rgba(80, 200, 200, 0.1)'; g.lineWidth = 1;
+        for (var x = 0; x < W; x += 40) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
+        for (var y = 0; y < H; y += 40) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+        g.fillStyle = 'rgba(120, 230, 220, 0.45)';
+        cities.forEach(function (city) { g.fillRect(city.x - 1.5, city.y - 1.5, 3, 3); });
+        var leg = Math.min(hops - 1, Math.floor(t / each)), along = Math.min(1, (t - leg * each) / (each * 0.7));
+        g.strokeStyle = 'rgba(255, 70, 60, 0.85)'; g.lineWidth = 2;
+        g.beginPath(); g.moveTo(route[0].x, route[0].y);
+        for (var r = 1; r <= leg; r++) { g.lineTo(route[r].x, route[r].y); }
+        var from = route[leg], to = route[Math.min(hops - 1, leg + 1)], px = from.x + (to.x - from.x) * along, py = from.y + (to.y - from.y) * along;
+        if (leg < hops - 1) { g.lineTo(px, py); }
+        g.stroke();
+        var pulse = 6 + Math.abs(Math.sin(t * 6)) * 6;
+        g.strokeStyle = 'rgba(255, 70, 60, 0.9)'; g.beginPath(); g.arc(px, py, pulse, 0, Math.PI * 2); g.stroke();
+        feed.textContent = 'SUBJECT    ' + page.name.toUpperCase() + '\nPOSITION   ' + (py / H * 90).toFixed(4) + ' N  ' + (px / W * 180).toFixed(4) + ' E' +
+          '\nSIGHTING   ' + (leg + 1) + ' of ' + hops + '\nSTATUS     ' + (t < lostAt ? 'TRACKING' : 'SIGNAL LOST');
+        if (t > lostAt) {
+          for (var b = 0; b < 14; b++) {
+            g.fillStyle = 'rgba(' + (Math.random() > 0.5 ? '120, 230, 220' : '6, 12, 16') + ', 0.8)';
+            g.fillRect(0, Math.random() * H, W, 2 + Math.random() * 18);
+          }
+        }
+        return t < lostAt + 0.7;
+      });
+    },
+
+    // Ice Age: frost creeps in from the edges and freezes the screen, then cracks and falls
+    // away. The page stays usable.
+    freeze: function () {
+      var c = curtain({ max: 5500, through: true });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var segs = [], reach = Math.min(W, H) * 0.12;
+      var grow = function (x, y, ang, len, depth, born) {
+        var x2 = x + Math.cos(ang) * len, y2 = y + Math.sin(ang) * len;
+        segs.push([x, y, x2, y2, born]);
+        if (depth < 4) {
+          grow(x2, y2, ang + 0.5 + Math.random() * 0.3, len * 0.68, depth + 1, born + 0.18);
+          grow(x2, y2, ang - 0.5 - Math.random() * 0.3, len * 0.68, depth + 1, born + 0.18);
+        }
+      };
+      for (var i = 0; i < 40; i++) {
+        var side = i % 4, f = Math.random();
+        var x = side === 0 ? f * W : side === 1 ? W : side === 2 ? f * W : 0;
+        var y = side === 0 ? 0 : side === 1 ? f * H : side === 2 ? H : f * H;
+        var ang = [Math.PI / 2, Math.PI, -Math.PI / 2, 0][side] + (Math.random() - 0.5) * 0.8;
+        grow(x, y, ang, reach * (0.6 + Math.random() * 0.6), 0, Math.random() * 0.5);
+      }
+      var crack = [[W * 0.15, H * 0.55]];
+      for (var k = 1; k <= 10; k++) { crack.push([W * 0.15 + W * 0.7 * k / 10, H * 0.55 + (Math.random() - 0.5) * H * 0.18]); }
+      var fell = false;
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var haze = Math.min(1, t / 2.4);
+        var edge = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * (0.6 - haze * 0.3), W / 2, H / 2, Math.max(W, H) * 0.75);
+        edge.addColorStop(0, 'rgba(225, 245, 255, 0)'); edge.addColorStop(1, 'rgba(225, 245, 255, ' + 0.7 * haze + ')');
+        g.fillStyle = edge; g.fillRect(0, 0, W, H);
+        g.strokeStyle = 'rgba(240, 250, 255, 0.85)'; g.lineWidth = 1.4;
+        g.beginPath();
+        segs.forEach(function (s) {
+          if (t < s[4]) { return; }
+          var p = Math.min(1, (t - s[4]) / 0.25);
+          g.moveTo(s[0], s[1]); g.lineTo(s[0] + (s[2] - s[0]) * p, s[1] + (s[3] - s[1]) * p);
+        });
+        g.stroke();
+        if (t > 2.5) {
+          var shown = Math.min(crack.length, Math.ceil((t - 2.5) / 0.3 * crack.length));
+          g.strokeStyle = 'rgba(255, 255, 255, 0.95)'; g.lineWidth = 3;
+          g.beginPath(); g.moveTo(crack[0][0], crack[0][1]);
+          for (var j = 1; j < shown; j++) { g.lineTo(crack[j][0], crack[j][1]); }
+          g.stroke();
+        }
+        if (t > 3.0 && !fell) {
+          fell = true;
+          if (canvas.animate) { canvas.animate([{ translate: '0 0', opacity: 1 }, { translate: '0 45vh', opacity: 0 }], { duration: 900, easing: 'ease-in', fill: 'forwards' }); }
+        }
+        return t < 4.0;
+      });
+    },
+
+    // Twilight: a misty blue-grey forest; a shaft of sunlight breaks through and the title
+    // sparkles in it.
+    forest: function () {
+      var c = curtain({ max: 6000, background: 'linear-gradient(to bottom, rgb(150 165 175), rgb(70 85 95))' });
+      var canvas = c.canvas(), g = canvas.getContext('2d'), W = canvas.width, H = canvas.height;
+      var layers = [['rgb(96 112 120)', 0.55], ['rgb(52 66 72)', 0.75], ['rgb(22 30 34)', 1]].map(function (layer) {
+        var trees = [];
+        for (var i = 0; i < 22; i++) { trees.push({ x: Math.random() * W, w: 18 + Math.random() * 30, h: H * layer[1] * (0.6 + Math.random() * 0.4) }); }
+        return { colour: layer[0], trees: trees, depth: layer[1] };
+      });
+      var box = h1 ? h1.getBoundingClientRect() : { left: W * 0.3, top: H * 0.4, width: W * 0.4, height: 60 };
+      var glints = [];
+      for (var s = 0; s < 40; s++) { glints.push({ x: box.left + Math.random() * Math.min(box.width, W * 0.8), y: box.top + Math.random() * box.height, p: Math.random() * 6 }); }
+      run(c, function (t) {
+        g.clearRect(0, 0, W, H);
+        var clear = t > 3.0 ? Math.min(1, (t - 3.0) / 0.9) : 0;
+        if (clear) { c.el.style.background = 'transparent'; }
+        g.globalAlpha = 1 - clear;
+        var sky = g.createLinearGradient(0, 0, 0, H);
+        sky.addColorStop(0, 'rgb(150 165 175)'); sky.addColorStop(1, 'rgb(70 85 95)');
+        if (clear) { g.fillStyle = sky; g.fillRect(0, 0, W, H); }
+        layers.forEach(function (layer, li) {
+          g.fillStyle = layer.colour;
+          layer.trees.forEach(function (tree) {
+            var x = tree.x + t * (li + 1) * 4;
+            g.beginPath(); g.moveTo(x, H - tree.h); g.lineTo(x + tree.w / 2, H); g.lineTo(x - tree.w / 2, H); g.closePath(); g.fill();
+          });
+          g.fillStyle = 'rgba(210, 220, 225, 0.18)';
+          g.fillRect(0, H * (0.55 + li * 0.12) + Math.sin(t + li) * 10, W, H * 0.08);
+        });
+        if (t > 1.8) {
+          var beam = Math.min(1, (t - 1.8) / 0.8);
+          g.fillStyle = 'rgba(255, 250, 230, ' + 0.28 * beam + ')';
+          g.beginPath(); g.moveTo(W * 0.85, 0); g.lineTo(W, 0); g.lineTo(box.left + Math.min(box.width, W * 0.8), box.top + box.height + 40); g.lineTo(box.left, box.top + box.height + 40); g.closePath(); g.fill();
+        }
+        g.globalAlpha = 1;
+        if (t > 2.2) {
+          glints.forEach(function (p) {
+            var a = Math.max(0, Math.sin(t * 5 + p.p)) * Math.min(1, (t - 2.2) / 0.5) * (t > 3.9 ? Math.max(0, 1 - (t - 3.9) / 0.5) : 1);
+            g.fillStyle = 'rgba(255, 255, 255, ' + a + ')';
+            g.beginPath(); g.moveTo(p.x, p.y - 6); g.lineTo(p.x + 1.5, p.y); g.lineTo(p.x, p.y + 6); g.lineTo(p.x - 1.5, p.y); g.closePath(); g.fill();
+            g.beginPath(); g.moveTo(p.x - 6, p.y); g.lineTo(p.x, p.y + 1.5); g.lineTo(p.x + 6, p.y); g.lineTo(p.x, p.y - 1.5); g.closePath(); g.fill();
+          });
+        }
+        return t < 4.5;
+      });
+    },
+
+    // Shrek: a storybook opens on this collection's tale; a page turns, then one is torn out and
+    // the page behind it appears.
+    storybook: function () {
+      var c = curtain({ max: 7500, background: 'radial-gradient(circle at 50% 45%, rgb(70 92 40), rgb(16 24 10))' });
+      var paper = 'rgb(242 230 198)', ink = 'rgb(62 42 22)';
+      var book = document.createElement('div');
+      book.className = 'sc-book';
+      var leftPage = document.createElement('div'), rightPage = document.createElement('div'), leaf = document.createElement('div');
+      leftPage.className = 'sc-book-page sc-book-left';
+      rightPage.className = 'sc-book-page sc-book-right';
+      leaf.className = 'sc-book-leaf';
+      var front = document.createElement('div'), back = document.createElement('div');
+      front.className = 'sc-book-page sc-book-front';
+      back.className = 'sc-book-page sc-book-back';
+      [leftPage, rightPage, front, back].forEach(function (p) { p.style.background = paper; p.style.color = ink; });
+      var n = page.missing.length;
+      text('p', 'sc-book-big', 'Once upon a time', leftPage);
+      text('p', null, 'there was a collection called ' + page.short + '.', front);
+      text('p', null, page.total ? 'Of its ' + page.total + ' films, ' + page.have + ' lived happily in the library…' : 'Its films lived happily in the library…', back);
+      text('p', null, n ? '…and ' + plural(n, 'film') + ' were still out in the wide world.' : '…every last one of them. The end.', rightPage);
+      leaf.appendChild(front);
+      leaf.appendChild(back);
+      book.appendChild(leftPage);
+      book.appendChild(rightPage);
+      book.appendChild(leaf);
+      c.el.appendChild(book);
+      if (book.animate) { book.animate([{ opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1 }], { duration: 600, easing: 'ease-out', fill: 'both' }); }
+      window.setTimeout(function () {
+        if (leaf.animate) { leaf.animate([{ rotate: 'y 0deg' }, { rotate: 'y -180deg' }], { duration: 1100, easing: 'ease-in-out', fill: 'forwards' }); }
+      }, 1700);
+      window.setTimeout(function () {
+        if (rightPage.animate) { rightPage.animate([{ translate: '0 0', rotate: '0deg', opacity: 1 }, { translate: '30vw 80vh', rotate: '38deg', opacity: 0 }], { duration: 900, easing: 'ease-in', fill: 'forwards' }); }
+        window.setTimeout(c.finish, 350);
+      }, 4700);
     },
   };
 
