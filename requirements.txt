@@ -1,7 +1,7 @@
 # Core web framework
 # Bumped 2026-09-18 for the Starlette advisories (Range-header DoS in FileResponse, form limits,
 # Host-header URL reconstruction) and python-multipart parsing DoS; see CHANGELOG 0.11.1.
-fastapi==0.142.1
+fastapi==0.142.2
 uvicorn[standard]==0.54.0
 jinja2==3.1.6
 python-multipart==0.0.32
