@@ -23,6 +23,7 @@ from datetime import date, datetime
 from dataclasses import dataclass, field
 
 import plexapi
+import plexapi.media
 from plexapi.exceptions import BadRequest, NotFound, Unauthorized
 from plexapi.server import PlexServer
 import requests
@@ -440,9 +441,13 @@ def _attr(raw, name: str, default=None):  # noqa: ANN001 - a plexapi Video
 
 
 def _guid_strings(raw) -> tuple[str, ...]:  # noqa: ANN001 - a plexapi Video
-    return tuple(
-        guid.id for guid in _attr(raw, "guids", ()) or () if guid.__dict__.get("id")
-    )
+    guids = raw.__dict__.get("guids")
+    if guids is None and raw.__dict__.get("_data") is not None:
+        # plexapi 4.18 builds `guids` lazily, on first read, so it isn't in __dict__ yet. Build
+        # it from the item's own XML, as plexapi would: no request, and no trip through the
+        # auto-reload in __getattribute__ (findItems is a method, never None or []).
+        guids = raw.findItems(raw.__dict__["_data"], plexapi.media.Guid)
+    return tuple(guid.id for guid in guids or () if guid.__dict__.get("id"))
 
 
 def _external_ids_of(raw) -> ExternalIds:  # noqa: ANN001 - a plexapi Video

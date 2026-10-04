@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.71.1] — 2026-10-03
+
+### Changed
+
+- **Dependencies updated**: FastAPI 0.142, uvicorn 0.54, SQLModel 0.0.47, Alembic 1.20,
+  APScheduler 3.11, PlexAPI 4.18, bcrypt 5, Apprise 2 (and responses 0.26 for the tests).
+
+### Fixed
+
+- **Plex scans with PlexAPI 4.18.** It builds an item's external ids lazily now, which the Plex
+  client didn't see — every film and show would have come back with no TMDb, IMDb or TVDb id.
+  The client builds them from the item itself, still without a request per item.
+
 ## [0.71.0] — 2026-10-03
 
 ### Added
