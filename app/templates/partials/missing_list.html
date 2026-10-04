@@ -4,7 +4,7 @@
 {% from "partials/trailer_button.html" import trailer_button %}
 {% if gap.missing %}
   <div class="collection-grid collection-grid--compact">
-    {% for movie in sort_titles(gap.missing, detail_sort or 'release') %}
+    {% for decade, movie in decades(sort_titles(gap.missing, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}
       {% call tile(movie.poster, 'missing', 'movie/' ~ movie.tmdb_id) %}
         <header><strong class="film-title">{{ movie.title }}</strong> {% include "partials/rating.html" %}</header>
         <p class="collection-counts muted"><span>{{ movie.release_year or '' }}</span></p>

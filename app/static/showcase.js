@@ -34,7 +34,8 @@
   // The app's address, from this script's own: everything is under BASE_URL.
   var script = document.currentScript;
   var base = script ? script.src.replace(/\/static\/showcase\.js.*$/, '') : '';
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+    document.documentElement.dataset.effects === 'off';   // the effects dial (0.71.0)
   var phone = window.matchMedia('(pointer: coarse), (max-width: 767px)').matches;
   var root = document.documentElement;
   // The Trophy case's gold (0.52.0). Set here, not in showcase.css, which holds no colour of its
@@ -74,9 +75,43 @@
         root.style.setProperty('--sc-glow', 'rgb(' + [r, g, b].map(function (c) {
           return Math.min(255, Math.round(c * lift));
         }).join(' ') + ')');
+        accentFrom(r, g, b);
       } catch (e) { /* a tainted canvas or no 2D context: keep the theme's colour */ }
     };
     img.src = src;
+  }
+
+  // ------------------------------------------------------------ accents (0.71.0)
+  // A collection's, franchise's or director's page takes its art's colour for its links, buttons
+  // and rings: the hue and some of its strength, at a lightness that reads on the theme -- worked
+  // out for both, so switching light and dark needs no reload. A grey picture keeps the theme's.
+  function hsl(h, s, l) {
+    var k = function (n) { return (n + h / 30) % 12; };
+    var a = s * Math.min(l, 1 - l);
+    var f = function (n) { return l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1)); };
+    return [f(0), f(8), f(4)].map(function (c) { return Math.round(c * 255); });
+  }
+  function rgb(c, alpha) { return 'rgb(' + c.join(' ') + (alpha ? ' / ' + alpha : '') + ')'; }
+  function accentFrom(r, g, b) {
+    if (!document.querySelector('.collection-heading')) { return; }
+    var R = r / 255, G = g / 255, B = b / 255;
+    var max = Math.max(R, G, B), min = Math.min(R, G, B), l = (max + min) / 2, d = max - min;
+    var s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+    if (s < 0.18) { return; }
+    var h = d === 0 ? 0 : max === R ? 60 * (((G - B) / d) % 6) : max === G ? 60 * ((B - R) / d + 2) : 60 * ((R - G) / d + 4);
+    if (h < 0) { h += 360; }
+    s = Math.max(0.45, Math.min(0.85, s));
+    var ink = function (c) { return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255 > 0.55 ? 'rgb(20 20 24)' : 'rgb(255 255 255)'; };
+    [['d', 0.72, 0.42], ['l', 0.34, 0.38]].forEach(function (t) {
+      var text = hsl(h, s, t[1]), button = hsl(h, s, t[2]), hover = hsl(h, s, t[2] - 0.06);
+      root.style.setProperty('--sc-accent-' + t[0], rgb(text));
+      root.style.setProperty('--sc-accent-hover-' + t[0], rgb(hsl(h, s, t[1] + (t[0] === 'd' ? 0.08 : -0.06))));
+      root.style.setProperty('--sc-accent-bg-' + t[0], rgb(button));
+      root.style.setProperty('--sc-accent-bg-hover-' + t[0], rgb(hover));
+      root.style.setProperty('--sc-accent-ink-' + t[0], ink(button));
+      root.style.setProperty('--sc-accent-focus-' + t[0], rgb(text, 0.4));
+    });
+    root.classList.add('sc-accented');
   }
 
   // A small copy, not the one on the page: the browser keeps that one cached from a plain
@@ -84,8 +119,13 @@
   // different URL, and a few kilobytes besides.
   function glowOf(art) {
     if (!art) { return; }
-    var wide = art.classList.contains('collection-backdrop') || art.classList.contains('spotlight-backdrop');
-    var src = (art.currentSrc || art.src || '').replace(/\/t\/p\/[^/]+\//, '/t/p/' + (wide ? 'w300' : 'w92') + '/');
+    // A director's banner is their photo (0.71.0): TMDb has no wide copy of a person.
+    var wide = (art.classList.contains('collection-backdrop') && !art.closest('.collection-heading--person')) ||
+      art.classList.contains('spotlight-backdrop');
+    // w154 for a poster, not w92: w92 is the blur-up placeholder's (0.71.0), fetched without CORS.
+    // A person's sizes differ; w45 because the Directors list shows w185 copies, cached without CORS.
+    var small = art.closest('.collection-heading--person') ? 'w45' : 'w154';
+    var src = (art.currentSrc || art.src || '').replace(/\/t\/p\/[^/]+\//, '/t/p/' + (wide ? 'w300' : small) + '/');
     if (src.indexOf('image.tmdb.org') !== -1) {
       glowFrom(src);
       // Ambient light (0.51.0): the same small copy, blurred to nothing but colour behind the
@@ -500,14 +540,38 @@
   // already loaded -- from the cache, usually -- is left as it is, as are the images something
   // else animates: the spotlight's, the release strip's, and the detail page's own poster and
   // banner, which the page transition hands over from the page before.
+  // Since 0.71.0 a TMDb poster blurs up instead: TMDb's smallest copy (w92, a few kilobytes) is
+  // painted behind it at once -- soft, at a card's size -- and the real one fades in over it. Only
+  // near the screen, as the lazy images themselves load, or a long list would fetch them all.
   var OWN_MOTION = '.spotlight, .timeline, .collection-heading, .poster-wall';
+  var TMDB_SIZE = /(image\.tmdb\.org\/t\/p\/)(w\d+|original)\//;
+  var near = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting) { return; }
+      near.unobserve(entry.target);
+      var img = entry.target;
+      if (img.classList.contains('sc-pending')) {
+        img.style.setProperty('--sc-lqip', 'url("' + img.dataset.scLqip + '")');
+        img.classList.add('sc-lqip');
+      }
+    });
+  }, { rootMargin: '400px 0px' }) : null;
   var soften = function (img) {
     if (img.dataset.scSoft || (img.complete && img.naturalWidth) || img.closest(OWN_MOTION)) { return; }
     img.dataset.scSoft = '1';
     img.classList.add('sc-pending');
+    var src = img.currentSrc || img.src || '';
+    if (near && TMDB_SIZE.test(src) && !/\/w92\//.test(src)) {
+      // A person's photo has its own sizes: w45 is their smallest.
+      img.dataset.scLqip = src.replace(TMDB_SIZE, img.classList.contains('person-photo') ? '$1w45/' : '$1w92/');
+      near.observe(img);
+    }
     var arrived = function () {
-      img.classList.remove('sc-pending');
-      if (!reduce && img.naturalWidth) { img.classList.add('sc-arrived'); }
+      var blurred = img.classList.contains('sc-lqip');
+      if (near) { near.unobserve(img); }
+      img.classList.remove('sc-pending', 'sc-lqip');
+      img.style.removeProperty('--sc-lqip');
+      if (!reduce && img.naturalWidth) { img.classList.add(blurred ? 'sc-arrived-over' : 'sc-arrived'); }
     };
     img.addEventListener('load', arrived, { once: true });
     img.addEventListener('error', arrived, { once: true });

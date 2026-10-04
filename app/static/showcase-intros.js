@@ -11,7 +11,8 @@
 
   var root = document.documentElement;
   if (root.dataset.look !== 'showcase') { return; }
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+    document.documentElement.dataset.effects === 'off';   // the effects dial (0.71.0)
   // The intro mark's clapperboard: dark on the gold badge in any theme (0.61.1).
   root.style.setProperty('--sc-mark-ink', 'rgb(46 30 6)');
 

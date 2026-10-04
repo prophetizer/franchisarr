@@ -36,7 +36,7 @@
       <article class="collection-card collection-card--compact">
         {% if d.photo %}
           <a href="{{ url('/directors/' ~ d.person_id) }}" class="collection-poster">
-            <img src="{{ d.photo }}" alt="" loading="lazy" decoding="async" width="92" height="138">
+            <img class="person-photo" src="{{ d.photo }}" alt="" loading="lazy" decoding="async" width="92" height="138">
           </a>
         {% else %}
           <div class="collection-poster collection-poster--empty" aria-hidden="true"></div>

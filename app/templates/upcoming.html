@@ -19,7 +19,52 @@
     Adding one tells Radarr to monitor it and grab it when it appears. When a scan sees a film
     here gain a release date, or move, the webhook says so.
   </small></p>
-  <div class="gap-controls">{% include "partials/sort_control.html" %}</div>
+  <div class="gap-controls">
+    {#- List or calendar (0.71.0), each person's choice, remembered. -#}
+    <p class="view-switch" role="toolbar" aria-label="View">
+      <a href="{{ url('/upcoming') }}?view=list" {% if view == 'list' %}aria-current="page"{% endif %}>☰ List</a>
+      <a href="{{ url('/upcoming') }}?view=calendar" {% if view == 'calendar' %}aria-current="page"{% endif %}>▦ Calendar</a>
+    </p>
+    {% if view == 'list' %}{% include "partials/sort_control.html" %}{% endif %}
+  </div>
+
+  {% if view == 'calendar' %}
+    {% for month in months %}
+      <section class="cal-month" aria-label="{{ month.label }}">
+        <h2>{{ month.label }}</h2>
+        <ol class="cal-grid">
+          {% for name in weekdays %}<li class="cal-weekday" aria-hidden="true">{{ name }}</li>{% endfor %}
+          {% for week in month.weeks %}{% for day in week %}
+            {% if day %}
+              <li class="cal-day{% if day.films %} has-films{% endif %}{% if day.is_today %} is-today{% endif %}">
+                <time class="cal-date" datetime="{{ day.day.isoformat() }}">{{ day.day.day }}</time>
+                {% for film in day.films[:2] %}
+                  {% set label = film.title ~ ' — ' ~ film.collection_name ~ ', you have ' ~ film.owned_count ~ ' of ' ~ film.total_count %}
+                  {% if user and user.is_admin %}
+                    <button type="button" class="cal-film" title="{{ label }}" aria-label="Add {{ film.title }}"
+                            hx-get="{{ url('/add/' ~ film.tmdb_id) }}" hx-target="#add-dialog" hx-swap="innerHTML">
+                  {% else %}
+                    <a class="cal-film" href="{{ url('/collections/' ~ film.collection_id) }}" title="{{ label }}">
+                  {% endif %}
+                    {% if film.poster %}<img src="{{ film.poster }}" alt="{{ film.title }}" loading="lazy" decoding="async" width="92" height="138">
+                    {% else %}<span class="cal-film-name">{{ film.title }}</span>{% endif %}
+                  {% if user and user.is_admin %}</button>{% else %}</a>{% endif %}
+                {% endfor %}
+                {% if day.films | length > 2 %}
+                  <a class="cal-more" href="{{ url('/upcoming') }}?view=list" title="{{ day.films[2:] | map(attribute='title') | join(', ') }}">+{{ day.films | length - 2 }}</a>
+                {% endif %}
+              </li>
+            {% else %}
+              <li class="cal-day is-blank" aria-hidden="true"></li>
+            {% endif %}
+          {% endfor %}{% endfor %}
+        </ol>
+      </section>
+    {% endfor %}
+    {% if undated %}
+      <p class="muted">{{ undated }} film{{ '' if undated == 1 else 's' }} with no date yet — <a href="{{ url('/upcoming') }}?view=list">in the list</a>.</p>
+    {% endif %}
+  {% else %}
 
   {#- One grid in date order, like every other list of titles. It used to be a heading per month,
       which on a typical list meant one tile per heading and a single column down the page; the
@@ -67,6 +112,7 @@
   </div>
 
   {% include "partials/pager.html" %}
+  {% endif %}
   <div id="add-dialog"></div>
 {% else %}
   <p><a href="{{ url('/') }}" role="button" class="secondary">Run a scan</a></p>

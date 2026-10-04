@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.71.0] — 2026-10-03
+
+### Added
+
+- **Upcoming as a calendar.** ▦ Calendar lays the announced films out month by month, Monday
+  first, with each poster on its release day; an admin can add one from there. ☰ List switches
+  back, and the page remembers which you chose.
+- **Director pages** have the director's photo softened behind the banner, and their career as a
+  strip in release order like a collection's, marked where each decade starts.
+- **Decade headings.** A long list (eight titles or more) sorted by release date, spanning more
+  than one decade, gets a slim heading where each decade starts, on collection, franchise and
+  director pages.
+
+Showcase:
+
+- **An effects dial** under your name: *full*, *calm* — every look kept, but nothing that loops
+  or flashes (the poster wall, the glows, the horror flicker, the beam's hum, the wave in the
+  completeness bars); a scan's progress still moves — or *off*, which is your device's "reduce
+  motion" for you alone. Each person's own.
+- **Blur-up posters.** A poster still loading shows TMDb's smallest copy at once and comes into
+  focus when the real one arrives, instead of a shimmering blank.
+- **Cinema seats.** A collection's, franchise's or director's banner shows the set as a small
+  auditorium under its count: a lit seat for each film you own, an empty one for each you're
+  missing, a dashed one for each not out yet.
+- **Poster-colour accents.** A detail page's links, buttons and rings take its art's colour,
+  worked out for light and dark alike; a grey picture keeps the theme's.
+
 ## [0.70.1] — 2026-10-03
 
 ### Removed

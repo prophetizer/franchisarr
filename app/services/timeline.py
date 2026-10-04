@@ -40,3 +40,16 @@ def build(owned=(), missing=(), upcoming=()) -> list[Step]:  # noqa: ANN001
     tagged.sort(key=lambda pair: (_when(pair[0]), pair[0].title.casefold()))
     return [Step(item.title, _year(item), item.poster, status, item.tmdb_id,
                  getattr(item, "item_type", "movie") or "movie") for item, status in tagged]
+
+
+def decade_marks(steps: list[Step]) -> dict[int, str]:
+    """Where each decade starts along the strip (0.71.0): {index: "1990s"}. Empty for a strip
+    within one decade, where a mark would only repeat the years under the posters."""
+    marks: dict[int, str] = {}
+    last = None
+    for n, step in enumerate(steps):
+        decade = f"{step.year // 10 * 10}s" if step.year else None
+        if decade and decade != last:
+            marks[n] = decade
+        last = decade or last
+    return marks if len(marks) > 1 else {}

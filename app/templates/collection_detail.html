@@ -64,7 +64,7 @@
       it appears.
     </small></p>
     <div class="collection-grid collection-grid--compact">
-      {% for movie in sort_titles(gap.upcoming, detail_sort or 'release') %}
+      {% for decade, movie in decades(sort_titles(gap.upcoming, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}
         {% call tile(movie.poster, 'upcoming') %}
           <header><strong class="film-title">{{ movie.title }}</strong></header>
           <p class="collection-counts muted"><span>
@@ -91,7 +91,7 @@
       rating filter
     </summary>
     <div class="collection-grid collection-grid--compact">
-      {% for movie in sort_titles(gap.hidden, detail_sort or 'release') %}
+      {% for decade, movie in decades(sort_titles(gap.hidden, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}
         {% call tile(movie.poster, 'hidden') %}
           <header><strong class="film-title">{{ movie.title }}</strong> {% include "partials/rating.html" %}</header>
           <p class="collection-counts muted"><span>{{ movie.release_year or '' }}</span></p>
@@ -111,7 +111,7 @@
   <section>
     <h2>In your library</h2>
     <div class="collection-grid collection-grid--compact collection-grid--owned">
-      {% for movie in sort_titles(gap.owned, detail_sort or 'release') %}
+      {% for decade, movie in decades(sort_titles(gap.owned, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}
         {% call tile(movie.poster, 'owned') %}
           <header><strong class="film-title">{{ movie.title }}</strong>{% with entry=movie %}{% include "partials/owned_mark.html" %}{% endwith %}</header>
           <p class="collection-counts muted"><span>{{ movie.release_year or '' }}</span></p>

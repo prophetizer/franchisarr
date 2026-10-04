@@ -425,6 +425,14 @@
               var(--pico-card-sectioning-background-color) 70%) 0 0 / 300% 100%;
 }
 [data-look="showcase"] img.sc-arrived { animation: sc-sharpen 0.7s var(--sc-ease); }
+/* Blur-up (0.71.0): TMDb's smallest copy behind a poster still loading; the real one paints over
+   it and comes into focus. No fade -- opacity would take the copy behind with it. showcase.js
+   sets --sc-lqip only near the screen. */
+[data-look="showcase"] img.sc-pending.sc-lqip { animation: none; background: var(--sc-lqip) center / cover no-repeat; }
+[data-look="showcase"] img.sc-arrived-over { animation: sc-focus 0.45s ease-out; }
+@keyframes sc-focus {
+  from { filter: blur(6px); }
+}
 @keyframes sc-shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
 @keyframes sc-sharpen {
   from { filter: blur(10px) saturate(0.5); opacity: 0.3; }
@@ -2032,6 +2040,97 @@
   [data-look="showcase"] .sc-holo-wrap { flex-basis: 6rem; width: 6rem; }
   [data-look="showcase"] .sc-box { flex-basis: 6rem; margin-bottom: var(--pico-spacing); width: 6rem; }
   [data-look="showcase"] .sc-lightbox-close { right: 0.5rem; top: 0.5rem; }
+}
+
+/* ---------------------------------------------------------------- seats (0.71.0) */
+/* The set as cinema seats under the banner's count: lit for owned, empty for missing, a dashed
+   "reserved" outline for one not out yet. Each seat is a back and two arms, drawn in CSS. */
+[data-look="showcase"] .sc-seats { display: grid; gap: 0.5rem; justify-items: start; margin: 0.7rem 0 0.3rem; }
+[data-look="showcase"] .sc-seat-row { display: flex; gap: 0.22rem; }
+[data-look="showcase"] .sc-seat {
+  animation: sc-seat-in 0.4s var(--sc-ease) calc(0.6s + var(--i, 0) * 0.035s) both;
+  border: 1.5px solid color-mix(in srgb, var(--pico-contrast) 45%, transparent);
+  border-radius: 0.35rem 0.35rem 0.12rem 0.12rem;
+  height: 1.1rem;
+  position: relative;
+  width: 1.1rem;
+}
+[data-look="showcase"] .sc-seat::after {
+  border-top: 1.5px solid currentColor;
+  bottom: -0.3rem;
+  color: color-mix(in srgb, var(--pico-contrast) 45%, transparent);
+  content: "";
+  left: -0.12rem;
+  position: absolute;
+  right: -0.12rem;
+}
+[data-look="showcase"] .sc-seat--aisle { margin-left: 0.7rem; }
+[data-look="showcase"] .sc-seat--owned {
+  background: var(--sc-glow);
+  border-color: var(--sc-glow);
+  box-shadow: 0 0 0.5rem color-mix(in srgb, var(--sc-glow) 55%, transparent);
+}
+[data-look="showcase"] .sc-seat--owned::after { color: var(--sc-glow); }
+[data-look="showcase"] .sc-seat--upcoming { border-style: dashed; opacity: 0.6; }
+[data-look="showcase"] .sc-seats.is-still .sc-seat { animation: none; }
+@keyframes sc-seat-in {
+  from { opacity: 0; translate: 0 0.4rem; }
+}
+
+/* ---------------------------------------------------------------- accents (0.71.0) */
+/* A detail page's links, buttons and rings in its art's colour; showcase.js works the colours out
+   for each theme and only marks the page when the art has a colour worth taking. */
+html[data-look="showcase"].sc-accented {
+  --sc-accent: var(--sc-accent-d);
+  --pico-primary: var(--sc-accent-d);
+  --pico-primary-hover: var(--sc-accent-hover-d);
+  --pico-primary-underline: color-mix(in srgb, var(--sc-accent-d) 50%, transparent);
+  --pico-primary-background: var(--sc-accent-bg-d);
+  --pico-primary-border: var(--sc-accent-bg-d);
+  --pico-primary-hover-background: var(--sc-accent-bg-hover-d);
+  --pico-primary-hover-border: var(--sc-accent-bg-hover-d);
+  --pico-primary-inverse: var(--sc-accent-ink-d);
+  --pico-primary-focus: var(--sc-accent-focus-d);
+}
+html[data-look="showcase"][data-theme="light"].sc-accented {
+  --sc-accent: var(--sc-accent-l);
+  --pico-primary: var(--sc-accent-l);
+  --pico-primary-hover: var(--sc-accent-hover-l);
+  --pico-primary-underline: color-mix(in srgb, var(--sc-accent-l) 50%, transparent);
+  --pico-primary-background: var(--sc-accent-bg-l);
+  --pico-primary-border: var(--sc-accent-bg-l);
+  --pico-primary-hover-background: var(--sc-accent-bg-hover-l);
+  --pico-primary-hover-border: var(--sc-accent-bg-hover-l);
+  --pico-primary-inverse: var(--sc-accent-ink-l);
+  --pico-primary-focus: var(--sc-accent-focus-l);
+}
+
+/* ---------------------------------------------------------------- effects dial (0.71.0) */
+/* Each person's own, under their name. Calm keeps every look but stops what loops or flashes;
+   what shows progress (a scan's reel and bar, a loading image) keeps moving, as it means
+   something. Off is the system's reduce-motion setting, for this person only (the scripts read
+   it as reduce motion too). */
+[data-look="showcase"][data-effects="calm"] :is(.poster-wall-row, .trophy-heading h1,
+  .trophy--new .trophy-frame, .sc-intro-mark, .sc-beam-cone, .collection-backdrop-frame,
+  .sc-scene-torch, .sc-scene-halo, .sc-scene-moth, .sc-scene-reel) { animation: none !important; }
+[data-look="showcase"][data-effects="calm"] .sc-almost::before { animation: none !important; }
+[data-look="showcase"][data-effects="calm"] progress.completeness::-webkit-progress-value { animation: none !important; }
+[data-look="showcase"][data-effects="calm"] progress.completeness::-moz-progress-bar { animation: none !important; }
+[data-look="showcase"][data-effects="calm"] .collection-backdrop { animation: sc-dawn 1.8s ease-out both !important; }
+[data-look="showcase"][data-effects="calm"] .spotlight-slide.is-current .spotlight-backdrop { animation: none !important; }
+[data-look="showcase"][data-effects="off"] :is(.collection-heading-poster, .collection-backdrop-frame, body > header.container) {
+  view-transition-name: none !important;
+}
+:root[data-look="showcase"][data-effects="off"]::view-transition-group(*),
+:root[data-look="showcase"][data-effects="off"]::view-transition-old(*),
+:root[data-look="showcase"][data-effects="off"]::view-transition-new(*) { animation: none !important; }
+[data-look="showcase"][data-effects="off"] .spotlight { --sc-full: min(45vh, 26rem); }
+[data-look="showcase"][data-effects="off"] .sc-busy::before { width: 100%; }
+[data-look="showcase"][data-effects="off"] *,
+[data-look="showcase"][data-effects="off"] *::before,
+[data-look="showcase"][data-effects="off"] *::after {
+  animation: none !important;
+  transition: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

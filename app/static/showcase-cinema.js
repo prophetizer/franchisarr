@@ -15,6 +15,8 @@
 //   house      -- playing a trailer dims the room; closing it brings the lights back up
 //   projector  -- a running scan plays on a projector into a countdown leader
 //   stubs      -- Activity's adds as a roll of ticket stubs
+// and since 0.71.0:
+//   seats      -- a detail page's banner shows the set as cinema seats, one lit per film you own
 // "Reduce motion" keeps them all still: no printing, rolling or flicker.
 // The marquee bulbs, the banner weather and the beam's dust went in 0.70.1, michael's call.
 (function () {
@@ -22,7 +24,8 @@
 
   var root = document.documentElement;
   if (root.dataset.look !== 'showcase') { return; }
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+    document.documentElement.dataset.effects === 'off';   // the effects dial (0.71.0)
   var phone = window.matchMedia('(pointer: coarse), (max-width: 767px)').matches;
   // Colours that are the object's own rather than the theme's -- a bulb is warm whatever the
   // theme -- set here, as showcase.css holds no colour of its own (test_theming).
@@ -122,6 +125,36 @@
   // to suit (showcase.css).
   var moody = document.querySelector('.collection-heading[data-mood]');
   if (moody) { root.dataset.mood = moody.dataset.mood; }
+
+  // ------------------------------------------------------------ seats (0.71.0)
+  // The set as a cinema's seats under the banner's count, in release order: a lit seat for each
+  // film you own, an empty one for each you're missing, "reserved" for one not out yet. Rows of
+  // up to twelve with an aisle down the middle, so a long franchise fills a small auditorium.
+  var heading = document.querySelector('.collection-heading hgroup');
+  var steps = document.querySelectorAll('.timeline-step');
+  if (heading && steps.length > 1) {
+    var house = make('div', 'sc-seats');
+    var taken = 0;
+    var perRow = Math.min(12, Math.max(4, Math.ceil(Math.sqrt(steps.length * 3))));
+    var row = null;
+    steps.forEach(function (step, n) {
+      if (n % perRow === 0) { row = make('span', 'sc-seat-row'); house.appendChild(row); }
+      var status = step.classList.contains('timeline-step--owned') ? 'owned'
+        : step.classList.contains('timeline-step--upcoming') ? 'upcoming' : 'missing';
+      if (status === 'owned') { taken++; }
+      var seat = make('i', 'sc-seat sc-seat--' + status);
+      var poster = step.querySelector('.timeline-poster');
+      if (poster) { seat.title = poster.getAttribute('title') || ''; }
+      if (n % perRow === Math.ceil(perRow / 2)) { seat.classList.add('sc-seat--aisle'); }
+      seat.style.setProperty('--i', String(n));
+      row.appendChild(seat);
+    });
+    var released = Array.prototype.filter.call(steps, function (s) { return !s.classList.contains('timeline-step--upcoming'); }).length;
+    house.setAttribute('role', 'img');
+    house.setAttribute('aria-label', taken + ' of ' + released + ' seats taken');
+    if (reduce) { house.classList.add('is-still'); }
+    heading.appendChild(house);
+  }
 
   // ------------------------------------------------------------ shelf
   // Collections and Franchises as box sets on a shelf: one spine per card, its poster as the

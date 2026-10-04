@@ -24,7 +24,13 @@
 
 {% block content %}
 <p><a href="{{ url('/directors') }}">← Directors</a></p>
-<div class="collection-heading">
+{#- Their photo, softened, fills the banner behind them (0.71.0). -#}
+<div class="collection-heading collection-heading--person{% if d.photo_large %} has-backdrop{% endif %}">
+  {% if d.photo_large %}
+    <div class="collection-backdrop-frame" aria-hidden="true">
+      <img class="collection-backdrop" src="{{ d.photo_large }}" alt="" decoding="async" aria-hidden="true">
+    </div>
+  {% endif %}
   <div class="collection-heading-inner">
     {% if d.photo_large %}
       <img class="collection-heading-poster" src="{{ d.photo_large }}" alt="" decoding="async"
@@ -39,6 +45,7 @@
 </div>
 
 {% include "partials/playlist_result_area.html" %}
+{% include "partials/timeline.html" %}
 <div class="gap-controls">{% include "partials/sort_control.html" %}</div>
 
 {% if d.pending %}
@@ -47,36 +54,36 @@
 
 {% if d.missing %}
   <section><h2>Missing</h2>
-    <div class="collection-grid collection-grid--compact">{% for m in sort_titles(d.missing, detail_sort or 'release') %}{{ row(m, 'missing') }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact">{% for decade, m in decades(sort_titles(d.missing, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(m, 'missing') }}{% endfor %}</div>
   </section>
 {% endif %}
 {% if d.upcoming %}
   <section class="upcoming-section"><h2>Coming soon</h2>
-    <div class="collection-grid collection-grid--compact">{% for m in sort_titles(d.upcoming, detail_sort or 'release') %}{{ row(m, 'upcoming') }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact">{% for decade, m in decades(sort_titles(d.upcoming, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(m, 'upcoming') }}{% endfor %}</div>
   </section>
 {% endif %}
 {% if d.hidden %}
   <details class="hidden-section">
     <summary>{{ d.hidden | length }} film{{ '' if d.hidden | length == 1 else 's' }} hidden by your rating filter</summary>
-    <div class="collection-grid collection-grid--compact">{% for m in sort_titles(d.hidden, detail_sort or 'release') %}{{ row(m, 'hidden') }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact">{% for decade, m in decades(sort_titles(d.hidden, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(m, 'hidden') }}{% endfor %}</div>
   </details>
 {% endif %}
 {% if d.shorts %}
   <details class="hidden-section">
     <summary>{{ d.shorts | length }} short{{ '' if d.shorts | length == 1 else 's' }} — folded away by your preferences</summary>
-    <div class="collection-grid collection-grid--compact">{% for m in sort_titles(d.shorts, detail_sort or 'release') %}{{ row(m, 'hidden') }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact">{% for decade, m in decades(sort_titles(d.shorts, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(m, 'hidden') }}{% endfor %}</div>
   </details>
 {% endif %}
 {% if d.music_videos %}
   <details class="hidden-section">
     <summary>{{ d.music_videos | length }} music-video collection{{ '' if d.music_videos | length == 1 else 's' }}</summary>
-    <div class="collection-grid collection-grid--compact">{% for m in sort_titles(d.music_videos, detail_sort or 'release') %}{{ row(m, 'hidden') }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact">{% for decade, m in decades(sort_titles(d.music_videos, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(m, 'hidden') }}{% endfor %}</div>
   </details>
 {% endif %}
 {% if d.documentaries %}
   <details class="hidden-section">
     <summary>{{ d.documentaries | length }} documentar{{ 'y' if d.documentaries | length == 1 else 'ies' }}</summary>
-    <div class="collection-grid collection-grid--compact">{% for m in sort_titles(d.documentaries, detail_sort or 'release') %}{{ row(m, 'hidden') }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact">{% for decade, m in decades(sort_titles(d.documentaries, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(m, 'hidden') }}{% endfor %}</div>
   </details>
 {% endif %}
 {% if not d.pending and not d.missing and not d.upcoming %}
@@ -85,7 +92,7 @@
 
 {% if d.owned %}
   <section><h2>In your library</h2>
-    <div class="collection-grid collection-grid--compact collection-grid--owned">{% for m in sort_titles(d.owned, detail_sort or 'release') %}{{ row(m, 'owned', addable=False) }}{% endfor %}</div>
+    <div class="collection-grid collection-grid--compact collection-grid--owned">{% for decade, m in decades(sort_titles(d.owned, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(m, 'owned', addable=False) }}{% endfor %}</div>
   </section>
 {% endif %}
 <div id="add-dialog"></div>

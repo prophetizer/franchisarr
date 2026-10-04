@@ -105,6 +105,18 @@ def choose_map_shape(session: DbSession, user: RequiredUser, shape: Annotated[st
     franchise_map.set_shape(session, user.id, shape)
 
 
+@router.post("/preferences/effects")
+def choose_effects(session: DbSession, user: RequiredUser, value: Annotated[str, Form()] = "full",
+                   back: Annotated[str, Form()] = ""):
+    """Showcase's effects dial for this person (0.71.0): full, calm or off, then back to the page."""
+    from app.services import look as look_service
+
+    look_service.set_effects(session, user.id, value)
+    base = get_settings().base_url
+    target = back if back.startswith(f"{base}/") and not back.startswith("//") and "://" not in back else _url("/")
+    return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)
+
+
 @router.post("/preferences/intros")
 def choose_intros(session: DbSession, user: RequiredUser, on: Annotated[str, Form()] = "true",
                   back: Annotated[str, Form()] = ""):

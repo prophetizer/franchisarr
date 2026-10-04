@@ -211,6 +211,21 @@ def sort_titles(titles: Sequence, current) -> list:  # noqa: ANN001 - (field, di
     return _ordered(titles, values.get(option.key, _release), dir_, tie=_title)
 
 
+def decades(titles: Sequence, current, at_least: int = 8) -> list[tuple[str | None, object]]:  # noqa: ANN001
+    """Sorted tiles paired with a heading where a new decade starts (0.71.0): "1990s", and "No date
+    yet" for the undated at the end. Only for a list sorted by release that's long enough to get
+    lost in and spans more than one decade -- otherwise every heading is None."""
+    key = current[0] if isinstance(current, tuple) else (current or "release")
+    def decade(item) -> str:  # noqa: ANN001
+        value = _release(item)
+        return f"{value[:3]}0s" if value and value[:4].isdigit() else "No date yet"
+    labels = [decade(t) for t in titles]
+    if key != "release" or len(labels) < at_least or len(set(labels)) < 2:
+        return [(None, t) for t in titles]
+    return [(label if n == 0 or label != labels[n - 1] else None, t)
+            for n, (label, t) in enumerate(zip(labels, titles))]
+
+
 def sort_spinoffs(suggestions: list, current: tuple[str, str]) -> list:
     key, dir_ = current
     values = {

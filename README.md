@@ -18,8 +18,8 @@ account, so it follows you between devices.
 
 And, built on the same data: **franchise pages** that put films and TV together (*Star Wars —
 you have 8 of 15*; fan films are left out), **director pages** (*you own 11 Nolan films; missing* Following *and*
-Insomnia), an **Upcoming** page of announced films in franchises you own with release-date
-notifications, **import lists** Radarr and Sonarr can poll so you never have to click Add, and
+Insomnia), an **Upcoming** page of announced films in franchises you own — as a list or a month-by-month
+calendar — with release-date notifications, **import lists** Radarr and Sonarr can poll so you never have to click Add, and
 **playlists** of a franchise, collection or director in release order, on Plex, Jellyfin or Emby — films and episodes
 together, so a franchise plays the way it came out.
 
@@ -82,7 +82,7 @@ curl -fsSL https://raw.githubusercontent.com/prophetizer/franchisarr/master/.env
 docker compose up -d
 ```
 
-The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.70.1`). To build
+The image is `ghcr.io/prophetizer/franchisarr` (`latest`, or a version like `0.71.0`). To build
 from source instead, clone the repository and change `image:` to `build: .` in the compose file.
 
 Then open <http://localhost:8000>, sign in, choose which libraries to scan, and run a scan.
@@ -250,14 +250,22 @@ empty and finished pages get a little scene; a set's poster is black and white w
 up it as far as you own, and a detail page's poster stands as a 3D box set; coming-soon films
 count down their days on a split-flap board; a watched film's poster has its ticket punched; TV
 shows sit in old CRT screens; a trailer dims the house lights; a running scan plays on a
-projector; Activity's adds are a roll of ticket stubs; and a hundred and twenty-eight franchises open with a nod to their films ([listed
+projector; Activity's adds are a roll of ticket stubs; posters blur up from a tiny copy instead of
+popping in; a collection's, franchise's or director's banner shows the set as **cinema seats**, one lit
+for each film you own, and the page takes its art's colour for its links and buttons; and a hundred and twenty-eight franchises open with a nod to their films ([listed
 below](#franchise-intros)) (and there's a code for a retro VHS mode, if you know it); **Ctrl+K** (Cmd+K on a Mac) searches from anywhere; and in October horror sets glow
 pumpkin, in December the top bar frosts over. The release strip
 **plays** as it comes on screen (posters fly in in order, the ones you own light up, a ring fills
 to how much you have); and a poster you click **grows into the page** it opens (in browsers with
 view transitions: Chrome, Edge, Safari). Phones get the calmer half (no parallax, tilt, arrows,
 previews or ambient light, and a shorter spotlight that stays put), and your device's "reduce
-motion" setting turns the motion off. **◻ Classic look** switches back.
+motion" setting turns the motion off. **✨ Effects** in the menu under your name is your own dial:
+*full*, *calm* (every look kept, but nothing loops or flashes) or *off* (no motion at all, as
+reduce motion). **◻ Classic look** switches back.
+
+In both looks, a director's page has their photo softened behind the banner and their career as a
+strip in release order, marked by decade, and a long list sorted by release date gets a slim
+heading where each decade starts.
 
 When a scan finds you've completed a collection — every released film of it in your library —
 Showcase throws **confetti** with a "Collection complete!" message, once for each person, on
@@ -533,7 +541,9 @@ the others. A rename on any server renames the rest. The order follows the origi
 
 ## Calendar
 
-The Upcoming page is also an iCalendar feed, so announced films in franchises you own appear in
+**▦ Calendar** on the Upcoming page lays the announced films out month by month, each poster on
+its release day (☰ List switches back; the page remembers which you chose). The page is also an
+iCalendar feed, so announced films in franchises you own appear in
 your calendar app — one all-day event per film, with the collection and how much of it you have:
 
 ```

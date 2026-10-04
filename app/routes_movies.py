@@ -94,7 +94,7 @@ def collections(
 
 @router.get("/upcoming", response_class=HTMLResponse)
 def upcoming(request: Request, session: DbSession, user: RequiredUser, page: int = 1,
-             sort: str | None = None, dir: str | None = None):  # noqa: A002
+             sort: str | None = None, dir: str | None = None, view: str | None = None):  # noqa: A002
     """Announced films in franchises the user owns part of, soonest first.
 
     The one thing no *arr calendar can show: Radarr knows what has been added, this knows what
@@ -102,8 +102,9 @@ def upcoming(request: Request, session: DbSession, user: RequiredUser, page: int
     """
     from datetime import date
 
-    from app.services import pagination, sorting, upcoming_service
+    from app.services import pagination, sorting, upcoming_calendar, upcoming_service
 
+    shown = upcoming_calendar.view(session, user.id, view)
     current = sorting.resolve(session, user.id, "upcoming", sort, dir)
     films = sorting.sort_upcoming(upcoming_service.upcoming_films(session, user.id), current)
     today = date.today()
@@ -113,6 +114,11 @@ def upcoming(request: Request, session: DbSession, user: RequiredUser, page: int
         request,
         "upcoming.html",
         {"user": user, "films": pager.items, "today": today, "soon": soon, "pager": pager,
+         "view": shown,
+         # The calendar shows every dated film, not a page of them: it's laid out by month.
+         "months": upcoming_calendar.months(films, today) if shown == upcoming_calendar.CALENDAR else [],
+         "undated": sum(1 for f in films if f.release is None),
+         "weekdays": upcoming_calendar.WEEKDAYS,
          "sort_ctl": sorting.control("upcoming", current, _url("/upcoming"))},
     )
 

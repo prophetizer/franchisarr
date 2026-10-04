@@ -337,6 +337,33 @@ article > footer [role="button"] { margin-bottom: 0.25rem; }
 
 /* Titles already in the library: the same tile, smaller and denser, so the missing ones above
    stay what the eye lands on. */
+/* A long list sorted by release gets a slim heading where each decade starts (0.71.0), its
+   decade large and faint behind it. A grid row of its own. */
+.decade-divider {
+  align-items: center;
+  color: var(--pico-muted-color);
+  display: flex;
+  font-size: 0.9rem;
+  font-weight: 600;
+  gap: 0.75rem;
+  grid-column: 1 / -1;
+  letter-spacing: 0.08em;
+  margin: 0.4rem 0 0;
+  overflow: hidden;
+  position: relative;
+}
+.decade-divider::after { border-top: 1px solid var(--pico-muted-border-color); content: ""; flex: 1; }
+.decade-divider::before {
+  content: attr(data-decade);
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+  opacity: 0.07;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
+
 .collection-grid--owned {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
 }
@@ -499,6 +526,10 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
   position: absolute;
   width: 100%;
 }
+
+/* A director's banner is their photo, softened to a wash of its colours (0.71.0): a portrait
+   cropped to a letterbox is a forehead, not a picture. */
+.collection-heading--person .collection-backdrop { filter: blur(28px) saturate(0.8) brightness(0.55); object-position: center 20%; scale: 1.15; }
 
 .collection-heading.has-backdrop::after {
   background: linear-gradient(
@@ -799,6 +830,26 @@ details.dropdown.more-actions > ul { left: auto; right: 0; min-width: 14rem; }
   padding: 0 0 0.6rem;
   scroll-snap-type: x proximity;
   scrollbar-width: thin;
+}
+/* Where a decade starts along the strip (0.71.0): its name above, a hairline to its left. */
+.timeline-strip:has(.timeline-step--decade) .timeline-step { padding-top: 1.15rem; position: relative; }
+.timeline-step--decade::before {
+  color: var(--pico-muted-color);
+  content: attr(data-decade);
+  font-size: 0.72rem;
+  font-weight: 600;
+  left: 0;
+  letter-spacing: 0.06em;
+  position: absolute;
+  top: 0;
+}
+.timeline-step--decade:not(:first-child)::after {
+  border-left: 1px solid var(--pico-muted-border-color);
+  bottom: 1.4rem;
+  content: "";
+  left: -0.32rem;
+  position: absolute;
+  top: 0.1rem;
 }
 .timeline-step {
   display: flex;
@@ -1139,3 +1190,56 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
 
 /* Showcase-only pieces that are in the page for everyone (0.48.0): hidden in Classic. */
 .spotlight, .timeline-ring, .sc-reel, .poster-wall, .end-credits { display: none; }
+
+/* ---------------------------------------------------------------- upcoming calendar (0.71.0) */
+/* Each month with a release in it: seven columns, Monday first, a poster on each film's day. At
+   375px a column is ~45px, which still holds a recognisable poster. */
+.view-switch { display: flex; gap: 0.25rem; margin: 0; }
+.view-switch a {
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+  font-size: 0.9rem;
+  padding: 0.25rem 0.7rem;
+  text-decoration: none;
+}
+.view-switch a[aria-current="page"] { background: var(--pico-primary-background); border-color: var(--pico-primary-background); color: var(--pico-primary-inverse); }
+.cal-month { margin-bottom: calc(var(--pico-block-spacing-vertical) * 1.5); }
+.cal-month h2 { font-size: 1.15rem; margin-bottom: 0.6rem; }
+.cal-grid {
+  display: grid;
+  gap: 0.3rem;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.cal-grid > li { list-style: none; margin: 0; }
+.cal-weekday { color: var(--pico-muted-color); font-size: 0.75rem; text-align: center; }
+.cal-day {
+  align-items: center;
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-height: 4.5rem;
+  min-width: 0;
+  padding: 0.2rem;
+}
+.cal-day.is-blank { border-color: transparent; }
+.cal-day.has-films { background: var(--pico-card-background-color); }
+.cal-day.is-today { border-color: var(--pico-primary); }
+.cal-date { align-self: flex-start; color: var(--pico-muted-color); font-size: 0.75rem; line-height: 1; }
+.cal-day.has-films .cal-date { color: var(--pico-color); font-weight: 600; }
+.cal-film {
+  background: none;
+  border: none;
+  display: block;
+  margin: 0;
+  max-width: 4.5rem;
+  padding: 0;
+  width: 100%;
+}
+.cal-film img { aspect-ratio: 2 / 3; border-radius: calc(var(--pico-border-radius) / 2); display: block; height: auto; object-fit: cover; width: 100%; }
+.cal-film-name { display: block; font-size: 0.7rem; line-height: 1.2; overflow-wrap: anywhere; text-align: center; }
+.cal-more { font-size: 0.75rem; }

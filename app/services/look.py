@@ -66,3 +66,40 @@ def intros_of(user) -> bool:  # noqa: ANN001 - a User, or None
 
     with Session(get_engine()) as session:
         return intros_on(session, user.id)
+
+
+#: Showcase's effects dial (0.71.0): "full" (everything), "calm" (the looks, nothing that loops or
+#: flashes) or "off" (no motion at all, as with the system's reduce-motion setting).
+EFFECTS_KEY = "effects"
+EFFECTS = ("full", "calm", "off")
+
+
+def effects(session: Session, user_id: int | None) -> str:
+    if user_id is None:
+        return "full"
+    value = session.exec(select(UserPreference.value).where(
+        col(UserPreference.user_id) == user_id, col(UserPreference.key) == EFFECTS_KEY)).first()
+    return value if value in EFFECTS else "full"
+
+
+def set_effects(session: Session, user_id: int, value: str) -> str:
+    from app.services.sorting import _save
+
+    value = value if value in EFFECTS else "full"
+    _save(session, user_id, EFFECTS_KEY, value)
+    return value
+
+
+def effects_of(user) -> str:  # noqa: ANN001 - a User, or None
+    """For the base template, as `of` is."""
+    if user is None or getattr(user, "id", None) is None:
+        return "full"
+    from app.db import get_engine
+
+    with Session(get_engine()) as session:
+        return effects(session, user.id)
+
+
+def next_effects(value: str) -> str:
+    """What the menu's button switches to: full, calm, off, then round again."""
+    return EFFECTS[(EFFECTS.index(value) + 1) % len(EFFECTS)] if value in EFFECTS else "calm"

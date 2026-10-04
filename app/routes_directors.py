@@ -67,7 +67,7 @@ def set_floor(session: DbSession, user: AdminUser, floor: Annotated[str, Form()]
 @router.get("/directors/{person_id}", response_class=HTMLResponse)
 def director_detail(request: Request, session: DbSession, user: RequiredUser, person_id: int,
                     sort: str | None = None, dir: str | None = None):  # noqa: A002
-    from app.services import sorting
+    from app.services import sorting, timeline
 
     detail_sort = sorting.resolve(session, user.id, "detail", sort, dir)
     view = director_service.director_view(session, person_id, user.id)
@@ -80,5 +80,7 @@ def director_detail(request: Request, session: DbSession, user: RequiredUser, pe
          "playlist_servers": playlist_service.targets(session),
          "playlist_kept": franchisarr_playlists.kept_on(session, "directors", str(person_id)),
          "detail_sort": detail_sort,
+         # Their career as a strip in release order (0.71.0), as a collection's run is.
+         "timeline": timeline.build(view.owned, view.missing, view.upcoming),
          "sort_ctl": sorting.control("detail", detail_sort, _url(f"/directors/{person_id}"))}
     )
