@@ -12,6 +12,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import logging
+import os
 from functools import lru_cache
 
 from fastapi.templating import Jinja2Templates
@@ -45,9 +46,10 @@ def make_asset_builder(base_url: str):
     nothing heuristic about that.
     """
     url = make_url_builder(base_url)
+    stamp = f"{__version__}-{build_id()}" if build_id() else __version__
 
     def asset(path: str) -> str:
-        return f"{url(path)}?v={__version__}"
+        return f"{url(path)}?v={stamp}"
 
     return asset
 
@@ -97,6 +99,13 @@ def _solo_context(request) -> dict:  # noqa: ANN001 - a Starlette Request
         return {"solo": None}
 
 
+def build_id() -> str:
+    """The commit a develop image was built from, short; empty in a release (docs/DEVELOPMENT.md,
+    Branches). A develop build keeps the last release's version number, so without this its
+    CSS and scripts would sit in browsers' caches from one develop push to the next."""
+    return os.environ.get("FRANCHISARR_BUILD", "").strip()[:7]
+
+
 def build_templates(base_url: str) -> Jinja2Templates:
     templates = Jinja2Templates(
         directory=str(TEMPLATES_DIR),
@@ -104,6 +113,7 @@ def build_templates(base_url: str) -> Jinja2Templates:
     )
     templates.env.globals["url"] = make_url_builder(base_url)
     templates.env.globals["version"] = __version__
+    templates.env.globals["build"] = build_id()
     templates.env.globals["asset"] = make_asset_builder(base_url)
     from app.services.sorting import sort_titles
 

@@ -762,6 +762,10 @@ Before a jump, skim the [changelog](CHANGELOG.md): anything that changes how an 
 behaves has an **Upgrading** note — 0.25.0, for example, signs out everyone who isn't an
 administrator until you choose to let them in.
 
+`:latest` and the version tags are releases. There is also a `:develop` image, built from every
+change before it's released — it's what the developer runs, and it can be broken on any given day;
+stay on `:latest` unless you want to try things early.
+
 ## Reporting a problem
 
 Settings also has **Download diagnostics**: version, library and cache counts, the titles that

@@ -29,6 +29,11 @@ COPY alembic.ini .
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
+# The commit a develop image was built from (CI sets it on the develop branch only; releases leave
+# it empty). Shown in the footer, and part of the asset URLs so each develop push busts caches.
+ARG FRANCHISARR_BUILD=""
+ENV FRANCHISARR_BUILD=$FRANCHISARR_BUILD
+
 # App data (the SQLite database) mounts here.
 VOLUME ["/config"]
 ENV FRANCHISARR_CONFIG_DIR=/config

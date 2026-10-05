@@ -206,7 +206,7 @@
     {% if user %}<div id="trailer"></div>{% endif %}
 
     <footer class="container">
-      <small>Franchisarr {{ version }}</small>
+      <small>Franchisarr {{ version }}{% if build %} · develop {{ build }}{% endif %}</small>
     </footer>
     <script>
       // The menu's dropdowns are <details>: they open on click, tap or Enter by themselves. This

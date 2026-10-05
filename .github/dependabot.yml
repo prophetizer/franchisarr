@@ -1,18 +1,22 @@
 # Weekly update pull requests for the three things this repo pins: Python packages, the Docker
 # base image (by digest) and GitHub Actions (by commit SHA). Each ecosystem's updates arrive as
-# one grouped PR, so it's one review a week rather than a dozen. Nothing merges on its own.
+# one grouped PR, so it's one review a week rather than a dozen. Nothing merges on its own. They
+# target develop, and reach installs with the next release (docs/DEVELOPMENT.md, Branches).
 version: 2
 updates:
   - package-ecosystem: pip
     directory: /
     schedule: {interval: weekly}
+    target-branch: develop
     groups:
       python: {patterns: ["*"]}
   - package-ecosystem: docker
     directory: /
     schedule: {interval: weekly}
+    target-branch: develop
   - package-ecosystem: github-actions
     directory: /
     schedule: {interval: weekly}
+    target-branch: develop
     groups:
       actions: {patterns: ["*"]}

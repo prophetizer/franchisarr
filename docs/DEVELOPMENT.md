@@ -45,6 +45,19 @@ Numbered because code comments cite them.
    confetti theme in `showcase.js`'s `CONFETTI`. Each needs a row in the README's *Franchise
    intros* table; `tests/test_showcase.py` fails until it has one.
 
+## Branches
+
+- **`develop`** is where work happens. Every push runs the tests and publishes
+  `ghcr.io/prophetizer/franchisarr:develop`, carrying its commit as a build id (shown in the footer,
+  and in the asset URLs so browsers fetch each push's CSS and scripts). No version bump, tag or
+  release: `CHANGELOG.md` collects it under `[Unreleased]`.
+- **`master`** is releases. When a batch is ready: merge develop into master, bump
+  `app/__init__.py`, date the changelog entry, tag `vX.Y.Z`. The tag publishes the version tags
+  and `:latest`, and the release is what installs' update check sees.
+- **An urgent fix** goes on a branch off master, is released from there, and is merged back into
+  develop.
+- **Dependabot** targets develop; its updates ship with the next release.
+
 ## Things worth knowing before you touch them
 
 - **plexapi refetches items behind your back.** Reading an attribute that came back empty on a
