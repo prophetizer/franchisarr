@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Designed placeholders.** A film or show with no poster gets a typeset card — its title and
+  year on a colour taken from the title — instead of a grey box, on every list, the release
+  strip, the home rows, the calendar and Surprise me.
+- **An A–Z rail** down the side of Collections, Franchises and Directors once they're 30 long: a
+  letter jumps to the first name under it, on whichever page that is, switching to A–Z order.
+- **Watched bars.** Collection, franchise and director cards show how much of what you own
+  you've watched, under the owned bar, wherever a server reports watched state.
+- **How long a set runs.** Collection, franchise and director pages say how long the films you
+  own run and how much of that is unwatched. Scans now keep each film's running time from Plex,
+  Jellyfin or Emby (no extra requests); it appears after the next scan.
+- **Up next** on the home page: the next film you own and haven't watched in each set you've
+  started, furthest along first.
+- **In numbers** (Browse menu): films by decade with the watched part of each, how long the
+  library runs, complete collections, the nearly complete ones, genres and the directors you
+  own most.
+- **▤ Density** under your name: compact grids, about twice the cards on a screen, each person's
+  own choice.
+- Showcase: the poster **lightbox steps through the whole set** — arrows, the arrow keys or a
+  swipe — each poster captioned owned, missing or coming.
+- Dependencies: FastAPI 0.142.2.
+
 ## [0.71.1] — 2026-10-03
 
 ### Changed

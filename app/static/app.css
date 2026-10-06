@@ -561,6 +561,9 @@ details > summary { cursor: pointer; margin-block: var(--pico-spacing); }
 
 /* How complete a set is, on every card (0.44.0): Pico's own progress bar, made thin. */
 progress.completeness { height: 0.35rem; margin: 0 0 0.5rem; }
+/* Watched of owned (0.72.0): thinner, right under the owned bar, in the muted colour so the two
+   read as "have" and "seen". */
+progress.watched-progress { --pico-progress-color: var(--pico-muted-color); height: 0.2rem; margin: -0.35rem 0 0.5rem; }
 
 .collection-heading-inner {
   align-items: end;
@@ -1241,5 +1244,108 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
   width: 100%;
 }
 .cal-film img { aspect-ratio: 2 / 3; border-radius: calc(var(--pico-border-radius) / 2); display: block; height: auto; object-fit: cover; width: 100%; }
-.cal-film-name { display: block; font-size: 0.7rem; line-height: 1.2; overflow-wrap: anywhere; text-align: center; }
 .cal-more { font-size: 0.75rem; }
+
+/* ---------------------------------------------------------------- set runtime (0.72.0) */
+.set-runtime { color: var(--pico-muted-color); font-size: 0.9rem; margin: 0.15rem 0 0; }
+
+/* ---------------------------------------------------------------- placeholder posters (0.72.0) */
+/* No artwork: the title and year typeset on a card, tinted by a hue from the title (--ph-hue,
+   set inline). Lightness and strength come from the theme's card colour, so it sits right in
+   light and dark and under a theme.park theme; a browser without relative colours gets the
+   theme's plain card colour. Type scales with the card (container units, inside it only). */
+.poster-card {
+  aspect-ratio: 2 / 3;
+  background: var(--pico-card-sectioning-background-color);
+  background: linear-gradient(160deg,
+    oklch(from var(--pico-card-sectioning-background-color) calc(l + 0.08) 0.07 var(--ph-hue)),
+    oklch(from var(--pico-card-sectioning-background-color) calc(l - 0.02) 0.05 calc(var(--ph-hue) + 40)));
+  border-radius: var(--pico-border-radius);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pico-contrast) 10%, transparent);
+  color: var(--pico-h1-color);
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  /* Percentages, not cqi: container units on the container itself resolve against an outer
+     container (or the viewport), which on a small card is wider than the card. */
+  padding: 9% 8%;
+  width: 100%;
+}
+.poster-card-title {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  display: -webkit-box;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13cqi;
+  font-weight: 700;
+  hyphens: auto;
+  line-height: 1.15;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.poster-card-year {
+  border-top: 1px solid color-mix(in srgb, var(--pico-h1-color) 35%, transparent);
+  font-size: 10cqi;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+  padding-top: 4cqi;
+}
+.timeline-placeholder.poster-card, .cal-film-card.poster-card, .surprise-placeholder.poster-card { height: auto; }
+
+/* ---------------------------------------------------------------- A-Z rail (0.72.0) */
+/* Down the right edge of a long list, over the page margin; letters with nothing under them are
+   greyed. A jumped-to card stops below the top bar. */
+.az-rail {
+  backdrop-filter: blur(6px);
+  background: color-mix(in srgb, var(--pico-background-color) 70%, transparent);
+  border-radius: 999px;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.4rem 0.15rem;
+  position: fixed;
+  right: 0.3rem;
+  top: 50%;
+  translate: 0 -50%;
+  z-index: 30;
+}
+.az-rail a, .az-rail span { display: block; padding: 0.12rem 0.3rem; text-align: center; text-decoration: none; }
+.az-rail span { color: var(--pico-muted-border-color); }
+[id^="az-"] { scroll-margin-top: 6rem; }
+@media (max-width: 767px) {
+  .az-rail { font-size: 0.62rem; padding: 0.3rem 0.05rem; right: 0.1rem; }
+  .az-rail a, .az-rail span { padding: 0.08rem 0.25rem; }
+  main:has(.az-rail) { padding-right: 2rem; }
+}
+
+/* ---------------------------------------------------------------- in numbers (0.72.0) */
+.stat-tiles { display: grid; gap: var(--pico-spacing); grid-template-columns: repeat(auto-fill, minmax(min(100%, 10rem), 1fr)); margin-bottom: calc(var(--pico-block-spacing-vertical) * 1.5); }
+.stat-tiles article { display: flex; flex-direction: column; gap: 0.2rem; margin: 0; padding: 1rem; }
+.stat-tiles strong { color: var(--pico-h1-color); font-size: 1.8rem; line-height: 1.1; }
+.stat-tiles span { color: var(--pico-muted-color); font-size: 0.85rem; }
+.stat-bars { display: grid; gap: 0.45rem; list-style: none; margin: 0 0 var(--pico-block-spacing-vertical); padding: 0; }
+.stat-bars li { align-items: center; display: grid; gap: 0.6rem; grid-template-columns: minmax(5rem, 12rem) 1fr auto; list-style: none; margin: 0; }
+.stat-label { font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-track { background: color-mix(in srgb, var(--pico-muted-color) 15%, transparent); border-radius: 999px; display: block; height: 0.7rem; overflow: hidden; }
+.stat-fill { background: color-mix(in srgb, var(--pico-primary) 45%, transparent); border-radius: 999px; display: block; height: 100%; min-width: 2px; }
+.stat-part { background: var(--pico-primary); border-radius: 999px; display: block; height: 100%; }
+.stat-value { font-size: 0.85rem; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.stat-pair { display: grid; gap: calc(var(--pico-spacing) * 2); grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); }
+@media (max-width: 767px) {
+  .stat-bars li { grid-template-columns: 6.5rem 1fr auto; }
+}
+
+/* ---------------------------------------------------------------- compact density (0.72.0) */
+/* Each person's choice, under their name: smaller cards, about twice as many on a screen. The
+   missing-film previews and the peek panels stay on the detail pages. */
+[data-density="compact"] .collection-grid--compact { gap: 0.6rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr)); }
+[data-density="compact"] .collection-grid--owned { grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr)); }
+[data-density="compact"] .collection-card--compact { column-gap: 0.6rem; font-size: 0.85rem; grid-template-columns: 3.6rem 1fr; padding: 0.6rem; row-gap: 0.15rem; }
+[data-density="compact"] .collection-grid--owned .collection-card--compact { grid-template-columns: 2.8rem 1fr; }
+[data-density="compact"] .collection-card--compact > .missing-preview { display: none; }
+[data-density="compact"] .collection-card--compact .card-actions button { font-size: 0.8rem; padding: 0.25rem 0.55rem; }
+[data-density="compact"] .collection-card--compact progress.completeness { margin-bottom: 0.25rem; }

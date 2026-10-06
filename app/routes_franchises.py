@@ -23,10 +23,11 @@ def _multi_server(session) -> bool:  # noqa: ANN001 - a Session
 def franchises(request: Request, session: DbSession, user: RequiredUser, sort: str | None = None,
                dir: str | None = None):  # noqa: A002
     from app.config import get_settings
-    from app.services import sorting
+    from app.services import az, sorting
 
     current = sorting.resolve(session, user.id, "franchises", sort, dir)
-    views = sorting.sort_groups(franchise_service.franchise_views(session, user.id), "franchises", current)
+    every = franchise_service.franchise_views(session, user.id)
+    views = sorting.sort_groups(every, "franchises", current)
     base = get_settings().base_url
     return get_templates().TemplateResponse(
         request,
@@ -34,6 +35,9 @@ def franchises(request: Request, session: DbSession, user: RequiredUser, sort: s
         {
             "user": user,
             "franchises": views,
+            "az_rail": az.rail(sorting.sort_groups(every, "franchises", ("name", "asc")), path=f"{base}/franchises",
+                               size=max(1, len(every))),
+            "az_ids": az.anchors(views, current),
             "sort_ctl": sorting.control("franchises", current, f"{base}/franchises"),
             "total_missing": sum(v.missing for v in views),
             "both": sum(1 for v in views if v.spans_both),

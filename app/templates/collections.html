@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/poster_card.html" import poster_card %}
 {% from "partials/completeness.html" import completeness %}
 {% from "partials/peek.html" import peek %}
 {% block title %}Collections — Franchisarr{% endblock %}
@@ -67,7 +68,7 @@
   </div>
   <div class="collection-grid collection-grid--compact" data-shelf>
     {% for gap in gaps %}
-      <article class="collection-card collection-card--compact">
+      <article class="collection-card collection-card--compact"{% if loop.index0 in az_ids %} id="{{ az_ids[loop.index0] }}"{% endif %}>
         {% if gap.small_poster %}
           <a href="{{ url('/collections/' ~ gap.collection_id) }}" class="collection-poster">
             {#- loading=lazy because a library can produce a hundred of these, and decoding=async
@@ -76,7 +77,7 @@
                  height="138">
           </a>
         {% else %}
-          <div class="collection-poster collection-poster--empty" aria-hidden="true"></div>
+          {{ poster_card(gap.name) }}
         {% endif %}
         <header>
           <a href="{{ url('/collections/' ~ gap.collection_id) }}"><strong>{{ gap.name }}</strong></a>
@@ -88,7 +89,7 @@
             <span class="count-upcoming">{{ gap.upcoming | length }} coming soon</span>
           {% endif %}
         </p>
-        {{ completeness(gap.owned | length, gap.missing | length) }}
+        {{ completeness(gap.owned | length, gap.missing | length, watched_of(gap.owned)) }}
         <ul class="missing-preview">
           {% for movie in gap.missing[:3] %}
             <li>{{ movie.title }}{% if movie.release_year %} <small class="muted">({{ movie.release_year }})</small>{% endif %}
@@ -108,5 +109,6 @@
     {% endfor %}
   </div>
   {% include "partials/pager.html" %}
+  {% include "partials/az_rail.html" %}
 {% endif %}
 {% endblock %}

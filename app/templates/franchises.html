@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/poster_card.html" import poster_card %}
 {% from "partials/completeness.html" import completeness %}
 {% from "partials/peek.html" import peek %}
 {% block title %}Franchises — Franchisarr{% endblock %}
@@ -22,7 +23,7 @@
   <div class="gap-controls">{% include "partials/sort_control.html" %}</div>
   <div class="collection-grid collection-grid--compact" data-shelf>
     {% for f in franchises %}
-      <article class="collection-card collection-card--compact">
+      <article class="collection-card collection-card--compact"{% if loop.index0 in az_ids %} id="{{ az_ids[loop.index0] }}"{% endif %}>
         {% if f.small_poster %}
           <a href="{{ url('/franchises/' ~ f.wikidata_id) }}" class="collection-poster">
             <img src="{{ f.small_poster }}" alt="" loading="lazy" decoding="async" width="92" height="138">
@@ -32,7 +33,7 @@
             {% for src in f.mosaic %}<img src="{{ src }}" alt="" loading="lazy" decoding="async">{% endfor %}
           </a>
         {% else %}
-          <div class="collection-poster collection-poster--empty" aria-hidden="true"></div>
+          {{ poster_card(f.name) }}
         {% endif %}
         <header>
           <a href="{{ url('/franchises/' ~ f.wikidata_id) }}"><strong>{{ f.name }}</strong></a>
@@ -43,7 +44,7 @@
           {% if f.missing %}<span class="count-missing">{{ f.missing }} missing</span>{% endif %}
           {% if f.upcoming_films %}<span class="count-upcoming">{{ f.upcoming_films | length }} coming</span>{% endif %}
         </p>
-        {{ completeness(f.owned, f.missing) }}
+        {{ completeness(f.owned, f.missing, watched_of(f.owned_films + f.owned_shows)) }}
         <p><small class="muted">
           {% if f.owned_films %}{{ f.owned_films | length }} film{{ '' if f.owned_films | length == 1 else 's' }}{% endif %}{% if f.owned_films and f.owned_shows %} · {% endif %}{% if f.owned_shows %}{{ f.owned_shows | length }} show{{ '' if f.owned_shows | length == 1 else 's' }}{% endif %}
         </small></p>
@@ -51,6 +52,7 @@
       </article>
     {% endfor %}
   </div>
+  {% include "partials/az_rail.html" %}
 {% else %}
   <p><a href="{{ url('/') }}" role="button" class="secondary">Run a scan</a></p>
 {% endif %}

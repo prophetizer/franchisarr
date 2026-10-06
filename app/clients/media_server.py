@@ -69,6 +69,8 @@ class MediaItem:
     #: Played by the account the server was asked as; for a show, any episode played. None when
     #: the server gave no answer.
     watched: bool | None = None
+    #: Running time in whole minutes, when the listing carries it (films; 0.72.0).
+    runtime: int | None = None
 
     @property
     def has_external_ids(self) -> bool:

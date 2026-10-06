@@ -404,6 +404,9 @@ class LibraryItem(SQLModel, table=True):
     #: Watched on that server, as of the last scan. Plex: the token owner's play count; Jellyfin
     #: and Emby: the server's `watched_user`. None when the server didn't say.
     watched: bool | None = Field(default=None)
+    #: A film's running time in minutes, as the server reports it (0.72.0): for the detail pages'
+    #: "how long is the set" line. None for shows, and until the next scan.
+    runtime: int | None = Field(default=None)
 
     last_seen_at: datetime = Field(default_factory=utcnow, index=True)
     #: When a scan first found it, for the home page's "Just added" (0.45.0). None for rows from

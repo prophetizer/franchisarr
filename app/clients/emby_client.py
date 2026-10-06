@@ -55,6 +55,15 @@ class EmbyAuthError(EmbyClientError):
     """The API key was rejected."""
 
 
+def _runtime(ticks) -> int | None:  # noqa: ANN001 - whatever the item held
+    """RunTimeTicks (100-nanosecond units) in whole minutes; None when absent or nonsense."""
+    try:
+        minutes = round(int(ticks) / 600_000_000)
+    except (TypeError, ValueError):
+        return None
+    return minutes if minutes > 0 else None
+
+
 def _watched(item: dict) -> bool | None:
     """Played state from the UserData a user-scoped listing carries. A film is watched when
     played; a series when any of it has been (`Played` there means every episode)."""
@@ -485,6 +494,7 @@ class EmbyLikeClient:
                 year=item.get("ProductionYear") if isinstance(item.get("ProductionYear"), int) else None,
                 external_ids=_external_ids(item.get("ProviderIds")),
                 watched=_watched(item),
+                runtime=_runtime(item.get("RunTimeTicks")),
             )
 
     def iter_shows(self, library_key: str | int) -> Iterator[MediaShow]:

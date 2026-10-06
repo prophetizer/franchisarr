@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/poster_card.html" import poster_card %}
 
 {% block content %}
   <div class="page-heading">
@@ -79,7 +80,7 @@
           <li style="--i: {{ loop.index0 }}">
             <a href="{{ url(c.path) }}" class="poster-row-card" title="{{ c.title }}">
               {% if c.poster %}<img src="{{ c.poster }}" alt="" loading="lazy" decoding="async" width="185" height="278">
-              {% else %}<span class="timeline-placeholder">{{ c.title }}</span>{% endif %}
+              {% else %}{{ poster_card(c.title, cls='timeline-placeholder') }}{% endif %}
             </a>
             <span class="poster-row-title">{{ c.title }}</span>
             <small class="muted">{{ c.detail }}</small>

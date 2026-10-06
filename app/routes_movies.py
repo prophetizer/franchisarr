@@ -49,7 +49,7 @@ def collections(
     request: Request, session: DbSession, user: RequiredUser, sort: str | None = None,
     started: bool = False, page: int = 1, dir: str | None = None,  # noqa: A002 - the query parameter's name
 ):
-    from app.services import pagination, scan_state, sorting
+    from app.services import az, pagination, scan_state, sorting
 
     current = sorting.resolve(session, user.id, "collections", sort, dir)
     gaps = movie_gap_service.collections_with_gaps(session, user.id)
@@ -76,6 +76,10 @@ def collections(
             "progress": scan_state.current(),
             "gaps": pager.items,
             "pager": pager,
+            # The A-Z rail (0.72.0): links into the name-sorted list, and this page's anchors.
+            "az_rail": az.rail(sorting.sort_groups(gaps, "collections", ("name", "asc")), path=_url("/collections"),
+                               size=pager.size, params={"started": 1 if started_on else None}),
+            "az_ids": az.anchors(pager.items, current),
             "started": started and watched_known,
             "watched_known": watched_known,
             "total_missing": sum(len(gap.missing) for gap in gaps),
@@ -90,6 +94,16 @@ def collections(
             or bool(movie_gap_service.owned_tmdb_ids(session, all_servers=True)),
         },
     )
+
+
+@router.get("/stats", response_class=HTMLResponse)
+def stats(request: Request, session: DbSession, user: RequiredUser):
+    """The library in numbers (0.72.0)."""
+    from app.services import library_stats
+
+    gaps = movie_gap_service.collection_gaps(session, user.id)
+    return get_templates().TemplateResponse(
+        request, "stats.html", {"user": user, "n": library_stats.numbers(session, gaps)})
 
 
 @router.get("/upcoming", response_class=HTMLResponse)

@@ -1,3 +1,4 @@
+{% from "partials/poster_card.html" import poster_card %}
 {# The set in release order (0.45.0): owned in colour, missing and upcoming dimmed. A missing one
    opens the add dialog for an admin; the grids below keep every other action. Scrolls sideways
    inside itself, never the page. #}
@@ -30,7 +31,7 @@
             <span class="timeline-poster" title="{{ label }}">
           {% endif %}
             {% if s.poster %}<img src="{{ s.poster }}" alt="{{ s.title }}" loading="lazy" decoding="async" width="92" height="138">
-            {% else %}<span class="timeline-placeholder">{{ s.title }}</span>{% endif %}
+            {% else %}{{ poster_card(s.title, s.year, 'timeline-placeholder') }}{% endif %}
             {% if s.status == 'owned' %}<span class="timeline-tick" aria-hidden="true">✓</span>{% endif %}
           {% if s.status != 'owned' and user and user.is_admin %}</button>{% else %}</span>{% endif %}
           <span class="timeline-year">{{ s.year or '—' }}{% if s.status == 'upcoming' %} · soon{% endif %}</span>

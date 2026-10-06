@@ -211,8 +211,8 @@ the label changes.
 ## Getting around
 
 The top bar has its menus: **Browse** (Franchises, Collections, Spin-offs, Upcoming,
-Directors, Trophy case); for administrators **Playlists** (one page with tabs) and
-**Manage** (Servers, Libraries, Instances, Users, Settings, Activity); and one under your name (Preferences, Password, light/dark, Sign out), with
+Directors, Trophy case, In numbers); for administrators **Playlists** (one page with tabs) and
+**Manage** (Servers, Libraries, Instances, Users, Settings, Activity); and one under your name (Preferences, Password, light/dark, grid density, Sign out), with
 search at the far right. The menu holding the page you're on is highlighted. On a phone it's a
 single ☰ button.
 
@@ -245,7 +245,8 @@ westerns, grey for crime, a flicker for horror); a collection or franchise
 page ends with its **end credits** rolling up — each title, its year and who directed it — to *The
 End*, or *To be continued…* while titles are missing; adding a film prints you a ticket stub;
 **📚 Shelf** shows Collections or Franchises as box sets on a shelf; clicking an owned film's
-poster (or the page's own) opens it large; a projector beam shines across the home spotlight;
+poster (or the page's own) opens it large, and the arrow keys or a swipe step through every
+poster in the set; a projector beam shines across the home spotlight;
 empty and finished pages get a little scene; a set's poster is black and white with colour risen
 up it as far as you own, and a detail page's poster stands as a 3D box set; coming-soon films
 count down their days on a split-flap board; a watched film's poster has its ticket punched; TV
@@ -265,7 +266,15 @@ reduce motion). **◻ Classic look** switches back.
 
 In both looks, a director's page has their photo softened behind the banner and their career as a
 strip in release order, marked by decade, and a long list sorted by release date gets a slim
-heading where each decade starts.
+heading where each decade starts. A film with no poster gets a typeset card — its title and year
+on a colour of its own — instead of a grey box. Long lists (Collections, Franchises, Directors)
+have an **A–Z rail** down the side. Cards show how much of what you own you've watched, under the
+owned bar, and a detail page says how long the set runs (*9h 40m across the 5 films you own ·
+3h 10m still to watch*, from the running times your server reports). The home page opens with
+**Up next** — the next film you own and haven't watched in each set you've started — and
+**In numbers** charts the library: films by decade, how much is watched, the nearly complete
+sets, genres and the directors you own most. **▤ Density** under your name switches every grid
+to compact cards, about twice as many on a screen.
 
 When a scan finds you've completed a collection — every released film of it in your library —
 Showcase throws **confetti** with a "Collection complete!" message, once for each person, on

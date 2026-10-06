@@ -1,3 +1,4 @@
+{% from "partials/poster_card.html" import poster_card %}
 {% from "partials/trailer_button.html" import trailer_button %}
 {# Surprise me (0.53.0): one pick, swapped into #surprise-card. data-reel carries the posters
    Showcase's spin rolls past before landing on this one; Classic just shows the pick. #}
@@ -11,7 +12,7 @@
   <article class="surprise-card" data-reel='{{ reel | tojson }}'>
     <div class="surprise-poster">
       {% if pick.poster %}<img src="{{ pick.poster }}" alt="" decoding="async" width="185" height="278">
-      {% else %}<span class="collection-poster--empty" aria-hidden="true"></span>{% endif %}
+      {% else %}{{ poster_card(pick.title, pick.year, 'surprise-placeholder') }}{% endif %}
     </div>
     <div class="surprise-body">
       <p class="surprise-kicker"><small>🎲 Surprise</small></p>

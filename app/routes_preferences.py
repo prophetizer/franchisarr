@@ -117,6 +117,18 @@ def choose_effects(session: DbSession, user: RequiredUser, value: Annotated[str,
     return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)
 
 
+@router.post("/preferences/density")
+def choose_density(session: DbSession, user: RequiredUser, value: Annotated[str, Form()] = "comfortable",
+                   back: Annotated[str, Form()] = ""):
+    """Comfortable or compact grids for this person (0.72.0), then back to the page."""
+    from app.services import look as look_service
+
+    look_service.set_density(session, user.id, value)
+    base = get_settings().base_url
+    target = back if back.startswith(f"{base}/") and not back.startswith("//") and "://" not in back else _url("/")
+    return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)
+
+
 @router.post("/preferences/intros")
 def choose_intros(session: DbSession, user: RequiredUser, on: Annotated[str, Form()] = "true",
                   back: Annotated[str, Form()] = ""):

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}In numbers — Franchisarr{% endblock %}
+
+{#- The library in numbers (0.72.0): still bars, drawn in CSS from the theme's colours. -#}
+{% macro bars(items, unit='', peak=none, pct=false) -%}
+  {% set top = 100 if pct else (peak or (items | map(attribute='value') | max) or 1) %}
+  <ol class="stat-bars">
+    {% for b in items %}
+      <li>
+        <span class="stat-label">{% if b.path %}<a href="{{ url(b.path) }}">{{ b.label }}</a>{% else %}{{ b.label }}{% endif %}</span>
+        <span class="stat-track" role="img" aria-label="{{ b.label }}: {{ b.value }}{{ unit }}{% if b.part is not none %}, {{ b.part }} watched{% endif %}">
+          <span class="stat-fill" style="width: {{ [b.value * 100 / top, 100] | min | round(1) }}%">
+            {% if b.part is not none and b.value %}<span class="stat-part" style="width: {{ (b.part * 100 / b.value) | round(1) }}%"></span>{% endif %}
+          </span>
+        </span>
+        <span class="stat-value">{{ b.value }}{{ unit }}{% if b.detail %} <small class="muted">{{ b.detail }}</small>{% endif %}</span>
+      </li>
+    {% endfor %}
+  </ol>
+{%- endmacro %}
+
+{% block content %}
+<hgroup>
+  <h1>Your library in numbers</h1>
+  <p>{% if n.films %}What's on the shelves, by the numbers.{% else %}<span data-scene="reel" hidden></span>Nothing scanned yet — run a scan and come back.{% endif %}</p>
+</hgroup>
+
+{% if n.films %}
+  <div class="stat-tiles">
+    <article><strong>{{ '{:,}'.format(n.films) }}</strong><span>films</span></article>
+    {% if n.shows %}<article><strong>{{ '{:,}'.format(n.shows) }}</strong><span>shows</span></article>{% endif %}
+    {% if n.watched is not none %}<article><strong>{{ (n.watched * 100 / n.films) | round | int }}%</strong><span>of films watched ({{ '{:,}'.format(n.watched) }})</span></article>{% endif %}
+    {% if n.minutes %}<article><strong>{{ (n.minutes / 1440) | round(1) }}</strong><span>days of film, back to back{% if n.timed < n.films %} ({{ '{:,}'.format(n.timed) }} with a known length){% endif %}</span></article>{% endif %}
+    <article><strong>{{ n.complete_sets }}</strong><span>complete collections</span></article>
+    <article><strong>{{ n.sets_with_gaps }}</strong><span>collections with gaps</span></article>
+  </div>
+
+  {% if n.decades %}
+    <section>
+      <h2>Films by decade</h2>
+      {% if n.watched is not none %}<p><small class="muted">The darker part of each bar is what you've watched.</small></p>{% endif %}
+      {{ bars(n.decades, peak=n.peak) }}
+    </section>
+  {% endif %}
+  {% if n.closest %}
+    <section>
+      <h2>Nearly complete</h2>
+      {{ bars(n.closest, '%', pct=true) }}
+    </section>
+  {% endif %}
+  <div class="stat-pair">
+    {% if n.genres %}
+      <section>
+        <h2>Genres</h2>
+        <p><small class="muted">Of films in collections, where TMDb gives genres; a film can have several.</small></p>
+        {{ bars(n.genres) }}
+      </section>
+    {% endif %}
+    {% if n.directors %}
+      <section>
+        <h2>Directors you own most</h2>
+        {{ bars(n.directors) }}
+      </section>
+    {% endif %}
+  </div>
+{% endif %}
+{% endblock %}

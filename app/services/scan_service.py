@@ -412,6 +412,7 @@ def _upsert_item(
     row.imdb_id = item.external_ids.imdb_id
     row.tvdb_id = item.external_ids.tvdb_id
     row.watched = item.watched
+    row.runtime = item.runtime
     row.last_seen_at = utcnow()
 
     if result is not None:

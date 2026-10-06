@@ -5,14 +5,18 @@
 
    Used inside <div class="collection-grid collection-grid--compact">, or --owned for the smaller
    tiles of titles already in the library. #}
-{% macro tile(poster, css='', about=None, show=False) -%}
+{% from "partials/poster_card.html" import poster_card %}
+{% macro tile(poster, css='', about=None, show=False, title=None, year=None) -%}
   {#- about ("movie/603", "show/1399"): Showcase flips the poster over to its plot (0.51.0).
-      show: a TV show, which Showcase frames as an old TV screen (0.62.0). -#}
+      show: a TV show, which Showcase frames as an old TV screen (0.62.0).
+      title, year: for the designed placeholder when there's no poster (0.72.0). -#}
   <article class="collection-card collection-card--compact film-tile {{ css }}{% if show %} is-show{% endif %}"{% if about %} data-about="{{ about }}"{% endif %}>
     {% if poster %}
       <div class="collection-poster">
         <img src="{{ poster }}" alt="" loading="lazy" decoding="async" width="92" height="138">
       </div>
+    {% elif title %}
+      {{ poster_card(title, year) }}
     {% else %}
       <div class="collection-poster collection-poster--empty" aria-hidden="true"></div>
     {% endif %}

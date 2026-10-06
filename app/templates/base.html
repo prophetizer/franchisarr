@@ -15,9 +15,11 @@
 {% set intros = (intros_of(user) if look == 'showcase' else false) %}
 {#- The effects dial (0.71.0): full, calm (nothing loops or flashes) or off (no motion). -#}
 {% set effects = (effects_of(user) if look == 'showcase' else 'full') %}
+{#- Grid density (0.72.0), both looks. -#}
+{% set density = density_of(user) if user is defined and user else 'comfortable' %}
 {#- `color_scheme` rather than `theme`: this is the light/dark attribute, and a context key
     called `theme` once shadowed it and rendered an object into the attribute. -#}
-<html lang="en" data-theme="{{ color_scheme|default('dark') }}"{% if look == 'showcase' %} data-look="showcase"{% if not intros %} data-intros="off"{% endif %}{% if effects != 'full' %} data-effects="{{ effects }}"{% endif %}{% endif %}>
+<html lang="en"{% if density == 'compact' %} data-density="compact"{% endif %} data-theme="{{ color_scheme|default('dark') }}"{% if look == 'showcase' %} data-look="showcase"{% if not intros %} data-intros="off"{% endif %}{% if effects != 'full' %} data-effects="{{ effects }}"{% endif %}{% endif %}>
 {#- The stored preference is applied before the stylesheets load, so a light-mode viewer never
     sees a dark flash. Wrapped in try/catch: a browser with site data blocked would otherwise
     throw here and stop the rest of the page's scripts. -#}
@@ -62,7 +64,7 @@
           so they can't disagree. Each item is (path, label). -#}
       {% if user %}
         {% set browse = [('/franchises', 'Franchises'), ('/collections', 'Collections'), ('/shows', 'Spin-offs'),
-                         ('/upcoming', 'Upcoming'), ('/directors', 'Directors'), ('/trophies', 'Trophy case')] %}
+                         ('/upcoming', 'Upcoming'), ('/directors', 'Directors'), ('/trophies', 'Trophy case'), ('/stats', 'In numbers')] %}
         {% set manage = [('/media-servers', 'Servers'), ('/libraries', 'Libraries'), ('/instances', 'Instances'),
                          ('/users', 'Users'), ('/settings', 'Settings'), ('/activity', 'Activity')] if user.is_admin else [] %}
         {#- Playlists is one page with tabs (0.42.0): a plain link, not a menu. -#}
@@ -115,6 +117,11 @@
                   <li><button type="button" class="nav-menu-button theme-toggle" onclick="franchisarrToggleTheme()"
                               title="Switch between light and dark">
                     <span class="theme-toggle-dark">☾ Dark mode</span><span class="theme-toggle-light">☀ Light mode</span></button></li>
+<li><form method="post" action="{{ url('/preferences/density') }}" class="nav-form">
+                    <input type="hidden" name="value" value="{{ 'comfortable' if density == 'compact' else 'compact' }}">
+                    <input type="hidden" name="back" value="{{ here }}">
+                    <button type="submit" class="nav-menu-button" title="Compact fits about twice the cards on a screen">
+                      {{ '▤ Density: compact' if density == 'compact' else '▤ Density: comfortable' }}</button></form></li>
 <li><form method="post" action="{{ url('/look') }}" class="nav-form">
                     <input type="hidden" name="look" value="{{ 'classic' if look == 'showcase' else 'showcase' }}">
                     <input type="hidden" name="back" value="{{ here }}">
@@ -164,6 +171,10 @@
             {{ links(mine) }}
             <li><button type="button" class="nav-menu-button theme-toggle" onclick="franchisarrToggleTheme()">
               <span class="theme-toggle-dark">☾ Dark mode</span><span class="theme-toggle-light">☀ Light mode</span></button></li>
+            <li><form method="post" action="{{ url('/preferences/density') }}" class="nav-form">
+              <input type="hidden" name="value" value="{{ 'comfortable' if density == 'compact' else 'compact' }}">
+              <input type="hidden" name="back" value="{{ here }}">
+              <button type="submit" class="nav-menu-button">{{ '▤ Density: compact' if density == 'compact' else '▤ Density: comfortable' }}</button></form></li>
             <li><form method="post" action="{{ url('/look') }}" class="nav-form">
               <input type="hidden" name="look" value="{{ 'classic' if look == 'showcase' else 'showcase' }}">
               <input type="hidden" name="back" value="{{ here }}">

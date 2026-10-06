@@ -371,7 +371,8 @@ def director_views(
                               bool(is_music_video))
             if t.tmdb_id in owned_ids or t.tmdb_id in owned:
                 info = details.get(t.tmdb_id)
-                view.owned.append(replace(t, servers=info.servers, watched=info.watched) if info else t)
+                view.owned.append(replace(t, servers=info.servers, watched=info.watched,
+                                          runtime=info.runtime or t.runtime) if info else t)
             elif t.tmdb_id in in_radarr or t.tmdb_id in dismissed:
                 continue
             elif not t.is_released(today):

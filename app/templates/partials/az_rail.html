@@ -1,0 +1,9 @@
+{#- The A-Z jump rail (0.72.0): long lists only. A letter with nothing under it is greyed. -#}
+{% if az_rail %}
+  <nav class="az-rail" aria-label="Jump to a letter">
+    {% for l in az_rail %}
+      {% if l.href %}<a href="{{ l.href }}" title="Names starting {{ 'with a number' if l.letter == '#' else 'with ' ~ l.letter }}">{{ l.letter }}</a>
+      {% else %}<span aria-hidden="true">{{ l.letter }}</span>{% endif %}
+    {% endfor %}
+  </nav>
+{% endif %}

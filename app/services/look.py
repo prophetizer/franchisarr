@@ -103,3 +103,35 @@ def effects_of(user) -> str:  # noqa: ANN001 - a User, or None
 def next_effects(value: str) -> str:
     """What the menu's button switches to: full, calm, off, then round again."""
     return EFFECTS[(EFFECTS.index(value) + 1) % len(EFFECTS)] if value in EFFECTS else "calm"
+
+
+#: Grid density (0.72.0), both looks: "comfortable" (the cards as they are) or "compact" (smaller
+#: cards, about twice as many on a screen, the missing-film previews left to the detail page).
+DENSITY_KEY = "density"
+DENSITIES = ("comfortable", "compact")
+
+
+def density(session: Session, user_id: int | None) -> str:
+    if user_id is None:
+        return "comfortable"
+    value = session.exec(select(UserPreference.value).where(
+        col(UserPreference.user_id) == user_id, col(UserPreference.key) == DENSITY_KEY)).first()
+    return "compact" if value == "compact" else "comfortable"
+
+
+def set_density(session: Session, user_id: int, value: str) -> str:
+    from app.services.sorting import _save
+
+    value = "compact" if value == "compact" else "comfortable"
+    _save(session, user_id, DENSITY_KEY, value)
+    return value
+
+
+def density_of(user) -> str:  # noqa: ANN001 - a User, or None
+    """For the base template, as `of` is."""
+    if user is None or getattr(user, "id", None) is None:
+        return "comfortable"
+    from app.db import get_engine
+
+    with Session(get_engine()) as session:
+        return density(session, user.id)

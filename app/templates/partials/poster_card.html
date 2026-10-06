@@ -1,0 +1,9 @@
+{#- A designed placeholder where there's no poster (0.72.0): the title and year typeset on a card
+    tinted by a hue taken from the title, so the same film always gets the same colour. Its
+    colours come from the theme's (app.css); only the hue is the title's. -#}
+{% macro poster_card(title, year=None, cls='collection-poster') -%}
+  <div class="{{ cls }} poster-card" style="--ph-hue: {{ (title or '') | title_hue }}" aria-hidden="true">
+    <span class="poster-card-title">{{ title }}</span>
+    {% if year %}<span class="poster-card-year">{{ year }}</span>{% endif %}
+  </div>
+{%- endmacro %}

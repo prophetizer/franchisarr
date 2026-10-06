@@ -482,7 +482,17 @@ def _to_item(raw, seen_unknown: set[str]) -> PlexItem:  # noqa: ANN001 - a plexa
         external_ids=external_ids,
         guids=all_guids,
         watched=_watched(raw),
+        runtime=_runtime(_attr(raw, "duration")),
     )
+
+
+def _runtime(milliseconds) -> int | None:  # noqa: ANN001 - whatever the listing held
+    """Plex's duration (ms) in whole minutes; None when absent or nonsense."""
+    try:
+        minutes = round(int(milliseconds) / 60000)
+    except (TypeError, ValueError):
+        return None
+    return minutes if minutes > 0 else None
 
 
 def _watched(raw) -> bool | None:  # noqa: ANN001 - a plexapi Video

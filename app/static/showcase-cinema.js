@@ -4,7 +4,8 @@
 //   beam       -- a projector's cone of light over the home spotlight, flickering on at load
 //   moods      -- the set's main genre grades the banner's picture
 //   shelf      -- the Collections and Franchises grids can be shown as box-set spines on a shelf
-//   lightbox   -- an owned or upcoming film's poster, or the page's own, opens large
+//   lightbox   -- an owned or upcoming film's poster, or the page's own, opens large; since
+//                 0.72.0 it steps through every poster in the set's release strip
 //   scenes     -- empty and finished pages get a small scene instead of bare words
 // and since 0.62.0:
 //   colour     -- a set's poster is black and white, colour risen up it as far as you own
@@ -228,20 +229,67 @@
     var logo = h1 && h1.querySelector('img');
     return [logo ? logo.alt : plain(h1), ''];
   };
+  // The gallery (0.72.0): with the set's release strip on the page, the lightbox steps through
+  // every poster in it -- arrows, the arrow keys or a swipe -- each captioned owned, missing or
+  // coming. A poster not in the strip (the page's own) opens alone, as before.
+  var gallery = [], at = 0;
+  var fileOf = function (src) { return (src || '').replace(/^.*\/t\/p\/[^/]+\//, ''); };
+  var STATUS = { owned: 'In your library', missing: 'Missing', upcoming: 'Coming' };
+  var stripEntries = function () {
+    return Array.prototype.map.call(document.querySelectorAll('.timeline-step'), function (step) {
+      var img = step.querySelector('.timeline-poster img');
+      var status = step.className.match(/timeline-step--(\w+)/);
+      var label = (step.querySelector('.timeline-poster') || step).getAttribute('title') || '';
+      var year = plain(step.querySelector('.timeline-year')).replace(/ · soon$/, '');
+      return img && { src: img.currentSrc || img.src, title: label.replace(/(?: \(\d{4}\))? — .*$/, ''),
+                      detail: [year !== '—' ? year : '', status ? STATUS[status[1]] : ''].filter(Boolean).join(' · ') };
+    }).filter(Boolean);
+  };
+  var show = function (entry) {
+    var poster = box.querySelector('.sc-lightbox-poster');
+    box.querySelector('.sc-lightbox-glow').src = entry.src;
+    poster.src = entry.src;
+    poster.alt = entry.title ? 'Poster of ' + entry.title : 'Poster';
+    box.querySelector('figcaption strong').textContent = entry.title;
+    box.querySelector('figcaption small').textContent = entry.detail;
+    box.querySelector('.sc-lightbox-count').textContent = gallery.length > 1 ? (at + 1) + ' of ' + gallery.length : '';
+    var large = bigger(entry.src);
+    if (large !== entry.src) {
+      var loader = new Image();
+      loader.onload = function () { if (poster.src === entry.src) { poster.src = large; } };
+      loader.src = large;
+    }
+  };
+  var step = function (by) {
+    if (gallery.length < 2) { return; }
+    at = (at + by + gallery.length) % gallery.length;
+    show(gallery[at]);
+  };
   var openBox = function (img) {
     if (!box) {
       box = make('dialog', 'sc-lightbox');
       box.setAttribute('aria-label', 'Poster');
       box.innerHTML = '<img class="sc-lightbox-glow" alt="" aria-hidden="true"><figure><img class="sc-lightbox-poster" alt="">' +
-        '<figcaption><strong></strong> <small class="muted"></small></figcaption></figure>' +
+        '<figcaption><strong></strong> <small class="muted"></small> <small class="sc-lightbox-count muted"></small></figcaption></figure>' +
+        '<button type="button" class="sc-lightbox-step sc-lightbox-prev secondary outline" aria-label="Previous poster">‹</button>' +
+        '<button type="button" class="sc-lightbox-step sc-lightbox-next secondary outline" aria-label="Next poster">›</button>' +
         '<button type="button" class="sc-lightbox-close secondary outline" aria-label="Close">✕</button>';
       document.body.appendChild(box);
-      box.addEventListener('click', function () { box.close(); });
-      var startY = null;
-      box.addEventListener('pointerdown', function (e) { startY = e.clientY; });
+      box.addEventListener('click', function (e) {
+        if (e.target.closest('.sc-lightbox-prev')) { step(-1); return; }
+        if (e.target.closest('.sc-lightbox-next')) { step(1); return; }
+        box.close();
+      });
+      box.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
+        if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+      });
+      var startY = null, startX = null;
+      box.addEventListener('pointerdown', function (e) { startY = e.clientY; startX = e.clientX; });
       box.addEventListener('pointerup', function (e) {
         if (startY !== null && e.clientY - startY > 70) { box.close(); }
-        startY = null;
+        else if (startX !== null && Math.abs(e.clientX - startX) > 60) { step(e.clientX < startX ? 1 : -1); }
+        startY = startX = null;
       });
       if (!reduce && !phone) {
         box.addEventListener('pointermove', function (e) {
@@ -251,19 +299,19 @@
       }
     }
     var small = img.currentSrc || img.src;
-    var poster = box.querySelector('.sc-lightbox-poster');
     var words = captionOf(img);
-    box.querySelector('.sc-lightbox-glow').src = small;
-    poster.src = small;
-    poster.alt = words[0] ? 'Poster of ' + words[0] : 'Poster';
-    box.querySelector('figcaption strong').textContent = words[0];
-    box.querySelector('figcaption small').textContent = words[1];
-    var large = bigger(small);
-    if (large !== small) {
-      var loader = new Image();
-      loader.onload = function () { if (poster.src === small) { poster.src = large; } };
-      loader.src = large;
+    var strip = stripEntries();
+    var found = -1;
+    strip.forEach(function (entry, n) { if (found < 0 && fileOf(entry.src) === fileOf(small)) { found = n; } });
+    if (found >= 0) {
+      gallery = strip;
+      at = found;
+    } else {
+      gallery = [{ src: small, title: words[0], detail: words[1] }];
+      at = 0;
     }
+    box.classList.toggle('is-gallery', gallery.length > 1);
+    show(gallery[at]);
     if (typeof box.showModal === 'function') { box.showModal(); } else { box.setAttribute('open', ''); }
   };
   document.addEventListener('click', function (event) {

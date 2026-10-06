@@ -200,8 +200,10 @@ def index(request: Request, session: DbSession, user: RequiredUser, surprise: st
 
     from app.services import celebrations, home_service, look, movie_gap_service, tv_spinoff_service, upcoming_service
 
-    gaps = movie_gap_service.collections_with_gaps(session, user.id)
     today = date.today()
+    # Every collection, once: the rows below want those with gaps, Up next wants every one.
+    every = movie_gap_service.collection_gaps(session, user.id, today=today)
+    gaps = [gap for gap in every if gap.has_gaps]
     upcoming = upcoming_service.upcoming_films(session, user.id, today=today)
     upcoming_soon = sum(
         1 for f in upcoming
@@ -215,6 +217,8 @@ def index(request: Request, session: DbSession, user: RequiredUser, surprise: st
             "library_counts": _library_counts(session),
             # The poster rows (0.45.0), from what this page reads anyway.
             "rows": [
+                ("Up next", "The next film you own and haven't watched, in sets you've started.",
+                 home_service.up_next(every), None, None),
                 ("Closest to complete", "Collections you're nearly done with.",
                  home_service.closest_to_complete(gaps), "/collections?sort=complete&dir=desc", "All collections"),
                 ("Coming in the next 90 days", "Announced films in franchises you own.",

@@ -497,6 +497,8 @@
 
 [data-look="showcase"] .sc-meter { align-items: center; display: flex; gap: 0.6rem; }
 [data-look="showcase"] .sc-meter progress.completeness { flex: 1; margin: 0; }
+[data-look="showcase"] .sc-bars { display: grid; flex: 1; gap: 0.3rem; }
+[data-look="showcase"] .sc-bars progress { margin: 0; }
 [data-look="showcase"] .sc-ring {
   animation: sc-ring-fill 1.2s var(--sc-ease) both;
   background: conic-gradient(var(--sc-glow) calc(var(--sc-p) * 1turn),
@@ -2041,6 +2043,25 @@
   [data-look="showcase"] .sc-box { flex-basis: 6rem; margin-bottom: var(--pico-spacing); width: 6rem; }
   [data-look="showcase"] .sc-lightbox-close { right: 0.5rem; top: 0.5rem; }
 }
+
+/* ---------------------------------------------------------------- lightbox gallery (0.72.0) */
+/* Previous and next at the sides when the set's strip is on the page; hidden otherwise. */
+[data-look="showcase"] .sc-lightbox-step {
+  display: none;
+  font-size: 1.6rem;
+  height: 3rem;
+  line-height: 1;
+  padding: 0;
+  position: fixed;
+  top: 50%;
+  translate: 0 -50%;
+  width: 3rem;
+  z-index: 2;
+}
+[data-look="showcase"] .sc-lightbox.is-gallery .sc-lightbox-step { display: block; }
+[data-look="showcase"] .sc-lightbox-prev { left: 1rem; }
+[data-look="showcase"] .sc-lightbox-next { right: 1rem; }
+[data-look="showcase"] .sc-lightbox-count { display: block; margin-top: 0.2rem; }
 
 /* ---------------------------------------------------------------- seats (0.71.0) */
 /* The set as cinema seats under the banner's count: lit for owned, empty for missing, a dashed

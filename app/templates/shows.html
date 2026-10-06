@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/poster_card.html" import poster_card %}
 {% from "partials/tile.html" import tile %}
 {% macro suggestion_card(poster, title, year, links, relationships, heuristic, add_url, add_target, dismiss_url, show=True) -%}
   {#- is-show: Showcase frames a show as an old TV screen (0.62.0). -#}
@@ -8,7 +9,7 @@
         <img src="{{ poster }}" alt="" loading="lazy" decoding="async" width="92" height="138">
       </div>
     {% else %}
-      <div class="collection-poster collection-poster--empty" aria-hidden="true"></div>
+      {{ poster_card(title, year) }}
     {% endif %}
     <header>
       <strong>{{ title }}</strong>
@@ -123,7 +124,7 @@
     </small></p>
     <div class="collection-grid collection-grid--compact collection-grid--owned">
       {% for show in shows %}
-        {% call tile(show_posters.get(show.tmdb_id), 'library-show', show=True) %}
+        {% call tile(show_posters.get(show.tmdb_id), 'library-show', show=True, title=show.title, year=show.year) %}
           <header><strong class="film-title">{{ show.title }}</strong></header>
           <p class="collection-counts muted"><span>{{ show.year or '' }}</span></p>
           <p class="card-actions">

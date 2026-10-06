@@ -99,6 +99,13 @@ def _solo_context(request) -> dict:  # noqa: ANN001 - a Starlette Request
         return {"solo": None}
 
 
+def title_hue(title: str) -> int:
+    """A hue (0-359) from a title, the same every time: a placeholder poster's tint (0.72.0)."""
+    import zlib
+
+    return zlib.crc32(title.casefold().encode("utf-8")) % 360
+
+
 def build_id() -> str:
     """The commit a develop image was built from, short; empty in a release (docs/DEVELOPMENT.md,
     Branches). A develop build keeps the last release's version number, so without this its
@@ -120,6 +127,11 @@ def build_templates(base_url: str) -> Jinja2Templates:
     templates.env.globals["sort_titles"] = sort_titles
     from app.services.sorting import decades
     templates.env.globals["decades"] = decades
+    from app.services.runtimes import hours, summary as runtime_summary, watched_of
+    templates.env.globals["watched_of"] = watched_of
+    templates.env.globals["runtime_summary"] = runtime_summary
+    templates.env.filters["hours"] = hours
+    templates.env.filters["title_hue"] = title_hue
     from app.services.timeline import decade_marks
     templates.env.globals["decade_marks"] = decade_marks
     from app.services import look as look_service
@@ -127,6 +139,7 @@ def build_templates(base_url: str) -> Jinja2Templates:
     templates.env.globals["look_of"] = look_service.of
     templates.env.globals["intros_of"] = look_service.intros_of
     templates.env.globals["effects_of"] = look_service.effects_of
+    templates.env.globals["density_of"] = look_service.density_of
     templates.env.globals["next_effects"] = look_service.next_effects
     import json
 

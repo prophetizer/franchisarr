@@ -536,7 +536,8 @@ def test_a_collection_with_no_artwork_renders_without_a_broken_image(
     body = client.get(f"{BASE}/collections").text
 
     assert "<img" not in body.split('class="collection-grid')[1].split("</article>")[0], "no <img> for a card without art"
-    assert 'collection-poster--empty' in body, "a placeholder keeps the card's text column aligned"
+    # Since 0.72.0 the placeholder is a designed card with the collection's name on it.
+    assert 'class="collection-poster poster-card"' in body, "a placeholder keeps the card's text column aligned"
     assert "image.tmdb.org" not in body
 
 

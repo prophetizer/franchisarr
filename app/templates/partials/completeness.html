@@ -1,8 +1,14 @@
 {# How complete a set is, as a thin bar under a card's counts (0.44.0). #}
-{% macro completeness(owned, missing) -%}
+{% macro completeness(owned, missing, watched=none) -%}
   {% if owned + missing %}
     <progress class="completeness" value="{{ owned }}" max="{{ owned + missing }}"
               aria-label="{{ owned }} of {{ owned + missing }} owned"
               title="{{ owned }} of {{ owned + missing }} owned ({{ (owned * 100 / (owned + missing)) | round | int }}%)"></progress>
+  {% endif %}
+  {#- How much of what's owned has been watched (0.72.0), when a server reports watched state. -#}
+  {% if watched is not none and owned %}
+    <progress class="watched-progress" value="{{ watched }}" max="{{ owned }}"
+              aria-label="{{ watched }} of {{ owned }} owned watched"
+              title="{{ watched }} of the {{ owned }} you own watched"></progress>
   {% endif %}
 {%- endmacro %}

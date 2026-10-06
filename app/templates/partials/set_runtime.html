@@ -1,0 +1,9 @@
+{#- How long the set runs (0.72.0): the films you own and how much of that is unwatched, from
+    what the media server reports. Nothing when no runtime is known yet (before the next scan). -#}
+{% macro set_runtime(owned) -%}
+  {% set rt = runtime_summary(owned) %}
+  {% if rt %}
+    <p class="set-runtime"><span aria-hidden="true">⏱</span>
+      {{ 'at least ' if rt.partial }}{{ rt.total | hours }} across the {{ rt.films }} film{{ '' if rt.films == 1 else 's' }} you own{% if rt.left is not none %}{% if rt.left == 0 %} · all watched{% elif rt.left < rt.total %} · {{ rt.left | hours }} still to watch{% endif %}{% endif %}</p>
+  {% endif %}
+{%- endmacro %}

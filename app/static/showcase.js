@@ -637,8 +637,18 @@
       if (!all) { return; }
       var meter = document.createElement('span');
       meter.className = 'sc-meter';
+      var watched = bar.nextElementSibling;
       bar.parentNode.insertBefore(meter, bar);
-      meter.appendChild(bar);
+      if (watched && watched.matches('progress.watched-progress')) {
+        // The watched bar (0.72.0) stacks under the owned one, both beside the ring.
+        var bars = document.createElement('span');
+        bars.className = 'sc-bars';
+        bars.appendChild(bar);
+        bars.appendChild(watched);
+        meter.appendChild(bars);
+      } else {
+        meter.appendChild(bar);
+      }
       var ring = document.createElement('span');
       ring.className = 'sc-ring';
       ring.setAttribute('aria-hidden', 'true');   // the bar already says it

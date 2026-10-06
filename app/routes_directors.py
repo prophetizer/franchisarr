@@ -29,7 +29,7 @@ def _url(path: str) -> str:
 @router.get("/directors", response_class=HTMLResponse)
 def directors(request: Request, session: DbSession, user: RequiredUser, sort: str | None = None,
               page: int = 1, dir: str | None = None):  # noqa: A002
-    from app.services import pagination, sorting
+    from app.services import az, pagination, sorting
 
     current = sorting.resolve(session, user.id, "directors", sort, dir)
     views = sorting.sort_groups(director_service.director_views(session, user.id), "directors", current)
@@ -42,6 +42,9 @@ def directors(request: Request, session: DbSession, user: RequiredUser, sort: st
             "user": user,
             "directors": pager.items,
             "pager": pager,
+            "az_rail": az.rail(sorting.sort_groups(views, "directors", ("name", "asc")), path=_url("/directors"),
+                               size=pager.size),
+            "az_ids": az.anchors(pager.items, current),
             "sort_ctl": sorting.control("directors", current, _url("/directors")),
             "floor": director_service.min_director_films(session),
             "total_missing": sum(len(v.missing) for v in views),

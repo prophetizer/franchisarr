@@ -32,6 +32,8 @@ class Owned:
     servers: tuple[str, ...] = ()
     #: Watched on any server; None when no server said either way.
     watched: bool | None = None
+    #: Running time in minutes, the longest any server reports (0.72.0); None if none did.
+    runtime: int | None = None
 
     @property
     def where(self) -> str:
@@ -41,7 +43,7 @@ class Owned:
 def owned_details(session: Session, item_type: str = ItemType.MOVIE.value) -> dict[int, Owned]:
     """Server names and watched state for every matched item of that type, by TMDb id."""
     rows = session.exec(
-        select(LibraryItem.tmdb_id, LibraryItem.watched, MediaServer.name)
+        select(LibraryItem.tmdb_id, LibraryItem.watched, MediaServer.name, LibraryItem.runtime)
         .join(MediaServer, col(MediaServer.id) == col(LibraryItem.server_id))
         .where(
             col(LibraryItem.item_type) == item_type,
@@ -52,8 +54,11 @@ def owned_details(session: Session, item_type: str = ItemType.MOVIE.value) -> di
     ).all()
     servers: dict[int, set[str]] = {}
     watched: dict[int, bool | None] = {}
-    for tmdb_id, seen, name in rows:
+    runtimes: dict[int, int] = {}
+    for tmdb_id, seen, name, runtime in rows:
         servers.setdefault(tmdb_id, set()).add(name)
+        if runtime and runtime > runtimes.get(tmdb_id, 0):
+            runtimes[tmdb_id] = runtime
         # True on any server wins; a False beats an unknown; unknown only when nobody said.
         current = watched.get(tmdb_id)
         if seen is True or current is True:
@@ -63,6 +68,6 @@ def owned_details(session: Session, item_type: str = ItemType.MOVIE.value) -> di
         else:
             watched[tmdb_id] = None
     return {
-        tmdb_id: Owned(servers=tuple(sorted(names)), watched=watched[tmdb_id])
+        tmdb_id: Owned(servers=tuple(sorted(names)), watched=watched[tmdb_id], runtime=runtimes.get(tmdb_id))
         for tmdb_id, names in servers.items()
     }

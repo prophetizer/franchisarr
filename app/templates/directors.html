@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/poster_card.html" import poster_card %}
 {% from "partials/completeness.html" import completeness %}
 {% block title %}Directors — Franchisarr{% endblock %}
 
@@ -33,13 +34,13 @@
 
   <div class="collection-grid collection-grid--compact">
     {% for d in directors %}
-      <article class="collection-card collection-card--compact">
+      <article class="collection-card collection-card--compact"{% if loop.index0 in az_ids %} id="{{ az_ids[loop.index0] }}"{% endif %}>
         {% if d.photo %}
           <a href="{{ url('/directors/' ~ d.person_id) }}" class="collection-poster">
             <img class="person-photo" src="{{ d.photo }}" alt="" loading="lazy" decoding="async" width="92" height="138">
           </a>
         {% else %}
-          <div class="collection-poster collection-poster--empty" aria-hidden="true"></div>
+          {{ poster_card(d.name) }}
         {% endif %}
         <header><a href="{{ url('/directors/' ~ d.person_id) }}"><strong>{{ d.name }}</strong></a></header>
         <p class="collection-counts">
@@ -50,7 +51,7 @@
             {% if d.upcoming %}<span class="count-upcoming">{{ d.upcoming | length }} coming</span>{% endif %}
           {% endif %}
         </p>
-        {% if not d.pending %}{{ completeness(d.owned | length, d.missing | length) }}{% endif %}
+        {% if not d.pending %}{{ completeness(d.owned | length, d.missing | length, watched_of(d.owned)) }}{% endif %}
         {% if d.missing %}
           <ul class="missing-preview">
             {% for movie in d.top_missing[:3] %}
@@ -66,6 +67,7 @@
     {% endfor %}
   </div>
   {% include "partials/pager.html" %}
+  {% include "partials/az_rail.html" %}
 {% else %}
   <p><a href="{{ url('/') }}" role="button" class="secondary">Run a scan</a></p>
 {% endif %}

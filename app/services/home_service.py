@@ -37,6 +37,24 @@ def closest_to_complete(gaps: list, limit: int = ROW) -> list[Card]:  # noqa: AN
                  g.small_poster, f"/collections/{g.collection_id}") for g in ranked[:limit]]
 
 
+def up_next(gaps: list, limit: int = ROW) -> list[Card]:  # noqa: ANN001 - CollectionGap, every one
+    """Up next (0.72.0, michael's pick): for each collection you've started watching, the first film
+    you own and haven't watched, in release order. Furthest along first. Only where a server
+    reports watched state; a set with nothing watched yet isn't "started"."""
+    picks = []
+    for g in gaps:
+        owned = sorted(g.owned, key=lambda m: (m.release_date or f"{m.release_year or 9999}", m.title.casefold()))
+        watched = sum(1 for m in owned if m.watched)
+        unwatched = [m for m in owned if m.watched is False]
+        if not watched or not unwatched:
+            continue
+        film = unwatched[0]
+        picks.append((watched / len(owned), Card(film.title, f"{g.name} · {watched} of {len(owned)} watched",
+                                                 film.poster, f"/collections/{g.collection_id}")))
+    picks.sort(key=lambda p: (-p[0], p[1].title.casefold()))
+    return [card for _, card in picks[:limit]]
+
+
 @dataclass(frozen=True)
 class Slide:
     """One slide of Showcase's spotlight (0.48.0): a collection nearly done, big."""

@@ -50,6 +50,8 @@ class Title:
     #: For owned titles: which servers hold it, and whether it has been watched on any.
     servers: tuple[str, ...] = ()
     watched: bool | None = None
+    #: Minutes, for owned films whose server reports it (0.72.0).
+    runtime: int | None = None
 
     @property
     def where(self) -> str:
@@ -387,7 +389,7 @@ def franchise_views(
 
     def with_ownership(t: Title) -> Title:
         info = (film_details if t.item_type == ItemType.MOVIE.value else show_details).get(t.tmdb_id)
-        return replace(t, servers=info.servers, watched=info.watched) if info else t
+        return replace(t, servers=info.servers, watched=info.watched, runtime=info.runtime) if info else t
 
     include_minor = include_tv_films(session)
 

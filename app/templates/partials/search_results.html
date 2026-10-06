@@ -14,7 +14,7 @@
       <h2>{{ heading }}</h2>
       <div class="collection-grid collection-grid--compact">
         {% for g in results[group] %}
-          {% call tile(g.image) %}
+          {% call tile(g.image, title=g.name) %}
             <header><a href="{{ url(g.path) }}"><strong class="film-title">{{ g.name }}</strong></a></header>
             <p class="collection-counts muted"><span>{{ g.detail }}</span></p>
           {% endcall %}
@@ -32,7 +32,7 @@
       <div class="collection-grid collection-grid--compact">
         {% for r in results[group] %}
           {% set film = r.item_type == 'movie' %}
-          {% call tile(r.poster, r.status if r.status in ('missing', 'upcoming') else '', show=r.item_type == 'show') %}
+          {% call tile(r.poster, r.status if r.status in ('missing', 'upcoming') else '', show=r.item_type == 'show', title=r.title, year=r.year) %}
             <header><strong class="film-title">{{ r.title }}</strong></header>
             <p class="collection-counts muted"><span>
               {{ r.year or '' }}{% if r.year %} · {% endif %}

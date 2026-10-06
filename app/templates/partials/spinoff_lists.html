@@ -9,7 +9,7 @@
     </small></p>
     <div class="collection-grid collection-grid--compact">
       {% for mapping in mappings %}
-        {% call tile(mapping.poster, 'mapping', show=True) %}
+        {% call tile(mapping.poster, 'mapping', show=True, title=mapping.spinoff_name) %}
           <header><strong class="film-title">{{ mapping.spinoff_name }}</strong></header>
           <p class="collection-counts muted"><span>spin-off of {{ mapping.source_name }}</span></p>
           {% if user and user.is_admin %}
