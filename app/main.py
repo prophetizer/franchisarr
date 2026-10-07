@@ -219,6 +219,8 @@ def index(request: Request, session: DbSession, user: RequiredUser, surprise: st
             "rows": [
                 ("Up next", "The next film you own and haven't watched, in sets you've started.",
                  home_service.up_next(every), None, None),
+                ("On this day", today.strftime("Films you own that came out on %-d %B."),
+                 home_service.on_this_day(session, today), None, None),
                 ("Closest to complete", "Collections you're nearly done with.",
                  home_service.closest_to_complete(gaps), "/collections?sort=complete&dir=desc", "All collections"),
                 ("Coming in the next 90 days", "Announced films in franchises you own.",

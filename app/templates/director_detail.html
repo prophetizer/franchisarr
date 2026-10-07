@@ -5,7 +5,8 @@
 {% from "partials/set_runtime.html" import set_runtime %}
 {% from "partials/trailer_button.html" import trailer_button %}
 {% macro row(movie, css, addable=True) -%}
-  {% call tile(movie.poster, css, ('movie/' ~ movie.tmdb_id) if css == 'missing' else None, title=movie.title, year=movie.year) %}
+  {% set nxt = next_to_watch(d.owned) if css == 'owned' else none %}
+  {% call tile(movie.poster, css, ('movie/' ~ movie.tmdb_id) if css == 'missing' else None, title=movie.title, year=movie.year, badge=movie.resolution if css == 'owned', ribbon=(nxt[1] if nxt and nxt[0] == movie.tmdb_id else None)) %}
     <header><strong class="film-title">{{ movie.title }}</strong> {% include "partials/rating.html" %}{% if css == 'owned' %}{% with entry=movie %}{% include "partials/owned_mark.html" %}{% endwith %}{% endif %}</header>
     <p class="collection-counts muted"><span>
       {% if css == 'upcoming' %}{% if movie.release_date %}expected <time datetime="{{ movie.release_date }}">{{ movie.release_date }}</time>{% else %}no release date{% endif %}

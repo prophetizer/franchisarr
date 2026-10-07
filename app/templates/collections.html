@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/poster_card.html" import poster_card %}
+{% from "partials/dot_strip.html" import dot_strip %}
 {% from "partials/completeness.html" import completeness %}
 {% from "partials/peek.html" import peek %}
 {% block title %}Collections — Franchisarr{% endblock %}
@@ -89,6 +90,7 @@
             <span class="count-upcoming">{{ gap.upcoming | length }} coming soon</span>
           {% endif %}
         </p>
+        {{ dot_strip(gap.owned, gap.missing, gap.upcoming) }}
         {{ completeness(gap.owned | length, gap.missing | length, watched_of(gap.owned)) }}
         <ul class="missing-preview">
           {% for movie in gap.missing[:3] %}

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/poster_card.html" import poster_card %}
+{% from "partials/dot_strip.html" import dot_strip %}
 {% from "partials/completeness.html" import completeness %}
 {% from "partials/peek.html" import peek %}
 {% block title %}Franchises — Franchisarr{% endblock %}
@@ -44,6 +45,7 @@
           {% if f.missing %}<span class="count-missing">{{ f.missing }} missing</span>{% endif %}
           {% if f.upcoming_films %}<span class="count-upcoming">{{ f.upcoming_films | length }} coming</span>{% endif %}
         </p>
+        {{ dot_strip(f.owned_films + f.owned_shows, f.missing_films + f.missing_shows, f.upcoming_films) }}
         {{ completeness(f.owned, f.missing, watched_of(f.owned_films + f.owned_shows)) }}
         <p><small class="muted">
           {% if f.owned_films %}{{ f.owned_films | length }} film{{ '' if f.owned_films | length == 1 else 's' }}{% endif %}{% if f.owned_films and f.owned_shows %} · {% endif %}{% if f.owned_shows %}{{ f.owned_shows | length }} show{{ '' if f.owned_shows | length == 1 else 's' }}{% endif %}

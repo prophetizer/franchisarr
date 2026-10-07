@@ -58,11 +58,34 @@ class Badge:
         return max(0, self.threshold - self.have)
 
 
+@dataclass(frozen=True)
+class Almost:
+    """A set a few titles from the shelf (0.72.0): what it is, how far along, and what's left."""
+
+    kind: str
+    name: str
+    path: str
+    image: str | None
+    have: int
+    total: int
+    left: tuple[str, ...]
+
+    @property
+    def to_go(self) -> int:
+        return self.total - self.have
+
+
+#: How few titles short a set has to be to count as almost on the shelf, and how many to show.
+ALMOST_WITHIN, ALMOST_SHOWN = 3, 8
+
+
 @dataclass
 class Case:
     collections: list[Trophy] = field(default_factory=list)
     franchises: list[Trophy] = field(default_factory=list)
     directors: list[Trophy] = field(default_factory=list)
+    #: Sets a few titles short of a trophy, fewest to go first (0.72.0).
+    almost: list[Almost] = field(default_factory=list)
 
     def count(self, kind: str) -> int:
         return len(getattr(self, kind))
@@ -111,7 +134,12 @@ def case(session: Session, *, now: datetime | None = None) -> Case:
         return when, now - when <= NEW_FOR
 
     collections = []
+    almost: list[Almost] = []
     for g in movie_gap_service.collection_gaps(session):
+        short = list(g.missing) + list(g.hidden)
+        if g.owned and 0 < len(short) <= ALMOST_WITHIN:
+            almost.append(Almost("collection", g.name, f"/collections/{g.collection_id}", g.small_poster,
+                                 len(g.owned), len(g.owned) + len(short), tuple(m.title for m in short)))
         if not g.owned or g.missing or g.hidden:
             continue
         when, new = dated(recorded.get(g.collection_id))
@@ -120,11 +148,19 @@ def case(session: Session, *, now: datetime | None = None) -> Case:
     # Newest first; the undated (complete before anyone was counting) after, by name.
     collections.sort(key=lambda t: (t.when is None, -(t.when.timestamp() if t.when else 0), t.name.casefold()))
 
+    views = franchise_service.franchise_views(session)
     franchises = [
         Trophy(f.name, f"/franchises/{f.wikidata_id}", f.small_poster,
                _films(len(f.owned_films), len(f.owned_shows)), mosaic=tuple(f.mosaic or ()))
-        for f in franchise_service.franchise_views(session) if f.owned and not f.missing
+        for f in views if f.owned and not f.missing
     ]
+    # A franchise that *is* a listed collection ("The Matrix" and "The Matrix Collection") would
+    # be the same set twice; the collection stands for both.
+    listed = [a.name for a in almost]
+    almost += [Almost("franchise", f.name, f"/franchises/{f.wikidata_id}", f.small_poster, f.owned, f.total,
+                      tuple(t.title for t in f.missing_films + f.missing_shows))
+               for f in views if f.owned and 0 < f.missing <= ALMOST_WITHIN
+               and not any(franchise_service._same_name(f.name, name) for name in listed)]
     franchises.sort(key=lambda t: t.name.casefold())
 
     directors = [
@@ -132,7 +168,8 @@ def case(session: Session, *, now: datetime | None = None) -> Case:
         for d in director_service.director_views(session) if d.owned and not d.missing and not d.pending
     ]
     directors.sort(key=lambda t: t.name.casefold())
-    return Case(collections, franchises, directors)
+    almost.sort(key=lambda a: (a.to_go, -a.have / a.total, a.name.casefold()))
+    return Case(collections, franchises, directors, almost[:ALMOST_SHOWN])
 
 
 #: Milestones a person has seen, for Showcase's "unlocked" moment (0.57.0).

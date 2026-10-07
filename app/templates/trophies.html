@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/poster_card.html" import poster_card %}
 {% block title %}Trophy case — Franchisarr{% endblock %}
 
 {% macro shelf(items, kind) -%}
@@ -31,6 +32,28 @@
     {% endif %}
   </p>
 </hgroup>
+
+{% if case.almost %}
+  {#- Almost on the shelf (0.72.0): sets a few titles short, and which titles. -#}
+  <section class="trophy-almost" aria-labelledby="almost-heading">
+    <h2 id="almost-heading">Almost on the shelf</h2>
+    <ul>
+      {% for a in case.almost %}
+        <li>
+          <a href="{{ url(a.path) }}" class="trophy-almost-poster" tabindex="-1" aria-hidden="true">
+            {% if a.image %}<img src="{{ a.image }}" alt="" loading="lazy" decoding="async" width="92" height="138">{% else %}{{ poster_card(a.name) }}{% endif %}
+          </a>
+          <div>
+            <a href="{{ url(a.path) }}"><strong>{{ a.name }}</strong></a>
+            <small class="muted">{{ a.kind }} · {{ a.to_go }} to go</small>
+            <progress value="{{ a.have }}" max="{{ a.total }}" aria-label="{{ a.have }} of {{ a.total }}"></progress>
+            <small>{{ a.left | join(', ') }}</small>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endif %}
 
 {% if case.earned or case.next_up %}
   <section class="trophy-badges" aria-label="Milestones">

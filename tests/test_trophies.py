@@ -85,7 +85,10 @@ def test_the_page_is_for_everyone_and_in_the_menu(client: TestClient) -> None:  
     page = client.get(f"{BASE}/trophies")
 
     assert page.status_code == 200
-    assert "Cars Collection" in page.text and "Die Hard Collection" not in page.text
+    shelves = page.text.split('aria-label="Milestones"', 1)[-1]   # past "Almost on the shelf" (0.72.0)
+    assert "Cars Collection" in shelves and "Die Hard Collection" not in shelves
+    almost = page.text.split('id="almost-heading"', 1)[1].split("</section>", 1)[0]
+    assert "Die Hard Collection" in almost and "to go" in almost, "a set a film short is almost on the shelf"
     assert "First complete collection" in page.text and "25 complete collections" not in page.text
     assert f'href="{BASE}/trophies"' in client.get(f"{BASE}/collections").text
 

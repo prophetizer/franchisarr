@@ -53,6 +53,11 @@
       <script src="{{ asset('/static/showcase-intros.js') }}" defer></script>
       <script src="{{ asset('/static/showcase-cinema.js') }}" defer></script>
     {% endif %}
+    {% if user is defined and user %}
+      {#- Both looks (0.72.0): the ? shortcut sheet and g-then-letter jumps, and the share card. -#}
+      <script src="{{ asset('/static/keys.js') }}" data-base="{{ url('') }}" defer></script>
+      <script src="{{ asset('/static/share.js') }}" defer></script>
+    {% endif %}
     <script src="{{ asset('/static/htmx.min.js') }}" defer></script>
     <script src="{{ asset('/static/alpine.min.js') }}" defer></script>
     {% block head %}{% endblock %}

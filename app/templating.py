@@ -127,12 +127,14 @@ def build_templates(base_url: str) -> Jinja2Templates:
     templates.env.globals["sort_titles"] = sort_titles
     from app.services.sorting import decades
     templates.env.globals["decades"] = decades
-    from app.services.runtimes import hours, summary as runtime_summary, watched_of
+    from app.services.runtimes import hours, next_to_watch, summary as runtime_summary, watched_of
     templates.env.globals["watched_of"] = watched_of
+    templates.env.globals["next_to_watch"] = next_to_watch
     templates.env.globals["runtime_summary"] = runtime_summary
     templates.env.filters["hours"] = hours
     templates.env.filters["title_hue"] = title_hue
-    from app.services.timeline import decade_marks
+    from app.services.timeline import build as release_steps, decade_marks
+    templates.env.globals["release_steps"] = release_steps
     templates.env.globals["decade_marks"] = decade_marks
     from app.services import look as look_service
 

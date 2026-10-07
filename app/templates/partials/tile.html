@@ -6,14 +6,20 @@
    Used inside <div class="collection-grid collection-grid--compact">, or --owned for the smaller
    tiles of titles already in the library. #}
 {% from "partials/poster_card.html" import poster_card %}
-{% macro tile(poster, css='', about=None, show=False, title=None, year=None) -%}
+{% macro marks(badge, ribbon) -%}
+  {% if ribbon %}<span class="poster-ribbon">{{ ribbon }}</span>{% endif %}
+  {% if badge %}<span class="quality-badge quality-badge--{{ badge | lower }}" title="Your best copy: {{ badge }}">{{ badge }}</span>{% endif %}
+{%- endmacro %}
+{% macro tile(poster, css='', about=None, show=False, title=None, year=None, badge=None, ribbon=None) -%}
   {#- about ("movie/603", "show/1399"): Showcase flips the poster over to its plot (0.51.0).
       show: a TV show, which Showcase frames as an old TV screen (0.62.0).
-      title, year: for the designed placeholder when there's no poster (0.72.0). -#}
+      title, year: for the designed placeholder when there's no poster (0.72.0).
+      badge: an owned film's resolution ("4K"...); ribbon: "Next" / "Start here" (both 0.72.0). -#}
   <article class="collection-card collection-card--compact film-tile {{ css }}{% if show %} is-show{% endif %}"{% if about %} data-about="{{ about }}"{% endif %}>
     {% if poster %}
-      <div class="collection-poster">
+      <div class="collection-poster{% if badge or ribbon %} has-marks{% endif %}">
         <img src="{{ poster }}" alt="" loading="lazy" decoding="async" width="92" height="138">
+        {{ marks(badge, ribbon) }}
       </div>
     {% elif title %}
       {{ poster_card(title, year) }}

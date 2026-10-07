@@ -42,6 +42,9 @@
 </div>
 
 {% include "partials/playlist_result_area.html" %}
+{% if part_of %}
+  <p class="link-chips"><span>Part of</span>{% for wid, name in part_of %}<a href="{{ url('/franchises/' ~ wid) }}">{{ name }} →</a>{% endfor %}</p>
+{% endif %}
 {% include "partials/timeline.html" %}
 <div class="gap-controls">{% include "partials/sort_control.html" %}</div>
 
@@ -114,7 +117,7 @@
     <h2>In your library</h2>
     <div class="collection-grid collection-grid--compact collection-grid--owned">
       {% for decade, movie in decades(sort_titles(gap.owned, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}
-        {% call tile(movie.poster, 'owned', title=movie.title, year=movie.release_year) %}
+        {% call tile(movie.poster, 'owned', title=movie.title, year=movie.release_year, badge=movie.resolution, ribbon=(nxt[1] if nxt and nxt[0] == movie.tmdb_id else None)) %}
           <header><strong class="film-title">{{ movie.title }}</strong>{% with entry=movie %}{% include "partials/owned_mark.html" %}{% endwith %}</header>
           <p class="collection-counts muted"><span>{{ movie.release_year or '' }}</span></p>
         {% endcall %}
@@ -126,4 +129,4 @@
 {% with name = gap.name %}{% include "partials/end_credits.html" %}{% endwith %}
 
 <div id="add-dialog"></div>
-{% endblock %}
+{% endblock %}{% set nxt = next_to_watch(gap.owned) %}

@@ -46,6 +46,8 @@ class DirectorTitle:
     #: For owned films: which servers hold it, and whether it has been watched on any.
     servers: tuple[str, ...] = ()
     watched: bool | None = None
+    #: "4K", "1080p"... for owned films whose server reports it (0.72.0).
+    resolution: str | None = None
 
     @property
     def where(self) -> str:
@@ -372,7 +374,8 @@ def director_views(
             if t.tmdb_id in owned_ids or t.tmdb_id in owned:
                 info = details.get(t.tmdb_id)
                 view.owned.append(replace(t, servers=info.servers, watched=info.watched,
-                                          runtime=info.runtime or t.runtime) if info else t)
+                                          runtime=info.runtime or t.runtime,
+                                          resolution=info.resolution) if info else t)
             elif t.tmdb_id in in_radarr or t.tmdb_id in dismissed:
                 continue
             elif not t.is_released(today):

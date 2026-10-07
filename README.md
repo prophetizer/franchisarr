@@ -276,6 +276,16 @@ owned bar, and a detail page says how long the set runs (*9h 40m across the 5 fi
 sets, genres and the directors you own most. **▤ Density** under your name switches every grid
 to compact cards, about twice as many on a screen.
 
+Owned posters carry their best copy's resolution (**4K**, 1080p…, from your server's listing),
+and the film to watch next in a set is marked **Next** (or **Start here**). List cards show their
+set as a row of dots in release order — filled for owned, hollow for missing — so the gaps show
+at a glance. A collection page says which franchises it's **part of**, and a franchise page lists
+its collections. The home page has **On this day** (films you own released on today's date), the
+Trophy case has **Almost on the shelf** (sets a few titles short, and which), and **⤴ Share** on a
+set's release strip makes a picture of it — posters in order, missing ones dimmed — drawn in
+your browser. Press **?** for the keyboard shortcuts, and **g** then a letter to jump (g c:
+Collections).
+
 When a scan finds you've completed a collection — every released film of it in your library —
 Showcase throws **confetti** with a "Collection complete!" message, once for each person, on
 their next visit to the home page or that collection. (Collections already complete when you

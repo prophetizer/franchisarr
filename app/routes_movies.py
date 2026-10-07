@@ -160,7 +160,8 @@ def collection_detail(
     sort: str | None = None, dir: str | None = None,  # noqa: A002
 ):
     gap = _gap_or_404(session, user, collection_id)
-    from app.services import celebrations, franchisarr_playlists, media_server_service, playlist_service, sorting, timeline
+    from app.services import (celebrations, franchisarr_playlists, franchise_service, media_server_service,
+                              playlist_service, sorting, timeline)
 
     detail_sort = sorting.resolve(session, user.id, "detail", sort, dir)
     steps = timeline.build(gap.owned, gap.missing, gap.upcoming)
@@ -175,6 +176,8 @@ def collection_detail(
          "playlist_kept": franchisarr_playlists.kept_on(session, "collections", str(collection_id)),
          "timeline": steps,
          "horror": mood == "horror", "mood": mood,
+         # "Part of" chips (0.72.0): the franchises its films belong to.
+         "part_of": franchise_service.for_collection(session, collection_id),
          "credits": end_credits.for_page(session, user, steps),
          "celebrations": celebrations.for_page(session, user, collection_id),
          "detail_sort": detail_sort,

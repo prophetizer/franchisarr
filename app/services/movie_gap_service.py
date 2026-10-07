@@ -64,6 +64,8 @@ class MissingMovie:
     watched: bool | None = None
     #: Minutes, for owned films whose server reports it (0.72.0).
     runtime: int | None = None
+    #: "4K", "1080p"... for owned films whose server reports it (0.72.0).
+    resolution: str | None = None
 
     @property
     def where(self) -> str:
@@ -353,6 +355,7 @@ def collection_gaps(
                 servers=info.servers if info else (),
                 watched=info.watched if info else None,
                 runtime=info.runtime if info else None,
+                resolution=info.resolution if info else None,
             )
             if tmdb_id in owned:
                 owned_here.append(entry)

@@ -24,6 +24,7 @@ import requests
 from app import __version__
 
 from app.clients.media_server import (
+    resolution_from_width,
     PlaylistEntry,
     PlaylistInfo,
     PlaylistItemRef,
@@ -471,7 +472,9 @@ class EmbyLikeClient:
                 "ParentId": str(library_key),
                 "Recursive": "true",
                 "IncludeItemTypes": item_type,
-                "Fields": "ProviderIds,ProductionYear",
+                # Width (0.72.0): the resolution badge; a server that doesn't know the field
+                # ignores it.
+                "Fields": "ProviderIds,ProductionYear,Width",
                 "StartIndex": start,
                 "Limit": PAGE_SIZE,
             }
@@ -495,6 +498,7 @@ class EmbyLikeClient:
                 external_ids=_external_ids(item.get("ProviderIds")),
                 watched=_watched(item),
                 runtime=_runtime(item.get("RunTimeTicks")),
+                resolution=resolution_from_width(item.get("Width")),
             )
 
     def iter_shows(self, library_key: str | int) -> Iterator[MediaShow]:

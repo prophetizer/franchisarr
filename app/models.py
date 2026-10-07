@@ -407,6 +407,9 @@ class LibraryItem(SQLModel, table=True):
     #: A film's running time in minutes, as the server reports it (0.72.0): for the detail pages'
     #: "how long is the set" line. None for shows, and until the next scan.
     runtime: int | None = Field(default=None)
+    #: The best copy's resolution, "4K" / "1080p" / "720p" / "SD", as the server's listing says
+    #: (0.72.0): the owned posters' quality badge. None for shows, and until the next scan.
+    resolution: str | None = Field(default=None)
 
     last_seen_at: datetime = Field(default_factory=utcnow, index=True)
     #: When a scan first found it, for the home page's "Just added" (0.45.0). None for rows from

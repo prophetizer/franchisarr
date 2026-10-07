@@ -16,6 +16,7 @@ from dataclasses import dataclass
 
 from sqlmodel import Session, col, select
 
+from app.clients.media_server import best_resolution
 from app.models import ItemType, LibraryItem, MediaServer
 
 
@@ -34,6 +35,8 @@ class Owned:
     watched: bool | None = None
     #: Running time in minutes, the longest any server reports (0.72.0); None if none did.
     runtime: int | None = None
+    #: The best resolution any server holds it in (0.72.0); None if none said.
+    resolution: str | None = None
 
     @property
     def where(self) -> str:
@@ -43,7 +46,8 @@ class Owned:
 def owned_details(session: Session, item_type: str = ItemType.MOVIE.value) -> dict[int, Owned]:
     """Server names and watched state for every matched item of that type, by TMDb id."""
     rows = session.exec(
-        select(LibraryItem.tmdb_id, LibraryItem.watched, MediaServer.name, LibraryItem.runtime)
+        select(LibraryItem.tmdb_id, LibraryItem.watched, MediaServer.name, LibraryItem.runtime,
+               LibraryItem.resolution)
         .join(MediaServer, col(MediaServer.id) == col(LibraryItem.server_id))
         .where(
             col(LibraryItem.item_type) == item_type,
@@ -55,7 +59,9 @@ def owned_details(session: Session, item_type: str = ItemType.MOVIE.value) -> di
     servers: dict[int, set[str]] = {}
     watched: dict[int, bool | None] = {}
     runtimes: dict[int, int] = {}
-    for tmdb_id, seen, name, runtime in rows:
+    resolutions: dict[int, str | None] = {}
+    for tmdb_id, seen, name, runtime, resolution in rows:
+        resolutions[tmdb_id] = best_resolution(resolutions.get(tmdb_id), resolution)
         servers.setdefault(tmdb_id, set()).add(name)
         if runtime and runtime > runtimes.get(tmdb_id, 0):
             runtimes[tmdb_id] = runtime
@@ -68,6 +74,7 @@ def owned_details(session: Session, item_type: str = ItemType.MOVIE.value) -> di
         else:
             watched[tmdb_id] = None
     return {
-        tmdb_id: Owned(servers=tuple(sorted(names)), watched=watched[tmdb_id], runtime=runtimes.get(tmdb_id))
+        tmdb_id: Owned(servers=tuple(sorted(names)), watched=watched[tmdb_id], runtime=runtimes.get(tmdb_id),
+                       resolution=resolutions.get(tmdb_id))
         for tmdb_id, names in servers.items()
     }

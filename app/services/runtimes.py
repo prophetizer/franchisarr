@@ -43,6 +43,23 @@ def watched_of(owned: Iterable) -> int | None:  # noqa: ANN001
     return sum(1 for t in titles if t.watched)
 
 
+def next_to_watch(owned: Iterable) -> tuple[int, str] | None:  # noqa: ANN001
+    """The owned film to watch next, in release order, and its ribbon (0.72.0): "Next" in a set
+    you've started, "Start here" in one you haven't. None when everything's watched or no server
+    reports watched state."""
+    films = [t for t in owned if (getattr(t, "item_type", None) or "movie") == "movie"]
+    if not any(getattr(t, "watched", None) is not None for t in films):
+        return None
+    def when(t) -> str:  # noqa: ANN001
+        year = getattr(t, "year", None) or getattr(t, "release_year", None)
+        return getattr(t, "release_date", None) or (f"{year}-99" if year else "9999")
+    ordered = sorted(films, key=lambda t: (when(t), t.title.casefold()))
+    unwatched = [t for t in ordered if not t.watched]
+    if not unwatched:
+        return None
+    return unwatched[0].tmdb_id, ("Next" if len(unwatched) < len(ordered) else "Start here")
+
+
 def hours(minutes: int | None) -> str:
     """142 -> "2h 22m"; 50 -> "50m"; 120 -> "2h"."""
     if not minutes:

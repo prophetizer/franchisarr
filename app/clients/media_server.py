@@ -71,6 +71,8 @@ class MediaItem:
     watched: bool | None = None
     #: Running time in whole minutes, when the listing carries it (films; 0.72.0).
     runtime: int | None = None
+    #: The best copy's resolution: "4K", "1080p", "720p" or "SD" (films; 0.72.0).
+    resolution: str | None = None
 
     @property
     def has_external_ids(self) -> bool:
@@ -266,3 +268,24 @@ def _edit_once(client, playlist_id: str, wanted: list[tuple[str, object]]) -> bo
         client.move_playlist_entry(playlist_id, entry[0], index, after)
         entries.insert(index, entry)
     return True
+
+
+#: Resolutions best first, for picking the best of several copies or servers (0.72.0).
+RESOLUTIONS = ("4K", "1080p", "720p", "SD")
+
+
+def resolution_from_width(width) -> str | None:  # noqa: ANN001 - whatever the server said
+    """A video's resolution from its frame width; None when unknown. By width, not height: a
+    widescreen 1080p film is 1920 wide and often well under 1080 tall."""
+    try:
+        w = int(width)
+    except (TypeError, ValueError):
+        return None
+    if w <= 0:
+        return None
+    return "4K" if w >= 3200 else "1080p" if w >= 1800 else "720p" if w >= 1200 else "SD"
+
+
+def best_resolution(*values: str | None) -> str | None:
+    known = [v for v in values if v in RESOLUTIONS]
+    return min(known, key=RESOLUTIONS.index) if known else None

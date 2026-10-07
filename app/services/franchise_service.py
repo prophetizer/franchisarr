@@ -52,6 +52,8 @@ class Title:
     watched: bool | None = None
     #: Minutes, for owned films whose server reports it (0.72.0).
     runtime: int | None = None
+    #: "4K", "1080p"... for owned films whose server reports it (0.72.0).
+    resolution: str | None = None
 
     @property
     def where(self) -> str:
@@ -83,6 +85,9 @@ class FranchiseView:
     poster_path: str | None = None
     backdrop_path: str | None = None
     logo_url: str | None = None
+    #: The TMDb collections its owned films belong to, (id, name), biggest share first: the
+    #: franchise page's chips (0.72.0).
+    collections: list[tuple[int, str]] = field(default_factory=list)
 
     @property
     def owned(self) -> int:
@@ -389,7 +394,8 @@ def franchise_views(
 
     def with_ownership(t: Title) -> Title:
         info = (film_details if t.item_type == ItemType.MOVIE.value else show_details).get(t.tmdb_id)
-        return replace(t, servers=info.servers, watched=info.watched, runtime=info.runtime) if info else t
+        return replace(t, servers=info.servers, watched=info.watched, runtime=info.runtime,
+                       resolution=info.resolution) if info else t
 
     include_minor = include_tv_films(session)
 
@@ -493,6 +499,8 @@ def franchise_views(
                     view.missing_shows, view.upcoming_films, view.specials):
             lst.sort(key=lambda t: (t.year or 9999, t.title.casefold()))
         _pick_art(view, candidates, len(film_ids))
+        view.collections = [(gap.collection_id, gap.name)
+                            for gap, _ in sorted(candidates, key=lambda pair: (-pair[1], pair[0].name.casefold()))]
         views.append(view)
 
     views.sort(key=lambda v: (-v.owned, v.name.casefold()))
@@ -544,3 +552,19 @@ def franchise_view(session: Session, wikidata_id: str, user_id: int | None = Non
         if view.wikidata_id == wikidata_id:
             return view
     return None
+
+
+def for_collection(session: Session, collection_id: int, limit: int = 3) -> list[tuple[str, str]]:
+    """The franchises a collection's films belong to, (wikidata_id, name), most of its films
+    first: the collection page's "Part of" chips (0.72.0). One query; every franchise row has a
+    page, so every chip goes somewhere."""
+    from collections import Counter
+
+    films = select(TmdbCollectionMovie.tmdb_movie_id).where(col(TmdbCollectionMovie.collection_id) == collection_id)
+    rows = session.exec(
+        select(Franchise.wikidata_id, Franchise.name)
+        .join(FranchiseMember, col(FranchiseMember.franchise_id) == col(Franchise.wikidata_id))
+        .where(col(FranchiseMember.item_type) == ItemType.MOVIE.value, col(FranchiseMember.tmdb_id).in_(films))
+    ).all()
+    counts = Counter(rows)
+    return [pair for pair, _ in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0][1].casefold()))][:limit]

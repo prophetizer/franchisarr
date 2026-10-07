@@ -1349,3 +1349,74 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
 [data-density="compact"] .collection-card--compact > .missing-preview { display: none; }
 [data-density="compact"] .collection-card--compact .card-actions button { font-size: 0.8rem; padding: 0.25rem 0.55rem; }
 [data-density="compact"] .collection-card--compact progress.completeness { margin-bottom: 0.25rem; }
+
+/* ---------------------------------------------------------------- poster marks (0.72.0) */
+/* On an owned poster: its best copy's resolution in the corner, and "Next" / "Start here" on
+   the film to watch next in release order. */
+.collection-poster.has-marks { align-self: start; position: relative; }
+.collection-poster.has-marks img { display: block; }
+.film-tile.owned .collection-poster:has(.poster-ribbon) { opacity: 1; }   /* the next one isn't dimmed */
+.quality-badge {
+  background: color-mix(in srgb, var(--pico-background-color) 80%, transparent);
+  border-radius: 0.2rem;
+  bottom: 0.25rem;
+  color: var(--pico-muted-color);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 0.15rem 0.25rem;
+  position: absolute;
+  right: 0.25rem;
+}
+.quality-badge--4k { background: var(--pico-primary-background); color: var(--pico-primary-inverse); }
+.poster-ribbon {
+  background: var(--pico-primary-background);
+  border-radius: 0 0 0.25rem 0;
+  color: var(--pico-primary-inverse);
+  font-size: 0.6rem;
+  font-weight: 700;
+  left: 0;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  padding: 0.2rem 0.35rem;
+  position: absolute;
+  text-transform: uppercase;
+  top: 0;
+}
+
+/* ---------------------------------------------------------------- dot strip (0.72.0) */
+/* A list card's set in release order as dots: filled owned, hollow missing, dashed coming. */
+.dot-strip { display: flex; flex-wrap: wrap; gap: 0.18rem; list-style: none; margin: 0 0 0.4rem; padding: 0; }
+.dot-strip li { border: 1.5px solid var(--pico-primary); border-radius: 50%; height: 0.5rem; list-style: none; margin: 0; width: 0.5rem; }
+.dot-strip .dot--owned { background: var(--pico-primary); }
+.dot-strip .dot--upcoming { border-style: dashed; opacity: 0.6; }
+.dot-strip .dot-more { border: none; color: var(--pico-muted-color); font-size: 0.65rem; height: auto; line-height: 0.5rem; width: auto; }
+[data-density="compact"] .dot-strip { display: none; }
+
+/* ---------------------------------------------------------------- franchise chips (0.72.0) */
+.link-chips { align-items: center; display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0 0 var(--pico-block-spacing-vertical); }
+.link-chips > span { color: var(--pico-muted-color); font-size: 0.85rem; margin-right: 0.15rem; }
+.link-chips a {
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  padding: 0.15rem 0.7rem;
+  text-decoration: none;
+}
+.link-chips a:hover { border-color: var(--pico-primary); }
+
+/* ---------------------------------------------------------------- almost on the shelf (0.72.0) */
+.trophy-almost ul { display: grid; gap: var(--pico-spacing); grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); list-style: none; padding: 0; }
+.trophy-almost li { align-items: start; display: grid; gap: 0.75rem; grid-template-columns: 3.5rem 1fr; list-style: none; margin: 0; }
+.trophy-almost li > div { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.trophy-almost-poster img { border-radius: var(--pico-border-radius); display: block; width: 100%; }
+.trophy-almost progress { height: 0.35rem; margin: 0.2rem 0; }
+
+/* ---------------------------------------------------------------- share and shortcuts (0.72.0) */
+.timeline-share { font-size: 0.8rem; margin: 0 0 0 auto; padding: 0.2rem 0.7rem; width: auto; }
+.timeline-heading:has(.timeline-share:not([hidden])) { align-items: center; display: flex; flex-wrap: wrap; gap: 0 0.5rem; }
+.key-sheet article { max-width: 26rem; }
+.key-sheet table { margin: 0; }
+.key-sheet td { font-size: 0.9rem; padding: 0.35rem 0.5rem; }
+.key-sheet kbd { font-size: 0.8rem; }

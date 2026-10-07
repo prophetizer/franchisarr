@@ -15,7 +15,9 @@
         <circle class="timeline-ring-fill" cx="18" cy="18" r="15.9" pathLength="100"></circle>
       </svg>
       <strong>In release order</strong>
-      <small class="muted">{{ have }} of {{ timeline | length - coming }}{% if coming %}, {{ coming }} coming{% endif %} — dimmed ones you don't have{% if user and user.is_admin %}; pick one to add it{% endif %}</small></p>
+      <small class="muted">{{ have }} of {{ timeline | length - coming }}{% if coming %}, {{ coming }} coming{% endif %} — dimmed ones you don't have{% if user and user.is_admin %}; pick one to add it{% endif %}</small>
+      {#- The set as a picture to share (0.72.0): drawn in the browser by share.js, which shows the button. -#}
+      <button type="button" class="secondary outline timeline-share" data-share-set data-summary="{{ have }} of {{ released }}" hidden>⤴ Share</button></p>
     {#- Where each decade starts (0.71.0): a director's career reads by decade. -#}
     {% set marks = decade_marks(timeline) %}
     <ol class="timeline-strip">

@@ -4,10 +4,13 @@
     <Guid id="imdb://tt0086960"/>
     <Guid id="tmdb://90"/>
     <Guid id="tvdb://12345"/>
+    <Media id="1" videoResolution="4k" width="3840" height="1608" container="mkv"/>
   </Video>
   <Video ratingKey="1002" key="/library/metadata/1002" guid="plex://movie/5d7768ba96b655001fdc0409" studio="Paramount Pictures" type="movie" title="Beverly Hills Cop II" type2="movie" year="1987" duration="6300000" addedAt="1700000000" updatedAt="1700000001">
     <Guid id="imdb://tt0092644"/>
     <Guid id="tmdb://96"/>
+    <Media id="2" videoResolution="720" width="1280" height="534"/>
+    <Media id="3" videoResolution="1080" width="1920" height="800"/>
   </Video>
   <Video ratingKey="1003" key="/library/metadata/1003" guid="plex://movie/5d7768ba96b655001fdc040a" type="movie" title="An Unmatched Film" addedAt="1700000000" updatedAt="1700000001"/>
 </MediaContainer>

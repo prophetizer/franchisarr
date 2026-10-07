@@ -28,6 +28,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   own choice.
 - Showcase: the poster **lightbox steps through the whole set** — arrows, the arrow keys or a
   swipe — each poster captioned owned, missing or coming.
+- **Quality badges.** Owned posters show their best copy's resolution — 4K, 1080p, 720p or SD —
+  read from the server's listing at scan time (no extra requests; HDR isn't in the listing). It
+  appears after the next scan.
+- **Next / Start here.** On a detail page, the owned film to watch next in release order is
+  marked, and not dimmed with the rest of what you own.
+- **Dot strips.** Collection and franchise cards show their set as dots in release order: filled
+  owned, hollow missing, dashed coming.
+- **Franchise chips.** A collection page says which franchises it's part of; a franchise page
+  lists its collections.
+- **On this day** on the home page: films you own released on today's date in earlier years.
+- **Almost on the shelf** in the Trophy case: sets a few titles short of a trophy, and which
+  titles.
+- **⤴ Share** on a set's release strip: a picture of the set — posters in release order, missing
+  ones dimmed, its name and how much you have — drawn in the browser, shared through the phone's
+  share sheet or saved as a PNG. Nothing is uploaded.
+- **Keyboard shortcuts.** ? lists them; g then a letter jumps to a section (g c, g f, g u...).
 - Dependencies: FastAPI 0.142.2.
 
 ## [0.71.1] — 2026-10-03

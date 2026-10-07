@@ -30,6 +30,8 @@ import requests
 from requests.exceptions import RequestException
 
 from app.clients.media_server import (
+    best_resolution,
+    resolution_from_width,
     MediaItem,
     MediaLibrary,
     MediaLibraryNotFoundError,
@@ -483,7 +485,24 @@ def _to_item(raw, seen_unknown: set[str]) -> PlexItem:  # noqa: ANN001 - a plexa
         guids=all_guids,
         watched=_watched(raw),
         runtime=_runtime(_attr(raw, "duration")),
+        resolution=_resolution(raw),
     )
+
+
+_PLEX_RESOLUTIONS = {"4k": "4K", "2160": "4K", "1080": "1080p", "720": "720p", "576": "SD", "480": "SD", "sd": "SD"}
+
+
+def _resolution(raw) -> str | None:  # noqa: ANN001 - a plexapi Video
+    """The best copy's resolution from the listing's Media elements -- built from the item's own
+    XML as `_guid_strings` builds guids (plexapi 4.18 makes `media` lazy), so no request."""
+    data = raw.__dict__.get("_data")
+    if data is None:
+        return None
+    found = []
+    for media in raw.findItems(data, plexapi.media.Media):
+        label = _PLEX_RESOLUTIONS.get(str(media.__dict__.get("videoResolution") or "").lower())
+        found.append(label or resolution_from_width(media.__dict__.get("width")))
+    return best_resolution(*found)
 
 
 def _runtime(milliseconds) -> int | None:  # noqa: ANN001 - whatever the listing held

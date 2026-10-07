@@ -55,6 +55,44 @@ def up_next(gaps: list, limit: int = ROW) -> list[Card]:  # noqa: ANN001 - Colle
     return [card for _, card in picks[:limit]]
 
 
+def on_this_day(session: Session, today: date, limit: int = ROW) -> list[Card]:
+    """On this day (0.72.0, michael's pick): films you own released on today's date in an earlier
+    year, oldest anniversary first. Exact dates are known for films in collections and in
+    directors' filmographies; the rest only have a year, so can't take part."""
+    from urllib.parse import quote
+
+    from app.services.artwork import SMALL_CARD_SIZE, poster_url
+    from app.services.movie_gap_service import owned_tmdb_ids
+
+    owned = owned_tmdb_ids(session)
+    if not owned:
+        return []
+    day = today.strftime("-%m-%d")
+    found: dict[int, tuple] = {}
+    for tmdb_id, title, released, poster, collection_id in session.exec(
+            select(TmdbCollectionMovie.tmdb_movie_id, TmdbCollectionMovie.title, TmdbCollectionMovie.release_date,
+                   TmdbCollectionMovie.poster_path, TmdbCollectionMovie.collection_id)
+            .where(col(TmdbCollectionMovie.tmdb_movie_id).in_(owned), col(TmdbCollectionMovie.release_date).like(f"%{day}"))):
+        found.setdefault(tmdb_id, (title, released, poster, f"/collections/{collection_id}"))
+    for tmdb_id, title, released, poster in session.exec(
+            select(DirectorFilm.tmdb_movie_id, DirectorFilm.title, DirectorFilm.release_date, DirectorFilm.poster_path)
+            .where(col(DirectorFilm.tmdb_movie_id).in_(owned), col(DirectorFilm.release_date).like(f"%{day}"))):
+        found.setdefault(tmdb_id, (title, released, poster, f"/search?q={quote(title)}"))
+    cards = []
+    for title, released, poster, path in found.values():
+        try:
+            year = int(released[:4])
+        except (TypeError, ValueError):
+            continue
+        if year >= today.year:
+            continue
+        ago = today.year - year
+        cards.append((year, Card(title, f"{year} · {ago} year{'' if ago == 1 else 's'} ago today",
+                                 poster_url(poster, SMALL_CARD_SIZE), path)))
+    cards.sort(key=lambda pair: (pair[0], pair[1].title.casefold()))
+    return [card for _, card in cards[:limit]]
+
+
 @dataclass(frozen=True)
 class Slide:
     """One slide of Showcase's spotlight (0.48.0): a collection nearly done, big."""

@@ -1,0 +1,11 @@
+{#- A list card's set in release order as dots (0.72.0): filled for owned, hollow for missing,
+    dashed for coming. Up to 40; past that a "+N". -#}
+{% macro dot_strip(owned, missing, upcoming=()) -%}
+  {% set steps = release_steps(owned, missing, upcoming) %}
+  {% if steps | length > 1 %}
+    <ol class="dot-strip" aria-hidden="true">
+      {% for s in steps[:40] %}<li class="dot--{{ s.status }}" title="{{ s.title }}{% if s.year %} ({{ s.year }}){% endif %}"></li>{% endfor %}
+      {% if steps | length > 40 %}<li class="dot-more">+{{ steps | length - 40 }}</li>{% endif %}
+    </ol>
+  {% endif %}
+{%- endmacro %}
