@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.72.0] — 2026-10-13
+
+### Upgrading
+
+Two small additions to the database (a film's running time and resolution, as your media server
+reports them) apply on start. Both fill in on the next scan, so the runtime lines and the quality
+badges appear after it. Nothing else about an existing install changes: the new home rows, the
+A–Z rail and the decade headings simply appear, compact density and the effects dial are each
+person's opt-in, and the list stays Upcoming's default view.
+
 ### Added
 
 - **Designed placeholders.** A film or show with no poster gets a typeset card — its title and
@@ -44,7 +54,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ones dimmed, its name and how much you have — drawn in the browser, shared through the phone's
   share sheet or saved as a PNG. Nothing is uploaded.
 - **Keyboard shortcuts.** ? lists them; g then a letter jumps to a section (g c, g f, g u...).
-- Dependencies: FastAPI 0.142.2.
+
+### Changed
+
+- Dependencies: FastAPI 0.142.2, SQLModel 0.0.48, Apprise 2.0.1, Typer 0.27.3.
 
 ## [0.71.1] — 2026-10-03
 
