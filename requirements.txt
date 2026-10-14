@@ -7,7 +7,7 @@ jinja2==3.1.6
 python-multipart==0.0.32
 
 # Data layer
-sqlmodel==0.0.47
+sqlmodel==0.0.48
 alembic==1.20.0
 
 # Scheduling
@@ -24,12 +24,12 @@ bcrypt==5.0.0
 # apprise is pure Python (py3-none-any wheel), so it needs no build on arm64. It brings
 # PyYAML, markdown and requests-oauthlib; PyYAML ships arm64 wheels. Pinned with click below
 # because apprise's CLI imports click too.
-apprise==2.0.0
+apprise==2.0.1
 
 # CLI
 # typer <0.16 calls Click's Parameter.make_metavar() with the old signature and dies on import
 # against Click 8.2+. Click is pinned alongside it so a fresh image build can't reintroduce that.
-typer==0.27.2
+typer==0.27.3
 click==8.5.0
 
 # Playlist posters
