@@ -200,11 +200,17 @@ def run(
         notify = False
 
     if notify and result.report.has_news:
-        url = get_setting(session, SettingKey.WEBHOOK_URL)
-        if url:
-            result.notified = notifier.send(
-                url, result.report, get_setting(session, SettingKey.WEBHOOK_FORMAT) or "generic"
-            )
+        from app.services import digest
+
+        if digest.weekly(session):
+            # Weekly digest (0.73.0): banked for the week's message, not sent now.
+            digest.bank(session, result.report)
+        else:
+            url = get_setting(session, SettingKey.WEBHOOK_URL)
+            if url:
+                result.notified = notifier.send(
+                    url, result.report, get_setting(session, SettingKey.WEBHOOK_FORMAT) or "generic"
+                )
 
     logger.info(
         "Scan finished: %s new (%d movies, %d shows), %d instance(s) refreshed",

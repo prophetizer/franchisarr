@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/poster_card.html" import poster_card %}
+{% from "partials/hidden_fold.html" import hidden_fold %}
 {% from "partials/dot_strip.html" import dot_strip %}
 {% from "partials/completeness.html" import completeness %}
 {% from "partials/peek.html" import peek %}
@@ -113,4 +114,6 @@
   {% include "partials/pager.html" %}
   {% include "partials/az_rail.html" %}
 {% endif %}
+{#- Outside the list: folded away is never gone, even when everything is (0.73.0). -#}
+{{ hidden_fold(hidden_gaps, 'collection', '/collections/', 'collection_id') }}
 {% endblock %}

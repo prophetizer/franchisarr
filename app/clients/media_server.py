@@ -73,6 +73,8 @@ class MediaItem:
     runtime: int | None = None
     #: The best copy's resolution: "4K", "1080p", "720p" or "SD" (films; 0.72.0).
     resolution: str | None = None
+    #: Versions of the film grouped under this item, where the listing says (Plex; 0.73.0).
+    copies: int | None = None
 
     @property
     def has_external_ids(self) -> bool:

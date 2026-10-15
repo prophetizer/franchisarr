@@ -212,7 +212,7 @@ the label changes.
 
 The top bar has its menus: **Browse** (Franchises, Collections, Spin-offs, Upcoming,
 Directors, Trophy case, In numbers); for administrators **Playlists** (one page with tabs) and
-**Manage** (Servers, Libraries, Instances, Users, Settings, Activity); and one under your name (Preferences, Password, light/dark, grid density, Sign out), with
+**Manage** (Servers, Libraries, Instances, Users, Settings, Activity, Duplicates, Server parity); and one under your name (Preferences, Password, light/dark, grid density, Sign out), with
 search at the far right. The menu holding the page you're on is highlighted. On a phone it's a
 single ☰ button.
 
@@ -584,6 +584,22 @@ delivered from inside the app. If you already run
 [apprise-api](https://github.com/caronc/apprise-api), point it at that instead and keep the
 destinations there. The URL is treated as a credential: redacted in logs and in the redacted
 config export.
+
+Rather have one message a week? Choose **A weekly digest** under the same section, with its day
+and hour: scans then save up what they find, and the digest sends a week of it at once — new
+gaps, spin-offs, release dates announced or moved — and holds on to it if delivery fails.
+
+## Keeping the library tidy
+
+On a collection, franchise or director page an administrator can **Add all N missing** at once:
+a confirm lists every film and where it's going (the Radarr instance, profile and folder, or a
+Seerr), then adds them one by one and says how each went. Never automatic, and never the titles a
+taste filter folded away. **Hide from my lists** on a collection or franchise folds it out of
+*your* lists and home page only — into a section at the foot of the list, never gone — for sets
+you'll never finish and don't want to see. Under **Manage**, **Duplicates** lists films in the
+library more than once on a server (two libraries, or several versions of one film), and
+**Server parity** — for installs with more than one media server — lists the films each server
+has that another doesn't, a paused one included as of its last scan.
 
 ## Dashboard widget
 

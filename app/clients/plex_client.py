@@ -486,7 +486,18 @@ def _to_item(raw, seen_unknown: set[str]) -> PlexItem:  # noqa: ANN001 - a plexa
         watched=_watched(raw),
         runtime=_runtime(_attr(raw, "duration")),
         resolution=_resolution(raw),
+        copies=_copies(raw),
     )
+
+
+def _copies(raw) -> int | None:  # noqa: ANN001 - a plexapi Video
+    """How many versions Plex groups under the item: its Media elements, from the listing's own
+    XML (no request). None when the listing carries none (shows, some older servers)."""
+    data = raw.__dict__.get("_data")
+    if data is None:
+        return None
+    count = len(raw.findItems(data, plexapi.media.Media))
+    return count or None
 
 
 _PLEX_RESOLUTIONS = {"4k": "4K", "2160": "4K", "1080": "1080p", "720": "720p", "576": "SD", "480": "SD", "sd": "SD"}

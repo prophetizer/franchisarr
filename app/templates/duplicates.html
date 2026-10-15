@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Duplicates — Franchisarr{% endblock %}
+{% block content %}
+<hgroup>
+  <h1>Duplicates</h1>
+  <p>{% if found %}<span data-count>{{ found | length }}</span> film{{ '' if found | length == 1 else 's' }} in your library more than once on the same server.
+     {% else %}No film is in your library twice on the same server.{% endif %}</p>
+</hgroup>
+<p><small class="muted">
+  Either a server keeps several versions of a film under one title (Plex lists them as versions), or
+  the same film sits in two places — two libraries, or Jellyfin and Emby showing separate files
+  separately. The same film on two different servers isn't counted: see Server parity. Nothing here
+  changes anything; it's a list to tidy from. Version counts fill in after a scan.
+</small></p>
+{% if found %}
+  <table>
+    <thead><tr><th>Film</th><th>Server</th><th>Where</th></tr></thead>
+    <tbody>
+      {% for d in found %}
+        <tr>
+          <td>{{ d.title }}{% if d.year %} <small class="muted">({{ d.year }})</small>{% endif %}</td>
+          <td>{{ d.server }}</td>
+          <td>{{ d.places | join(' · ') }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+{% endblock %}

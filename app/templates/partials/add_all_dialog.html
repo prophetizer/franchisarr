@@ -1,0 +1,86 @@
+{# "Add all missing" (0.73.0): the confirm. Lists what will be added and where; the films are
+   worked out again on the server when it's pressed (`kind`/`ref` name the set, never the ids). #}
+<dialog open>
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" hx-get="{{ url('/add/close') }}"
+              hx-target="#add-dialog" hx-swap="innerHTML"></button>
+      <strong>Add all missing from {{ batch.name }}</strong>
+    </header>
+
+    {% if not batch.films %}
+      <p>Nothing missing to add.</p>
+    {% else %}
+      <p>{{ batch.films | length }} film{{ '' if batch.films | length == 1 else 's' }}{% if batch.more %}
+        — the first {{ batch.films | length }}; {{ batch.more }} more after these, with another press{% endif %}:</p>
+      <ol class="add-all-list">
+        {% for f in batch.films %}<li>{{ f.title }}{% if f.year %} <small class="muted">({{ f.year }})</small>{% endif %}</li>{% endfor %}
+      </ol>
+
+      {% if not instances and not seerr_instances %}
+        <p role="alert" class="notice-bad">No Radarr instance is configured yet.</p>
+      {% elif instances and not options.ok %}
+        <p role="alert" class="notice-bad">{{ options.error }}</p>
+        <p><small>Franchisarr can't read this instance's quality profiles or root folders right now,
+          so it can't add anything to it. Check the instance is running and try again.</small></p>
+      {% elif instances %}
+        <form hx-post="{{ url('/add-all') }}" hx-target="#add-dialog" hx-swap="innerHTML">
+          <input type="hidden" name="kind" value="{{ batch.kind }}">
+          <input type="hidden" name="ref" value="{{ batch.ref }}">
+          <input type="hidden" name="target" value="radarr">
+          {% if instances | length > 1 %}
+            <label for="all_instance_id">Radarr instance</label>
+            <select id="all_instance_id" name="instance_id"
+                    hx-get="{{ url('/add-all/' ~ batch.kind ~ '/' ~ batch.ref) }}" hx-target="#add-dialog"
+                    hx-swap="innerHTML" hx-trigger="change">
+              {% for instance in instances %}
+                <option value="{{ instance.id }}" {% if instance.id == selected.id %}selected{% endif %}>
+                  {{ instance.name }}{% if instance.default_root_folder %} — {{ instance.default_root_folder }}{% endif %}</option>
+              {% endfor %}
+            </select>
+          {% else %}
+            <input type="hidden" name="instance_id" value="{{ selected.id }}">
+          {% endif %}
+          <label for="all_quality_profile_id">Quality profile</label>
+          <select id="all_quality_profile_id" name="quality_profile_id" required>
+            {% for profile in options.quality_profiles %}
+              <option value="{{ profile.id }}" {% if profile.id == options.default_quality_profile_id %}selected{% endif %}>{{ profile.name }}</option>
+            {% endfor %}
+          </select>
+          <label for="all_root_folder_path">Root folder</label>
+          <select id="all_root_folder_path" name="root_folder_path" required>
+            {% for folder in options.root_folders %}
+              <option value="{{ folder.path }}" {% if folder.path == options.default_root_folder %}selected{% endif %}>
+                {{ folder.path }}{% if folder.free_space_label %} — {{ folder.free_space_label }}{% endif %}</option>
+            {% endfor %}
+          </select>
+          <label><input type="checkbox" name="search_on_add" checked> Search for them now</label>
+          <footer>
+            <button type="submit" aria-busy="false">Add {{ batch.films | length }} to {{ selected.name }}</button>
+          </footer>
+        </form>
+      {% endif %}
+
+      {% if seerr_instances %}
+        {% if instances and options.ok %}<hr>{% endif %}
+        <form hx-post="{{ url('/add-all') }}" hx-target="#add-dialog" hx-swap="innerHTML" class="seerr-request">
+          <input type="hidden" name="kind" value="{{ batch.kind }}">
+          <input type="hidden" name="ref" value="{{ batch.ref }}">
+          <input type="hidden" name="target" value="seerr">
+          {% if seerr_instances | length > 1 %}
+            <label for="all_seerr_id">Request through</label>
+            <select id="all_seerr_id" name="seerr_id">
+              {% for seerr in seerr_instances %}<option value="{{ seerr.id }}" {% if seerr.is_default %}selected{% endif %}>{{ seerr.name }}</option>{% endfor %}
+            </select>
+          {% else %}
+            <input type="hidden" name="seerr_id" value="{{ seerr_instances[0].id }}">
+          {% endif %}
+          <footer>
+            <button type="submit" class="secondary" aria-busy="false">
+              Request all {{ batch.films | length }} via {{ seerr_instances[0].name if seerr_instances | length == 1 else 'Seerr' }}</button>
+          </footer>
+        </form>
+      {% endif %}
+    {% endif %}
+  </article>
+</dialog>

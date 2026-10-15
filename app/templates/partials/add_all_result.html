@@ -1,0 +1,24 @@
+{# "Add all missing" (0.73.0): how each film went. #}
+{% set done = outcomes | selectattr(1, 'equalto', '') | list %}
+<dialog open>
+  <article>
+    <header>
+      <button aria-label="Close" rel="prev" hx-get="{{ url('/add/close') }}"
+              hx-target="#add-dialog" hx-swap="innerHTML"></button>
+      <strong>{{ 'Requested' if requested else 'Added' }} {{ done | length }} of {{ outcomes | length }} from {{ batch.name }}</strong>
+    </header>
+    <p>{{ 'Requested through' if requested else 'Added to' }} {{ where }}{% if not requested and searched and done %}, searching for them now{% endif %}.
+      {% if batch.more %}{{ batch.more }} more are missing — reload the page and add again for those.{% endif %}</p>
+    <ul class="add-all-list">
+      {% for film, error in outcomes %}
+        <li>{% if error %}<span aria-hidden="true">✗</span>{% else %}<span aria-hidden="true">✓</span>{% endif %}
+          {{ film.title }}{% if film.year %} <small class="muted">({{ film.year }})</small>{% endif %}
+          {% if error %}<br><small class="notice-bad">{{ error }}</small>{% endif %}</li>
+      {% endfor %}
+    </ul>
+    <footer>
+      <button type="button" hx-get="{{ url('/add/close') }}" hx-target="#add-dialog" hx-swap="innerHTML"
+              onclick="window.setTimeout(function () { window.location.reload(); }, 50)">Done</button>
+    </footer>
+  </article>
+</dialog>

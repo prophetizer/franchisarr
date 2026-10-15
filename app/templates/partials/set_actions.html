@@ -1,0 +1,23 @@
+{#- The row under a collection's or franchise's banner (0.73.0): hide it from this person's lists,
+    and for an admin, add every missing film at once. `set_kind` / `set_ref` name the set;
+    `set_hidden` says whether it's hidden now; `add_all_url` (admins, when films are missing)
+    opens the confirm dialog. -#}
+{% if add_all_url or set_kind %}
+<div class="set-actions">
+  {% if add_all_url %}
+    <button type="button" class="outline" hx-get="{{ add_all_url }}" hx-target="#add-dialog" hx-swap="innerHTML">
+      Add all {{ add_all_count }} missing…</button>
+  {% endif %}
+  {% if set_kind %}
+  <form method="post" action="{{ url('/hidden-sets') }}" class="nav-form">
+    <input type="hidden" name="kind" value="{{ set_kind }}">
+    <input type="hidden" name="ref" value="{{ set_ref }}">
+    <input type="hidden" name="hide" value="{{ 'false' if set_hidden else 'true' }}">
+    <input type="hidden" name="back" value="{{ request.url.path }}">
+    <button type="submit" class="secondary outline" title="{{ 'Show it in your Collections and Franchises lists again' if set_hidden else 'Fold it away at the foot of your lists and out of the home page; only for you' }}">
+      {{ 'Show in my lists' if set_hidden else 'Hide from my lists' }}</button>
+  </form>
+  {% if set_hidden %}<small class="muted">Hidden from your lists.</small>{% endif %}
+  {% endif %}
+</div>
+{% endif %}

@@ -23,10 +23,12 @@ def _multi_server(session) -> bool:  # noqa: ANN001 - a Session
 def franchises(request: Request, session: DbSession, user: RequiredUser, sort: str | None = None,
                dir: str | None = None):  # noqa: A002
     from app.config import get_settings
-    from app.services import az, sorting
+    from app.services import az, hidden_sets, sorting
 
     current = sorting.resolve(session, user.id, "franchises", sort, dir)
-    every = franchise_service.franchise_views(session, user.id)
+    # Sets this person hid (0.73.0) fold into a section at the foot, out of the counts.
+    every, hidden_views = hidden_sets.split(franchise_service.franchise_views(session, user.id),
+                                            hidden_sets.hidden(session, user.id, "franchise"), lambda f: f.wikidata_id)
     views = sorting.sort_groups(every, "franchises", current)
     base = get_settings().base_url
     return get_templates().TemplateResponse(
@@ -35,6 +37,7 @@ def franchises(request: Request, session: DbSession, user: RequiredUser, sort: s
         {
             "user": user,
             "franchises": views,
+            "hidden_views": sorting.sort_groups(hidden_views, "franchises", ("name", "asc")),
             "az_rail": az.rail(sorting.sort_groups(every, "franchises", ("name", "asc")), path=f"{base}/franchises",
                                size=max(1, len(every))),
             "az_ids": az.anchors(views, current),
@@ -49,7 +52,7 @@ def franchises(request: Request, session: DbSession, user: RequiredUser, sort: s
 def franchise_detail(request: Request, session: DbSession, user: RequiredUser, wikidata_id: str,
                      sort: str | None = None, dir: str | None = None):  # noqa: A002
     from app.config import get_settings
-    from app.services import sorting
+    from app.services import hidden_sets, sorting
 
     detail_sort = sorting.resolve(session, user.id, "detail", sort, dir)
     if detail_sort[0] == "rating":
@@ -64,7 +67,13 @@ def franchise_detail(request: Request, session: DbSession, user: RequiredUser, w
     mood = about_service.mood(session, film_ids=[t.tmdb_id for t in view.owned_films + view.missing_films])
     return get_templates().TemplateResponse(
         request, "franchise_detail.html",
-        {"user": user, "f": view, "multi_server": _multi_server(session),
+        {
+         # Hide from my lists, and Add all missing (both 0.73.0).
+         "set_kind": "franchise", "set_ref": view.wikidata_id,
+         "set_hidden": hidden_sets.is_hidden(session, user.id, "franchise", view.wikidata_id),
+         "add_all_url": (f"{get_settings().base_url}/add-all/franchise/{view.wikidata_id}"
+                         if user.is_admin and len(view.missing_films) > 1 else None),
+         "add_all_count": len(view.missing_films),"user": user, "f": view, "multi_server": _multi_server(session),
          "can_playlist": playlist_service.available(session) and view.owned > 0,
          "playlist_servers": playlist_service.targets(session),
          "playlist_kept": franchisarr_playlists.kept_on(session, "franchises", wikidata_id),

@@ -1420,3 +1420,14 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
 .key-sheet table { margin: 0; }
 .key-sheet td { font-size: 0.9rem; padding: 0.35rem 0.5rem; }
 .key-sheet kbd { font-size: 0.8rem; }
+
+/* ---------------------------------------------------------------- set actions (0.73.0) */
+.set-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 var(--pico-block-spacing-vertical); }
+.set-actions button { font-size: 0.85rem; margin: 0; padding: 0.3rem 0.8rem; width: auto; }
+.set-actions form { margin: 0; }
+.add-all-list { font-size: 0.9rem; max-height: 14rem; overflow-y: auto; padding-left: 1.4rem; }
+.add-all-list li { margin-bottom: 0.15rem; }
+
+/* ---------------------------------------------------------------- duplicates and parity (0.73.0) */
+.link-chips > .parity-side { border: 1px solid var(--pico-muted-border-color); border-radius: 999px; color: var(--pico-color); font-size: 0.82rem; padding: 0.15rem 0.7rem; }
+.parity-list { max-height: 28rem; }

@@ -85,5 +85,9 @@ def director_detail(request: Request, session: DbSession, user: RequiredUser, pe
          "detail_sort": detail_sort,
          # Their career as a strip in release order (0.71.0), as a collection's run is.
          "timeline": timeline.build(view.owned, view.missing, view.upcoming),
+         # Add all missing (0.73.0); directors aren't hidden like sets.
+         "set_kind": None,
+         "add_all_url": _url(f"/add-all/director/{person_id}") if user.is_admin and len(view.missing) > 1 else None,
+         "add_all_count": len(view.missing),
          "sort_ctl": sorting.control("detail", detail_sort, _url(f"/directors/{person_id}"))}
     )

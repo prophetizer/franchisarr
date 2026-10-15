@@ -76,6 +76,12 @@ class SettingKey:
     #: Playlist sync's own schedule (cron, like the scan's); empty for none. Syncs also follow
     #: every scan.
     PLAYLIST_SYNC_CRON = "playlist_sync_cron"
+    #: Notifications after every scan ("each") or one weekly digest ("weekly"); 0.73.0.
+    NOTIFY_MODE = "notify_mode"
+    #: When the weekly digest goes out (cron), and the news it has banked since the last one --
+    #: JSON, written by scans, not configured.
+    DIGEST_CRON = "digest_cron"
+    DIGEST_PENDING = "digest_pending"
 
 
 #: Values used when neither the environment nor the user has said otherwise.
@@ -101,6 +107,8 @@ DEFAULTS: dict[str, str] = {
     SettingKey.FRANCHISARR_PLAYLIST_SERVERS: "",
     SettingKey.FRANCHISARR_PLAYLISTS_TO_ADOPT: "false",
     SettingKey.PLAYLIST_SYNC_CRON: "",
+    SettingKey.NOTIFY_MODE: "each",
+    SettingKey.DIGEST_CRON: "0 9 * * 1",
 }
 
 #: Theming moved to environment variables in 0.2.0 (TP_THEME and friends), so a homelab can set

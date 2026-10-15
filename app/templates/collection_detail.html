@@ -42,6 +42,7 @@
 </div>
 
 {% include "partials/playlist_result_area.html" %}
+{% include "partials/set_actions.html" %}
 {% if part_of %}
   <p class="link-chips"><span>Part of</span>{% for wid, name in part_of %}<a href="{{ url('/franchises/' ~ wid) }}">{{ name }} →</a>{% endfor %}</p>
 {% endif %}

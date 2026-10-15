@@ -414,6 +414,7 @@ def _upsert_item(
     row.watched = item.watched
     row.runtime = item.runtime
     row.resolution = item.resolution
+    row.copies = item.copies
     row.last_seen_at = utcnow()
 
     if result is not None:

@@ -1,0 +1,9 @@
+{#- Sets this person has hidden (0.73.0): folded here, not gone; each page has "Show in my lists". -#}
+{% macro hidden_fold(items, noun, path, ref) -%}
+  {% if items %}
+    <details class="hidden-section">
+      <summary>{{ items | length }} {{ noun }}{{ '' if items | length == 1 else 's' }} you've hidden</summary>
+      <p class="link-chips">{% for i in items %}<a href="{{ url(path ~ (i | attr(ref))) }}">{{ i.name }}</a>{% endfor %}</p>
+    </details>
+  {% endif %}
+{%- endmacro %}

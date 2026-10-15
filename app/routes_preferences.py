@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Form, Request, status
+from fastapi import HTTPException, APIRouter, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.auth.dependencies import AdminUser, DbSession, RequiredUser
@@ -124,6 +124,20 @@ def choose_density(session: DbSession, user: RequiredUser, value: Annotated[str,
     from app.services import look as look_service
 
     look_service.set_density(session, user.id, value)
+    base = get_settings().base_url
+    target = back if back.startswith(f"{base}/") and not back.startswith("//") and "://" not in back else _url("/")
+    return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/hidden-sets")
+def hide_set(session: DbSession, user: RequiredUser, kind: Annotated[str, Form()], ref: Annotated[str, Form()],
+             hide: Annotated[str, Form()] = "true", back: Annotated[str, Form()] = ""):
+    """Hide a collection or franchise from this person's own lists, or show it again (0.73.0)."""
+    from app.services import hidden_sets
+
+    if kind not in hidden_sets.KINDS:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No such kind of set.")
+    hidden_sets.set_hidden(session, user.id, kind, ref[:64], hide == "true")
     base = get_settings().base_url
     target = back if back.startswith(f"{base}/") and not back.startswith("//") and "://" not in back else _url("/")
     return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)

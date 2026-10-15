@@ -114,6 +114,36 @@ def apply_playlist_sync_schedule(expression: str) -> str | None:
     return expression.strip()
 
 
+DIGEST_JOB_ID = "franchisarr-digest"
+
+
+def _send_digest() -> None:
+    """The weekly digest's own schedule (0.73.0)."""
+    from app.services import digest
+
+    with Session(get_engine()) as session:
+        if digest.weekly(session):
+            digest.send(session)
+
+
+def apply_digest_schedule(mode: str, expression: str) -> str | None:
+    """Install, replace or remove the weekly digest job. Only in weekly mode."""
+    scheduler = get_scheduler()
+    try:
+        trigger = validate_cron(expression) if mode == "weekly" else None
+    except InvalidSchedule as exc:
+        logger.error("Ignoring the configured digest schedule: %s", exc)
+        trigger = None
+    if trigger is None:
+        if scheduler.get_job(DIGEST_JOB_ID):
+            scheduler.remove_job(DIGEST_JOB_ID)
+        return None
+    scheduler.add_job(_send_digest, trigger=trigger, id=DIGEST_JOB_ID, replace_existing=True,
+                      max_instances=1, coalesce=True, misfire_grace_time=6 * 3600)
+    logger.info("Weekly digest scheduled: %s", expression.strip())
+    return expression.strip()
+
+
 def get_scheduler() -> BackgroundScheduler:
     global _scheduler
     if _scheduler is None:
@@ -164,6 +194,8 @@ def start(session: Session) -> None:
         scheduler.start()
     apply_schedule(get_setting(session, SettingKey.SCAN_SCHEDULE_CRON) or "")
     apply_playlist_sync_schedule(get_setting(session, SettingKey.PLAYLIST_SYNC_CRON) or "")
+    apply_digest_schedule(get_setting(session, SettingKey.NOTIFY_MODE) or "each",
+                          get_setting(session, SettingKey.DIGEST_CRON) or "")
 
 
 def shutdown() -> None:

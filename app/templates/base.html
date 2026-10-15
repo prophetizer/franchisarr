@@ -71,7 +71,8 @@
         {% set browse = [('/franchises', 'Franchises'), ('/collections', 'Collections'), ('/shows', 'Spin-offs'),
                          ('/upcoming', 'Upcoming'), ('/directors', 'Directors'), ('/trophies', 'Trophy case'), ('/stats', 'In numbers')] %}
         {% set manage = [('/media-servers', 'Servers'), ('/libraries', 'Libraries'), ('/instances', 'Instances'),
-                         ('/users', 'Users'), ('/settings', 'Settings'), ('/activity', 'Activity')] if user.is_admin else [] %}
+                         ('/users', 'Users'), ('/settings', 'Settings'), ('/activity', 'Activity'),
+                         ('/duplicates', 'Duplicates'), ('/parity', 'Server parity')] if user.is_admin else [] %}
         {#- Playlists is one page with tabs (0.42.0): a plain link, not a menu. -#}
         {% set playlists = [('/playlists', 'Playlists')] if user.is_admin else [] %}
         {% set mine = ([('/preferences', 'Preferences')] if user.is_admin else [])

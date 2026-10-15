@@ -286,7 +286,7 @@ def _importable_settings() -> set[str]:
     keys = {v for k, v in vars(SettingKey).items() if k.isupper() and isinstance(v, str)}
     return keys - {SettingKey.PLEX_CLIENT_ID, SettingKey.SOLO_RESTORE,
                    SettingKey.PLAYLIST_SYNC_TARGETS, SettingKey.FRANCHISARR_PLAYLIST_SERVERS,
-                   SettingKey.FRANCHISARR_PLAYLISTS_TO_ADOPT}
+                   SettingKey.FRANCHISARR_PLAYLISTS_TO_ADOPT, SettingKey.DIGEST_PENDING}
 
 
 def _setting_value_ok(key: str, value: str) -> bool:
@@ -295,7 +295,9 @@ def _setting_value_ok(key: str, value: str) -> bool:
 
     if key == SettingKey.WEBHOOK_FORMAT:
         return value in {f.value for f in WebhookFormat}
-    if key in (SettingKey.SCAN_SCHEDULE_CRON, SettingKey.PLAYLIST_SYNC_CRON):
+    if key == SettingKey.NOTIFY_MODE:
+        return value in ("each", "weekly")
+    if key in (SettingKey.SCAN_SCHEDULE_CRON, SettingKey.PLAYLIST_SYNC_CRON, SettingKey.DIGEST_CRON):
         from app.services.scheduler import InvalidSchedule, validate_cron
 
         try:

@@ -77,6 +77,8 @@ ADMIN_ONLY = [
     ("post", "/playlists/franchisarr/1/remove"), ("get", "/playlists/clean-up"),
     ("post", "/playlists/copies/1/link"),
     ("post", "/settings/keys"),
+    ("get", "/add-all/collection/1"), ("post", "/add-all"), ("get", "/duplicates"), ("get", "/parity"),
+    ("post", "/settings/notify-mode"),
 ]
 
 MEMBER_PAGES = ["/", "/collections", "/franchises", "/directors", "/upcoming", "/shows", "/activity",

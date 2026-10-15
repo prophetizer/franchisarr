@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Server parity — Franchisarr{% endblock %}
+{% block content %}
+<hgroup>
+  <h1>Server parity</h1>
+  <p>{% if gaps %}Films one of your media servers has and another doesn't.{% else %}Needs two or more media servers with scanned films.{% endif %}</p>
+</hgroup>
+{% if sides %}
+  <p class="link-chips"><span>Servers</span>
+    {% for s in sides %}<span class="parity-side">{{ s.name }} · {{ '{:,}'.format(s.films) }} films{% if not s.enabled %} · paused, last scanned {{ s.last_seen.strftime('%-d %b %Y') if s.last_seen else 'never' }}{% endif %}</span>{% endfor %}
+  </p>
+{% endif %}
+{% if gaps %}
+  <p><small class="muted">
+    Compared by TMDb id, films only. A switched-off server is still compared, as of its last scan.
+  </small></p>
+  {% for g in gaps %}
+    <details{% if loop.first and g.films %} open{% endif %} class="parity-gap">
+      <summary><strong>{{ g.have.name }}</strong> has {{ '{:,}'.format(g.films | length) }} film{{ '' if g.films | length == 1 else 's' }} <strong>{{ g.lacks.name }}</strong> doesn't</summary>
+      {% if g.films %}
+        <ol class="add-all-list parity-list">
+          {% for tmdb_id, title, year in g.films %}<li>{{ title }}{% if year %} <small class="muted">({{ year }})</small>{% endif %}</li>{% endfor %}
+        </ol>
+      {% else %}
+        <p class="muted">None — {{ g.lacks.name }} has everything {{ g.have.name }} has.</p>
+      {% endif %}
+    </details>
+  {% endfor %}
+{% endif %}
+{% endblock %}

@@ -47,7 +47,8 @@ def test_an_admin_gets_browse_manage_and_their_own_menu(client: TestClient) -> N
     assert _menu(page, "Browse") == ["Franchises", "Collections", "Spin-offs", "Upcoming", "Directors", "Trophy case", "In numbers"]
     assert "<summary>Playlists</summary>" not in page, "one page with tabs since 0.42.0: a plain link"
     assert f'href="{BASE}/playlists" class="nav-link"' in page
-    assert _menu(page, "Manage") == ["Servers", "Libraries", "Instances", "Users", "Settings", "Activity"]
+    assert _menu(page, "Manage") == ["Servers", "Libraries", "Instances", "Users", "Settings", "Activity",
+                                      "Duplicates", "Server parity"]
     assert _menu(page, "admin") == ["Preferences", "Password"]
     assert "Sign out" in page and "theme-toggle" in page
     nav = page.split('<nav class="app-nav">', 1)[1].split("</nav>", 1)[0]

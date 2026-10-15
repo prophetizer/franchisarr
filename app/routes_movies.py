@@ -49,7 +49,7 @@ def collections(
     request: Request, session: DbSession, user: RequiredUser, sort: str | None = None,
     started: bool = False, page: int = 1, dir: str | None = None,  # noqa: A002 - the query parameter's name
 ):
-    from app.services import az, pagination, scan_state, sorting
+    from app.services import az, hidden_sets, pagination, scan_state, sorting
 
     current = sorting.resolve(session, user.id, "collections", sort, dir)
     gaps = movie_gap_service.collections_with_gaps(session, user.id)
@@ -59,6 +59,9 @@ def collections(
     if started and watched_known:
         gaps = [gap for gap in gaps if gap.started]
     gaps = sorting.sort_groups(gaps, "collections", current)
+    # Sets this person hid (0.73.0) fold into a section at the foot, out of the counts and pages.
+    gaps, hidden_gaps = hidden_sets.split(gaps, hidden_sets.hidden(session, user.id, "collection"),
+                                          lambda g: g.collection_id)
     started_on = started and watched_known
     # The totals below describe every collection, not the page -- they are counted before the
     # slice for exactly that reason.
@@ -76,6 +79,7 @@ def collections(
             "progress": scan_state.current(),
             "gaps": pager.items,
             "pager": pager,
+            "hidden_gaps": hidden_gaps,
             # The A-Z rail (0.72.0): links into the name-sorted list, and this page's anchors.
             "az_rail": az.rail(sorting.sort_groups(gaps, "collections", ("name", "asc")), path=_url("/collections"),
                                size=pager.size, params={"started": 1 if started_on else None}),
@@ -160,8 +164,8 @@ def collection_detail(
     sort: str | None = None, dir: str | None = None,  # noqa: A002
 ):
     gap = _gap_or_404(session, user, collection_id)
-    from app.services import (celebrations, franchisarr_playlists, franchise_service, media_server_service,
-                              playlist_service, sorting, timeline)
+    from app.services import (celebrations, franchisarr_playlists, franchise_service, hidden_sets,
+                              media_server_service, playlist_service, sorting, timeline)
 
     detail_sort = sorting.resolve(session, user.id, "detail", sort, dir)
     steps = timeline.build(gap.owned, gap.missing, gap.upcoming)
@@ -178,6 +182,11 @@ def collection_detail(
          "horror": mood == "horror", "mood": mood,
          # "Part of" chips (0.72.0): the franchises its films belong to.
          "part_of": franchise_service.for_collection(session, collection_id),
+         # Hide from my lists, and Add all missing (both 0.73.0).
+         "set_kind": "collection", "set_ref": collection_id,
+         "set_hidden": hidden_sets.is_hidden(session, user.id, "collection", collection_id),
+         "add_all_url": _url(f"/add-all/collection/{collection_id}") if user.is_admin and len(gap.missing) > 1 else None,
+         "add_all_count": len(gap.missing),
          "credits": end_credits.for_page(session, user, steps),
          "celebrations": celebrations.for_page(session, user, collection_id),
          "detail_sort": detail_sort,
@@ -366,6 +375,103 @@ def submit_add(
     return get_templates().TemplateResponse(request, "partials/add_result.html", context)
 
 
+@router.get("/duplicates", response_class=HTMLResponse)
+def duplicates_page(request: Request, session: DbSession, user: AdminUser):
+    """Films in the library more than once, per server (0.73.0)."""
+    from app.services import duplicates
+
+    return get_templates().TemplateResponse(request, "duplicates.html",
+                                            {"user": user, "found": duplicates.find(session)})
+
+
+@router.get("/parity", response_class=HTMLResponse)
+def parity_page(request: Request, session: DbSession, user: AdminUser):
+    """Films one media server has and another doesn't (0.73.0)."""
+    from app.services import server_parity
+
+    sides, gaps = server_parity.compare(session)
+    return get_templates().TemplateResponse(request, "parity.html", {"user": user, "sides": sides, "gaps": gaps})
+
+
+@router.get("/add-all/{kind}/{ref}", response_class=HTMLResponse)
+def add_all_dialog(request: Request, session: DbSession, user: AdminUser, kind: str, ref: str,
+                   instance_id: int | None = None):
+    """The confirm for adding a set's every missing film (0.73.0): the films, and where they go."""
+    from app.services import add_all
+
+    batch = add_all.missing(session, user.id, kind, ref)
+    if batch is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such set.")
+    instances = instance_service.list_radarr(session)
+    selected = (instance_service.get_radarr(session, instance_id) if instance_id
+                else instance_service.preferred_instance(session, user))
+    options: dict = {"ok": False, "error": "", "quality_profiles": [], "root_folders": []}
+    if selected is not None and batch.films:
+        client = instance_service.client_for(selected)
+        try:
+            options = {"ok": True, "error": "", "quality_profiles": client.quality_profiles(),
+                       "root_folders": client.root_folders(),
+                       "default_quality_profile_id": selected.default_quality_profile_id,
+                       "default_root_folder": selected.default_root_folder}
+        except RadarrError as exc:
+            options["error"] = str(exc)
+    return get_templates().TemplateResponse(
+        request, "partials/add_all_dialog.html",
+        {"user": user, "batch": batch, "instances": instances, "selected": selected, "options": options,
+         "seerr_instances": seerr_instance_service.list_seerr(session)})
+
+
+@router.post("/add-all", response_class=HTMLResponse)
+def submit_add_all(
+    request: Request, session: DbSession, user: AdminUser,
+    kind: Annotated[str, Form()], ref: Annotated[str, Form()], target: Annotated[str, Form()] = "radarr",
+    instance_id: Annotated[int | None, Form()] = None, quality_profile_id: Annotated[int | None, Form()] = None,
+    root_folder_path: Annotated[str, Form()] = "", search_on_add: Annotated[bool, Form()] = False,
+    seerr_id: Annotated[int | None, Form()] = None,
+):
+    """Add every missing film of the set, one at a time, and say how each went. The films are
+    worked out again here, never taken from the form."""
+    from app.services import add_all
+
+    batch = add_all.missing(session, user.id, kind, ref)
+    if batch is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such set.")
+    outcomes: list[tuple[add_all.Film, str]] = []   # (film, "" when it worked, else the reason)
+    where = ""
+    if target == "seerr":
+        seerr = seerr_instance_service.get_seerr(session, seerr_id) if seerr_id else None
+        if seerr is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such instance.")
+        where = seerr.name
+        for film in batch.films:
+            try:
+                add_service.request_via_seerr(session, instance=seerr, item_type=ItemType.MOVIE.value,
+                                              tmdb_id=film.tmdb_id, title=film.title, user=user)
+                outcomes.append((film, ""))
+            except add_service.AddFailed as exc:
+                outcomes.append((film, str(exc)))
+    else:
+        instance = instance_service.get_radarr(session, instance_id) if instance_id else None
+        if instance is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such instance.")
+        where = instance.name
+        for film in batch.films:
+            try:
+                add_service.add_movie(session, instance=instance, tmdb_id=film.tmdb_id, user=user,
+                                      quality_profile_id=quality_profile_id, root_folder_path=root_folder_path,
+                                      search_on_add=search_on_add)
+                outcomes.append((film, ""))
+            except add_service.AddFailed as exc:
+                outcomes.append((film, str(exc)))
+    surprise.forget()
+    logger.info("Added %d of %d missing films of %s %s to %s", sum(1 for _, e in outcomes if not e),
+                len(outcomes), kind, ref, where)
+    return get_templates().TemplateResponse(
+        request, "partials/add_all_result.html",
+        {"user": user, "batch": batch, "outcomes": outcomes, "where": where, "requested": target == "seerr",
+         "searched": search_on_add})
+
+
 # ---------------------------------------------------------------------- settings
 
 
@@ -458,6 +564,8 @@ def _settings_context(session, user, **extra) -> dict:
             (WebhookFormat.APPRISE.value, "Apprise — 100+ services"),
             (WebhookFormat.APPRISE_API.value, "apprise-api (self-hosted)"),
         ],
+        # The weekly digest (0.73.0): the mode, its day and hour, and what's banked so far.
+        **_digest_context(session),
         "saved": False,
         "error": None,
         "import_note": None,
@@ -578,6 +686,44 @@ def save_schedule(
         scan_job.prime_seen_gaps(session)
 
     return RedirectResponse(_url("/settings?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
+
+
+DIGEST_DAYS = ((1, "Monday"), (2, "Tuesday"), (3, "Wednesday"), (4, "Thursday"), (5, "Friday"),
+               (6, "Saturday"), (0, "Sunday"))
+
+
+def _digest_context(session) -> dict:  # noqa: ANN001
+    from app.services import digest
+
+    parts = (get_setting(session, SettingKey.DIGEST_CRON) or "0 9 * * 1").split()
+    try:
+        hour, day = int(parts[1]), int(parts[4])
+    except (IndexError, ValueError):
+        hour, day = 9, 1   # a hand-written cron the form can't show: the form offers the default
+    return {"notify_mode": get_setting(session, SettingKey.NOTIFY_MODE) or "each", "digest_day": day,
+            "digest_hour": hour, "digest_days": DIGEST_DAYS, "digest_banked": digest.pending_report(session).total}
+
+
+@router.post("/settings/notify-mode")
+def save_notify_mode(session: DbSession, user: AdminUser, mode: Annotated[str, Form()] = "each",
+                     day: Annotated[int, Form()] = 1, hour: Annotated[int, Form()] = 9,
+                     send_now: Annotated[str, Form()] = ""):
+    """After every scan, or a weekly digest on a chosen day and hour (0.73.0)."""
+    from app.services import digest, scheduler as scheduler_service
+    from app.services.settings_service import set_setting
+
+    mode = mode if mode in digest.MODES else "each"
+    cron = f"0 {max(0, min(23, hour))} * * {max(0, min(6, day))}"
+    set_setting(session, SettingKey.NOTIFY_MODE, mode)
+    set_setting(session, SettingKey.DIGEST_CRON, cron)
+    session.commit()
+    scheduler_service.apply_digest_schedule(mode, cron)
+    if send_now:
+        digest.send(session)
+    elif mode == "each" and digest.pending_report(session).has_news:
+        # Back to every scan: what was banked for the week goes now rather than never.
+        digest.send(session)
+    return RedirectResponse(_url("/settings?saved=1#notifications"), status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/settings/webhook", response_class=HTMLResponse)

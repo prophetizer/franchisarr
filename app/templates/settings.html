@@ -148,7 +148,7 @@ TP_COMMUNITY_THEME=false</code></pre>
   </form>
 </article>
 
-<article>
+<article id="notifications">
   <header><strong>Notifications</strong></header>
 
   {# tojson, in a single-quoted attribute: the browser decodes HTML escapes before Alpine
@@ -194,13 +194,39 @@ TP_COMMUNITY_THEME=false</code></pre>
     </small>
     <small x-show="format !== 'apprise' && format !== 'apprise_api'">
       Sent after a scan — scheduled or by hand — only when something new turns up, and never
-      after the first scan.
+      after the first scan; or saved up for one weekly digest, below.
     </small>
 
     <p>
       <button type="submit">Save</button>
       {% if webhook_masked %}
         <button type="submit" name="test" value="1" class="secondary">Send a test</button>
+      {% endif %}
+    </p>
+  </form>
+
+  {#- After every scan, or one message a week (0.73.0). -#}
+  <form method="post" action="{{ url('/settings/notify-mode') }}" class="notify-mode">
+    <fieldset>
+      <legend>When</legend>
+      <label><input type="radio" name="mode" value="each" {% if notify_mode != 'weekly' %}checked{% endif %}>
+        After every scan that finds something</label>
+      <label><input type="radio" name="mode" value="weekly" {% if notify_mode == 'weekly' %}checked{% endif %}>
+        A weekly digest — everything a week of scans found, in one message</label>
+    </fieldset>
+    <div class="grid">
+      <label>Digest day
+        <select name="day">{% for value, name in digest_days %}<option value="{{ value }}" {% if value == digest_day %}selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+      </label>
+      <label>at
+        <select name="hour">{% for h in range(24) %}<option value="{{ h }}" {% if h == digest_hour %}selected{% endif %}>{{ '%02d' % h }}:00</option>{% endfor %}</select>
+      </label>
+    </div>
+    {% if notify_mode == 'weekly' %}<small class="muted">{{ digest_banked }} item{{ '' if digest_banked == 1 else 's' }} saved up for the next digest.</small>{% endif %}
+    <p>
+      <button type="submit">Save when</button>
+      {% if notify_mode == 'weekly' and digest_banked and webhook_masked %}
+        <button type="submit" name="send_now" value="1" class="secondary">Send the digest now</button>
       {% endif %}
     </p>
   </form>

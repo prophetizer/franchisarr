@@ -151,6 +151,22 @@ class DismissedItem(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utcnow)
 
 
+class UserHiddenSet(SQLModel, table=True):
+    """A collection or franchise one person has hidden from their own lists (0.73.0). Per user,
+    like a dismissal; the household-wide version is a collection exclude."""
+
+    __tablename__ = "user_hidden_sets"
+    __table_args__ = (UniqueConstraint("user_id", "kind", "ref", name="uq_user_hidden_set"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    # CASCADE: one person's preference, meaningless without them.
+    user_id: int = Field(foreign_key="users.id", ondelete="CASCADE", index=True)
+    #: "collection" (ref: the TMDb collection id) or "franchise" (ref: the Wikidata id).
+    kind: str
+    ref: str
+    created_at: datetime = Field(default_factory=utcnow)
+
+
 class UserPreference(SQLModel, table=True):
     """One person's remembered choice for a page -- how they last sorted it. Per account, so it
     follows them across devices; see app/services/sorting.py."""
@@ -410,6 +426,9 @@ class LibraryItem(SQLModel, table=True):
     #: The best copy's resolution, "4K" / "1080p" / "720p" / "SD", as the server's listing says
     #: (0.72.0): the owned posters' quality badge. None for shows, and until the next scan.
     resolution: str | None = Field(default=None)
+    #: How many versions of the film the server groups under this item -- Plex's Media elements
+    #: (0.73.0): the Duplicates page. None where the listing doesn't say (Jellyfin, Emby).
+    copies: int | None = Field(default=None)
 
     last_seen_at: datetime = Field(default_factory=utcnow, index=True)
     #: When a scan first found it, for the home page's "Just added" (0.45.0). None for rows from

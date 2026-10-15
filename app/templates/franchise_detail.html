@@ -76,6 +76,7 @@
 </div>
 
 {% include "partials/playlist_result_area.html" %}
+{% include "partials/set_actions.html" %}
 {% if f.collections %}
   <p class="link-chips"><span>Collections in it</span>{% for cid, name in f.collections %}<a href="{{ url('/collections/' ~ cid) }}">{{ name }}</a>{% endfor %}</p>
 {% endif %}

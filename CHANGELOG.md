@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Add all missing.** A collection, franchise or director page can add every missing film at
+  once, for an administrator: a confirm lists the films and where they go (Radarr instance,
+  profile, folder — or Seerr), then each is added and the result says how each went. The films
+  are worked out again on the server, released ones only, up to 50 a press.
+- **A weekly digest.** Settings → Notifications can send one message a week, on a day and hour
+  you choose, instead of one after every scan. Scans save up what they find; a delivery that
+  fails keeps it for next time; switching back to every scan sends what's waiting.
+- **Hide from my lists.** Each person can hide a collection or franchise from their own
+  Collections and Franchises lists and home page; hidden ones fold into a section at the foot of
+  the list. The household-wide collection exclude is unchanged.
+- **Duplicates** (Manage): films in the library more than once on the same server — two libraries,
+  or several versions of one film. Plex's versions are counted from its listing, after the next
+  scan.
+- **Server parity** (Manage): for several media servers, the films each has that another doesn't.
+
 ## [0.72.0] — 2026-10-13
 
 ### Upgrading

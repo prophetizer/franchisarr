@@ -203,6 +203,11 @@ def index(request: Request, session: DbSession, user: RequiredUser, surprise: st
     today = date.today()
     # Every collection, once: the rows below want those with gaps, Up next wants every one.
     every = movie_gap_service.collection_gaps(session, user.id, today=today)
+    # Collections this person hid (0.73.0) stay out of the home page's rows and spotlight.
+    from app.services import hidden_sets
+
+    hidden_ids = hidden_sets.hidden(session, user.id, "collection")
+    every = [gap for gap in every if str(gap.collection_id) not in hidden_ids]
     gaps = [gap for gap in every if gap.has_gaps]
     upcoming = upcoming_service.upcoming_films(session, user.id, today=today)
     upcoming_soon = sum(

@@ -61,6 +61,13 @@ class ScanReport:
     new_shows: list[NewItem] = field(default_factory=list)
     #: Announced films in owned franchises that gained a release date, or whose date moved.
     release_dates: list[NewItem] = field(default_factory=list)
+    #: "" after a scan; "this week" for the weekly digest (0.73.0), which the wording reflects.
+    period: str = ""
+
+    @property
+    def found(self) -> str:
+        """The message's lead: "found 3 missing films" or "this week: 3 missing films"."""
+        return f"{self.period}: {self.summary()}" if self.period else f"found {self.summary()}"
 
     @property
     def total(self) -> int:
@@ -108,6 +115,7 @@ def build_generic(report: ScanReport) -> dict:
     return {
         "event": "franchisarr.scan_complete",
         "summary": report.summary(),
+        "period": report.period or "scan",
         "total_new": report.total,
         "movies": [
             {"tmdb_id": item.tmdb_id, "title": item.title, "collection": item.detail}
@@ -142,10 +150,10 @@ def build_discord(report: ScanReport) -> dict:
 
     return {
         "username": "Franchisarr",
-        "content": f"Franchisarr found {report.summary()}."[:DISCORD_CONTENT_LIMIT],
+        "content": f"Franchisarr {report.found}."[:DISCORD_CONTENT_LIMIT],
         "embeds": [
             {
-                "title": "Scan complete",
+                "title": "Weekly digest" if report.period else "Scan complete",
                 "color": DISCORD_COLOUR,
                 "fields": fields,
             }
@@ -162,7 +170,7 @@ def build_slack(report: ScanReport) -> dict:
     blocks: list[dict] = [
         {
             "type": "section",
-            "text": {"type": "mrkdwn", "text": f"*Franchisarr* found {report.summary()}."},
+            "text": {"type": "mrkdwn", "text": f"*Franchisarr* {report.found}."},
         }
     ]
 
@@ -183,7 +191,7 @@ def build_slack(report: ScanReport) -> dict:
             }
         )
 
-    return {"text": f"Franchisarr found {report.summary()}.", "blocks": blocks}
+    return {"text": f"Franchisarr {report.found}.", "blocks": blocks}
 
 
 BUILDERS = {
@@ -209,7 +217,7 @@ def build_text(report: ScanReport) -> tuple[str, str]:
         if more:
             lines.append(f"- …and {more} more")
         lines.append("")
-    return f"Franchisarr: {report.summary()}", "\n".join(lines).rstrip()
+    return f"Franchisarr: {report.period + ': ' if report.period else ''}{report.summary()}", "\n".join(lines).rstrip()
 
 
 def apprise_urls(field: str) -> list[str]:
