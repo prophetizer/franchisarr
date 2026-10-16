@@ -243,7 +243,7 @@ def test_calendar_text_is_escaped_and_long_lines_fold() -> None:
                         release_date="2030-01-02", owned_count=1, total_count=2)
     body = ical.calendar([film], now=datetime(2026, 9, 20, tzinfo=timezone.utc))
 
-    assert "SUMMARY:A\; B\\, C\\\\D" in body
+    assert "SUMMARY:A\\; B\\, C\\\\D" in body
     assert "DTSTAMP:20260920T000000Z" in body
     for line in body.split("\r\n"):
         assert len(line.encode()) <= 75, line
