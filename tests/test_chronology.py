@@ -20,7 +20,7 @@ CHRONO = "Star Wars — Chronological (Franchisarr)"
 
 
 def test_every_built_in_order_is_well_formed() -> None:
-    """The ids were checked against TMDb when written (194 titles, 2026-10-17); CI has no network,
+    """The ids were checked against TMDb when written (219 titles, 2026-10-17); CI has no network,
     so here: no title twice, real item types, and an order worth having."""
     for name, entries in ORDERS.items():
         keys = [(t, i) for t, i, _ in entries]

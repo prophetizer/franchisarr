@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Story order** under a collection's or franchise's banner (administrators): drag the titles,
   or use ↑ ↓, into the order the story happens; a chronological playlist follows it from its
   next refresh. Built-in orders cover 23 franchises where story and release order differ — Star
-  Wars (with its shows), the MCU, X-Men, Alien (with the AVP films), Fast & Furious, the
+  Wars and the MCU (each with its series, placed where their stories start), X-Men, Alien (with the AVP films), Fast & Furious, the
   Wizarding World, Middle-earth, the MonsterVerse, Indiana Jones, Saw, the Conjuring universe,
   John Wick, Transformers and more — each id checked against TMDb.
 
