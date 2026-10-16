@@ -55,7 +55,7 @@
               <a href="{{ url(v.path) }}" class="set-thumb" aria-hidden="true" tabindex="-1">
                 {% if v.poster %}<img src="{{ v.poster }}" alt="" loading="lazy" decoding="async" width="46" height="69">{% endif %}
               </a>
-              <span class="film-title"><a href="{{ url(v.path) }}">{{ v.entry.name }}</a>
+              <span class="film-title"><a href="{{ url(v.path) }}">{{ v.entry.name }}</a>{% if v.entry.variant == 'chronological' %} <small class="muted">chronological</small>{% endif %}
                 {% if v.custom %}<small class="muted">its own servers</small>{% endif %}</span>
               <span class="sync-chips">
                 {% for name, copy in v.copies %}
@@ -71,7 +71,7 @@
                 {% endfor %}
               </span>
               <form method="post" action="{{ url('/playlists/franchisarr/' ~ v.entry.id ~ '/remove') }}" class="nav-form"
-                    onsubmit="return confirm({{ ('Delete “' ~ v.entry.name ~ ' (Franchisarr)” on every server?') | tojson | forceescape }})">
+                    onsubmit="return confirm({{ ('Delete “' ~ playlist_title(v.entry.name, v.entry.variant) ~ '” on every server?') | tojson | forceescape }})">
                 <button type="submit" class="secondary outline">Remove</button>
               </form>
             </li>

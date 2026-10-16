@@ -19,8 +19,31 @@ from app.templating import get_templates
 router = APIRouter()
 
 
-def _render(request: Request, result: playlist_service.PlaylistResult) -> HTMLResponse:
-    return get_templates().TemplateResponse(request, "partials/playlist_result.html", {"r": result})
+def _render(request: Request, *results: playlist_service.PlaylistResult) -> HTMLResponse:
+    return get_templates().TemplateResponse(request, "partials/playlist_results.html", {"results": results})
+
+
+Orders = Annotated[list[str], Form()]
+
+
+def _make_each(session, request: Request, kind: str, ref: str, name: str, refs, art, server: str,  # noqa: ANN001
+               orders: list[str]) -> HTMLResponse:
+    """One playlist per order ticked (0.74.0): release, chronological or both. Release when none
+    is. Chronological only where the set has a story order; otherwise it says how to give it one."""
+    from app.services import chronology
+
+    server_id = _server_id(session, server)
+    wanted = [v for v in playlist_service.VARIANTS if v in orders] or ["release"]
+    results = []
+    for variant in wanted:
+        if variant == "chronological" and chronology.story(session, kind, ref, list(refs)) is None:
+            results.append(playlist_service.PlaylistResult(
+                title=playlist_service.playlist_title(name, variant), variant=variant,
+                note="It has no story order yet: arrange one in Story order and it can have a chronological playlist."))
+            continue
+        results.append(franchisarr_playlists.make(session, kind, ref, name, refs, art, server_id=server_id,
+                                                  variant=variant))
+    return _render(request, *results)
 
 
 def _server_id(session, raw: str) -> int | None:  # noqa: ANN001
@@ -39,7 +62,7 @@ Server = Annotated[str, Form()]
 
 @router.post("/franchises/{wikidata_id}/playlist", response_class=HTMLResponse)
 def franchise_playlist(request: Request, session: DbSession, user: AdminUser, wikidata_id: str,
-                       server: Server = ""):
+                       server: Server = "", order: Orders = []):  # noqa: B006 - FastAPI copies defaults
     from app.services import franchise_service
 
     view = franchise_service.franchise_view(session, wikidata_id, user.id)
@@ -47,13 +70,12 @@ def franchise_playlist(request: Request, session: DbSession, user: AdminUser, wi
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such franchise.")
     refs = [(t.item_type, t.tmdb_id) for t in view.owned_films + view.owned_shows]
     art = playlist_service.art_from(view.backdrop_path, view.owned_films)
-    return _render(request, franchisarr_playlists.make(session, "franchises", wikidata_id, view.name, refs, art,
-                                                       server_id=_server_id(session, server)))
+    return _make_each(session, request, "franchises", wikidata_id, view.name, refs, art, server, order)
 
 
 @router.post("/collections/{collection_id}/playlist", response_class=HTMLResponse)
 def collection_playlist(request: Request, session: DbSession, user: AdminUser, collection_id: int,
-                        server: Server = ""):
+                        server: Server = "", order: Orders = []):  # noqa: B006 - FastAPI copies defaults
     from app.services import movie_gap_service
 
     gap = next((g for g in movie_gap_service.collection_gaps(session, user.id, only={collection_id})
@@ -62,8 +84,7 @@ def collection_playlist(request: Request, session: DbSession, user: AdminUser, c
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such collection.")
     refs = [(ItemType.MOVIE.value, m.tmdb_id) for m in gap.owned]
     art = playlist_service.art_from(getattr(gap, "backdrop_path", None), gap.owned)
-    return _render(request, franchisarr_playlists.make(session, "collections", str(collection_id), gap.name, refs,
-                                                       art, server_id=_server_id(session, server)))
+    return _make_each(session, request, "collections", str(collection_id), gap.name, refs, art, server, order)
 
 
 @router.post("/directors/{person_id}/playlist", response_class=HTMLResponse)

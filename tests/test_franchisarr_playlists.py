@@ -450,7 +450,7 @@ def test_the_franchise_button_builds_and_the_tab_lists_it(client: TestClient) ->
 
     page = client.get(f"{BASE}/franchises/Q462").text
     assert "✓ Playlist kept on Attic, Living room" in page and "Refresh playlist" in page, "in the banner (0.44.0)"
-    assert page.index('class="heading-actions"') < page.index('id="playlist-result"'), "the result goes below it"
+    assert page.index('class="heading-actions') < page.index('id="playlist-result"'), "the result goes below it"
 
     tab = client.get(f"{BASE}/playlists/franchisarr").text
     assert "<h1>Playlists</h1>" in tab and 'aria-current="page">Franchisarr' in tab

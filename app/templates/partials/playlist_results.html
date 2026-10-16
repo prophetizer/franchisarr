@@ -1,0 +1,5 @@
+{# One result per playlist built from a button (0.74.0: release order, chronological, or both). #}
+{% for r in results %}
+  {% if r.note %}<p class="muted">“{{ r.title }}”: {{ r.note }}</p>
+  {% else %}{% include "partials/playlist_result.html" %}{% endif %}
+{% endfor %}

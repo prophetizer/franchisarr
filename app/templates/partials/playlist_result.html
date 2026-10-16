@@ -4,10 +4,13 @@
     <p role="alert" class="notice-bad">{{ s.server }}: {{ s.error }}</p>
   {% else %}
     <p role="status" class="notice-good">
-      “{{ r.title }}” is ready on {{ s.server }}: {{ s.films }} film{{ '' if s.films == 1 else 's' }}{% if s.shows %}, {{ s.shows }} show{{ '' if s.shows == 1 else 's' }}{% endif %}{% if s.episodes %} ({{ s.episodes }} episode{{ '' if s.episodes == 1 else 's' }}){% endif %}, in release order{% if s.poster %}, with its own poster{% endif %}.
+      “{{ r.title }}” is ready on {{ s.server }}: {{ s.films }} film{{ '' if s.films == 1 else 's' }}{% if s.shows %}, {{ s.shows }} show{{ '' if s.shows == 1 else 's' }}{% endif %}{% if s.episodes %} ({{ s.episodes }} episode{{ '' if s.episodes == 1 else 's' }}){% endif %}, {% if r.variant == 'chronological' %}in story order{% if r.story_source and r.story_source != 'yours' %} ({{ r.story_source }}'s built-in timeline){% endif %}{% else %}in release order{% endif %}{% if s.poster %}, with its own poster{% endif %}.
     </p>
   {% endif %}
 {% endfor %}
+{% if r.variant == 'chronological' and r.unplaced %}
+  <p><small class="muted">{{ r.unplaced }} title{{ '' if r.unplaced == 1 else 's' }} the story order doesn't place {{ 'goes' if r.unplaced == 1 else 'go' }} at the end, in release order — arrange {{ 'it' if r.unplaced == 1 else 'them' }} in Story order.</small></p>
+{% endif %}
 {% if r.made_any %}
   <p><small class="muted">It's kept current after every scan — see
     <a href="{{ url('/playlists/franchisarr') }}">Playlists → Franchisarr's</a>.</small></p>

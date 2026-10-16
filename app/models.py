@@ -167,6 +167,24 @@ class UserHiddenSet(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utcnow)
 
 
+class SetOrder(SQLModel, table=True):
+    """A collection's or franchise's story order as the household set it (0.74.0): one row per
+    title, by position. Where a set has none, a built-in order may apply (chronology_data.py)."""
+
+    __tablename__ = "set_orders"
+    __table_args__ = (UniqueConstraint("kind", "ref", "item_type", "tmdb_id", name="uq_set_order"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    #: "collections" or "franchises" -- the same words the playlists use.
+    kind: str = Field(index=True)
+    #: The TMDb collection id or the Wikidata id, as text.
+    ref: str = Field(index=True)
+    item_type: str
+    tmdb_id: int
+    position: int
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
 class UserPreference(SQLModel, table=True):
     """One person's remembered choice for a page -- how they last sorted it. Per account, so it
     follows them across devices; see app/services/sorting.py."""
@@ -781,7 +799,7 @@ class FranchisarrPlaylist(SQLModel, table=True):
     or by Add many; deleted everywhere, and dropped from here, once it's deleted on any server."""
 
     __tablename__ = "franchisarr_playlists"
-    __table_args__ = (UniqueConstraint("kind", "ref", name="uq_franchisarr_playlist"),)
+    __table_args__ = (UniqueConstraint("kind", "ref", "variant", name="uq_franchisarr_playlist"),)
 
     id: int | None = Field(default=None, primary_key=True)
     #: "franchises", "collections" or "directors".
@@ -795,6 +813,9 @@ class FranchisarrPlaylist(SQLModel, table=True):
     servers: str | None = Field(default=None)
     #: Fewest titles worth a playlist on a server: 1 from a page's button, 2 from Add many.
     min_items: int = Field(default=1)
+    #: "release" (the order things came out) or "chronological" (story order, 0.74.0): a set
+    #: can have one of each, "<name> (Franchisarr)" and "<name> — Chronological (Franchisarr)".
+    variant: str = Field(default="release")
     created_at: datetime = Field(default_factory=utcnow)
     refreshed_at: datetime | None = Field(default=None)
     #: Set when it's been removed (on the page, or deleted on a server) but a copy is still on a

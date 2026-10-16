@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Story order — {{ name }} — Franchisarr{% endblock %}
+{% block content %}
+<p><a href="{{ url(back) }}">← {{ name }}</a></p>
+<hgroup>
+  <h1>Story order</h1>
+  <p>{{ name }}, in the order its story happens — what its <strong>Chronological</strong> playlist follows.</p>
+</hgroup>
+{% if request.query_params.get('saved') %}<p class="notice-good" role="status">Saved. A chronological playlist picks it up the next time it's refreshed.</p>{% endif %}
+<p><small class="muted">
+  {% if story and story.source == 'yours' %}This is your order.{% if builtin %} The built-in one ({{ builtin[0] }}) is a reset away.{% endif %}
+  {% elif story %}This is the built-in order for {{ story.source }}{% if story.unplaced %}; the last {{ story.unplaced }} it doesn't place are in release order{% endif %}. Change it and save to make it yours.
+  {% else %}There's no built-in story order for this set, so it starts in release order. Arrange it and save, and its Chronological playlist becomes available.{% endif %}
+  Drag a title, or use ↑ ↓.
+</small></p>
+<form method="post" action="{{ url('/story-order/' ~ kind ~ '/' ~ ref) }}">
+  <ol class="story-order" id="story-order">
+    {% for s in steps %}
+      <li draggable="true" data-key="{{ s.item_type }}:{{ s.tmdb_id }}">
+        <input type="hidden" name="order" value="{{ s.item_type }}:{{ s.tmdb_id }}">
+        <span class="story-handle" aria-hidden="true">⠿</span>
+        {% if s.poster %}<img src="{{ s.poster }}" alt="" loading="lazy" decoding="async" width="40" height="60">{% else %}<span class="story-noposter" aria-hidden="true"></span>{% endif %}
+        <span class="story-title">{{ s.title }} <small class="muted">{{ s.year or '' }}{% if s.item_type == 'show' %} · series{% endif %}{% if s.status != 'owned' %} · {{ 'coming' if s.status == 'upcoming' else 'missing' }}{% endif %}</small></span>
+        <span class="story-move">
+          <button type="button" class="secondary outline" data-move="-1" aria-label="Move {{ s.title }} up">↑</button>
+          <button type="button" class="secondary outline" data-move="1" aria-label="Move {{ s.title }} down">↓</button>
+        </span>
+      </li>
+    {% endfor %}
+  </ol>
+  <p class="set-actions">
+    <button type="submit">Save this order</button>
+    {% if story and story.source == 'yours' %}
+      <button type="submit" name="reset" value="1" class="secondary outline">{{ 'Back to the built-in order' if builtin else 'Back to release order' }}</button>
+    {% endif %}
+  </p>
+</form>
+<script src="{{ asset('/static/story_order.js') }}" defer></script>
+{% endblock %}

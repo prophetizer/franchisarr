@@ -2,8 +2,9 @@
 
 The titles are the ones you own on that page. Films and every regular episode of the shows go
 into one list sorted by first release -- so for a franchise that spans film and TV, episodes
-fall between the films as they were broadcast. Nothing records story order (where *Rogue One*
-sits in the timeline), so release order is the order there is.
+fall between the films as they were broadcast. Story order (where *Rogue One* sits in the
+timeline) is recorded nowhere Franchisarr reads; since 0.74.0 a "Chronological" playlist follows
+the household's own Story order or a built-in one (chronology.py, chronology_data.py).
 
 One playlist per media server, since a playlist can only hold that server's items, named
 "<name> (Franchisarr)". Making and keeping them is franchisarr_playlists.py (0.42.0): each is
@@ -60,6 +61,14 @@ class PlaylistResult:
     only: str | None = None
     #: Servers left out because they held fewer than `min_items` of the titles.
     skipped: int = 0
+    #: "release" or "chronological" (0.74.0), for the result's wording.
+    variant: str = "release"
+    #: Chronological only: where the story order came from ("yours", "Star Wars") and how many
+    #: titles it didn't place (they go last, in release order).
+    story_source: str | None = None
+    unplaced: int = 0
+    #: Said instead of building anything (a chronological one for a set with no story order).
+    note: str | None = None
 
     @property
     def made_any(self) -> bool:
@@ -80,8 +89,13 @@ def targets(session: Session) -> list[MediaServer]:
     return media_server_service.enabled_servers(session)
 
 
-def playlist_title(name: str) -> str:
-    return f"{name}{SUFFIX}"
+#: What a chronological playlist's name carries (0.74.0): "Star Wars — Chronological (Franchisarr)".
+CHRONOLOGICAL = " — Chronological"
+VARIANTS = ("release", "chronological")
+
+
+def playlist_title(name: str, variant: str = "release") -> str:
+    return f"{name}{CHRONOLOGICAL if variant == 'chronological' else ''}{SUFFIX}"
 
 
 def _owned_items(session: Session, refs: list[tuple[str, int]]) -> dict[int, list[LibraryItem]]:
@@ -119,11 +133,13 @@ def order_entries(entries: list) -> list:  # noqa: ANN001 - PlaylistEntry
 
 def apply_poster(client, title: str, name: str, films: int, episodes: int,  # noqa: ANN001
                  art: PosterArt, *, shows: int = 0) -> bool:
+    # A chronological playlist's poster says so (0.74.0); the title tells which this is.
+    order = "IN STORY ORDER" if title.endswith(CHRONOLOGICAL + SUFFIX) else "IN RELEASE ORDER"
     """Render and upload the poster. Never raises: True if it went on, False otherwise."""
     from app.services import playlist_poster
 
     image = playlist_poster.render(name, films=films, episodes=episodes, shows=shows,
-                                   backdrop_url=art.backdrop_url, poster_urls=list(art.poster_urls))
+                                   backdrop_url=art.backdrop_url, poster_urls=list(art.poster_urls), order=order)
     if image is None:
         return False
     try:
@@ -244,7 +260,7 @@ def repost_all(session: Session) -> list[tuple[str, bool]]:
         for title in client.playlist_titles():
             if not title.endswith(SUFFIX):
                 continue
-            name = title[: -len(SUFFIX)]
+            name = title[: -len(SUFFIX)].removesuffix(CHRONOLOGICAL)   # either order's playlist
             art = _art_for_name(session, name)
             counts = client.playlist_counts(title)
             if art is None or counts is None:

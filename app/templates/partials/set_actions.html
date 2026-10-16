@@ -2,11 +2,15 @@
     and for an admin, add every missing film at once. `set_kind` / `set_ref` name the set;
     `set_hidden` says whether it's hidden now; `add_all_url` (admins, when films are missing)
     opens the confirm dialog. -#}
-{% if add_all_url or set_kind %}
+{% if add_all_url or set_kind or story_order_url %}
 <div class="set-actions">
   {% if add_all_url %}
     <button type="button" class="outline" hx-get="{{ add_all_url }}" hx-target="#add-dialog" hx-swap="innerHTML">
       Add all {{ add_all_count }} missing…</button>
+  {% endif %}
+  {% if story_order_url %}
+    <a href="{{ story_order_url }}" role="button" class="secondary outline"
+       title="The order its story happens in, for a chronological playlist">Story order…</a>
   {% endif %}
   {% if set_kind %}
   <form method="post" action="{{ url('/hidden-sets') }}" class="nav-form">

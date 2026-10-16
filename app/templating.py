@@ -120,6 +120,8 @@ def build_templates(base_url: str) -> Jinja2Templates:
     )
     templates.env.globals["url"] = make_url_builder(base_url)
     templates.env.globals["version"] = __version__
+    from app.services.playlist_service import playlist_title
+    templates.env.globals["playlist_title"] = playlist_title
     templates.env.globals["build"] = build_id()
     templates.env.globals["asset"] = make_asset_builder(base_url)
     from app.services.sorting import sort_titles

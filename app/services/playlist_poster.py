@@ -114,7 +114,7 @@ def _name_lines(draw, name: str):  # noqa: ANN001, ANN202
 
 
 def render(name: str, *, films: int, episodes: int, shows: int = 0, backdrop_url: str | None = None,
-           poster_urls: list[str] | None = None) -> bytes | None:
+           poster_urls: list[str] | None = None, order: str = "IN RELEASE ORDER") -> bytes | None:
     """The square poster as JPEG bytes, or None if there's no artwork to build it from (or it
     failed)."""
     from app.services.artwork import images_enabled
@@ -142,7 +142,8 @@ def render(name: str, *, films: int, episodes: int, shows: int = 0, backdrop_url
         if caption:
             draw.text((SIZE // 2, y), caption, font=_font(False, 36), fill=(210, 210, 210), anchor="ms")
         y -= 48
-        draw.text((SIZE // 2, y), "IN RELEASE ORDER", font=_font(True, 32), fill=ACCENT, anchor="ms")
+        # "IN STORY ORDER" on a chronological playlist's poster (0.74.0).
+        draw.text((SIZE // 2, y), order, font=_font(True, 32), fill=ACCENT, anchor="ms")
         line_height = int(font.size * 1.1)
         y -= 60
         for line in reversed(lines):

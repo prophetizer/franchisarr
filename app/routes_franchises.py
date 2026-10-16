@@ -52,6 +52,7 @@ def franchises(request: Request, session: DbSession, user: RequiredUser, sort: s
 def franchise_detail(request: Request, session: DbSession, user: RequiredUser, wikidata_id: str,
                      sort: str | None = None, dir: str | None = None):  # noqa: A002
     from app.config import get_settings
+    from app.routes_movies import _story_context
     from app.services import hidden_sets, sorting
 
     detail_sort = sorting.resolve(session, user.id, "detail", sort, dir)
@@ -73,7 +74,10 @@ def franchise_detail(request: Request, session: DbSession, user: RequiredUser, w
          "set_hidden": hidden_sets.is_hidden(session, user.id, "franchise", view.wikidata_id),
          "add_all_url": (f"{get_settings().base_url}/add-all/franchise/{view.wikidata_id}"
                          if user.is_admin and len(view.missing_films) > 1 else None),
-         "add_all_count": len(view.missing_films),"user": user, "f": view, "multi_server": _multi_server(session),
+         "add_all_count": len(view.missing_films),
+         # Chronological playlists (0.74.0).
+         **_story_context(session, user, "franchises", view.wikidata_id,
+                          [(t.item_type, t.tmdb_id) for t in view.owned_films + view.owned_shows]),"user": user, "f": view, "multi_server": _multi_server(session),
          "can_playlist": playlist_service.available(session) and view.owned > 0,
          "playlist_servers": playlist_service.targets(session),
          "playlist_kept": franchisarr_playlists.kept_on(session, "franchises", wikidata_id),

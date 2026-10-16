@@ -79,6 +79,7 @@ ADMIN_ONLY = [
     ("post", "/settings/keys"),
     ("get", "/add-all/collection/1"), ("post", "/add-all"), ("get", "/duplicates"), ("get", "/parity"),
     ("post", "/settings/notify-mode"),
+    ("get", "/story-order/collections/1"), ("post", "/story-order/collections/1"),
 ]
 
 MEMBER_PAGES = ["/", "/collections", "/franchises", "/directors", "/upcoming", "/shows", "/activity",

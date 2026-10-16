@@ -165,9 +165,9 @@ def count(session: Session) -> int:
     return len(session.exec(select(FranchisarrPlaylist.id).where(col(FranchisarrPlaylist.removed_at).is_(None))).all())
 
 
-def kept_on(session: Session, kind: str, ref: str) -> list[str]:
+def kept_on(session: Session, kind: str, ref: str, variant: str = "release") -> list[str]:
     """The servers a page's playlist is kept on, by name, for its banner: none if it isn't kept."""
-    entry = entry_for(session, kind, ref)
+    entry = entry_for(session, kind, ref, variant)
     if entry is None:
         return []
     names = {s.id: s.name for s in session.exec(select(MediaServer)).all() if s.enabled}
@@ -175,27 +175,30 @@ def kept_on(session: Session, kind: str, ref: str) -> list[str]:
                    if c.server_playlist_id and c.server_id in names), key=str.casefold)
 
 
-def entry_for(session: Session, kind: str, ref: str) -> FranchisarrPlaylist | None:
+def entry_for(session: Session, kind: str, ref: str, variant: str = "release") -> FranchisarrPlaylist | None:
     return session.exec(select(FranchisarrPlaylist).where(
         col(FranchisarrPlaylist.kind) == kind, col(FranchisarrPlaylist.ref) == str(ref),
-        col(FranchisarrPlaylist.removed_at).is_(None))).first()
+        col(FranchisarrPlaylist.variant) == variant, col(FranchisarrPlaylist.removed_at).is_(None))).first()
 
 
 # ------------------------------------------------------------------ making one
 
 
 def make(session: Session, kind: str, ref: str, name: str, refs: list[tuple[str, int]], art,  # noqa: ANN001
-         *, server_id: int | None = None, min_items: int = 1, work=None) -> PlaylistResult:  # noqa: ANN001
+         *, server_id: int | None = None, min_items: int = 1, work=None,  # noqa: ANN001
+         variant: str = "release") -> PlaylistResult:
     """A page's playlist button (and each set of Add many): add it to the set and build it now,
-    on `server_id` or on every server it belongs on. Pressing it again refreshes it."""
+    on `server_id` or on every server it belongs on. Pressing it again refreshes it. `variant`:
+    "release" or "chronological" (0.74.0) -- a set can keep one of each."""
     from app.services import media_server_service
     from app.services.playlist_sync import _Run
 
     work = work or _Run(session)
     entry = session.exec(select(FranchisarrPlaylist).where(
-        col(FranchisarrPlaylist.kind) == kind, col(FranchisarrPlaylist.ref) == str(ref))).first()
+        col(FranchisarrPlaylist.kind) == kind, col(FranchisarrPlaylist.ref) == str(ref),
+        col(FranchisarrPlaylist.variant) == variant)).first()
     if entry is None:
-        entry = FranchisarrPlaylist(kind=kind, ref=str(ref), name=name, min_items=min_items)
+        entry = FranchisarrPlaylist(kind=kind, ref=str(ref), name=name, min_items=min_items, variant=variant)
     elif entry.removed_at is not None:
         entry.removed_at, entry.servers, entry.min_items = None, None, min_items
     else:
@@ -217,7 +220,7 @@ def make(session: Session, kind: str, ref: str, name: str, refs: list[tuple[str,
     session.commit()
     session.refresh(entry)
 
-    result = PlaylistResult(title=playlist_title(entry.name))
+    result = PlaylistResult(title=playlist_title(entry.name, entry.variant), variant=entry.variant)
     if server_id is not None:
         server = session.get(MediaServer, server_id)
         result.only = server.name if server else None
@@ -249,9 +252,20 @@ def _build(work, entry: FranchisarrPlaylist, refs: list[tuple[str, int]], art, t
     from app.services.playlist_service import _owned_items, order_entries
 
     session = work.session
-    title = playlist_title(entry.name)
+    title = playlist_title(entry.name, entry.variant)
     copies = _copies(session, entry)
     owned = _owned_items(session, refs)
+    # Chronological (0.74.0): the set's story order ranks each title; a show's episodes stay
+    # together, in air order, where the show falls. No story order any more: release order.
+    rank: dict[tuple[str, int], int] | None = None
+    if entry.variant == "chronological":
+        from app.services import chronology
+
+        story = chronology.story(session, entry.kind, entry.ref, list(refs))
+        if story is not None:
+            rank = {key: n for n, key in enumerate(story.order)}
+            if result is not None:
+                result.story_source, result.unplaced = story.source, story.unplaced
     for server_id in sorted(targets):
         server = work.servers.get(server_id)
         if server is None:
@@ -280,7 +294,9 @@ def _build(work, entry: FranchisarrPlaylist, refs: list[tuple[str, int]], art, t
                 result.servers.append(outcome)
             films = [i.item_key for i in items if i.item_type == ItemType.MOVIE.value]
             shows = [i.item_key for i in items if i.item_type == ItemType.SHOW.value]
-            basis = _fingerprint(sorted(films) + ["|"] + sorted(shows))
+            basis = _fingerprint(sorted(films) + ["|"] + sorted(shows)
+                                 # the order itself, so re-arranging the story rebuilds it
+                                 + (["|story"] + [f"{t}:{i}" for t, i in sorted(rank, key=rank.get)] if rank else []))
             existing = present.get(copy.server_playlist_id or "")
             if existing is None:
                 # Never made, or made before the set kept ids: take a same-named one of ours.
@@ -293,6 +309,12 @@ def _build(work, entry: FranchisarrPlaylist, refs: list[tuple[str, int]], art, t
                 continue
             client = work.client(server_id)
             entries = order_entries(client.playlist_entries(films, shows))
+            if rank is not None:
+                # A stable sort by the title's place in the story keeps each show's episodes
+                # in the air order order_entries gave them.
+                key_of = {i.item_key: (i.item_type, i.tmdb_id) for i in items}
+                last = len(rank)
+                entries.sort(key=lambda e: rank.get(key_of.get(e.show_key or e.key or ""), last))
             if not entries:
                 outcome.error = "None of these titles could be found on the server any more."
                 copy.status, copy.message = "error", outcome.error
@@ -311,7 +333,7 @@ def _build(work, entry: FranchisarrPlaylist, refs: list[tuple[str, int]], art, t
             outcome.episodes = len(entries) - outcome.films
             outcome.shows = len({e.show_key for e in entries if e.show_key is not None})
             if changed and art is not None:
-                outcome.poster = _poster(client, copy.server_playlist_id, entry.name, outcome, art)
+                outcome.poster = _poster(client, copy.server_playlist_id, entry.name, outcome, art, entry.variant)
             copy.fingerprint, copy.items = basis, len(entries)
             copy.status, copy.message = "ok", None
         except Exception as exc:  # noqa: BLE001 -- reported on the page and in the run, logged in full
@@ -333,14 +355,16 @@ def _info(playlist_id: str, title: str, count: int):  # noqa: ANN202
     return PlaylistInfo(id=playlist_id, title=title, count=count)
 
 
-def _poster(client, playlist_id: str | None, name: str, outcome: ServerResult, art) -> bool:  # noqa: ANN001
+def _poster(client, playlist_id: str | None, name: str, outcome: ServerResult, art,  # noqa: ANN001
+            variant: str = "release") -> bool:
     """Render the poster with the new counts and put it on by id. Never raises."""
     from app.services import playlist_poster
 
     if not playlist_id:
         return False
     image = playlist_poster.render(name, films=outcome.films, episodes=outcome.episodes, shows=outcome.shows,
-                                   backdrop_url=art.backdrop_url, poster_urls=list(art.poster_urls))
+                                   backdrop_url=art.backdrop_url, poster_urls=list(art.poster_urls),
+                                   order="IN STORY ORDER" if variant == "chronological" else "IN RELEASE ORDER")
     if image is None:
         return False
     try:
@@ -379,7 +403,7 @@ def refresh(work, *, bump: Callable = _quiet, error: Callable = _quiet,  # noqa:
             if not gone:
                 live.append(entry)
                 continue
-            logger.info("Playlist %r was deleted on %s; deleting it everywhere", playlist_title(entry.name),
+            logger.info("Playlist %r was deleted on %s; deleting it everywhere", playlist_title(entry.name, entry.variant),
                         ", ".join(work.servers[s].name for s in gone))
             entry.removed_at = _now()
             for server_id in gone:
@@ -396,7 +420,7 @@ def refresh(work, *, bump: Callable = _quiet, error: Callable = _quiet,  # noqa:
     for entry in live:
         found = index.get((entry.kind, entry.ref))
         if progress:
-            progress(playlist_title(entry.name))
+            progress(playlist_title(entry.name, entry.variant))
         if found is None:
             continue              # its page is gone: leave the playlists as they are
         copies = _copies(session, entry)
@@ -408,7 +432,7 @@ def refresh(work, *, bump: Callable = _quiet, error: Callable = _quiet,  # noqa:
             _build(work, entry, found.refs, found.art, wanted, bump=bump, error=error)
         except Exception as exc:  # noqa: BLE001 -- one playlist must not stop the rest
             logger.exception("Refreshing %r failed", entry.name)
-            error(f"{playlist_title(entry.name)}: {type(exc).__name__}")
+            error(f"{playlist_title(entry.name, entry.variant)}: {type(exc).__name__}")
         session.commit()
 
 
@@ -427,7 +451,7 @@ def _remove_copies(work, entry: FranchisarrPlaylist, copies: dict[int, Franchisa
                 reachable[server_id][:] = [p for p in reachable[server_id] if p.id != copy.server_playlist_id]
                 bump("deleted")
             except Exception as exc:  # noqa: BLE001
-                error(f"{playlist_title(entry.name)}: couldn't delete it on {work.servers[server_id].name} "
+                error(f"{playlist_title(entry.name, entry.variant)}: couldn't delete it on {work.servers[server_id].name} "
                       f"({type(exc).__name__})")
                 continue
         session.delete(copy)
@@ -493,7 +517,7 @@ def remove(session: Session, entry_id: int) -> str | None:
     session.add(entry)
     _remove_copies(work, entry, _copies(session, entry), reachable, error=problems.append)
     session.commit()
-    logger.info("Removed %r from the Franchisarr playlist set", playlist_title(entry.name))
+    logger.info("Removed %r from the Franchisarr playlist set", playlist_title(entry.name, entry.variant))
     return "; ".join(problems) or None
 
 

@@ -20,7 +20,7 @@ And, built on the same data: **franchise pages** that put films and TV together 
 you have 8 of 15*; fan films are left out), **director pages** (*you own 11 Nolan films; missing* Following *and*
 Insomnia), an **Upcoming** page of announced films in franchises you own — as a list or a month-by-month
 calendar — with release-date notifications, **import lists** Radarr and Sonarr can poll so you never have to click Add, and
-**playlists** of a franchise, collection or director in release order, on Plex, Jellyfin or Emby — films and episodes
+**playlists** of a franchise, collection or director in release order — or in story order — on Plex, Jellyfin or Emby — films and episodes
 together, so a franchise plays the way it came out.
 
 It reads all three — one of them or several at once, with a film on any of them counting as
@@ -500,8 +500,15 @@ out. With more than one server the button opens a menu — **On every server**, 
 - Playlists belong to one account. On Plex that's the account of the token Franchisarr uses —
   normally yours as the server owner. On Jellyfin and Emby it's the server's *watched as* user
   (Servers page), which is the first administrator unless you've set one.
-- The order is release order. Nothing records story order (where *Rogue One* sits in the saga),
-  so that isn't offered.
+- **Chronological, too.** A collection or franchise page has two ticks above the button —
+  **Release order** and **Chronological** — so it makes either playlist or both. The
+  chronological one, "*name* — Chronological (Franchisarr)", follows the story: *Rogue One*
+  before *A New Hope*, *Prometheus* before *Alien*, a show's episodes together where the show
+  falls. Built-in story orders cover the big franchises where the two differ (Star Wars, the MCU,
+  X-Men, Alien, Fast & Furious, the Wizarding World, Middle-earth and sixteen more); any
+  collection or franchise can be given its own, or the built-in one changed, in **Story order…**
+  under its banner — drag the titles or use ↑ ↓. A title the order doesn't place goes at the end,
+  in release order. Directors are release order only.
 
 ## The Playlists page
 

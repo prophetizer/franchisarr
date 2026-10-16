@@ -187,6 +187,9 @@ def collection_detail(
          "set_hidden": hidden_sets.is_hidden(session, user.id, "collection", collection_id),
          "add_all_url": _url(f"/add-all/collection/{collection_id}") if user.is_admin and len(gap.missing) > 1 else None,
          "add_all_count": len(gap.missing),
+         # Chronological playlists (0.74.0).
+         **_story_context(session, user, "collections", str(collection_id),
+                          [(ItemType.MOVIE.value, m.tmdb_id) for m in gap.owned]),
          "credits": end_credits.for_page(session, user, steps),
          "celebrations": celebrations.for_page(session, user, collection_id),
          "detail_sort": detail_sort,
@@ -373,6 +376,57 @@ def submit_add(
         context["error"] = str(exc)
 
     return get_templates().TemplateResponse(request, "partials/add_result.html", context)
+
+
+def _story_context(session, user, kind: str, ref: str, owned_refs: list) -> dict:  # noqa: ANN001
+    """What a collection's or franchise's page needs for chronological playlists (0.74.0)."""
+    from app.services import chronology, franchisarr_playlists
+
+    return {"playlist_orders": True,
+            "story_available": chronology.story(session, kind, ref, owned_refs) is not None,
+            "playlist_kept_chrono": franchisarr_playlists.kept_on(session, kind, ref, "chronological"),
+            "story_order_url": _url(f"/story-order/{kind}/{ref}") if user.is_admin else None}
+
+
+@router.get("/story-order/{kind}/{ref}", response_class=HTMLResponse)
+def story_order_page(request: Request, session: DbSession, user: AdminUser, kind: str, ref: str):
+    """A set's story order, to arrange (0.74.0): what its Chronological playlist follows."""
+    from app.services import chronology
+
+    found = chronology.set_titles(session, user.id, kind, ref)
+    if found is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such set.")
+    name, steps = found
+    by_key = {(s.item_type, s.tmdb_id): s for s in steps}
+    story = chronology.story(session, kind, ref, list(by_key))
+    ordered = [by_key[k] for k in (story.order if story else list(by_key))]
+    back = f"/{kind}/{ref}"
+    return get_templates().TemplateResponse(
+        request, "story_order.html",
+        {"user": user, "kind": kind, "ref": ref, "name": name, "steps": ordered, "story": story, "back": back,
+         "builtin": chronology._builtin(set(by_key))})
+
+
+@router.post("/story-order/{kind}/{ref}")
+async def save_story_order(request: Request, session: DbSession, user: AdminUser, kind: str, ref: str):
+    """Save the arranged order, or put it back to the built-in one (or release order)."""
+    from app.services import chronology
+
+    found = chronology.set_titles(session, user.id, kind, ref)
+    if found is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such set.")
+    form = await request.form()
+    if form.get("reset"):
+        chronology.reset(session, kind, ref)
+    else:
+        known = {(s.item_type, s.tmdb_id) for s in found[1]}
+        ordered = []
+        for raw in form.getlist("order"):
+            item_type, _, tid = str(raw).partition(":")
+            if tid.isdigit() and (item_type, int(tid)) in known:   # only this set's own titles
+                ordered.append((item_type, int(tid)))
+        chronology.save(session, kind, ref, ordered)
+    return RedirectResponse(_url(f"/story-order/{kind}/{ref}?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.get("/duplicates", response_class=HTMLResponse)

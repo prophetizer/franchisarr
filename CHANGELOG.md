@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Chronological playlists.** Collection and franchise pages can make a playlist in story order
+  as well as — or instead of — release order: two ticks above **Make a playlist**. It's called
+  "*name* — Chronological (Franchisarr)", says *In story order* on its poster, is kept current
+  like the other, and keeps a show's episodes together where the show falls in the story.
+- **Story order** under a collection's or franchise's banner (administrators): drag the titles,
+  or use ↑ ↓, into the order the story happens; a chronological playlist follows it from its
+  next refresh. Built-in orders cover 23 franchises where story and release order differ — Star
+  Wars (with its shows), the MCU, X-Men, Alien (with the AVP films), Fast & Furious, the
+  Wizarding World, Middle-earth, the MonsterVerse, Indiana Jones, Saw, the Conjuring universe,
+  John Wick, Transformers and more — each id checked against TMDb.
+
 ### Changed
 
 - **The Trophy case is about a third quicker on a big library** (3.5s to 2.3s at 20,000 films):
