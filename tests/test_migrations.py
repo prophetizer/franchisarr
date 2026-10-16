@@ -108,3 +108,27 @@ def test_0034_drops_stored_fan_films_and_nothing_else(db_path: Path) -> None:
     with sqlite3.connect(db_path) as conn:
         left = [row[0] for row in conn.execute("SELECT title FROM franchise_members ORDER BY tmdb_id")]
     assert left == ["Philosopher's Stone", "A Short", "Untagged"]
+
+
+def test_0038_keeps_every_playlist_copy_through_the_table_rebuild(db_path: Path) -> None:
+    """0038 rebuilds franchisarr_playlists to widen its unique key. With foreign keys on, SQLite's
+    drop of the old table cascaded into franchisarr_playlist_copies and emptied it -- found on a
+    copy of a real database (16 playlists, 48 copies -> 0). env.py turns them off for migrations."""
+    config = _alembic_config(db_path)
+    command.upgrade(config, "0037")
+    with sqlite3.connect(db_path) as conn:
+        conn.execute("INSERT INTO media_servers (id, name, kind, url, credential, enabled, created_at) "
+                     "VALUES (1, 'Plex', 'plex', 'http://plex:32400', 'x', 1, '2026-09-01')")
+        conn.execute("INSERT INTO franchisarr_playlists (id, kind, ref, name, min_items, created_at) "
+                     "VALUES (1, 'franchises', 'Q462', 'Star Wars', 1, '2026-09-01')")
+        conn.execute("INSERT INTO franchisarr_playlist_copies (playlist_id, server_id, server_playlist_id, items, status) "
+                     "VALUES (1, 1, 'pl-1', 3, 'ok')")
+
+    command.upgrade(config, "head")
+
+    with sqlite3.connect(db_path) as conn:
+        assert conn.execute("SELECT server_playlist_id FROM franchisarr_playlist_copies").fetchall() == [("pl-1",)]
+        assert conn.execute("SELECT variant FROM franchisarr_playlists").fetchall() == [("release",)]
+        conn.execute("INSERT INTO franchisarr_playlists (kind, ref, name, min_items, created_at, variant) "
+                     "VALUES ('franchises', 'Q462', 'Star Wars', 1, '2026-09-01', 'chronological')")   # now allowed
+        assert conn.execute("PRAGMA foreign_key_check").fetchall() == []

@@ -52,6 +52,16 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     connectable = create_engine(_url(), poolclass=pool.NullPool)
     with connectable.connect() as connection:
+        # SQLite rebuilds a table in batch mode by copying it and dropping the old one -- and with
+        # foreign keys on (app/db.py turns them on for every connection) that drop cascades into
+        # every table referencing it: 0038's rebuild of franchisarr_playlists emptied
+        # franchisarr_playlist_copies when tried on a copy of a real database. Off for migrations,
+        # as Alembic's docs advise; it's this connection only, which closes when they're done.
+        if connection.dialect.name == "sqlite":
+            connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+            # SQLAlchemy began a transaction for that statement; end it, or Alembic's own would
+            # nest inside it and the migrations would roll back when the connection closes.
+            connection.commit()
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
