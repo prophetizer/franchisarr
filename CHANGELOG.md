@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.74.0] — 2026-10-17
+
+### Upgrading
+
+A small change to the database applies on start: a collection or franchise can keep two
+Franchisarr playlists now, one per order. Every playlist Franchisarr already keeps is release
+order and stays exactly as it is, on the same servers, with the same id; nothing chronological is
+made until someone ticks Chronological.
+
 ### Added
 
 - **Chronological playlists.** Collection and franchise pages can make a playlist in story order
