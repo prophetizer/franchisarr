@@ -12,6 +12,7 @@ from typing import Annotated
 from fastapi import HTTPException, APIRouter, Form, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
+from app.routes_auth import _safe_next
 from app.auth.dependencies import AdminUser, DbSession, RequiredUser
 from app.config import get_settings
 from app.services.settings_service import SettingKey, get_setting, set_setting
@@ -92,9 +93,8 @@ def choose_look(request: Request, session: DbSession, user: RequiredUser,
     from app.services import look as look_service
 
     look_service.set_look(session, user.id, look)
-    base = get_settings().base_url
-    target = back if back.startswith(f"{base}/") and not back.startswith("//") and "://" not in back else _url("/")
-    return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)
+    # The sign-in page's check (backslashes and control characters refused too), not a copy.
+    return RedirectResponse(_safe_next(back or None), status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/preferences/map-shape", status_code=status.HTTP_204_NO_CONTENT)
@@ -112,9 +112,8 @@ def choose_effects(session: DbSession, user: RequiredUser, value: Annotated[str,
     from app.services import look as look_service
 
     look_service.set_effects(session, user.id, value)
-    base = get_settings().base_url
-    target = back if back.startswith(f"{base}/") and not back.startswith("//") and "://" not in back else _url("/")
-    return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)
+    # The sign-in page's check (backslashes and control characters refused too), not a copy.
+    return RedirectResponse(_safe_next(back or None), status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/preferences/density")
@@ -124,9 +123,8 @@ def choose_density(session: DbSession, user: RequiredUser, value: Annotated[str,
     from app.services import look as look_service
 
     look_service.set_density(session, user.id, value)
-    base = get_settings().base_url
-    target = back if back.startswith(f"{base}/") and not back.startswith("//") and "://" not in back else _url("/")
-    return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)
+    # The sign-in page's check (backslashes and control characters refused too), not a copy.
+    return RedirectResponse(_safe_next(back or None), status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/hidden-sets")
@@ -138,9 +136,8 @@ def hide_set(session: DbSession, user: RequiredUser, kind: Annotated[str, Form()
     if kind not in hidden_sets.KINDS:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No such kind of set.")
     hidden_sets.set_hidden(session, user.id, kind, ref[:64], hide == "true")
-    base = get_settings().base_url
-    target = back if back.startswith(f"{base}/") and not back.startswith("//") and "://" not in back else _url("/")
-    return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)
+    # The sign-in page's check (backslashes and control characters refused too), not a copy.
+    return RedirectResponse(_safe_next(back or None), status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/preferences/intros")
@@ -150,6 +147,5 @@ def choose_intros(session: DbSession, user: RequiredUser, on: Annotated[str, For
     from app.services import look as look_service
 
     look_service.set_intros(session, user.id, on == "true")
-    base = get_settings().base_url
-    target = back if back.startswith(f"{base}/") and not back.startswith("//") and "://" not in back else _url("/")
-    return RedirectResponse(target, status_code=status.HTTP_303_SEE_OTHER)
+    # The sign-in page's check (backslashes and control characters refused too), not a copy.
+    return RedirectResponse(_safe_next(back or None), status_code=status.HTTP_303_SEE_OTHER)

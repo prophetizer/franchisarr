@@ -296,12 +296,18 @@ def _pages(api_key: str, cleanup: str | None) -> int:
         pages = ["/", "/collections", "/collections?filter=started", "/collections/3", "/franchises",
                  "/franchises/Q100001", "/shows", "/upcoming", "/directors", "/directors/1", "/settings",
                  "/activity", "/libraries", "/settings/diagnostics", "/search?q=film 1", "/search?q=show",
-                 f"/api/lists/collections.json?api_key={api_key}", f"/api/lists/shows.json?api_key={api_key}",
-                 f"/api/lists/upcoming.ics?api_key={api_key}", "/api/collections/gaps", "/api/spinoffs"]
+                 # Pages added since 0.70 (checked 2026-10-16): the stats, trophies, calendar, the
+                 # household tools and the add-all confirm.
+                 "/stats", "/trophies", "/upcoming?view=calendar", "/duplicates", "/parity",
+                 "/add-all/collection/3", "/add-all/director/1",
+                 "/api/lists/collections.json", "/api/lists/shows.json",
+                 "/api/lists/upcoming.ics", "/api/collections/gaps", "/api/spinoffs"]
         print("\npages (first hit / second hit):")
         for path in pages:
-            label = path.split("?api_key")[0]
-            t0 = time.perf_counter(); r1 = client.get(path); t1 = time.perf_counter(); r2 = client.get(path); t2 = time.perf_counter()
+            # The key goes on at request time, so nothing printed is ever built from it.
+            label = path
+            url = f"{path}?api_key={api_key}" if path.startswith("/api/lists/") else path
+            t0 = time.perf_counter(); r1 = client.get(url); t1 = time.perf_counter(); r2 = client.get(url); t2 = time.perf_counter()
             size = len(r1.content) // 1024
             flag = "" if r1.status_code == 200 else f"  <-- HTTP {r1.status_code}"
             print(f"  {label:<38} {t1 - t0:7.2f}s {t2 - t1:7.2f}s  {size:6,} KB{flag}")

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Redirects after a preference change** (look, intros, effects, density, hiding a set) now use
+  the same check as signing in, which refuses backslashes and control characters too; the old
+  check would have let `/\example.com` through (the redirect percent-encoded it, so it went
+  nowhere in practice). Found by GitHub's CodeQL scanning, now switched on for the repository.
+
 ## [0.73.0] — 2026-10-16
 
 ### Upgrading

@@ -126,7 +126,9 @@
     // A person's sizes differ; w45 because the Directors list shows w185 copies, cached without CORS.
     var small = art.closest('.collection-heading--person') ? 'w45' : 'w154';
     var src = (art.currentSrc || art.src || '').replace(/\/t\/p\/[^/]+\//, '/t/p/' + (wide ? 'w300' : small) + '/');
-    if (src.indexOf('image.tmdb.org') !== -1) {
+    var host = '';
+    try { host = new URL(src, window.location.href).hostname; } catch (e) { /* not a URL: no glow */ }
+    if (host === 'image.tmdb.org') {
       glowFrom(src);
       // Ambient light (0.51.0): the same small copy, blurred to nothing but colour behind the
       // page. Only a wide picture: a poster blown up to a screen is a smear, not a light.
@@ -815,10 +817,12 @@
       finder.setAttribute('aria-label', 'Quick search');
       finder.innerHTML = '<article><input type="search" name="q" autocomplete="off" ' +
         'placeholder="Collection, franchise, director, film or show" aria-label="Search">' +
-        '<a class="sc-quick-surprise" href="' + base + '/?surprise=1">🎲 Surprise me ' +
+        '<a class="sc-quick-surprise">🎲 Surprise me ' +
         '<small class="muted">a well-rated film you\u2019re missing</small></a>' +
         '<div id="quick-results"></div><p class="sc-quick-keys"><small class="muted">' +
         '↑ ↓ to choose · Enter to go · Esc to close</small></p></article>';
+      // Set as an attribute, not written into the markup above: no URL is ever parsed as HTML.
+      finder.querySelector('.sc-quick-surprise').setAttribute('href', base + '/?surprise=1');
       var box = finder.querySelector('input');
       box.setAttribute('hx-get', base + '/search');
       box.setAttribute('hx-trigger', 'input changed delay:200ms, search');

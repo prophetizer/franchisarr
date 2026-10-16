@@ -207,3 +207,15 @@ def test_the_pages_render(client: TestClient) -> None:  # noqa: F811
     assert "Needs two or more media servers" in client.get(f"{BASE}/parity").text
     nav = client.get(f"{BASE}/collections").text
     assert f'href="{BASE}/duplicates"' in nav and f'href="{BASE}/parity"' in nav
+
+
+def test_the_preference_forms_send_you_back_only_inside_the_app(client: TestClient) -> None:  # noqa: F811
+    """CodeQL py/url-redirection, 2026-10-16: the forms' own check let a backslash through
+    ("/\\evil.com" is "//evil.com" to a browser); they use the sign-in page's check now."""
+    for form, data in (("/look", {"look": "showcase"}), ("/preferences/intros", {"on": "true"}),
+                       ("/preferences/effects", {"value": "calm"}), ("/preferences/density", {"value": "compact"}),
+                       ("/hidden-sets", {"kind": "collection", "ref": "1"})):
+        for back, expected in ((f"{BASE}/collections", f"{BASE}/collections"), (f"{BASE}/\\evil.com", f"{BASE}/"),
+                               ("https://evil.com/", f"{BASE}/"), (f"{BASE}/x\tjs", f"{BASE}/")):
+            location = client.post(f"{BASE}{form}", data={**data, "back": back}).headers["location"]
+            assert location == expected, (form, back, location)
