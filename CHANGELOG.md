@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.73.1] — 2026-10-16
+
 ### Security
 
 - **Redirects after a preference change** (look, intros, effects, density, hiding a set) now use
