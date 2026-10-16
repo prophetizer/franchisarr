@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.73.0] — 2026-10-16
+
+### Upgrading
+
+One small addition to the database (a person's hidden sets, and how many versions of a film a
+server holds) applies on start. Nothing about an existing install changes by itself:
+notifications still go out after every scan until you choose the weekly digest, nothing is
+hidden until you hide it, and the Duplicates page counts Plex's versions after the next scan.
+
 ### Added
 
 - **Add all missing.** A collection, franchise or director page can add every missing film at
