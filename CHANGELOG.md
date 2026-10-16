@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The Trophy case is about a third quicker on a big library** (3.5s to 2.3s at 20,000 films):
+  it worked every collection's gaps out twice, and compared "Almost on the shelf" names pairwise.
+
 ## [0.73.1] — 2026-10-16
 
 ### Security

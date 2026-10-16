@@ -135,7 +135,8 @@ def case(session: Session, *, now: datetime | None = None) -> Case:
 
     collections = []
     almost: list[Almost] = []
-    for g in movie_gap_service.collection_gaps(session):
+    gaps = movie_gap_service.collection_gaps(session)
+    for g in gaps:
         short = list(g.missing) + list(g.hidden)
         if g.owned and 0 < len(short) <= ALMOST_WITHIN:
             almost.append(Almost("collection", g.name, f"/collections/{g.collection_id}", g.small_poster,
@@ -148,7 +149,7 @@ def case(session: Session, *, now: datetime | None = None) -> Case:
     # Newest first; the undated (complete before anyone was counting) after, by name.
     collections.sort(key=lambda t: (t.when is None, -(t.when.timestamp() if t.when else 0), t.name.casefold()))
 
-    views = franchise_service.franchise_views(session)
+    views = franchise_service.franchise_views(session, gaps=gaps)   # the same gaps, not a second pass
     franchises = [
         Trophy(f.name, f"/franchises/{f.wikidata_id}", f.small_poster,
                _films(len(f.owned_films), len(f.owned_shows)), mosaic=tuple(f.mosaic or ()))
@@ -156,11 +157,13 @@ def case(session: Session, *, now: datetime | None = None) -> Case:
     ]
     # A franchise that *is* a listed collection ("The Matrix" and "The Matrix Collection") would
     # be the same set twice; the collection stands for both.
-    listed = [a.name for a in almost]
+    # Each name normalised once and looked up, not compared pairwise: the pairwise version ran the
+    # regex 88,000 times on a 20k-film library (0.84s of the page).
+    listed = {key for a in almost if (key := franchise_service.name_key(a.name))}
     almost += [Almost("franchise", f.name, f"/franchises/{f.wikidata_id}", f.small_poster, f.owned, f.total,
                       tuple(t.title for t in f.missing_films + f.missing_shows))
                for f in views if f.owned and 0 < f.missing <= ALMOST_WITHIN
-               and not any(franchise_service._same_name(f.name, name) for name in listed)]
+               and franchise_service.name_key(f.name) not in listed]
     franchises.sort(key=lambda t: t.name.casefold())
 
     directors = [

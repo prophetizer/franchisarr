@@ -377,11 +377,13 @@ def _dismissed(session: Session, user_id: int | None) -> set[tuple[str, int]]:
 
 def franchise_views(
     session: Session, user_id: int | None = None, *, today: date | None = None,
-    only: str | None = None,
+    only: str | None = None, gaps: list | None = None,
 ) -> list[FranchiseView]:
     """Every franchise, assembled. Sorted by how much of it the user has, most first. `only`
     narrows to one Wikidata id for the detail page; the shared inputs (collection gaps,
-    spin-offs, continuations) are what cost, and those are computed once either way."""
+    spin-offs, continuations) are what cost, and those are computed once either way. `gaps`: a
+    caller that already has this person's collection_gaps passes them rather than paying twice
+    (the Trophy case, 0.73.2)."""
     owned_films = movie_gap_service.owned_tmdb_ids(session)
     owned_shows = tv_spinoff_service.owned_show_ids(session)
     in_radarr = movie_gap_service.radarr_known_ids(session)
@@ -399,7 +401,8 @@ def franchise_views(
 
     include_minor = include_tv_films(session)
 
-    gaps = movie_gap_service.collection_gaps(session, user_id, today=today)
+    if gaps is None:
+        gaps = movie_gap_service.collection_gaps(session, user_id, today=today)
     gap_by_film: dict[int, movie_gap_service.CollectionGap] = {}
     for gap in gaps:
         for m in gap.owned:
@@ -510,11 +513,15 @@ def franchise_views(
 _NAME_NOISE = re.compile(r"^the |\b(collection|franchise|film series|series|saga|universe)\b|[^a-z0-9]+")
 
 
+def name_key(name: str) -> str:
+    """A name with "The", "Collection", "Franchise"... and punctuation taken out, for telling when
+    two names are the same set's. Empty for a name that's nothing but those."""
+    return _NAME_NOISE.sub("", name.casefold())
+
+
 def _same_name(a: str, b: str) -> bool:
     """"Star Wars" and "Star Wars Collection", "Alien franchise" and "Alien Collection"."""
-    def norm(name: str) -> str:
-        return _NAME_NOISE.sub("", name.casefold())
-    return bool(norm(a)) and norm(a) == norm(b)
+    return bool(name_key(a)) and name_key(a) == name_key(b)
 
 
 def _pick_art(view: FranchiseView, candidates: list, owned_films: int) -> None:  # noqa: ANN001

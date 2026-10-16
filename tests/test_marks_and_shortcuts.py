@@ -136,7 +136,7 @@ def test_the_trophy_case_lists_sets_a_few_titles_short() -> None:
     page = (HERE / "app" / "templates" / "trophies.html").read_text()
     assert "Almost on the shelf" in page and "{{ a.left | join(', ') }}" in page
     src = (HERE / "app" / "services" / "trophies.py").read_text()
-    assert "franchise_service._same_name(f.name, name) for name in listed" in src, "one set, listed once"
+    assert "franchise_service.name_key(f.name) not in listed" in src, "one set, listed once"
 
 
 # ------------------------------------------------------------------ share and keys
