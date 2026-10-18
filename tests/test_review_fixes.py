@@ -83,7 +83,11 @@ def test_malformed_backups_are_refused_with_a_message(session: Session, document
 def test_a_deeply_nested_backup_is_a_message_not_a_crash(client: TestClient) -> None:
     nested = "[" * 100_000 + "]" * 100_000
     response = client.post(f"{BASE}/settings/import", files={"backup": ("b.json", nested, "application/json")})
-    assert response.status_code == 400 and "valid JSON" in response.text
+    # Since Python 3.14 the recursion limit follows the thread's real C stack: with a large one this
+    # parses (and is refused as not a config object), with a small one it's a RecursionError (not
+    # valid JSON). CI's runner and the image differ. Either way: a message, never a 500.
+    assert response.status_code == 400
+    assert "valid JSON" in response.text or "a Franchisarr config object" in response.text
 
 
 # ------------------------------------------------------------------ redirects, CSRF, logout, docs
