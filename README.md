@@ -139,7 +139,9 @@ See [`.env.example`](.env.example) for the full list.
 Spin-offs of shows you own are discovered from [Wikidata](https://www.wikidata.org) during a
 scan — no key or account needed — and matched on TMDb ids rather than titles, so it finds the
 ones whose names give nothing away (*Family Guy* → *American Dad!*). Weaker evidence is marked
-*possible*, and nothing is ever added without you clicking.
+*possible*, and nothing is ever added without you clicking. If you think one has been missed,
+**Search a single show** on the Spin-offs page looks on TMDb for shows named after it (*NCIS* →
+*NCIS: Sydney*), leaving out official podcasts and making-of documentaries.
 
 ### Import lists for Radarr and Sonarr
 

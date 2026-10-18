@@ -84,6 +84,15 @@ _NOT_A_SPINOFF_REMAINDER = re.compile(
     r"^(season|series|part|volume|vol|chapter|book)\s*\d*$", re.IGNORECASE
 )
 
+#: TMDb genre ids for companion content: "Peacemaker: The Official Podcast with James Gunn" (Talk),
+#: "The Witcher: A Look Inside the Episodes" (Documentary). Named exactly like spin-offs, wanted
+#: by nobody in Sonarr. Measured 2026-10-17 across the real library's 656 shows: of 103 candidates
+#: this drops 25 -- every official podcast, every making-of, unrelated foreign documentaries -- and
+#: at most one arguable follow-up (a documentary special of a reality show). Skipped where the
+#: parent shares the genre, so Tiger King keeps its documentary follow-up. Search results carry
+#: the ids, so it costs no request.
+COMPANION_GENRES = frozenset({99, 10763, 10767})   # Documentary, News, Talk
+
 
 @dataclass(frozen=True)
 class SpinoffSuggestion:
@@ -421,6 +430,9 @@ def heuristic_candidates(
         mapping.spinoff_show_tmdb_id for mapping in list_mappings(session, show.tmdb_id)
     }
 
+    # The parent is nearly always in its own title search; if not, it counts as no genre at all.
+    parent_genres = next((set(c.genre_ids) for c in results if c.tmdb_id == show.tmdb_id), set())
+
     found: list[SpinoffSuggestion] = []
     for candidate in results:
         if candidate.tmdb_id == show.tmdb_id or candidate.tmdb_id in owned:
@@ -428,6 +440,8 @@ def heuristic_candidates(
         if candidate.tmdb_id in mapped:
             continue
         if not looks_like_spinoff_of(show.title, candidate.name):
+            continue
+        if (COMPANION_GENRES & set(candidate.genre_ids)) - parent_genres:
             continue
 
         found.append(

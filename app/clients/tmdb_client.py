@@ -104,6 +104,8 @@ class TmdbShowSummary:
     overview: str | None = None
     genres: tuple[str, ...] = ()
     vote_average: float | None = None
+    #: TMDb's genre ids, which search results carry (detail calls give `genres`, the names).
+    genre_ids: tuple[int, ...] = ()
 
     @property
     def year(self) -> int | None:
@@ -432,6 +434,7 @@ class TmdbClient:
                 name=str(item.get("name") or item.get("original_name") or ""),
                 first_air_date=item.get("first_air_date") or None,
                 poster_path=item.get("poster_path") or None,
+                genre_ids=tuple(g for g in item.get("genre_ids") or [] if isinstance(g, int)),
             )
             for item in payload.get("results") or []
             if isinstance(item, dict) and item.get("id")

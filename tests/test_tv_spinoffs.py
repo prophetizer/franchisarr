@@ -134,6 +134,31 @@ def test_a_heuristic_candidate_is_never_treated_as_confirmed(session: Session) -
 
 
 @responses.activate
+def test_companion_podcasts_and_making_ofs_are_not_spinoffs(session: Session) -> None:
+    """Named exactly like spin-offs, wanted by nobody in Sonarr: TMDb files them under Talk,
+    Documentary or News, and the search result says so. Real titles from the 2026-10-17 measurement."""
+    show = _own_show(session, 110492, "Peacemaker")
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/search/tv", json={"results": [
+        {"id": 110492, "name": "Peacemaker", "genre_ids": [10759, 35, 18]},
+        {"id": 900001, "name": "Peacemaker: The Official Podcast with James Gunn", "genre_ids": [10767]},
+        {"id": 900002, "name": "Peacemaker: A Look Inside", "genre_ids": [99]},
+        {"id": 900003, "name": "Peacemaker: Origins", "genre_ids": [10759, 18]},
+    ]})
+    assert [c.spinoff_name for c in svc.heuristic_candidates(session, TmdbClient("k" * 32), show)] == [
+        "Peacemaker: Origins"]
+
+
+@responses.activate
+def test_a_documentary_series_keeps_its_documentary_follow_up(session: Session) -> None:
+    show = _own_show(session, 97646, "Tiger King")
+    responses.add(responses.GET, f"{TMDB_BASE_URL}/search/tv", json={"results": [
+        {"id": 97646, "name": "Tiger King", "genre_ids": [99, 80]},
+        {"id": 900004, "name": "Tiger King: The Doc Antle Story", "genre_ids": [99, 80]},
+    ]})
+    assert [c.spinoff_tmdb_id for c in svc.heuristic_candidates(session, TmdbClient("k" * 32), show)] == [900004]
+
+
+@responses.activate
 def test_a_tmdb_failure_yields_no_candidates_rather_than_an_error(session: Session) -> None:
     show = _own_show(session, NCIS, "NCIS")
     responses.add(responses.GET, f"{TMDB_BASE_URL}/search/tv", status=500)

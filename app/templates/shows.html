@@ -120,7 +120,8 @@
     <p><small class="muted">
       Scans discover spin-offs automatically, so this is only worth reaching for when you think
       one has been missed. It searches TMDb for shows <em>named after</em> the one you pick, which
-      finds "NCIS: Los Angeles" but never "American Dad!" — {{ '{:,}'.format(owned_total) }} show{{ '' if owned_total == 1 else 's' }} in your library.
+      finds "NCIS: Los Angeles" but never "American Dad!", and leaves out official podcasts and
+      making-of documentaries — {{ '{:,}'.format(owned_total) }} show{{ '' if owned_total == 1 else 's' }} in your library.
     </small></p>
     <div class="collection-grid collection-grid--compact collection-grid--owned">
       {% for show in shows %}
