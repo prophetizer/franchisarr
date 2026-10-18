@@ -123,8 +123,11 @@ def test_the_story_order_page_saves_and_resets(client: TestClient) -> None:  # n
     assert "built-in order for Star Wars" in page and 'name="order" value="movie:1893"' in page
     assert page.index('value="movie:1893"') < page.index('value="movie:11"'), "Episode I first"
 
-    client.post(f"{BASE}/story-order/franchises/Q462",
-                data={"order": ["movie:11", "movie:1891", "movie:999", "show:1893"]})   # strangers dropped
+    saved = client.post(f"{BASE}/story-order/franchises/Q462",
+                        data={"order": ["movie:11", "movie:1891", "movie:999", "show:1893"]},   # strangers dropped
+                        follow_redirects=True)
+    assert saved.url.path == f"{BASE}/story-order/franchises/Q462" and "Saved." in saved.text
+    assert saved.history[0].headers["location"] == "?saved=1", "nothing from the request in the Location"
     page = client.get(f"{BASE}/story-order/franchises/Q462").text
     assert "This is your order" in page
     assert page.index('value="movie:11"') < page.index('value="movie:1891"') < page.index('value="movie:1893"')

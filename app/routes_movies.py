@@ -426,7 +426,9 @@ async def save_story_order(request: Request, session: DbSession, user: AdminUser
             if tid.isdigit() and (item_type, int(tid)) in known:   # only this set's own titles
                 ordered.append((item_type, int(tid)))
         chronology.save(session, kind, ref, ordered)
-    return RedirectResponse(_url(f"/story-order/{kind}/{ref}?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
+    # Back to this same page: a query-only reference keeps the path the browser already has (base
+    # URL included), so nothing from the request is written into the Location header.
+    return RedirectResponse("?saved=1", status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.get("/duplicates", response_class=HTMLResponse)
