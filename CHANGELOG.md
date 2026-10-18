@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Search a single show** (Spin-offs) no longer offers companion content named like a spin-off:
+  official podcasts, making-of documentaries and the like ("Peacemaker: The Official Podcast with
+  James Gunn", "The Witcher: A Look Inside the Episodes"). TMDb files them under Talk,
+  Documentary or News; a documentary series still gets its documentary follow-ups. On the
+  developer's library this removed 25 of 103 suggestions, every one of them noise or near it.
+
+- Saving a story order returns to the page with a relative redirect (`?saved=1`), so nothing from
+  the request is written into the redirect (a CodeQL url-redirection finding; the set was already
+  checked to exist, and the path stayed inside the app).
+- FastAPI 0.143.0, and the image moves to Python 3.14 (both Dependabot). The full test suite
+  was run inside the 3.14 image before merging; CI now tests on 3.14 too.
+
 ## [0.74.0] — 2026-10-17
 
 ### Upgrading

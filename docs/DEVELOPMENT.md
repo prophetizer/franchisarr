@@ -7,7 +7,7 @@ anything that touches a route, an external API, or the database.
 
 | Layer | Choice |
 |---|---|
-| Backend | Python 3.12, FastAPI |
+| Backend | Python 3.14, FastAPI |
 | Data | SQLite via SQLModel, migrations via Alembic |
 | Frontend | Server-rendered Jinja2 + htmx + Alpine.js + Pico.css — no build step, no npm |
 | Scheduling | APScheduler, in-process |
@@ -17,7 +17,7 @@ anything that touches a route, an external API, or the database.
 
 Local setup: `python -m venv .venv && .venv/bin/pip install -r requirements-dev.txt` (the app's own
 dependencies are `requirements.txt`, which is all the image installs), then
-`.venv/bin/pytest`. The image and CI target Python 3.12. CI also runs `pip-audit` against the
+`.venv/bin/pytest`. The image and CI target Python 3.14. CI also runs `pip-audit` against the
 pins; a published advisory for a pinned version fails the build, so bump and re-pin.
 
 ## Conventions
