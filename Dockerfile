@@ -1,6 +1,6 @@
 # Pinned by digest so a rebuild produces the same base; Dependabot proposes digest updates
 # weekly, so security fixes to the base image still arrive (as a reviewable pull request).
-FROM python:3.12-slim@sha256:f77ac9e44ae96ef2c90b8053ea08c31f8be030f824196b0ae4db6d462c84e51f AS base
+FROM python:3.14-slim@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170 AS base
 
 # Python behaves better in a container this way: no .pyc clutter on the read-only layers, and
 # logs appear immediately instead of sitting in a buffer when the container is killed.
