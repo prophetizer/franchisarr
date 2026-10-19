@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.74.1] — 2026-10-18
+
 ### Changed
 
 - **Search a single show** (Spin-offs) no longer offers companion content named like a spin-off:
@@ -14,7 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   James Gunn", "The Witcher: A Look Inside the Episodes"). TMDb files them under Talk,
   Documentary or News; a documentary series still gets its documentary follow-ups. On the
   developer's library this removed 25 of 103 suggestions, every one of them noise or near it.
-
 - Saving a story order returns to the page with a relative redirect (`?saved=1`), so nothing from
   the request is written into the redirect (a CodeQL url-redirection finding; the set was already
   checked to exist, and the path stayed inside the app).
