@@ -137,11 +137,11 @@ def case(session: Session, *, now: datetime | None = None) -> Case:
     almost: list[Almost] = []
     gaps = movie_gap_service.collection_gaps(session)
     for g in gaps:
-        short = list(g.missing) + list(g.hidden)
+        short = list(g.missing) + list(g.hidden) + list(g.tv_films)
         if g.owned and 0 < len(short) <= ALMOST_WITHIN:
             almost.append(Almost("collection", g.name, f"/collections/{g.collection_id}", g.small_poster,
                                  len(g.owned), len(g.owned) + len(short), tuple(m.title for m in short)))
-        if not g.owned or g.missing or g.hidden:
+        if not g.owned or g.missing or g.hidden or g.tv_films:
             continue
         when, new = dated(recorded.get(g.collection_id))
         collections.append(Trophy(g.name, f"/collections/{g.collection_id}", g.small_poster,

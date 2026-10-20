@@ -672,3 +672,36 @@ def test_unrated_collections_sort_after_rated_ones(session: Session) -> None:
     names = [g.name for g in movie_gap_service.collections_with_gaps(session)]
 
     assert names == ["Zebra Collection", "Beverly Hills Cop Collection"]
+
+
+# ------------------------------------------------------------------ TV films (0.75.0)
+
+
+def _tv_film(session: Session, tmdb_id: int) -> None:
+    from sqlmodel import col
+
+    row = session.exec(select(TmdbCollectionMovie).where(col(TmdbCollectionMovie.tmdb_movie_id) == tmdb_id)).one()
+    row.genre_ids = "10770,10751"
+    session.add(row)
+    session.commit()
+
+
+def test_a_tv_film_folds_and_does_not_count_as_a_gap(session: Session) -> None:
+    """Descendants and the Hallmark mysteries were most of these on the developer's library:
+    the franchise pages' TV films preference, applied to collections."""
+    from app.services.settings_service import SettingKey, set_setting
+
+    _own(session, 90, "Beverly Hills Cop")
+    _collection(session, (90, "Beverly Hills Cop"), (96, "Beverly Hills Cop II"), (306, "III"))
+    _tv_film(session, 306)
+
+    gap = movie_gap_service.collection_gaps(session)[0]
+    assert [m.tmdb_id for m in gap.missing] == [96]
+    assert [m.tmdb_id for m in gap.tv_films] == [306], "folded, not dropped"
+
+    _tv_film(session, 96)
+    assert movie_gap_service.collections_with_gaps(session) == [], "only TV films missing: complete enough"
+
+    set_setting(session, SettingKey.FRANCHISE_INCLUDE_TV_FILMS, "true"); session.commit()
+    gap = movie_gap_service.collection_gaps(session)[0]
+    assert [m.tmdb_id for m in gap.missing] == [96, 306] and gap.tv_films == ()

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Upgrading
+
+Collections now follow the "TV films, specials and shorts" preference that franchises already
+used. With it off (the default), a collection's missing made-for-TV films -- TMDb's TV Movie
+genre -- move into a folded **TV films** section on the collection's page, with **Add anyway**,
+and no longer count as missing: a collection whose only gaps are TV films reads as complete. To
+keep them listed as missing, tick **List them as missing** under Preferences.
+
+### Changed
+
+- **TV films fold in collections too.** On the developer's library that was 31 of 224 missing
+  films -- *Descendants*, the Hallmark mystery series, *Tangled: Before Ever After* -- and ten
+  collections whose only gaps were TV films stop reading as incomplete (107 to 97). On a franchise page, a TV
+  film that came from a collection joins the franchise's own TV films fold.
+
 ## [0.74.1] — 2026-10-18
 
 ### Changed

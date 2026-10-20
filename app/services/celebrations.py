@@ -30,7 +30,7 @@ def record(session: Session) -> list[str]:
     from app.services import movie_gap_service
 
     complete = {g.collection_id: g.name for g in movie_gap_service.collection_gaps(session)
-                if g.owned and not g.missing and not g.hidden}
+                if g.owned and not g.missing and not g.hidden and not g.tv_films}
     known = set(session.exec(select(CollectionCompletion.collection_id)).all())
     first_time = not known and session.exec(select(CollectionCompletion.id).limit(1)).first() is None
     new = []

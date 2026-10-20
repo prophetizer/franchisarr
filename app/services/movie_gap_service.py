@@ -101,6 +101,10 @@ class MissingMovie:
         return self.release_date <= (today or date.today()).isoformat()
 
 
+#: TMDb's "TV Movie" genre id, as stored in TmdbCollectionMovie.genre_ids ("10770,35").
+TV_MOVIE_GENRE = "10770"
+
+
 @dataclass(frozen=True)
 class CollectionGap:
     collection_id: int
@@ -113,6 +117,11 @@ class CollectionGap:
     #: Missing, released, and rated below the user's threshold. Kept rather than dropped so the
     #: filter is a fold, not a deletion -- the detail page shows what it hid.
     hidden: tuple[MissingMovie, ...] = ()
+    #: Missing TV films (TMDb genre 10770), folded unless the TV films preference lists them
+    #: (0.75.0) -- the same preference, and the same fold, franchise pages already use.
+    #: "Descendants" and the Hallmark mystery series were most of what this held on the
+    #: developer's library: 31 of 224 missing films, and ten collections no longer incomplete.
+    tv_films: tuple[MissingMovie, ...] = ()
     poster_path: str | None = None
     backdrop_path: str | None = None
     #: A full fanart.tv URL, or None when no fanart key is configured.
@@ -149,9 +158,9 @@ class CollectionGap:
 
     @property
     def has_gaps(self) -> bool:
-        """Deliberately ignores `upcoming` and `hidden`: a collection whose only absence is a
-        film nobody can watch yet, or one the user has said isn't worth having, is complete as
-        far as they are concerned."""
+        """Deliberately ignores `upcoming`, `hidden` and `tv_films`: a collection whose only
+        absence is a film nobody can watch yet, or one the user has said isn't worth having, is
+        complete as far as they are concerned."""
         return bool(self.missing)
 
     @property
@@ -298,6 +307,9 @@ def collection_gaps(
         relevant &= only
 
     threshold = min_gap_rating(session)
+    from app.services.franchise_service import include_tv_films
+
+    fold_tv_films = not include_tv_films(session)
 
     # Three queries for everything, not three per collection. At 3,300 collections the
     # per-collection form was 10,000 queries and eleven seconds a page (scripts/loadtest.py);
@@ -315,7 +327,7 @@ def collection_gaps(
                TmdbCollectionMovie.title, TmdbCollectionMovie.release_year,
                TmdbCollectionMovie.release_date, TmdbCollectionMovie.poster_path,
                TmdbCollectionMovie.vote_average, TmdbCollectionMovie.vote_count,
-               TmdbCollectionMovie.popularity)
+               TmdbCollectionMovie.popularity, TmdbCollectionMovie.genre_ids)
         .order_by(col(TmdbCollectionMovie.collection_id), col(TmdbCollectionMovie.position))
     ).all():
         if row[0] in relevant:
@@ -339,9 +351,10 @@ def collection_gaps(
         missing_here: list[MissingMovie] = []
         upcoming_here: list[MissingMovie] = []
         hidden_here: list[MissingMovie] = []
+        tv_here: list[MissingMovie] = []
 
         for (_, tmdb_id, title, release_year, release_date, poster_path,
-             vote_average, vote_count, popularity) in members:
+             vote_average, vote_count, popularity, genre_ids) in members:
             info = details.get(tmdb_id) if tmdb_id in owned else None
             entry = MissingMovie(
                 tmdb_id=tmdb_id,
@@ -363,6 +376,8 @@ def collection_gaps(
                 continue
             elif not entry.is_released(today):
                 upcoming_here.append(entry)
+            elif fold_tv_films and TV_MOVIE_GENRE in (genre_ids or "").split(","):
+                tv_here.append(entry)
             elif entry.falls_below(threshold):
                 hidden_here.append(entry)
             else:
@@ -379,6 +394,7 @@ def collection_gaps(
                 missing=tuple(missing_here),
                 upcoming=tuple(upcoming_here),
                 hidden=tuple(hidden_here),
+                tv_films=tuple(tv_here),
                 poster_path=collection.poster_path,
                 backdrop_path=collection.backdrop_path,
                 logo=collection.logo_url,

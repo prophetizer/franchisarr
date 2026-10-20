@@ -463,6 +463,13 @@ def franchise_views(
             candidates.append((gap, held.get(gap.collection_id, 0)))
             for mm in gap.missing:
                 add_missing(_from_missing(mm, "collection", gap.name))
+            # A collection's TV films are only here when the preference folds them: into the
+            # franchise's own TV films fold, never dropped.
+            for mm in gap.tv_films:
+                key = (ItemType.MOVIE.value, mm.tmdb_id)
+                if key not in seen_missing and key not in dismissed:
+                    seen_missing.add(key)
+                    view.specials.append(_from_missing(mm, "collection", gap.name))
             for mm in gap.upcoming:
                 key = (ItemType.MOVIE.value, mm.tmdb_id)
                 if key not in seen_missing and key not in dismissed:

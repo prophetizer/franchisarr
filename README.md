@@ -31,7 +31,7 @@ tells you when it finds something new — Discord, Slack, or anything
 more) — wears your
 [theme.park](https://theme-park.dev) theme like the rest of your stack, and has a web UI and a
 CLI. Everything
-it hides — low-rated films, TV specials, shorts, directors' music-video collections — is folded
+it hides — low-rated films, TV films and specials, shorts, directors' music-video collections — is folded
 away rather than deleted, and most of it is a preference.
 
 Franchisarr owes its starting idea to [Gaps](https://github.com/JasonHHouse/gaps), which has

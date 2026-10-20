@@ -498,3 +498,19 @@ def test_a_franchise_in_no_collection_still_gets_its_first_titles_poster(session
     session.commit()
 
     assert franchise_service.franchise_view(session, "Q1").poster_path == "/c.jpg"
+
+
+def test_a_collections_tv_film_lands_in_the_franchise_fold_not_missing(session: Session) -> None:
+    """Collection gaps feed franchise pages; a TV film the collection folded must reach the
+    franchise's TV films fold rather than vanish (0.75.0)."""
+    _mcu(session, "Some Collection")
+    session.add(TmdbCollectionMovie(collection_id=131292, tmdb_movie_id=900, title="A TV Film",
+                                    release_year=2001, release_date="2001-01-01", genre_ids="10770"))
+    session.add(TmdbCollectionMovie(collection_id=131292, tmdb_movie_id=901, title="A Cinema Film",
+                                    release_year=2002, release_date="2002-01-01", genre_ids="28"))
+    session.commit()
+
+    view = franchise_service.franchise_views(session)[0]
+    assert "A Cinema Film" in [t.title for t in view.missing_films]
+    assert "A TV Film" not in [t.title for t in view.missing_films]
+    assert "A TV Film" in [t.title for t in view.specials]

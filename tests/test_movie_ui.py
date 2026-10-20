@@ -757,6 +757,21 @@ def test_setting_the_rating_filter_hides_and_explains(client: TestClient) -> Non
     assert "Add anyway" in detail
 
 
+def test_a_tv_film_sits_in_its_own_fold_on_the_collection_page(client: TestClient) -> None:
+    from sqlmodel import col
+
+    _seed_collection()
+    with Session(get_engine()) as session:
+        row = session.exec(select(TmdbCollectionMovie).where(col(TmdbCollectionMovie.tmdb_movie_id) == 306)).one()
+        row.genre_ids = "10770"
+        session.add(row)
+        session.commit()
+
+    detail = client.get(f"{BASE}/collections/{COLLECTION}").text
+    assert "1 TV film" in detail and "Made for television" in detail
+    assert f'href="{BASE}/preferences"' in detail
+
+
 def test_the_sort_toggle_is_shown_and_honoured(client: TestClient) -> None:
     _seed_collection()
 

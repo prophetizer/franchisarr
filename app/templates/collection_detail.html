@@ -113,6 +113,31 @@
   </details>
 {% endif %}
 
+{% if gap.tv_films %}
+  {# The franchise pages' TV films fold, here too (0.75.0): Preferences can list them as missing. #}
+  <details class="hidden-section">
+    <summary>
+      {{ gap.tv_films | length }} TV film{{ '' if gap.tv_films | length == 1 else 's' }}
+    </summary>
+    <p><small class="muted">Made for television, so not counted as missing.
+      <a href="{{ url('/preferences') }}">Preferences</a> can list them with the rest.</small></p>
+    <div class="collection-grid collection-grid--compact">
+      {% for decade, movie in decades(sort_titles(gap.tv_films, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}
+        {% call tile(movie.poster, 'hidden', title=movie.title, year=movie.release_year) %}
+          <header><strong class="film-title">{{ movie.title }}</strong> {% include "partials/rating.html" %}</header>
+          <p class="collection-counts muted"><span>{{ movie.release_year or '' }}</span></p>
+          {% if user and user.is_admin %}
+          <p class="card-actions">
+            <button class="outline" hx-get="{{ url('/add/' ~ movie.tmdb_id) }}"
+                    hx-target="#add-dialog" hx-swap="innerHTML">Add anyway</button>
+          </p>
+          {% endif %}
+        {% endcall %}
+      {% endfor %}
+    </div>
+  </details>
+{% endif %}
+
 {% if gap.owned %}
   <section>
     <h2>In your library</h2>
