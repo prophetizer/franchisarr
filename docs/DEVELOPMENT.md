@@ -18,7 +18,8 @@ anything that touches a route, an external API, or the database.
 Local setup: `python -m venv .venv && .venv/bin/pip install -r requirements-dev.txt` (the app's own
 dependencies are `requirements.txt`, which is all the image installs), then
 `.venv/bin/pytest`. The image and CI target Python 3.14. CI also runs `pip-audit` against the
-pins; a published advisory for a pinned version fails the build, so bump and re-pin.
+pins; a published advisory for a pinned version fails the build and holds back the image, so
+bump and re-pin.
 
 ## Conventions
 

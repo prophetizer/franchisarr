@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Pillow 13.0.0** (from 12.3.0), which fixes 35 advisories published after 0.74.1 shipped.
+  Pillow draws the poster on the playlists Franchisarr builds, from TMDb artwork. 0.75.0's image
+  was published before CI's dependency audit caught these, so it was never announced as a
+  release; use this one. CI now holds back the image whenever the dependency audit fails, not
+  only when the tests do.
+
 ## [0.75.0] — 2026-10-22
 
 ### Upgrading

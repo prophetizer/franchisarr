@@ -50,7 +50,9 @@ jobs:
     # release. Pushes only for a version tag: ghcr.io/<owner>/franchisarr:<version> and :latest.
     # The image inherits the repository's visibility, so it is private until the repo is public.
     runs-on: ubuntu-24.04
-    needs: test
+    # The audit too: v0.75.0's image went out to :latest while pip-audit was failing on Pillow,
+    # because only the tests gated it. A known-vulnerable pin now publishes nothing.
+    needs: [test, audit]
     permissions:
       contents: read
       packages: write

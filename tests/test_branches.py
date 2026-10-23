@@ -42,3 +42,10 @@ def test_dependabot_targets_develop_and_screenshots_stay_on_master() -> None:
     assert bot.count("target-branch: develop") == bot.count("package-ecosystem:") == 3
     shots = (HERE / ".github" / "workflows" / "screenshots.yml").read_text()
     assert "branches: [master]" in shots
+
+
+def test_no_image_publishes_while_the_dependency_audit_fails() -> None:
+    """v0.75.0 reached :latest with pip-audit failing on Pillow: only the tests gated the image."""
+    ci = (HERE / ".github" / "workflows" / "ci.yml").read_text()
+    image = ci[ci.index("\n  image:"):]
+    assert "needs: [test, audit]" in image
