@@ -49,3 +49,34 @@ def test_no_image_publishes_while_the_dependency_audit_fails() -> None:
     ci = (HERE / ".github" / "workflows" / "ci.yml").read_text()
     image = ci[ci.index("\n  image:"):]
     assert "needs: [test, audit]" in image
+
+
+def _login_page(app_factory, monkeypatch, build: str) -> str:
+    from fastapi.testclient import TestClient
+
+    from app.templating import _cached_templates
+
+    if build:
+        monkeypatch.setenv("FRANCHISARR_BUILD", build)
+    else:
+        monkeypatch.delenv("FRANCHISARR_BUILD", raising=False)
+    _cached_templates.cache_clear()               # the build id is read when templates are built
+    try:
+        module = app_factory("/f")
+        with TestClient(module.app) as client:
+            return client.get("/f/login").text
+    finally:
+        _cached_templates.cache_clear()
+
+
+def test_a_develop_build_says_so_across_the_top_of_every_page(app_factory, monkeypatch) -> None:
+    """michael, 2026-10-22: franchisarr-dev runs beside the release, and should be unmistakable."""
+    page = _login_page(app_factory, monkeypatch, "0123456789abcdef")
+    assert 'class="dev-banner"' in page and "develop 0123456" in page
+    assert "<title>DEV · " in page
+    assert page.index('class="dev-banner"') < page.index('<header class="container">'), "first thing on the page"
+
+
+def test_a_release_build_shows_no_banner(app_factory, monkeypatch) -> None:
+    page = _login_page(app_factory, monkeypatch, "")
+    assert "dev-banner" not in page.split("</head>")[1] and "<title>DEV" not in page

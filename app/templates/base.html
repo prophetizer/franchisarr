@@ -32,7 +32,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Franchisarr{% endblock %}</title>
+    <title>{% if build %}DEV · {% endif %}{% block title %}Franchisarr{% endblock %}</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('/static/favicon.svg') }}">
     <link rel="apple-touch-icon" href="{{ asset('/static/apple-touch-icon.png') }}">
     <link rel="manifest" href="{{ url('/manifest.webmanifest') }}">
@@ -63,6 +63,11 @@
     {% block head %}{% endblock %}
   </head>
   <body>
+    {#- A develop image says so on every page (michael, 2026-10-22: runs beside the release on the
+        same box). Release images carry no build id, so they never show it. -#}
+    {% if build %}<div class="dev-banner" role="note"><strong>Development build</strong>
+      <span>develop {{ build }}</span><span class="dev-banner-note">— newer than the latest
+      release, and may change</span></div>{% endif %}
     <header class="container">
       {#- The menu (0.40.0, michael's answers): Browse and Manage dropdowns and one under your
           name, search at the far right; a ☰ panel on a phone. Both are drawn from these lists,

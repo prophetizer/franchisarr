@@ -1455,3 +1455,27 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
 .playlist-orders { display: inline-flex; flex-wrap: wrap; font-size: 0.82rem; gap: 0.2rem 0.8rem; margin-right: 0.5rem; }
 .playlist-orders label { align-items: center; display: inline-flex; gap: 0.3rem; margin: 0; }
 .playlist-orders input { margin: 0; }
+
+/* Develop builds (FRANCHISARR_BUILD set): a strip across the top of every page, so a test copy
+   is never mistaken for the real one. Not sticky -- Showcase has sticky bars of its own. */
+.dev-banner {
+  /* Positioned, or Showcase's poster wall (which reaches up behind the header) paints over it. */
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 .6rem;
+  padding: .3rem 1rem;
+  background: repeating-linear-gradient(-45deg,
+                color-mix(in srgb, var(--pico-del-color) 78%, var(--pico-color)) 0 14px,
+                color-mix(in srgb, var(--pico-del-color) 64%, var(--pico-color)) 14px 28px);
+  /* The page colour: dark on dark theme's light red, light on light theme's deep red. */
+  color: var(--pico-background-color);
+  font-size: .8rem;
+  line-height: 1.4;
+  text-align: center;
+}
+.dev-banner strong { text-transform: uppercase; letter-spacing: .08em; }
+.dev-banner-note { margin-left: -.35rem; }
+@media (max-width: 600px) { .dev-banner-note { display: none; } }

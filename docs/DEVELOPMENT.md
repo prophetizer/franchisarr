@@ -49,8 +49,9 @@ Numbered because code comments cite them.
 ## Branches
 
 - **`develop`** is where work happens. Every push runs the tests and publishes
-  `ghcr.io/prophetizer/franchisarr:develop`, carrying its commit as a build id (shown in the footer,
-  and in the asset URLs so browsers fetch each push's CSS and scripts). No version bump, tag or
+  `ghcr.io/prophetizer/franchisarr:develop`, carrying its commit as a build id (shown in the footer
+  and a "Development build" banner atop every page, and in the asset URLs so browsers fetch each
+  push's CSS and scripts). No version bump, tag or
   release: `CHANGELOG.md` collects it under `[Unreleased]`.
 - **`master`** is releases. When a batch is ready: merge develop into master, bump
   `app/__init__.py`, date the changelog entry, tag `vX.Y.Z`. The tag publishes the version tags

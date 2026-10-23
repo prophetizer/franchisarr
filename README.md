@@ -809,7 +809,8 @@ administrator until you choose to let them in.
 
 `:latest` and the version tags are releases. There is also a `:develop` image, built from every
 change before it's released — it's what the developer runs, and it can be broken on any given day;
-stay on `:latest` unless you want to try things early.
+stay on `:latest` unless you want to try things early. A develop build says so in a striped
+banner across the top of every page, and "DEV" in the tab title.
 
 ## Reporting a problem
 

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **A develop build says so on every page**: a striped "Development build · develop abc1234"
+  banner across the top, and "DEV ·" at the start of the tab title, so a test copy running beside
+  a release is never mistaken for it. Release images carry no build id and never show it.
+
 ## [0.76.0] — 2026-10-22
 
 ### Added
