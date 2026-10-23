@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.76.0] — 2026-10-22
+
 ### Added
 
 - **Thirteen more built-in story orders** (thirty-six in all, 327 titles, each id checked against
