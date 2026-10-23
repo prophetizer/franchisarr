@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.75.0] — 2026-10-22
+
 ### Upgrading
 
 Collections now follow the "TV films, specials and shorts" preference that franchises already
