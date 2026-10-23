@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Thirteen more built-in story orders** (thirty-six in all, 327 titles, each id checked against
+  TMDb): Star Trek (series and films by in-universe start, the Kelvin films by their 2258-2263
+  setting), the DC Extended Universe (Wonder Woman's two first), Planet of the Apes (Caesar's
+  films, then 1968's), Predator (Killer of Killers and Prey before 1987), Paranormal Activity (3,
+  then 2, then the first), Shrek with Puss in Boots, A Quiet Place (Day One first), Ouija (Origin
+  of Evil first), The Exorcist (the two prequels first), Tremors (The Legend Begins first), The
+  Mummy with The Scorpion King, Ti West's X trilogy (Pearl first) and Rurouni Kenshin (The
+  Beginning first). On the developer's library they give 25 collections and franchises a
+  chronological playlist without any arranging.
+
 ## [0.75.1] — 2026-10-22
 
 ### Security

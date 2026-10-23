@@ -507,7 +507,8 @@ out. With more than one server the button opens a menu — **On every server**, 
   chronological one, "*name* — Chronological (Franchisarr)", follows the story: *Rogue One*
   before *A New Hope*, *Prometheus* before *Alien*, a show's episodes together where the show
   falls. Built-in story orders cover the big franchises where the two differ (Star Wars, the MCU,
-  X-Men, Alien, Fast & Furious, the Wizarding World, Middle-earth and sixteen more); any
+  Star Trek, X-Men, Alien, Predator, Planet of the Apes, the DC Extended Universe, Fast &
+  Furious, the Wizarding World, Middle-earth and twenty-five more); any
   collection or franchise can be given its own, or the built-in one changed, in **Story order…**
   under its banner — drag the titles or use ↑ ↓. A title the order doesn't place goes at the end,
   in release order. Directors are release order only.
