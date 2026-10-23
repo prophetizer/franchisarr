@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.75.1] — 2026-10-22
+
 ### Security
 
 - **Pillow 13.0.0** (from 12.3.0), which fixes 35 advisories published after 0.74.1 shipped.
