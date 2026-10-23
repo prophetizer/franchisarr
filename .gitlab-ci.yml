@@ -1,0 +1,40 @@
+# GitLab CI for franchisarr (2026-10-23, Forgejo -> GitLab move): the test and audit
+# jobs of .github/workflows/ci.yml. Publishing the image to GHCR and regenerating the
+# README screenshots stay on GitHub Actions (.github/workflows/), which is where the
+# public image and README live; nothing here pushes anything anywhere.
+# Runs on the homelab's docker runner (tag "docker").
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # Every branch and v* tag, like the GitHub workflow; skip branch pipelines that
+    # duplicate an open merge request's.
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG =~ /^v/
+
+default:
+  tags: [docker]
+  image: python:3.14-slim
+  interruptible: true   # a newer push to the same ref cancels an older run
+
+variables:
+  PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip
+
+test:
+  cache:
+    key:
+      prefix: pip
+      files: [requirements-dev.txt]
+    paths: [.cache/pip]
+  script:
+    - pip install -r requirements-dev.txt
+    - pytest -q
+
+audit:
+  # Known-vulnerable pins fail the build. The 0.11.1 upgrade happened because someone asked
+  # for a security check before going public; this is that check, on every push.
+  script:
+    - pip install pip-audit==2.10.1
+    # requirements-dev.txt includes requirements.txt: the image's packages and the test suite's.
+    - pip-audit -r requirements-dev.txt --desc off
