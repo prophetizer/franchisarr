@@ -851,8 +851,10 @@ DB_PATH=./franchisarr.db ADMIN_USERNAME=admin ADMIN_PASSWORD=change-me uvicorn a
 ```
 
 Tests never touch the network — Plex, Jellyfin, Emby, TMDb, Wikidata, fanart.tv, Radarr, Sonarr and Seerr are all mocked. See `docs/DEVELOPMENT.md` for
-the conventions this codebase holds itself to, and `docs/DESIGN.md` for the design and the
-28 documented technical challenges behind it.
+the conventions this codebase holds itself to, `docs/DESIGN.md` for the design and the
+28 documented technical challenges behind it, `GLOSSARY.md` for the words the app uses (set,
+missing, upcoming, wanted, story order...), and `docs/adr/` for the decisions that would surprise
+you without their reasons.
 
 ## License
 

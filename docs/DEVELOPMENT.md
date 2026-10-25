@@ -1,7 +1,9 @@
 # Development notes
 
 How Franchisarr is built, and the rules the code holds itself to. Read this before changing
-anything that touches a route, an external API, or the database.
+anything that touches a route, an external API, or the database. The words the app uses -- in
+its pages, its docs and its code -- are defined in `GLOSSARY.md`; use those, and add to it when
+a new one settles. Decisions that would surprise a reader are recorded in `docs/adr/`.
 
 ## Stack
 
