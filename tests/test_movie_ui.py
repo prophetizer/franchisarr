@@ -101,7 +101,7 @@ def test_the_detail_page_separates_missing_owned_and_upcoming(client: TestClient
     response = client.get(f"{BASE}/collections/{COLLECTION}")
 
     assert response.status_code == 200
-    assert "Coming soon" in response.text
+    assert "<h2>Upcoming</h2>" in response.text
     assert "Beverly Hills Cop: Axel F" in response.text
     assert "In your library" in response.text
     # The upcoming film must not be counted among the actionable ones.
@@ -641,7 +641,7 @@ def test_the_home_page_offers_a_scan(client: TestClient) -> None:
     body = client.get(f"{BASE}/").text
 
     assert 'hx-post="/franchisarr/scan"' in body
-    assert "Scan my library" in body
+    assert "Scan now" in body
 
 
 def test_the_spinoff_page_offers_a_scan_when_it_has_nothing(client: TestClient) -> None:
@@ -749,11 +749,11 @@ def test_setting_the_rating_filter_hides_and_explains(client: TestClient) -> Non
     assert response.status_code == 303
 
     page = client.get(f"{BASE}/collections").text
-    assert "1 film hidden" in page
+    assert "1 film below the floor" in page
     assert 'value="6"' in page
 
     detail = client.get(f"{BASE}/collections/{COLLECTION}").text
-    assert "1 film hidden by your" in detail
+    assert "1 film below your" in detail
     assert "Add anyway" in detail
 
 

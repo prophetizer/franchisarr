@@ -7,7 +7,7 @@
 {% for group, label in [('films', 'Film'), ('shows', 'Show')] %}
   {% for r in results[group] %}
     {% set where = r.links[0].path if r.links else '/search?q=' ~ (r.title | urlencode) %}
-    {% set state = {'owned': 'in your library', 'in_arr': 'requested', 'dismissed': 'hidden by you', 'upcoming': 'not out yet'}.get(r.status, 'missing') %}
+    {% set state = {'owned': 'in your library', 'in_arr': 'wanted', 'dismissed': 'not interested', 'upcoming': 'upcoming'}.get(r.status, 'missing') %}
     {% set _ = rows.append((where, r.poster, r.title, label ~ (' · ' ~ r.year if r.year else '') ~ ' · ' ~ state)) %}
   {% endfor %}
 {% endfor %}

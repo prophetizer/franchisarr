@@ -20,7 +20,7 @@
   </hgroup>
   {% if gaps and user and user.is_admin %}
     <button class="secondary outline" hx-post="{{ url('/scan') }}" hx-target="#scan-status"
-            hx-swap="outerHTML">Rescan my library</button>
+            hx-swap="outerHTML">Scan now</button>
   {% endif %}
 </div>
 
@@ -30,7 +30,7 @@
       <header>Nothing scanned yet</header>
       <p>Run a scan to find the gaps in your library.</p>
 {% if user and user.is_admin %}      <button hx-post="{{ url('/scan') }}" hx-target="#scan-status" hx-swap="outerHTML">
-        Scan my library</button>
+        Scan now</button>
 {% endif %}      <footer><small>This walks your libraries and looks each film up on TMDb. On a few
         thousand films it takes a handful of minutes, and runs in the background — you don't have
         to stay on this page.</small></footer>
@@ -60,7 +60,7 @@
              value="{{ '%g' | format(min_rating) }}" inputmode="decimal">
       <button type="submit" class="secondary">Apply</button>
       {% if total_hidden %}
-        <small class="muted">{{ total_hidden }} film{{ '' if total_hidden == 1 else 's' }} hidden —
+        <small class="muted">{{ total_hidden }} film{{ '' if total_hidden == 1 else 's' }} below the floor —
           each collection's page shows which.</small>
       {% elif min_rating %}
         <small class="muted">Nothing hidden at {{ '%g' | format(min_rating) }}.</small>
@@ -88,7 +88,7 @@
           <span class="count-owned">{{ gap.owned | length }} owned{% if gap.watched_count %}, {{ gap.watched_count }} watched{% endif %}</span>
           <span class="count-missing">{{ gap.missing | length }} missing</span>
           {% if gap.upcoming %}
-            <span class="count-upcoming">{{ gap.upcoming | length }} coming soon</span>
+            <span class="count-upcoming">{{ gap.upcoming | length }} upcoming</span>
           {% endif %}
         </p>
         {{ dot_strip(gap.owned, gap.missing, gap.upcoming) }}

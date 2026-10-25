@@ -14,7 +14,7 @@
     {% endif %}
     <hgroup>
       <h1>Franchisarr</h1>
-      <p>Films missing from collections you already own, and spin-offs of shows you already watch.</p>
+      <p>Films missing from collections you already own, and spin-offs of shows you own.</p>
     </hgroup>
     {#- Surprise me (0.53.0). Showcase's Ctrl+K box links here with ?surprise=1, which spins on load. -#}
     {% if scanned %}
@@ -107,7 +107,7 @@
       {% endfor %}
       <footer>
 {% if user and user.is_admin %}        <button hx-post="{{ url('/scan') }}" hx-target="#scan-status" hx-swap="outerHTML">
-          {{ 'Scan my library' if not scanned else 'Rescan my library' }}</button>
+          Scan now</button>
         {% if scanned %}
           <button class="secondary outline" hx-post="{{ url('/scan') }}"
                   hx-vals='{"refresh": "1"}'
@@ -157,11 +157,11 @@
   </article>
 
   <article>
-    <header><strong>Coming soon</strong></header>
+    <header><strong>Upcoming</strong></header>
     <p>
       {% if upcoming_count %}
-        {{ upcoming_count }} announced film{{ '' if upcoming_count == 1 else 's' }} in franchises
-        you own{% if upcoming_soon %} — {{ upcoming_soon }} due in the next 90 days{% endif %}.
+        {{ upcoming_count }} upcoming film{{ '' if upcoming_count == 1 else 's' }} in collections
+        you own part of{% if upcoming_soon %} — {{ upcoming_soon }} due in the next 90 days{% endif %}.
       {% else %}
         Nothing announced in a franchise you own, or nothing scanned yet.
       {% endif %}

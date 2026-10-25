@@ -3,8 +3,8 @@
    (`playlist_kept`, server names). `playlist_url` is the POST route. Admins only, and only when
    a server can take one and something here is owned (`can_playlist`). The result goes in
    #playlist-result, below the banner.
-   Since 0.74.0 a collection or franchise can have a chronological one too: `playlist_orders` turns
-   on the Release order / Chronological ticks (sent with every button via hx-include);
+   Since 0.74.0 a collection or franchise can have a story-order one too: `playlist_orders` turns
+   on the Release order / Story order ticks (sent with every button via hx-include);
    `story_available` says whether the set has a story order to follow. #}
 {% if can_playlist and user and user.is_admin %}
   <div class="heading-actions playlist-control">
@@ -12,12 +12,12 @@
       <span class="playlist-orders" role="group" aria-label="Which playlists">
         <label><input type="checkbox" name="order" value="release" {% if playlist_kept or not playlist_kept_chrono %}checked{% endif %}> Release order</label>
         <label title="{{ 'In story order' if story_available else 'Arrange a Story order first (under the banner)' }}">
-          <input type="checkbox" name="order" value="chronological" {% if playlist_kept_chrono %}checked{% endif %}{% if not story_available %} disabled{% endif %}> Chronological</label>
+          <input type="checkbox" name="order" value="chronological" {% if playlist_kept_chrono %}checked{% endif %}{% if not story_available %} disabled{% endif %}> Story order</label>
       </span>
     {% endif %}
     {% if playlist_servers | length > 1 %}
       <details class="dropdown playlist-menu">
-        <summary role="button" class="secondary outline">{{ 'Refresh playlist' if playlist_kept else 'Make a playlist' }}</summary>
+        <summary role="button" class="secondary outline">{{ 'Update playlist' if playlist_kept else 'Make a playlist' }}</summary>
         <ul dir="rtl">
           <li><a href="#" dir="ltr" hx-post="{{ playlist_url }}" hx-vals='{"server": "all"}' hx-include="closest .playlist-control"
                  hx-target="#playlist-result" hx-swap="innerHTML" hx-indicator="#playlist-busy"
@@ -34,13 +34,13 @@
       <button class="secondary outline" hx-post="{{ playlist_url }}" hx-include="closest .playlist-control" hx-target="#playlist-result"
               hx-swap="innerHTML" hx-disabled-elt="this" hx-indicator="#playlist-busy"
               title="Everything you own here, films and episodes, in the order it came out">
-        {{ 'Refresh playlist' if playlist_kept else 'Make a playlist' }}</button>
+        {{ 'Update playlist' if playlist_kept else 'Make a playlist' }}</button>
     {% endif %}
     {% if playlist_kept %}
       <small class="playlist-kept">✓ Playlist kept on {{ playlist_kept | join(', ') }}</small>
     {% endif %}
     {% if playlist_kept_chrono %}
-      <small class="playlist-kept">✓ Chronological kept on {{ playlist_kept_chrono | join(', ') }}</small>
+      <small class="playlist-kept">✓ Story order kept on {{ playlist_kept_chrono | join(', ') }}</small>
     {% endif %}
   </div>
 {% endif %}

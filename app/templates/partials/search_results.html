@@ -39,11 +39,11 @@
               {%- if r.status == 'owned' -%}
                 <span class="search-status search-status--owned">In your library{% if r.servers %} on {{ r.servers | join(', ') }}{% endif %}</span>
               {%- elif r.status == 'in_arr' -%}
-                <span class="search-status">In {{ 'Radarr' if film else 'Sonarr' }} or requested</span>
+                <span class="search-status">Wanted — in {{ 'Radarr' if film else 'Sonarr' }} or requested</span>
               {%- elif r.status == 'dismissed' -%}
-                <span class="search-status">Hidden by you</span>
+                <span class="search-status">Not interested</span>
               {%- elif r.status == 'upcoming' -%}
-                <span class="search-status">Not out yet</span>
+                <span class="search-status">Upcoming</span>
               {%- else -%}
                 <span class="search-status search-status--missing">Missing</span>
               {%- endif -%}

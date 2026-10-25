@@ -62,19 +62,19 @@
   </section>
 {% endif %}
 {% if d.upcoming %}
-  <section class="upcoming-section"><h2>Coming soon</h2>
+  <section class="upcoming-section"><h2>Upcoming</h2>
     <div class="collection-grid collection-grid--compact">{% for decade, m in decades(sort_titles(d.upcoming, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(m, 'upcoming') }}{% endfor %}</div>
   </section>
 {% endif %}
 {% if d.hidden %}
   <details class="hidden-section">
-    <summary>{{ d.hidden | length }} film{{ '' if d.hidden | length == 1 else 's' }} hidden by your rating filter</summary>
+    <summary>{{ d.hidden | length }} film{{ '' if d.hidden | length == 1 else 's' }} below your rating floor</summary>
     <div class="collection-grid collection-grid--compact">{% for decade, m in decades(sort_titles(d.hidden, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(m, 'hidden') }}{% endfor %}</div>
   </details>
 {% endif %}
 {% if d.shorts %}
   <details class="hidden-section">
-    <summary>{{ d.shorts | length }} short{{ '' if d.shorts | length == 1 else 's' }} — folded away by your preferences</summary>
+    <summary>{{ d.shorts | length }} short{{ '' if d.shorts | length == 1 else 's' }} — folded by a household setting</summary>
     <div class="collection-grid collection-grid--compact">{% for decade, m in decades(sort_titles(d.shorts, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(m, 'hidden') }}{% endfor %}</div>
   </details>
 {% endif %}

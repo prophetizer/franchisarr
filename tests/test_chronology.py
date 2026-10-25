@@ -99,7 +99,7 @@ def test_the_button_builds_either_or_both(client: TestClient) -> None:  # noqa: 
                        data={"server": "all", "order": ["release", "chronological"]}).text
     assert "Star Wars (Franchisarr)" in both and CHRONO in both and "in story order" in both
     page = client.get(f"{BASE}/franchises/Q462").text
-    assert "✓ Chronological kept on" in page and "✓ Playlist kept on" in page
+    assert "✓ Story order kept on" in page and "✓ Playlist kept on" in page
 
     only = client.post(f"{BASE}/franchises/Q462/playlist", data={"server": "all", "order": ["chronological"]}).text
     assert CHRONO in only and "Star Wars (Franchisarr)" not in only.replace(CHRONO, "")
@@ -129,7 +129,7 @@ def test_the_story_order_page_saves_and_resets(client: TestClient) -> None:  # n
     assert saved.url.path == f"{BASE}/story-order/franchises/Q462" and "Saved." in saved.text
     assert saved.history[0].headers["location"] == "?saved=1", "nothing from the request in the Location"
     page = client.get(f"{BASE}/story-order/franchises/Q462").text
-    assert "This is your order" in page
+    assert "This is the household's order" in page.replace("&#39;", "'")
     assert page.index('value="movie:11"') < page.index('value="movie:1891"') < page.index('value="movie:1893"')
 
     client.post(f"{BASE}/story-order/franchises/Q462", data={"reset": "1"})

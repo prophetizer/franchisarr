@@ -301,7 +301,7 @@ def test_the_confirmed_mappings_section_lists_only_the_users_own(client: TestCli
     response = client.get(f"{BASE}/shows")
     assert response.status_code == 200, response.headers.get("location")
     body = response.text
-    assert "Confirmed spin-off mappings" in body, body[-600:]
-    section = body.split("Confirmed spin-off mappings")[1]
+    assert "Spin-offs you added" in body, body[-600:]
+    section = body.split("Spin-offs you added")[1]
 
     assert "Mine" in section and "Found" not in section

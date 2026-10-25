@@ -8,7 +8,7 @@
 {% from "partials/poster_card.html" import poster_card %}
 {% macro marks(badge, ribbon) -%}
   {% if ribbon %}<span class="poster-ribbon">{{ ribbon }}</span>{% endif %}
-  {% if badge %}<span class="quality-badge quality-badge--{{ badge | lower }}" title="Your best copy: {{ badge }}">{{ badge }}</span>{% endif %}
+  {% if badge %}<span class="quality-badge quality-badge--{{ badge | lower }}" title="Your best version: {{ badge }}">{{ badge }}</span>{% endif %}
 {%- endmacro %}
 {% macro tile(poster, css='', about=None, show=False, title=None, year=None, badge=None, ribbon=None) -%}
   {#- about ("movie/603", "show/1399"): Showcase flips the poster over to its plot (0.51.0).

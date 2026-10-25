@@ -64,7 +64,7 @@
   {# Kept deliberately separate from the list above: these films don't exist yet, so they are not
      something to go and get. Mixing them in was measured at 41% of the raw gap list. #}
   <section class="upcoming-section">
-    <h2>Coming soon</h2>
+    <h2>Upcoming</h2>
     <p><small class="muted">
       Announced but not released. You can still add one — Radarr will monitor it and grab it when
       it appears.
@@ -89,12 +89,12 @@
 {% endif %}
 
 {% if gap.hidden %}
-  {# A fold, not a deletion. The rating filter is a household shortcut past the straight-to-video
+  {# A fold, not a deletion. The rating floor is a household shortcut past the straight-to-video
      tail of a franchise, and the cost of a shortcut is being able to see what it skipped. #}
   <details class="hidden-section">
     <summary>
-      {{ gap.hidden | length }} film{{ '' if gap.hidden | length == 1 else 's' }} hidden by your
-      rating filter
+      {{ gap.hidden | length }} film{{ '' if gap.hidden | length == 1 else 's' }} below your
+      rating floor
     </summary>
     <div class="collection-grid collection-grid--compact">
       {% for decade, movie in decades(sort_titles(gap.hidden, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}

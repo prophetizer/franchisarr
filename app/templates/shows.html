@@ -17,7 +17,7 @@
       {{ links }}
     </header>
     <p class="collection-counts muted">
-      <span>{{ relationships }}{% if heuristic %} <small>· possible</small>{% endif %}</span>
+      <span>{{ relationships }}{% if heuristic %} <small title="Found on weaker evidence: worth checking before you add it">· possible</small>{% endif %}</span>
     </p>
     <p class="card-actions">
       {% if user and user.is_admin %}
@@ -37,7 +37,7 @@
 {% include "partials/scan_status.html" %}
 <hgroup>
   <h1>TV spin-offs</h1>
-  <p>Spin-offs of shows you already watch, that aren't in your library.</p>
+  <p>Spin-offs of shows you own, that aren't in your library.</p>
 </hgroup>
 
 {% if not shows %}
@@ -71,7 +71,7 @@
       {% if not progress.running and user and user.is_admin %}
         <p>
           <button hx-post="{{ url('/scan') }}" hx-target="#scan-status" hx-swap="outerHTML">
-            Scan my library</button>
+            Scan now</button>
         </p>
       {% endif %}
     {% endif %}

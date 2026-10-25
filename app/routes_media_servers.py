@@ -154,7 +154,7 @@ def scan_server(request: Request, session: DbSession, user: AdminUser, server_id
     # do nothing at all.
     missing = scan_prerequisites(session)
     if not server.enabled:
-        missing.insert(0, (f"{server.name} is turned off.", "/media-servers", "Turn it on here"))
+        missing.insert(0, (f"{server.name} is switched off.", "/media-servers", "Switch it on here"))
     if missing:
         logger.warning("Scan of %s not started: %s", server.name, "; ".join(t for t, _, _ in missing))
         return get_templates().TemplateResponse(request, "partials/scan_status.html", {

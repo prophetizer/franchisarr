@@ -54,7 +54,7 @@ def _server_id(session, raw: str) -> int | None:  # noqa: ANN001
         return None
     if raw.isdigit() and any(s.id == int(raw) for s in playlist_service.targets(session)):
         return int(raw)
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such server, or it's turned off.")
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such server, or it's switched off.")
 
 
 Server = Annotated[str, Form()]

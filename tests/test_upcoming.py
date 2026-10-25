@@ -231,4 +231,4 @@ def test_the_home_page_counts_what_is_coming(client: TestClient) -> None:
 
     body = " ".join(client.get("/franchisarr/").text.split())
 
-    assert "2 announced films in franchises you own" in body
+    assert "2 upcoming films in collections" in body

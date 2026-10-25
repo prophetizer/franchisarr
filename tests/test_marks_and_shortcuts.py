@@ -46,7 +46,7 @@ def test_plex_reads_the_best_copy_from_the_listing(mocked_plex, plex_fixtures, p
 def test_an_owned_poster_carries_its_badge_and_a_ribbon() -> None:
     tile = _render('{% from "partials/tile.html" import tile %}{% call tile("/p.jpg", "owned", badge="4K", ribbon="Next") %}x{% endcall %}')
     assert 'class="collection-poster has-marks"' in tile and '<span class="poster-ribbon">Next</span>' in tile
-    assert 'class="quality-badge quality-badge--4k" title="Your best copy: 4K">4K</span>' in tile
+    assert 'class="quality-badge quality-badge--4k" title="Your best version: 4K">4K</span>' in tile
     assert "has-marks" not in _render('{% from "partials/tile.html" import tile %}{% call tile("/p.jpg", "owned") %}x{% endcall %}')
 
 

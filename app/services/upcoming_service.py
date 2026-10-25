@@ -1,4 +1,4 @@
-"""Films that are coming to franchises the user already owns part of.
+"""Upcoming films in collections the user already owns part of (GLOSSARY.md: upcoming).
 
 The gap service already separates announced-but-unreleased films out of the missing list, because
 they were 41% of it and nobody can go and get a film that doesn't exist. This is the other side

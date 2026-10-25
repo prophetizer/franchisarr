@@ -165,7 +165,7 @@ class CollectionGap:
 
     @property
     def started(self) -> bool:
-        """Whether any owned film has been watched -- the difference between a franchise the
+        """Whether any owned film has been watched -- the difference between a collection the
         person is following and one that merely landed in the library."""
         return any(movie.watched for movie in self.owned)
 

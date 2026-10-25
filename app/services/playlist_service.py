@@ -2,9 +2,10 @@
 
 The titles are the ones you own on that page. Films and every regular episode of the shows go
 into one list sorted by first release -- so for a franchise that spans film and TV, episodes
-fall between the films as they were broadcast. Story order (where *Rogue One* sits in the
-timeline) is recorded nowhere Franchisarr reads; since 0.74.0 a "Chronological" playlist follows
-the household's own Story order or a built-in one (chronology.py, chronology_data.py).
+fall between the films as they were broadcast. Story order (where *Rogue One* falls in the
+story) is recorded nowhere Franchisarr reads; since 0.74.0 a story-order playlist (named
+"... -- Chronological") follows the household's own story order or a built-in one
+(chronology.py, chronology_data.py).
 
 One playlist per media server, since a playlist can only hold that server's items, named
 "<name> (Franchisarr)". Making and keeping them is franchisarr_playlists.py (0.42.0): each is

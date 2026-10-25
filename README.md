@@ -7,7 +7,7 @@ want and don't have:
 
 - **Films missing from collections you already own part of.** You have *Beverly Hills Cop* and
   *II* but not *III* — one click sends it to Radarr.
-- **Spin-offs of shows you already watch.** You have *NCIS* but not *NCIS: Los Angeles* — one
+- **Spin-offs of shows you own.** You have *NCIS* but not *NCIS: Los Angeles* — one
   click sends it to Sonarr. Found through Wikidata, so it also knows *Family Guy* → *American
   Dad!*, which no name search could — and crosses between film and TV: own the film *Serenity*
   and it suggests the series *Firefly*.
@@ -18,7 +18,7 @@ account, so it follows you between devices.
 
 And, built on the same data: **franchise pages** that put films and TV together (*Star Wars —
 you have 8 of 15*; fan films are left out), **director pages** (*you own 11 Nolan films; missing* Following *and*
-Insomnia), an **Upcoming** page of announced films in franchises you own — as a list or a month-by-month
+Insomnia), an **Upcoming** page of films not out yet in collections you own part of — as a list or a month-by-month
 calendar — with release-date notifications, **import lists** Radarr and Sonarr can poll so you never have to click Add, and
 **playlists** of a franchise, collection or director in release order — or in story order — on Plex, Jellyfin or Emby — films and episodes
 together, so a franchise plays the way it came out.
@@ -123,7 +123,7 @@ See [`.env.example`](.env.example) for the full list.
 | `EMBY_URL`, `EMBY_API_KEY` | Your Emby server |
 | `MEDIA_SERVER` | Optional: seed only `plex`, `jellyfin` or `emby` when several pairs are set |
 | `TMDB_API_KEY` | Your own free v3 key |
-| `FANART_API_KEY` | Optional; adds franchise logos to collection headings |
+| `FANART_API_KEY` | Optional; adds title logos to collection headings |
 | `SHOW_ARTWORK` | `false` turns off all poster and logo images |
 | `RADARR_URL`, `RADARR_API_KEY` | Optional first Radarr; more can be added in the UI |
 | `SONARR_URL`, `SONARR_API_KEY` | Optional first Sonarr |
@@ -161,7 +161,7 @@ lists; `min_rating` on the URL overrides the household floor for that list only.
 ### Artwork
 
 Collection screens show posters from TMDb. Adding a free
-[fanart.tv key](https://fanart.tv/get-an-api-key/) additionally puts the franchise wordmark over
+[fanart.tv key](https://fanart.tv/get-an-api-key/) additionally puts the series' wordmark over
 a backdrop at the top of each collection — the only thing that key is used for.
 
 Both are fetched by the browser from `image.tmdb.org` and `assets.fanart.tv`, so a client with no
@@ -219,7 +219,7 @@ search at the far right. The menu holding the page you're on is highlighted. On 
 single ☰ button.
 
 The home page leads with rows of posters: the collections you're **closest to completing**,
-films in franchises you own **coming in the next 90 days**, and titles **just added** to your
+upcoming films in collections you own **coming in the next 90 days**, and titles **just added** to your
 library from sets you're collecting (counted from 0.45.0 on — nobody recorded when earlier ones
 arrived). The summary cards for each section sit below them.
 
@@ -278,7 +278,7 @@ owned bar, and a detail page says how long the set runs (*9h 40m across the 5 fi
 sets, genres and the directors you own most. **▤ Density** under your name switches every grid
 to compact cards, about twice as many on a screen.
 
-Owned posters carry their best copy's resolution (**4K**, 1080p…, from your server's listing),
+Owned posters carry their best version's resolution (**4K**, 1080p…, from your server's listing),
 and the film to watch next in a set is marked **Next** (or **Start here**). List cards show their
 set as a row of dots in release order — filled for owned, hollow for missing — so the gaps show
 at a glance. A collection page says which franchises it's **part of**, and a franchise page lists
@@ -307,7 +307,7 @@ YouTube sees your Franchisarr's address (the origin only — its player won't pl
 
 Each franchise page has a **Map** of how the franchise fits together — its collections, its other
 films and its shows, with which show spun off which — in three shapes: **Lanes** (a
-timeline lane per series), **Tree** (the franchise, its series, their titles) and
+timeline lane per collection), **Tree** (the franchise, its collections, their titles) and
 **Constellation** (a web you can drag about). Your pick is remembered; owned titles are filled in,
 missing ones hollow, and each leads to its collection page.
 
@@ -488,7 +488,7 @@ and for a franchise that spans film and TV, every episode placed by its air date
 S.H.I.E.L.D.* falls between the Marvel films as it was broadcast. Specials (season 0) are left
 out. With more than one server the button opens a menu — **On every server**, or **On Plex**,
 **On Jellyfin** and so on for just one. Once Franchisarr is keeping one, the banner says where
-("✓ Playlist kept on Plex, Jellyfin") and the button reads **Refresh playlist**.
+("✓ Playlist kept on Plex, Jellyfin") and the button reads **Update playlist**.
 
 - It's called "*name* (Franchisarr)" and gets its own square poster: the franchise or
   collection backdrop across the top, and the name, "In release order" and what's in it ("13
@@ -502,9 +502,9 @@ out. With more than one server the button opens a menu — **On every server**, 
 - Playlists belong to one account. On Plex that's the account of the token Franchisarr uses —
   normally yours as the server owner. On Jellyfin and Emby it's the server's *watched as* user
   (Servers page), which is the first administrator unless you've set one.
-- **Chronological, too.** A collection or franchise page has two ticks above the button —
-  **Release order** and **Chronological** — so it makes either playlist or both. The
-  chronological one, "*name* — Chronological (Franchisarr)", follows the story: *Rogue One*
+- **Story order, too.** A collection or franchise page has two ticks above the button —
+  **Release order** and **Story order** — so it makes either playlist or both. The
+  story-order one, "*name* — Chronological (Franchisarr)", follows the story: *Rogue One*
   before *A New Hope*, *Prometheus* before *Alien*, a show's episodes together where the show
   falls. Built-in story orders cover the big franchises where the two differ (Star Wars, the MCU,
   Star Trek, X-Men, Alien, Predator, Planet of the Apes, the DC Extended Universe, Fast &
@@ -572,7 +572,7 @@ the others. A rename on any server renames the rest. The order follows the origi
 
 **▦ Calendar** on the Upcoming page lays the announced films out month by month, each poster on
 its release day (☰ List switches back; the page remembers which you chose). The page is also an
-iCalendar feed, so announced films in franchises you own appear in
+iCalendar feed, so upcoming films in collections you own appear in
 your calendar app — one all-day event per film, with the collection and how much of it you have:
 
 ```
@@ -609,7 +609,7 @@ taste filter folded away. **Hide from my lists** on a collection or franchise fo
 you'll never finish and don't want to see. Under **Manage**, **Duplicates** lists films in the
 library more than once on a server (two libraries, or several versions of one film), and
 **Server parity** — for installs with more than one media server — lists the films each server
-has that another doesn't, a paused one included as of its last scan.
+has that another doesn't, a switched-off one included as of its last scan.
 
 ## Dashboard widget
 
@@ -661,7 +661,7 @@ local account if one is set up), shows only the one you pick, and remembers it i
 **By default only administrators can sign in.** Being able to reach your Plex server is a much
 wider group than the people who run your house, so friends and family you share it with are
 refused. If you want them in, turn on **Settings → Who can sign in**. They can then browse the
-lists and hide titles for themselves, but they can't add anything to Radarr, Sonarr or Seerr,
+lists and mark titles Not interested for themselves, but they can't add anything to Radarr, Sonarr or Seerr,
 start scans, or change settings, and they don't see those controls. Turning it off again signs
 them out and stops their API keys. **Settings → Users** lists everyone who has signed in, and can
 sign someone out everywhere, revoke their API key or remove them.
@@ -686,12 +686,12 @@ On first boot every filled-in pair in `.env` becomes a server; after that, add a
 under **Servers** in the app (name, address, key; a *watched as* username for Jellyfin/Emby, since an API key belongs to
 nobody). Their libraries are chosen together on the Libraries page and scanned in one pass. A
 film on two servers is owned once; its tile on a collection page says which servers hold it. Watched films get a
-tick, and the Collections page can be filtered to franchises you've actually started.
+tick, and the Collections page can be filtered to collections you've actually started.
 
 Each server on the Servers page has its own **Scan** button (just that server's libraries) and a
 **Turn off / Turn on** switch. A server that's off isn't scanned, isn't a playlist target, and
 nothing on it counts as owned; what it holds stays in the database, so turning it back on needs
-no rescan. **Use only this** turns every other server off at once, with a banner on every page
+no rescan. **Use only this** switches every other server off at once, with a banner on every page
 to turn them back on: the quick way to see what one server has on its own.
 
 ## Command line
@@ -791,7 +791,7 @@ Settings has a config download. **The full one contains your media server creden
 text** — treat it like a password. There's a redacted download alongside it with those blanked
 out; that's the one to paste into a forum thread when asking for help.
 
-Importing a backup restores settings, instances, spin-off mappings and your hidden titles. Media
+Importing a backup restores settings, instances, spin-offs you added and the titles marked Not interested. Media
 servers in it arrive **switched off**: a server decides who can sign in, so check each one on the
 Servers page and switch it on. Anything in the file that isn't a known setting or field is skipped.
 

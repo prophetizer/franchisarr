@@ -228,7 +228,7 @@ def index(request: Request, session: DbSession, user: RequiredUser, surprise: st
                  home_service.on_this_day(session, today), None, None),
                 ("Closest to complete", "Collections you're nearly done with.",
                  home_service.closest_to_complete(gaps), "/collections?sort=complete&dir=desc", "All collections"),
-                ("Coming in the next 90 days", "Announced films in franchises you own.",
+                ("Coming in the next 90 days", "Upcoming films in collections you own part of.",
                  home_service.coming_soon(upcoming, today), "/upcoming", "Everything coming"),
                 ("Just added", "New in your library, from sets you're collecting.",
                  home_service.just_added(session), None, None),

@@ -2,7 +2,8 @@
 
 Decided with michael (0.38.0):
 - Only the playlists someone switches on; one source per playlist, copied to every other server
-  that's switched on. Edits to a copy are overwritten at the next sync.
+  that's switched on. (Since 0.43.0 it works both ways: an edit to any copy reaches the others,
+  by a three-way merge -- see "two-way" below.)
 - The account Franchisarr already uses on each server: the Plex token's owner, the Jellyfin/Emby
   "watched as" user.
 - A title the target doesn't have is left out and reported. A same-named playlist that sync

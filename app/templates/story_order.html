@@ -4,13 +4,13 @@
 <p><a href="{{ url(back) }}">← {{ name }}</a></p>
 <hgroup>
   <h1>Story order</h1>
-  <p>{{ name }}, in the order its story happens — what its <strong>Chronological</strong> playlist follows.</p>
+  <p>{{ name }}, in the order its story happens — what its story-order playlist follows.</p>
 </hgroup>
-{% if request.query_params.get('saved') %}<p class="notice-good" role="status">Saved. A chronological playlist picks it up the next time it's refreshed.</p>{% endif %}
+{% if request.query_params.get('saved') %}<p class="notice-good" role="status">Saved. Its story-order playlist picks it up the next time it's updated.</p>{% endif %}
 <p><small class="muted">
-  {% if story and story.source == 'yours' %}This is your order.{% if builtin %} The built-in one ({{ builtin[0] }}) is a reset away.{% endif %}
-  {% elif story %}This is the built-in order for {{ story.source }}{% if story.unplaced %}; the last {{ story.unplaced }} it doesn't place are in release order{% endif %}. Change it and save to make it yours.
-  {% else %}There's no built-in story order for this set, so it starts in release order. Arrange it and save, and its Chronological playlist becomes available.{% endif %}
+  {% if story and story.source == 'yours' %}This is the household's order.{% if builtin %} The built-in one ({{ builtin[0] }}) is a reset away.{% endif %}
+  {% elif story %}This is the built-in order for {{ story.source }}{% if story.unplaced %}; the last {{ story.unplaced }} it doesn't place are in release order{% endif %}. Change it and save to make it the household's own.
+  {% else %}There's no built-in story order for this set, so it starts in release order. Arrange it and save, and its story-order playlist becomes available.{% endif %}
   Drag a title, or use ↑ ↓.
 </small></p>
 <form method="post" action="{{ url('/story-order/' ~ kind ~ '/' ~ ref) }}">

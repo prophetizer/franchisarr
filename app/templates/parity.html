@@ -7,7 +7,7 @@
 </hgroup>
 {% if sides %}
   <p class="link-chips"><span>Servers</span>
-    {% for s in sides %}<span class="parity-side">{{ s.name }} · {{ '{:,}'.format(s.films) }} films{% if not s.enabled %} · paused, last scanned {{ s.last_seen.strftime('%-d %b %Y') if s.last_seen else 'never' }}{% endif %}</span>{% endfor %}
+    {% for s in sides %}<span class="parity-side">{{ s.name }} · {{ '{:,}'.format(s.films) }} films{% if not s.enabled %} · switched off, last scanned {{ s.last_seen.strftime('%-d %b %Y') if s.last_seen else 'never' }}{% endif %}</span>{% endfor %}
   </p>
 {% endif %}
 {% if gaps %}

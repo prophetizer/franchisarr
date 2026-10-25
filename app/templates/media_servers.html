@@ -7,8 +7,8 @@
   <p>Where Franchisarr reads what you own. Add every Plex, Jellyfin or Emby you use; their libraries are scanned together.</p>
 </hgroup>
 {% if several %}
-  <p><small class="muted">A server that's turned off isn't scanned or counted, and can't be signed in
-    through (except while "Use only this" has paused it); what it holds stays here, so turning it
+  <p><small class="muted">A server that's switched off isn't scanned or counted, and can't be signed in
+    through (except while "Use only this" has switched it off); what it holds stays here, so switching it
     back on needs no rescan.</small></p>
 {% endif %}
 
@@ -22,7 +22,7 @@
       <li class="film-row" x-data="{ editing: false }">
         <span class="film-title">
           {{ server.name }}
-          <small class="muted">{{ server.label }}{% if not server.enabled %} · disabled{% endif %}</small>
+          <small class="muted">{{ server.label }}{% if not server.enabled %} · switched off{% endif %}</small>
         </span>
         <span class="film-meta muted server-meta">
           {{ server.url }} · {{ 'token' if server.kind == 'plex' else 'key' }} {{ server.masked_credential }}

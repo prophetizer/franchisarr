@@ -73,7 +73,7 @@ def calendar(films: list[UpcomingFilm], *, domain: str = "franchisarr", link_bas
         f"PRODID:{PRODID}",
         "CALSCALE:GREGORIAN",
         "METHOD:PUBLISH",
-        "X-WR-CALNAME:Franchisarr — coming to franchises you own",
+        "X-WR-CALNAME:Franchisarr — coming to collections you own",
         "REFRESH-INTERVAL;VALUE=DURATION:P1D",
         "X-PUBLISHED-TTL:P1D",
     ]

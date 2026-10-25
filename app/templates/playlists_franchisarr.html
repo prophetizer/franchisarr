@@ -2,7 +2,7 @@
 {% from "partials/sync_chips.html" import chip %}
 
 {% block tab_content %}
-<p>The playlists Franchisarr makes from a franchise, collection or director page, in release order.
+<p>The playlists Franchisarr makes from a franchise, collection or director page, in release order or story order.
   Each is kept current: after every scan, titles you've added go in and ones you've removed come out,
   in place, so it keeps its poster and its spot in your apps. Delete one on any server and it's
   deleted on the others and taken off this list.</p>
@@ -55,7 +55,7 @@
               <a href="{{ url(v.path) }}" class="set-thumb" aria-hidden="true" tabindex="-1">
                 {% if v.poster %}<img src="{{ v.poster }}" alt="" loading="lazy" decoding="async" width="46" height="69">{% endif %}
               </a>
-              <span class="film-title"><a href="{{ url(v.path) }}">{{ v.entry.name }}</a>{% if v.entry.variant == 'chronological' %} <small class="muted">chronological</small>{% endif %}
+              <span class="film-title"><a href="{{ url(v.path) }}">{{ v.entry.name }}</a>{% if v.entry.variant == 'chronological' %} <small class="muted">story order</small>{% endif %}
                 {% if v.custom %}<small class="muted">its own servers</small>{% endif %}</span>
               <span class="sync-chips">
                 {% for name, copy in v.copies %}

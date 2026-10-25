@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **One word for each thing**, from the new `GLOSSARY.md`. Nothing behaves differently; the pages
+  now say the same word for the same thing everywhere:
+  - **Upcoming** replaces "Coming soon", "Not out yet" and "announced" -- and the Upcoming page,
+    home card and calendar say *collections*, which is what they always counted, not franchises.
+  - **Story order** is the playlist tick and every label (it was "Chronological" on the tick).
+    Playlists already on your servers keep their "— Chronological" names.
+  - **Not interested** is how search and quick find show a title you dismissed (it said
+    "Hidden by you"); "hidden" now only means a whole set you hid from your lists.
+  - **Below your rating floor** names the rating fold (it said "hidden by your rating filter").
+  - **Wanted** is a title already in Radarr or Sonarr, or requested through Seerr.
+  - **Scan now** is every scan button (it was Scan my library, Rescan my library and Scan again);
+    a kept playlist's button says **Update playlist**.
+  - **Switched off** for a media server everywhere (it was turned off, paused or disabled).
+  - **Spin-offs you added** heads your own list (it said "Confirmed spin-off mappings"), and
+    "possible" explains itself on hover. Spin-offs are of shows you *own*, not "watch".
+  - A film's file is a **version**: the quality badge says "Your best version".
+
 ### Added
 
 - **A develop build says so on every page**: a striped "Development build · develop abc1234"
