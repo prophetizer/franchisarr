@@ -2,8 +2,8 @@
 -r requirements.txt
 
 # Testing
-pytest==9.1.1
-pytest-asyncio==1.4.0
+pytest==9.2.0
+pytest-asyncio==1.4.1
 responses==0.26.3
 # Required by fastapi.testclient (Starlette's TestClient is built on it). Not used by the
 # application itself -- all outbound HTTP goes through requests.
