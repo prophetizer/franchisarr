@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.77.0] — 2026-11-05
+
 ### Upgrading
 
 What some pages count, and where some settings live, changes with this release:
@@ -44,8 +46,8 @@ What some pages count, and where some settings live, changes with this release:
 
 ### Changed
 
-- **Search agrees with the collection pages about upcoming films**: a collection film TMDb has no
-  date for yet shows as Upcoming in search too (it said Missing).
+- **Search agrees with the collection pages**: a collection film TMDb has no date for yet shows as
+  Upcoming in search too (it said Missing), and a collection's card counts what its page counts.
 
 ## [0.76.1] — 2026-10-25
 
