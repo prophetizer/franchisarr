@@ -85,7 +85,7 @@ def test_upcoming_lists_announced_films_soonest_first(session: Session) -> None:
     assert [f.title for f in films] == ["Puss in Boots 3", "Shrek 5", "Shrek 6"]
     assert films[0].days_until(TODAY) == 101
     assert films[2].days_until(TODAY) is None
-    assert films[0].owned_count == 1 and films[0].total_count == 4
+    assert films[0].owned_count == 1 and films[0].total_count == 1, "owned + missing: the others are upcoming"
 
 
 def test_a_released_film_is_a_gap_not_an_upcoming_one(session: Session) -> None:
@@ -221,7 +221,7 @@ def test_the_upcoming_page_lists_by_month_with_undated_last(client: TestClient) 
 
     assert "June 2027" in body and "No date yet" in body
     assert body.index("June 2027") < body.index("No date yet")
-    assert "you have 1 of 3" in body
+    assert "you have 1 of 1" in body, "owned + missing: Shrek 5 and 6 are upcoming, not counted (0.77.0)"
     assert 'href="/franchisarr/collections/2150"' in body
 
 

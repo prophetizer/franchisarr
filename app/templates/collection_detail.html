@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/tile.html" import tile %}
+{% from "partials/marked_fold.html" import not_interested_fold, excluded_fold %}
 {% from "partials/set_runtime.html" import set_runtime %}
 {% block title %}{{ gap.name }} — Franchisarr{% endblock %}
 
@@ -113,6 +114,8 @@
   </details>
 {% endif %}
 
+{{ not_interested_fold(gap.not_interested) }}
+{% if user and user.is_admin %}{{ excluded_fold(gap.excluded, gap.collection_id) }}{% endif %}
 {% if gap.tv_films %}
   {# The franchise pages' TV films fold, here too (0.75.0): Preferences can list them as missing. #}
   <details class="hidden-section">

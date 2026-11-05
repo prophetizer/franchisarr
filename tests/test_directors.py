@@ -66,7 +66,7 @@ def test_a_director_page_splits_the_filmography(session: Session) -> None:
     assert [t.title for t in view.missing] == ["Following", "Insomnia"]
     assert [t.title for t in view.upcoming] == ["Untitled Nolan"]
     assert [t.title for t in view.documentaries] == ["Quay"]
-    assert view.total == 5, "an unreleased film is not yet a film they directed"
+    assert view.total == 4, "owned + missing: upcoming and folded titles (the documentary) are shown, not counted"
 
 
 def test_the_floor_hides_directors_you_own_few_films_by(session: Session) -> None:

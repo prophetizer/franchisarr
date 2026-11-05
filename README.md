@@ -155,7 +155,7 @@ https://franchisarr.example.com/api/lists/films.json?api_key=YOUR_KEY&min_rating
 
 Sonarr takes the `shows` URL the same way. The key is shown once, stored only as a hash, and can be
 revoked from the same place. Radarr's and Sonarr's own settings then decide what
-to monitor and where — Franchisarr never adds anything itself. Your dismissals and preferences apply to the
+to monitor and where — Franchisarr never adds anything itself. Your Not interested titles and the household settings apply to the
 lists; `min_rating` on the URL overrides the household floor for that list only.
 
 ### Artwork
@@ -214,8 +214,9 @@ the label changes.
 
 The top bar has its menus: **Browse** (Franchises, Collections, Spin-offs, Upcoming,
 Directors, Trophy case, In numbers); for administrators **Playlists** (one page with tabs) and
-**Manage** (Servers, Libraries, Instances, Users, Settings, Activity, Duplicates, Server parity); and one under your name (Preferences, Password, light/dark, grid density, Sign out), with
-search at the far right. The menu holding the page you're on is highlighted. On a phone it's a
+**Manage** (Servers, Libraries, Instances, Users, Settings, Activity, Duplicates, Server parity); and one under your name (Password, then your own preferences — light/dark, grid density, the look — and Sign out), with
+search at the far right. What the lists show for everyone — the rating floor, which directors
+get a page, whether TV films and shorts count — is **Settings → Household**. The menu holding the page you're on is highlighted. On a phone it's a
 single ☰ button.
 
 The home page leads with rows of posters: the collections you're **closest to completing**,

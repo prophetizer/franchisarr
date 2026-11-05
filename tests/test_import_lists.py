@@ -229,7 +229,7 @@ def test_the_upcoming_calendar_is_a_valid_feed_of_dated_films(client: TestClient
     assert "DTSTART;VALUE=DATE:20300601" in unfolded
     assert "SUMMARY:Axel F 2" in unfolded
     assert "UID:franchisarr-99@" in unfolded
-    assert "DESCRIPTION:Beverly Hills Cop Collection — you have 1 of 5." in unfolded, "the undated film counts toward the total"
+    assert "DESCRIPTION:Beverly Hills Cop Collection — you have 1 of 3." in unfolded, "owned + missing; upcoming films aren't counted (0.77.0)"
     assert f"/collections/{COLLECTION}" in unfolded
 
 

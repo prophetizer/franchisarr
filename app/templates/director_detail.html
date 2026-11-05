@@ -2,6 +2,7 @@
 {% block title %}{{ d.name }} — Franchisarr{% endblock %}
 
 {% from "partials/tile.html" import tile %}
+{% from "partials/marked_fold.html" import not_interested_fold, excluded_fold %}
 {% from "partials/set_runtime.html" import set_runtime %}
 {% from "partials/trailer_button.html" import trailer_button %}
 {% macro row(movie, css, addable=True) -%}
@@ -72,6 +73,7 @@
     <div class="collection-grid collection-grid--compact">{% for decade, m in decades(sort_titles(d.hidden, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(m, 'hidden') }}{% endfor %}</div>
   </details>
 {% endif %}
+{{ not_interested_fold(d.not_interested) }}
 {% if d.shorts %}
   <details class="hidden-section">
     <summary>{{ d.shorts | length }} short{{ '' if d.shorts | length == 1 else 's' }} — folded by a household setting</summary>
@@ -90,8 +92,8 @@
     <div class="collection-grid collection-grid--compact">{% for decade, m in decades(sort_titles(d.documentaries, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(m, 'hidden') }}{% endfor %}</div>
   </details>
 {% endif %}
-{% if not d.pending and not d.missing and not d.upcoming %}
-  <p role="status" class="notice-good" data-scene="usher">Complete.</p>
+{% if not d.pending and d.owned and not d.missing %}
+  <p role="status" class="notice-good" data-scene="usher">Complete{% if d.upcoming %}, with {{ d.upcoming | length }} upcoming{% endif %}.</p>
 {% endif %}
 
 {% if d.owned %}

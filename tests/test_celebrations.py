@@ -105,3 +105,23 @@ def test_the_scan_status_has_a_reel_for_showcase(client: TestClient) -> None:
         assert 'class="sc-reel"' in client.get(f"{BASE}/scan/status").text
     finally:
         scan_state.finish("done", [])
+
+
+def test_sets_complete_only_because_the_rule_changed_are_recorded_quietly(session: Session) -> None:
+    """0.77.0: complete = nothing missing. On an install that already celebrates, a set whose only
+    absence is below the rating floor turns complete with nothing added -- recorded, not news, that
+    once (michael, 2026-10-25). A real completion afterwards is news as before."""
+    from app.services.settings_service import SettingKey, set_setting
+
+    server = _library(session)
+    session.add(CollectionCompletion(collection_id=1, name="Collection 1", celebrate=False))  # an existing install
+    _collection(session, server, 3, [31, 32], [31])
+    session.exec(select(TmdbCollectionMovie).where(TmdbCollectionMovie.tmdb_movie_id == 32)).one().vote_average = 3.0
+    session.exec(select(TmdbCollectionMovie).where(TmdbCollectionMovie.tmdb_movie_id == 32)).one().vote_count = 500
+    set_setting(session, SettingKey.MIN_GAP_RATING, "6")
+    session.commit()
+
+    assert celebrations.record(session) == [], "complete by the new rule alone: quiet"
+    assert session.exec(select(CollectionCompletion).where(CollectionCompletion.collection_id == 3)).one().celebrate is False
+    _own(session, server, 22)
+    assert celebrations.record(session) == ["Collection 2"], "a real completion is still news"

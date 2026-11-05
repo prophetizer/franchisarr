@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Upgrading
+
+What some pages count, and where some settings live, changes with this release:
+
+- **"Complete" means nothing missing.** Upcoming films, and titles folded away (below the rating
+  floor, TV films, Not interested), no longer stop a set being complete -- for trophies and the
+  confetti as well as the pages. Sets that became complete only because of this are recorded
+  quietly the first time, without confetti.
+- **"N of M" counts owned + missing**, so it reads "M of M" exactly when a set is complete.
+  Collections no longer count upcoming films in M, and directors no longer count their folded
+  documentaries, shorts and music videos.
+- **The rating floor, the directors floor and the TV films / shorts switches moved to
+  Settings → Household.** They apply to everyone, and only an administrator can change them; the
+  menu under your name now holds only your own preferences. Old links to Preferences land there.
+- **Story-order playlists are named "*name* — Story order (Franchisarr)".** Ones already on your
+  servers, named "— Chronological", are renamed in place at their next update -- same playlist,
+  same spot in your apps. A name you gave one yourself is left alone.
+
+### Added
+
+- **Not interested, with Undo.** Titles you mark Not interested now sit in a folded section on the
+  page they came from -- collections, franchises, directors and Spin-offs -- each with **Undo**,
+  instead of vanishing for good. Only you see yours. Films marked **Not part of this
+  collection** get the same fold on their collection, which administrators can undo.
+
+### Changed
+
+- **Search agrees with the collection pages about upcoming films**: a collection film TMDb has no
+  date for yet shows as Upcoming in search too (it said Missing).
+
 ## [0.76.1] — 2026-10-25
 
 ### Changed

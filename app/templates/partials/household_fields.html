@@ -1,0 +1,57 @@
+{#- The household settings (GLOSSARY.md: household setting): what the lists show, for everyone on
+    this install. On Settings' Household section, and on the first-run step (0.77.0; they were the
+    personal menu's "Preferences" before). -#}
+  <article>
+    <header><strong>Hide low-rated films</strong></header>
+    <label for="min_rating">Hide missing films rated below</label>
+    <input type="number" id="min_rating" name="min_rating" min="0" max="10" step="0.1"
+           value="{{ '%g' | format(min_rating | default(0)) }}" inputmode="decimal" style="max-width: 8rem">
+    <small class="muted">
+      <strong>Example:</strong> at 6.0, <em>Halloween: Resurrection</em> (★4.6) and
+      <em>The NeverEnding Story III</em> (★4.5) fold into a "below your rating floor"
+      section on their collection's page, while <em>Schindler's List</em> (★8.6) stays.
+      0 turns it off. Films with fewer than ten votes are never hidden — unknown is not the same
+      as bad.
+    </small>
+  </article>
+
+  <article>
+    <header><strong>Which directors get a page</strong></header>
+    <label for="director_floor">Show directors you own at least</label>
+    <input type="number" id="director_floor" name="director_floor" min="2" max="50"
+           value="{{ director_floor }}" inputmode="numeric" style="max-width: 8rem">
+    <small class="muted">
+      films by. <strong>Example:</strong> on a library of 3,400 films, 5 gives about 150
+      directors — Spielberg, Nolan, the Coens — and 2 gives over 700, most of them people you
+      own two films by and have never heard of.
+    </small>
+  </article>
+
+  <article>
+    <header><strong>TV films, specials and shorts in franchises and collections</strong></header>
+    <label>
+      <input type="checkbox" name="include_tv_films" value="1" {% if include_tv_films %}checked{% endif %}>
+      List them as missing
+    </label>
+    <small class="muted">
+      <strong>Example:</strong> Wikidata files <em>The Star Wars Holiday Special</em> and
+      <em>LEGO Star Wars: The Empire Strikes Out</em> under Star Wars. Off, they sit in a folded
+      "TV films, specials or shorts" section on the franchise page; on, they count as gaps like
+      any other film. TMDb collections follow it too: the <em>Descendants</em> films, made for Disney Channel,
+      fold into "TV films" on their collection's page.
+    </small>
+  </article>
+
+  <article>
+    <header><strong>Shorts in a director's filmography</strong></header>
+    <label>
+      <input type="checkbox" name="include_shorts" value="1" {% if include_shorts %}checked{% endif %}>
+      List films under 40 minutes as missing
+    </label>
+    <small class="muted">
+      <strong>Example:</strong> Christopher Nolan directed <em>Doodlebug</em>, three minutes long
+      and rated 6.5. Off, it folds into a "shorts" section on his page; on, it is a gap beside
+      <em>Insomnia</em>. A film whose runtime TMDb doesn't know is never treated as a short.
+    </small>
+  </article>
+

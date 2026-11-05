@@ -4,12 +4,21 @@
 {% block content %}
 <hgroup>
   <h1>Settings</h1>
-  <p>Connections, scheduling, notifications and backup. What the lists <em>show</em> — rating
-     floor, which directors get a page, whether specials and shorts count — lives under
-     <a href="{{ url('/preferences') }}">Preferences</a>.</p>
+  <p>What the lists show for everyone here, connections, scheduling, notifications and backup.
+     How the app looks is each person's own, under their name in the menu.</p>
 </hgroup>
 
 {% if saved %}<p role="status" class="notice-good">Saved.</p>{% endif %}
+
+<section id="household">
+  <h2>Household</h2>
+  <p><small class="muted">What the lists show, for everyone who signs in. Nothing these hide is
+    thrown away: each page keeps a folded section of what they filtered out.</small></p>
+  <form method="post" action="{{ url('/preferences') }}">
+    {% include "partials/household_fields.html" %}
+    <button type="submit">Save household settings</button>
+  </form>
+</section>
 {% if import_note %}<p role="status" class="notice-good">{{ import_note }}</p>{% endif %}
 {% if update and update.update_available %}
   <p role="status">

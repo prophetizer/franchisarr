@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "partials/poster_card.html" import poster_card %}
 {% from "partials/tile.html" import tile %}
+{% from "partials/marked_fold.html" import not_interested_fold, excluded_fold %}
 {% macro suggestion_card(poster, title, year, links, relationships, heuristic, add_url, add_target, dismiss_url, show=True) -%}
   {#- is-show: Showcase frames a show as an old TV screen (0.62.0). -#}
   <article class="collection-card collection-card--compact{% if show %} is-show{% endif %}">
@@ -115,6 +116,7 @@
   <div id="spinoff-lists">{% include "partials/spinoff_lists.html" %}</div>
 
   {% if user and user.is_admin %}
+  {{ not_interested_fold(not_interested_shows) }}
   <details id="library" {% if library_pager.page > 1 %}open{% endif %}>
     <summary><strong>Search a single show</strong></summary>
     <p><small class="muted">

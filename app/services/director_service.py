@@ -100,6 +100,8 @@ class DirectorView:
     #: Music-video compilations. Always folded away: they're a music-video director's back
     #: catalogue, not the films someone completing that director is after.
     music_videos: list[DirectorTitle] = field(default_factory=list)
+    #: Films this person marked Not interested: a fold with Undo (0.77.0).
+    not_interested: list = field(default_factory=list)
     @property
     def photo(self) -> str | None:
         from app.services.artwork import profile_url
@@ -117,8 +119,9 @@ class DirectorView:
 
     @property
     def total(self) -> int:
-        return (len(self.owned) + len(self.missing) + len(self.hidden)
-                + len(self.documentaries) + len(self.shorts) + len(self.music_videos))
+        """Owned + missing, as for collections and franchises (0.77.0): the folds -- below the
+        floor, documentaries, shorts, music videos -- are shown in their sections, not counted."""
+        return len(self.owned) + len(self.missing)
 
     @property
     def best_rating(self) -> float:
@@ -376,8 +379,12 @@ def director_views(
                 view.owned.append(replace(t, servers=info.servers, watched=info.watched,
                                           runtime=info.runtime or t.runtime,
                                           resolution=info.resolution) if info else t)
-            elif t.tmdb_id in in_radarr or t.tmdb_id in dismissed:
+            elif t.tmdb_id in in_radarr:
                 continue
+            elif t.tmdb_id in dismissed:
+                from app.services.not_interested import Marked
+
+                view.not_interested.append(Marked(ItemType.MOVIE.value, t.tmdb_id, t.title, t.year, t.poster_path))
             elif not t.is_released(today):
                 view.upcoming.append(t)
             elif t.is_music_video:

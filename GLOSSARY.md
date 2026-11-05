@@ -29,8 +29,8 @@ In the library, on a media server that is switched on.
 _Avoid_: In your library (as a term), have, collected
 
 **Wanted**:
-Not owned, but already on its way: Radarr or Sonarr has it or is fetching it, or it has been
-requested through Seerr.
+Released and not owned, but already with Radarr or Sonarr or requested through Seerr. It counts
+against its set until it is owned, and outranks any fold.
 _Avoid_: Requested, known, in Radarr, queued
 
 **Missing**:
@@ -38,7 +38,8 @@ Released, neither owned nor wanted, and counted against its set.
 _Avoid_: Gap (for a single title)
 
 **Upcoming**:
-Announced but not yet released, whether or not it has a date; never counted as missing.
+Announced but not yet released, whether or not it has a date; never counted against its set, even
+if it is already with Radarr or Sonarr.
 _Avoid_: Coming soon, not out yet, announced, unreleased
 
 **Below the rating floor**:
@@ -58,7 +59,8 @@ Collapsed into its own section on the page it came from, rather than counted or 
 _Avoid_: Filtered out, removed
 
 **Complete**:
-A set with nothing missing; upcoming and folded titles don't count against it.
+A set with nothing missing or wanted: every title that counts is owned. Upcoming and folded titles
+don't count against it.
 _Avoid_: Finished, full
 
 **TV film**:

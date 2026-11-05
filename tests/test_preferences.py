@@ -60,7 +60,7 @@ def test_saving_writes_all_four(client: TestClient) -> None:
     response = client.post(f"{BASE}/preferences", data={
         "min_rating": "6", "director_floor": "3", "include_tv_films": "1"})
 
-    assert response.headers["location"] == f"{BASE}/preferences?saved=1"
+    assert response.headers["location"] == f"{BASE}/settings?saved=1#household", "back to Settings (0.77.0)"
     assert _setting(SettingKey.MIN_GAP_RATING) == "6"
     assert _setting(SettingKey.MIN_DIRECTOR_FILMS) == "3"
     assert _setting(SettingKey.FRANCHISE_INCLUDE_TV_FILMS) == "true"
@@ -73,9 +73,10 @@ def test_the_page_shows_current_values_and_examples(client: TestClient) -> None:
         set_setting(session, SettingKey.DIRECTOR_INCLUDE_SHORTS, "true")
         session.commit()
 
-    body = client.get(f"{BASE}/preferences").text
+    assert client.get(f"{BASE}/preferences", follow_redirects=False).headers["location"].endswith("/settings#household")
+    body = client.get(f"{BASE}/settings").text
 
-    assert 'value="6.5"' in body
+    assert 'id="household"' in body and 'value="6.5"' in body
     assert 'name="include_shorts" value="1" checked' in body
     assert "Holiday Special" in body and "Doodlebug" in body, "every option has an example"
     assert "Skip" not in body, "the skip button is only for the first run"
@@ -84,5 +85,10 @@ def test_the_page_shows_current_values_and_examples(client: TestClient) -> None:
     assert "Skip" in first and "Save and continue" in first
 
 
-def test_settings_links_to_preferences(client: TestClient) -> None:
-    assert f'href="{BASE}/preferences"' in client.get(f"{BASE}/settings").text
+def test_household_settings_live_on_settings_and_not_in_the_personal_menu(client: TestClient) -> None:
+    """GLOSSARY.md: a household setting is for everyone and an administrator's; a preference is
+    one person's. 0.77.0 moved the four household settings from the name menu to Settings."""
+    page = client.get(f"{BASE}/settings").text
+    assert 'id="household"' in page and f'action="{BASE}/preferences"' in page
+    assert f'href="{BASE}/preferences"' not in page, "no menu link to a Preferences page any more"
+    assert "Your preferences" in page

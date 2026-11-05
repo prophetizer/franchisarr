@@ -208,7 +208,7 @@ def test_a_released_film_is_still_reported_alongside_upcoming_ones(session: Sess
 
     assert [m.title for m in gap.missing] == ["Beverly Hills Cop III"]
     assert [m.title for m in gap.upcoming] == ["Beverly Hills Cop IV"]
-    assert gap.total == 3
+    assert gap.total == 2, "owned + missing: the upcoming film is in its own section (0.77.0)"
 
 
 def test_a_film_released_today_counts_as_available(session: Session) -> None:

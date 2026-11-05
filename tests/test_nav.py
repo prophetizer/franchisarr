@@ -49,7 +49,7 @@ def test_an_admin_gets_browse_manage_and_their_own_menu(client: TestClient) -> N
     assert f'href="{BASE}/playlists" class="nav-link"' in page
     assert _menu(page, "Manage") == ["Servers", "Libraries", "Instances", "Users", "Settings", "Activity",
                                       "Duplicates", "Server parity"]
-    assert _menu(page, "admin") == ["Preferences", "Password"]
+    assert _menu(page, "admin") == ["Password"]
     assert "Sign out" in page and "theme-toggle" in page
     nav = page.split('<nav class="app-nav">', 1)[1].split("</nav>", 1)[0]
     assert nav.index("<summary>admin</summary>") < nav.index(f'href="{BASE}/search"'), "search at the far right"
@@ -81,7 +81,7 @@ def test_the_phone_panel_has_every_section_and_slash_goes_to_search(client: Test
     page = client.get(f"{BASE}/collections").text
 
     panel = page.split('id="nav-panel"', 1)[1].split("</div>", 1)[0]
-    for label in ("Franchises", "Servers", "Playlists", "Preferences", "Sign out"):
+    for label in ("Franchises", "Servers", "Playlists", "Your preferences", "Sign out"):
         assert label in panel
     assert 'aria-controls="nav-panel"' in page and "franchisarrToggleMenu" in page
     assert "event.key !== '/'" in page and f'"{BASE}/search"' in page

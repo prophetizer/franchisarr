@@ -101,6 +101,12 @@ class MissingMovie:
         return self.release_date <= (today or date.today()).isoformat()
 
 
+def _marked(movie: MissingMovie):  # noqa: ANN202
+    from app.services.not_interested import Marked
+
+    return Marked(ItemType.MOVIE.value, movie.tmdb_id, movie.title, movie.release_year, movie.poster_path)
+
+
 #: TMDb's "TV Movie" genre id, as stored in TmdbCollectionMovie.genre_ids ("10770,35").
 TV_MOVIE_GENRE = "10770"
 
@@ -122,6 +128,10 @@ class CollectionGap:
     #: "Descendants" and the Hallmark mystery series were most of what this held on the
     #: developer's library: 31 of 224 missing films, and ten collections no longer incomplete.
     tv_films: tuple[MissingMovie, ...] = ()
+    #: Marked Not interested by this person, and marked not part of this collection by the
+    #: household: folds with Undo since 0.77.0, never counted (app/services/not_interested.py).
+    not_interested: tuple = ()
+    excluded: tuple = ()
     poster_path: str | None = None
     backdrop_path: str | None = None
     #: A full fanart.tv URL, or None when no fanart key is configured.
@@ -154,7 +164,9 @@ class CollectionGap:
 
     @property
     def total(self) -> int:
-        return len(self.owned) + len(self.missing) + len(self.upcoming)
+        """Owned + missing: "N of M" reads M of M exactly when the set is complete (GLOSSARY.md;
+        michael, 0.77.0). Upcoming and folded titles are shown in their own sections instead."""
+        return len(self.owned) + len(self.missing)
 
     @property
     def has_gaps(self) -> bool:
@@ -352,6 +364,8 @@ def collection_gaps(
         upcoming_here: list[MissingMovie] = []
         hidden_here: list[MissingMovie] = []
         tv_here: list[MissingMovie] = []
+        not_interested_here: list = []
+        excluded_here: list = []
 
         for (_, tmdb_id, title, release_year, release_date, poster_path,
              vote_average, vote_count, popularity, genre_ids) in members:
@@ -372,8 +386,10 @@ def collection_gaps(
             )
             if tmdb_id in owned:
                 owned_here.append(entry)
-            elif tmdb_id in excluded or tmdb_id in dismissed:
-                continue
+            elif tmdb_id in excluded:
+                excluded_here.append(_marked(entry))
+            elif tmdb_id in dismissed:
+                not_interested_here.append(_marked(entry))
             elif not entry.is_released(today):
                 upcoming_here.append(entry)
             elif fold_tv_films and TV_MOVIE_GENRE in (genre_ids or "").split(","):
@@ -395,6 +411,8 @@ def collection_gaps(
                 upcoming=tuple(upcoming_here),
                 hidden=tuple(hidden_here),
                 tv_films=tuple(tv_here),
+                not_interested=tuple(not_interested_here),
+                excluded=tuple(excluded_here),
                 poster_path=collection.poster_path,
                 backdrop_path=collection.backdrop_path,
                 logo=collection.logo_url,

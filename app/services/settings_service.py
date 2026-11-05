@@ -46,6 +46,9 @@ class SettingKey:
     # Generated or discovered at runtime rather than configured, so deliberately absent from
     # DEFAULTS: a default value for either would be actively wrong.
     PLEX_CLIENT_ID = "plex_client_id"
+    #: Set once completions have been recorded under 0.77.0's rule ("complete" = nothing missing).
+    #: Sets that became complete only because the rule changed are recorded quietly that once.
+    COMPLETE_RULE_APPLIED = "complete_rule_applied"
 
     #: Where to look for new releases. Empty uses the built-in default; set it to point at a fork,
     #: or at nothing, if you'd rather the install asked no one.

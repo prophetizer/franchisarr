@@ -79,6 +79,8 @@ class FranchiseView:
     #: TV films, specials and shorts on the roster, folded away unless the preference says
     #: otherwise. Never counted as missing.
     specials: list[Title] = field(default_factory=list)
+    #: Titles this person marked Not interested: a fold with Undo (0.77.0).
+    not_interested: list = field(default_factory=list)
     #: A poster for the card and a logo for the heading, borrowed from the collection that *is*
     #: this franchise -- same name, or most of its films (see _pick_art, 0.46.1). None when no
     #: collection is, and the card shows `mosaic` instead.
@@ -428,13 +430,27 @@ def franchise_views(
         show_ids: set[int] = set()
         seen_missing: set[tuple[str, int]] = set()
 
+        def note_not_interested(t) -> None:  # noqa: ANN001
+            # A fold with Undo since 0.77.0 (app/services/not_interested.py), never counted.
+            from app.services.not_interested import Marked
+
+            key = (t.item_type, t.tmdb_id)
+            if key not in seen_missing:
+                seen_missing.add(key)
+                year = getattr(t, "year", None) or getattr(t, "release_year", None)
+                view.not_interested.append(Marked(t.item_type if hasattr(t, "item_type") else ItemType.MOVIE.value,
+                                                  t.tmdb_id, t.title, year, t.poster_path))
+
         def add_missing(t: Title) -> None:
             key = (t.item_type, t.tmdb_id)
-            if key in seen_missing or key in dismissed:
+            if key in seen_missing:
                 return
             if t.item_type == ItemType.MOVIE.value and (t.tmdb_id in owned_films or t.tmdb_id in in_radarr):
                 return
             if t.item_type == ItemType.SHOW.value and (t.tmdb_id in owned_shows or t.tmdb_id in in_sonarr):
+                return
+            if key in dismissed:
+                note_not_interested(t)
                 return
             seen_missing.add(key)
             (view.missing_films if t.item_type == ItemType.MOVIE.value else view.missing_shows).append(t)
@@ -463,6 +479,8 @@ def franchise_views(
             candidates.append((gap, held.get(gap.collection_id, 0)))
             for mm in gap.missing:
                 add_missing(_from_missing(mm, "collection", gap.name))
+            for marked in gap.not_interested:
+                note_not_interested(marked)
             # A collection's TV films are only here when the preference folds them: into the
             # franchise's own TV films fold, never dropped.
             for mm in gap.tv_films:
@@ -499,7 +517,9 @@ def franchise_views(
             if _is_minor(m.kind) and not include_minor:
                 key = (m.item_type, m.tmdb_id)
                 owned_it = (m.tmdb_id in owned_films) if m.item_type == ItemType.MOVIE.value else (m.tmdb_id in owned_shows)
-                if key not in seen_missing and key not in dismissed and not owned_it:
+                if key in dismissed and not owned_it:
+                    note_not_interested(t)
+                elif key not in seen_missing and not owned_it:
                     seen_missing.add(key)
                     view.specials.append(t)
                 continue

@@ -33,23 +33,29 @@ def preferences_reviewed(session) -> bool:  # noqa: ANN001
     return _flag(session, SettingKey.PREFERENCES_REVIEWED)
 
 
+def household_values(session) -> dict:  # noqa: ANN001
+    """The four household settings (GLOSSARY.md), for Settings' Household section and the first-run
+    step -- one place, so neither can show a stale value."""
+    from app.services import director_service, movie_gap_service
+
+    return {
+        "min_rating": movie_gap_service.min_gap_rating(session),
+        "director_floor": director_service.min_director_films(session),
+        "include_tv_films": _flag(session, SettingKey.FRANCHISE_INCLUDE_TV_FILMS),
+        "include_shorts": _flag(session, SettingKey.DIRECTOR_INCLUDE_SHORTS),
+    }
+
+
 @router.get("/preferences", response_class=HTMLResponse)
 def preferences(request: Request, session: DbSession, user: AdminUser,
                 first: bool = False, saved: bool = False):
-    from app.services import director_service, movie_gap_service
-
+    """The first-run step. Otherwise these household settings live on Settings (0.77.0): a link
+    from before then lands there."""
+    if not first:
+        return RedirectResponse(_url("/settings#household"), status_code=status.HTTP_303_SEE_OTHER)
     return get_templates().TemplateResponse(
-        request,
-        "preferences.html",
-        {
-            "user": user,
-            "first": first,
-            "saved": saved,
-            "min_rating": movie_gap_service.min_gap_rating(session),
-            "director_floor": director_service.min_director_films(session),
-            "include_tv_films": _flag(session, SettingKey.FRANCHISE_INCLUDE_TV_FILMS),
-            "include_shorts": _flag(session, SettingKey.DIRECTOR_INCLUDE_SHORTS),
-        },
+        request, "preferences.html",
+        {"user": user, "first": first, "saved": saved, **household_values(session)},
     )
 
 
@@ -82,7 +88,7 @@ def save_preferences(
     session.commit()
     if first:
         return RedirectResponse(_url("/"), status_code=status.HTTP_303_SEE_OTHER)
-    return RedirectResponse(_url("/preferences?saved=1"), status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(_url("/settings?saved=1#household"), status_code=status.HTTP_303_SEE_OTHER)
 
 
 @router.post("/look")

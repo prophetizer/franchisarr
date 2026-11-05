@@ -69,6 +69,12 @@ def _mapping_rows(session) -> list[dict]:
     ]
 
 
+def _not_interested_shows(session, user):  # noqa: ANN001, ANN202
+    from app.services import not_interested
+
+    return not_interested.shows(session, user.id if user else None)
+
+
 def _lists(request: Request, session, user) -> HTMLResponse:
     return get_templates().TemplateResponse(
         request,
@@ -107,6 +113,8 @@ def shows(request: Request, session: DbSession, user: RequiredUser, page: int = 
         "shows.html",
         {
             "user": user,
+            # Shows this person marked Not interested: a fold with Undo (0.77.0).
+            "not_interested_shows": _not_interested_shows(session, user),
             "shows": library_pager.items,
             "show_posters": _show_posters(session, [show.tmdb_id for show in library_pager.items]),
             "owned_total": library_pager.total,

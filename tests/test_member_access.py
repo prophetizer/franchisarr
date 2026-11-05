@@ -51,7 +51,7 @@ ADMIN_ONLY = [
     ("get", "/add/1"), ("post", "/add"), ("post", "/add/request"),
     ("post", "/api/radarr/add"), ("post", "/api/sonarr/add"),
     ("get", "/shows/add/1"), ("post", "/shows/add"), ("post", "/shows/add/request"),
-    ("post", "/collections/1/exclude/2"), ("post", "/collections/rating-filter"),
+    ("post", "/collections/1/exclude/2"), ("post", "/collections/1/exclude/2/undo"), ("post", "/collections/rating-filter"),
     ("post", "/directors/floor"), ("get", "/preferences"), ("post", "/preferences"),
     ("post", "/shows/mappings"), ("post", "/shows/mappings/1/delete"), ("get", "/shows/1/candidates"),
     ("post", "/api/spinoffs/mappings"),

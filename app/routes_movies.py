@@ -242,6 +242,30 @@ def exclude(
     return _missing_list(request, session, user, collection_id)
 
 
+@router.post("/not-interested/{item_type}/{tmdb_id}/undo", response_class=HTMLResponse)
+def undo_not_interested(session: DbSession, user: RequiredUser, item_type: str, tmdb_id: int):
+    """Take a title off this person's Not interested list (0.77.0): it comes back wherever it
+    belongs, so the page reloads rather than guessing where."""
+    from app.services import not_interested
+
+    if item_type not in (ItemType.MOVIE.value, ItemType.SHOW.value):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such kind of title.")
+    if not_interested.undo(session, user.id, item_type, tmdb_id):
+        logger.info("User %s undid Not interested for %s:%s", user.id, item_type, tmdb_id)
+    return HTMLResponse("", headers={"HX-Refresh": "true"})
+
+
+@router.post("/collections/{collection_id}/exclude/{tmdb_id}/undo", response_class=HTMLResponse)
+def undo_exclude(session: DbSession, user: AdminUser, collection_id: int, tmdb_id: int):
+    """Put a film back in a collection it was marked not part of -- the household's correction,
+    so an administrator's to undo (0.77.0)."""
+    from app.services import not_interested
+
+    if not_interested.undo_exclude(session, collection_id, tmdb_id):
+        logger.info("User %s put tmdb:%s back in collection %s", user.id, tmdb_id, collection_id)
+    return HTMLResponse("", headers={"HX-Refresh": "true"})
+
+
 # ---------------------------------------------------------------------- add dialog
 
 
@@ -595,6 +619,12 @@ def _mask(value: str) -> str:
     return mask_secret(value.strip())
 
 
+def _household_values(session) -> dict:  # noqa: ANN001
+    from app.routes_preferences import household_values
+
+    return household_values(session)
+
+
 def _settings_context(session, user, **extra) -> dict:
     """One place that assembles the settings page, so a new field can't be added to the template
     and forgotten in one of the handlers that renders it."""
@@ -626,6 +656,8 @@ def _settings_context(session, user, **extra) -> dict:
         "error": None,
         "import_note": None,
         "update": _update_status(session),
+        # The household settings section (0.77.0): what the lists show, for everyone.
+        **_household_values(session),
         "update_check_enabled": _update_check_enabled(session),
         "members_allowed": _members_allowed(session),
         "update_check_forced": _update_check_forced(),

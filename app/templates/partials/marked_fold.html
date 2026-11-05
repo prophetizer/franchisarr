@@ -1,0 +1,46 @@
+{#- Folds with Undo for titles marked Not interested, and for films marked not part of a collection
+    (0.77.0, GLOSSARY.md: not interested, folded). Each item is a not_interested.Marked. Undo reloads
+    the page, so the title reappears wherever it belongs. -#}
+{% from "partials/tile.html" import tile %}
+
+{% macro not_interested_fold(items) -%}
+{% if items %}
+  <details class="hidden-section marked-fold">
+    <summary>{{ items | length }} title{{ '' if items | length == 1 else 's' }} you're not interested in</summary>
+    <p><small class="muted">Only you see these. Undo puts one back where it belongs.</small></p>
+    <div class="collection-grid collection-grid--compact">
+      {% for m in items %}
+        {% call tile(m.poster, 'hidden', show=m.is_show, title=m.title, year=m.year) %}
+          <header><strong class="film-title">{{ m.title }}</strong></header>
+          <p class="collection-counts muted"><span>{{ m.year or '' }}</span></p>
+          <div class="card-actions">
+            <button class="secondary outline" hx-post="{{ url('/not-interested/' ~ m.item_type ~ '/' ~ m.tmdb_id ~ '/undo') }}"
+                    hx-swap="none" hx-disabled-elt="this">Undo</button>
+          </div>
+        {% endcall %}
+      {% endfor %}
+    </div>
+  </details>
+{% endif %}
+{%- endmacro %}
+
+{% macro excluded_fold(items, collection_id) -%}
+{% if items %}
+  <details class="hidden-section marked-fold">
+    <summary>{{ items | length }} film{{ '' if items | length == 1 else 's' }} marked not part of this collection</summary>
+    <p><small class="muted">Hidden for everyone, as a correction to TMDb's list. Undo puts one back.</small></p>
+    <div class="collection-grid collection-grid--compact">
+      {% for m in items %}
+        {% call tile(m.poster, 'hidden', title=m.title, year=m.year) %}
+          <header><strong class="film-title">{{ m.title }}</strong></header>
+          <p class="collection-counts muted"><span>{{ m.year or '' }}</span></p>
+          <div class="card-actions">
+            <button class="secondary outline" hx-post="{{ url('/collections/' ~ collection_id ~ '/exclude/' ~ m.tmdb_id ~ '/undo') }}"
+                    hx-swap="none" hx-disabled-elt="this">Undo</button>
+          </div>
+        {% endcall %}
+      {% endfor %}
+    </div>
+  </details>
+{% endif %}
+{%- endmacro %}

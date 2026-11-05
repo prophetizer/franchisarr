@@ -80,8 +80,8 @@
                          ('/duplicates', 'Duplicates'), ('/parity', 'Server parity')] if user.is_admin else [] %}
         {#- Playlists is one page with tabs (0.42.0): a plain link, not a menu. -#}
         {% set playlists = [('/playlists', 'Playlists')] if user.is_admin else [] %}
-        {% set mine = ([('/preferences', 'Preferences')] if user.is_admin else [])
-                      + [('/password', 'Password')]
+        {#- Household settings moved to Settings (0.77.0); this menu is yours alone. -#}
+        {% set mine = [('/password', 'Password')]
                       + ([] if user.is_admin else [('/activity', 'Activity')]) %}
         {% set here = request.url.path if request else '' %}
         {%- macro is_here(path) -%}{{ 'true' if here == url(path) or here.startswith(url(path) ~ '/') else '' }}{%- endmacro %}
@@ -125,6 +125,9 @@
                 <summary>{{ who }}</summary>
                 <ul class="nav-end">
                   {{ links(mine) }}
+                  <li><form method="post" action="{{ url('/logout') }}" class="nav-form">
+                    <button type="submit" class="nav-menu-button">Sign out</button></form></li>
+                  <li class="nav-menu-heading" aria-hidden="true">Your preferences</li>
                   <li><button type="button" class="nav-menu-button theme-toggle" onclick="franchisarrToggleTheme()"
                               title="Switch between light and dark">
                     <span class="theme-toggle-dark">☾ Dark mode</span><span class="theme-toggle-light">☀ Light mode</span></button></li>
@@ -150,8 +153,6 @@
                     <button type="submit" class="nav-menu-button" title="Full: every effect. Calm: no looping or flashing. Off: no motion at all">
                       {{ {'full': '✨ Effects: full', 'calm': '✨ Effects: calm', 'off': '✨ Effects: off'}[effects] }}</button></form></li>
                   {% endif %}
-                  <li><form method="post" action="{{ url('/logout') }}" class="nav-form">
-                    <button type="submit" class="nav-menu-button">Sign out</button></form></li>
                 </ul>
               </details>
             </li>
@@ -180,6 +181,11 @@
           <p class="nav-panel-heading">{{ who }}</p>
           <ul>
             {{ links(mine) }}
+            <li><form method="post" action="{{ url('/logout') }}" class="nav-form">
+              <button type="submit" class="nav-menu-button">Sign out</button></form></li>
+          </ul>
+          <p class="nav-panel-heading">Your preferences</p>
+          <ul>
             <li><button type="button" class="nav-menu-button theme-toggle" onclick="franchisarrToggleTheme()">
               <span class="theme-toggle-dark">☾ Dark mode</span><span class="theme-toggle-light">☀ Light mode</span></button></li>
             <li><form method="post" action="{{ url('/preferences/density') }}" class="nav-form">
@@ -200,8 +206,6 @@
               <input type="hidden" name="back" value="{{ here }}">
               <button type="submit" class="nav-menu-button">{{ {'full': '✨ Effects: full', 'calm': '✨ Effects: calm', 'off': '✨ Effects: off'}[effects] }}</button></form></li>
             {% endif %}
-            <li><form method="post" action="{{ url('/logout') }}" class="nav-form">
-              <button type="submit" class="nav-menu-button">Sign out</button></form></li>
           </ul>
         </div>
       {% endif %}

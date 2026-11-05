@@ -3,6 +3,7 @@
 {% block title %}{{ f.name }} — Franchisarr{% endblock %}
 
 {% from "partials/tile.html" import tile %}
+{% from "partials/marked_fold.html" import not_interested_fold, excluded_fold %}
 {% from "partials/set_runtime.html" import set_runtime %}
 {% from "partials/trailer_button.html" import trailer_button %}
 {% macro row(t, css) -%}
@@ -114,14 +115,16 @@
     <div class="collection-grid collection-grid--compact">{% for decade, t in decades(sort_titles(f.upcoming_films, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(t, 'upcoming') }}{% endfor %}</div>
   </section>
 {% endif %}
+{{ not_interested_fold(f.not_interested) }}
 {% if f.specials %}
   <details class="hidden-section">
     <summary>{{ f.specials | length }} TV film{{ '' if f.specials | length == 1 else 's' }}, special{{ '' if f.specials | length == 1 else 's' }} or short{{ '' if f.specials | length == 1 else 's' }} — folded away by your preferences</summary>
     <div class="collection-grid collection-grid--compact">{% for decade, t in decades(sort_titles(f.specials, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(t, 'hidden') }}{% endfor %}</div>
   </details>
 {% endif %}
-{% if not f.missing and not f.upcoming_films %}
-  <p role="status" class="notice-good" data-scene="usher">Complete, as far as anything knows.</p>
+{# Complete = nothing missing; upcoming titles don't count against it (GLOSSARY.md, 0.77.0). #}
+{% if f.owned and not f.missing %}
+  <p role="status" class="notice-good" data-scene="usher">Complete{% if f.upcoming_films %}, with {{ f.upcoming_films | length }} upcoming{% else %}, as far as anything knows{% endif %}.</p>
 {% endif %}
 
 {% if f.owned_films or f.owned_shows %}

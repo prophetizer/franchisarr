@@ -24,15 +24,20 @@ SEEN_KEEP = 200
 
 
 def record(session: Session) -> list[str]:
-    """After a scan: add every collection complete now that isn't recorded yet. The first time
-    ever, they're recorded quietly -- a library full of complete collections isn't news. Returns
-    the names newly celebrated."""
+    """After a scan: add every collection complete now that isn't recorded yet. Complete means
+    nothing missing (GLOSSARY.md, 0.77.0): upcoming and folded titles don't count against it. The
+    first time ever, they're recorded quietly -- a library full of complete collections isn't news
+    -- and so, once, are the ones the rule change alone made complete (michael, 2026-10-25).
+    Returns the names newly celebrated."""
     from app.services import movie_gap_service
+    from app.services.settings_service import SettingKey, get_setting, set_setting
 
     complete = {g.collection_id: g.name for g in movie_gap_service.collection_gaps(session)
-                if g.owned and not g.missing and not g.hidden and not g.tv_films}
+                if g.owned and not g.missing}
     known = set(session.exec(select(CollectionCompletion.collection_id)).all())
-    first_time = not known and session.exec(select(CollectionCompletion.id).limit(1)).first() is None
+    first_time = (not known and session.exec(select(CollectionCompletion.id).limit(1)).first() is None) \
+        or get_setting(session, SettingKey.COMPLETE_RULE_APPLIED) != "true"
+    set_setting(session, SettingKey.COMPLETE_RULE_APPLIED, "true")
     new = []
     for collection_id, name in complete.items():
         if collection_id in known:

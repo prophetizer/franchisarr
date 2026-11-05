@@ -1479,3 +1479,13 @@ details.sync-chip[open] { border-radius: var(--pico-border-radius); flex-basis: 
 .dev-banner strong { text-transform: uppercase; letter-spacing: .08em; }
 .dev-banner-note { margin-left: -.35rem; }
 @media (max-width: 600px) { .dev-banner-note { display: none; } }
+
+/* "Your preferences" (0.77.0): a quiet label over the per-person toggles in the name menu. */
+.nav-menu-heading {
+  padding: .5rem var(--pico-form-element-spacing-horizontal) .1rem;
+  color: var(--pico-muted-color);
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  border-top: 1px solid var(--pico-muted-border-color);
+}

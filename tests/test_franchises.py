@@ -514,3 +514,20 @@ def test_a_collections_tv_film_lands_in_the_franchise_fold_not_missing(session: 
     assert "A Cinema Film" in [t.title for t in view.missing_films]
     assert "A TV Film" not in [t.title for t in view.missing_films]
     assert "A TV Film" in [t.title for t in view.specials]
+
+
+def test_a_title_marked_not_interested_folds_on_the_franchise_instead_of_vanishing(session: Session) -> None:
+    """0.77.0: Not interested is a fold with Undo (GLOSSARY.md), on franchise pages too."""
+    from app.models import DismissedItem, User
+
+    user = User(local_username="admin", is_admin=True)
+    session.add(user); session.commit(); session.refresh(user)
+    _own_film(session, 11, "A New Hope"); _own_film(session, 1891, "Empire")
+    session.add(Franchise(wikidata_id="Q462", name="Star Wars", kind="media franchise"))
+    for tid, title in ((11, "A New Hope"), (1891, "Empire"), (1893, "Return of the Jedi")):
+        session.add(FranchiseMember(franchise_id="Q462", item_type="movie", tmdb_id=tid, title=title, kind="film"))
+    session.add(DismissedItem(user_id=user.id, item_type="movie", tmdb_id=1893))
+    session.commit()
+
+    view = franchise_service.franchise_views(session, user.id)[0]
+    assert view.missing_films == [] and [m.title for m in view.not_interested] == ["Return of the Jedi"]
