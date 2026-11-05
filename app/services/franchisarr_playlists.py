@@ -33,7 +33,7 @@ from typing import Callable
 from sqlmodel import Session, col, select
 
 from app.models import FranchisarrPlaylist, FranchisarrPlaylistCopy, ItemType, MediaServer
-from app.services.playlist_service import SUFFIX, PlaylistResult, ServerResult, playlist_title
+from app.services.playlist_service import SUFFIX, PlaylistResult, ServerResult, legacy_title, playlist_title
 
 logger = logging.getLogger(__name__)
 
@@ -298,10 +298,19 @@ def _build(work, entry: FranchisarrPlaylist, refs: list[tuple[str, int]], art, t
                                  # the order itself, so re-arranging the story rebuilds it
                                  + (["|story"] + [f"{t}:{i}" for t, i in sorted(rank, key=rank.get)] if rank else []))
             existing = present.get(copy.server_playlist_id or "")
+            old_title = legacy_title(entry.name) if entry.variant == "chronological" else None
             if existing is None:
                 # Never made, or made before the set kept ids: take a same-named one of ours.
-                existing = next((p for p in listing if p.title == title), None)
+                existing = next((p for p in listing if p.title in (title, old_title)), None)
                 copy.server_playlist_id = existing.id if existing else None
+            if existing is not None and old_title and existing.title == old_title and hasattr(work.client(server_id), "rename_playlist"):
+                # "— Chronological" became "— Story order" (0.77.0): renamed in place, by id, so it
+                # keeps its spot in people's apps. Only from the exact old name -- a title someone
+                # chose themselves is left alone.
+                work.client(server_id).rename_playlist(existing.id, title)
+                existing = _info(existing.id, title, existing.count)
+                listing[:] = [existing if p.id == existing.id else p for p in listing]
+                bump("updated")
             if (existing is not None and not shows and copy.fingerprint == basis
                     and existing.count == copy.items and copy.status == "ok"):
                 bump("unchanged")

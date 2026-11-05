@@ -90,9 +90,17 @@ def targets(session: Session) -> list[MediaServer]:
     return media_server_service.enabled_servers(session)
 
 
-#: What a chronological playlist's name carries (0.74.0): "Star Wars — Chronological (Franchisarr)".
-CHRONOLOGICAL = " — Chronological"
+#: What a story-order playlist's name carries: "Star Wars — Story order (Franchisarr)" since 0.77.0
+#: (GLOSSARY.md: story order). 0.74.0-0.76.x called it "— Chronological"; a kept one is renamed
+#: in place, by id, at its next update (franchisarr_playlists._build).
+CHRONOLOGICAL = " — Story order"
+LEGACY_CHRONOLOGICAL = " — Chronological"
 VARIANTS = ("release", "chronological")
+
+
+def legacy_title(name: str) -> str:
+    """The title a story-order playlist had before 0.77.0, to find and rename it."""
+    return f"{name}{LEGACY_CHRONOLOGICAL}{SUFFIX}"
 
 
 def playlist_title(name: str, variant: str = "release") -> str:
@@ -135,7 +143,8 @@ def order_entries(entries: list) -> list:  # noqa: ANN001 - PlaylistEntry
 def apply_poster(client, title: str, name: str, films: int, episodes: int,  # noqa: ANN001
                  art: PosterArt, *, shows: int = 0) -> bool:
     # A chronological playlist's poster says so (0.74.0); the title tells which this is.
-    order = "IN STORY ORDER" if title.endswith(CHRONOLOGICAL + SUFFIX) else "IN RELEASE ORDER"
+    story = title.endswith(CHRONOLOGICAL + SUFFIX) or title.endswith(LEGACY_CHRONOLOGICAL + SUFFIX)
+    order = "IN STORY ORDER" if story else "IN RELEASE ORDER"
     """Render and upload the poster. Never raises: True if it went on, False otherwise."""
     from app.services import playlist_poster
 
@@ -261,7 +270,8 @@ def repost_all(session: Session) -> list[tuple[str, bool]]:
         for title in client.playlist_titles():
             if not title.endswith(SUFFIX):
                 continue
-            name = title[: -len(SUFFIX)].removesuffix(CHRONOLOGICAL)   # either order's playlist
+            name = (title[: -len(SUFFIX)].removesuffix(CHRONOLOGICAL)         # either order's playlist,
+                    .removesuffix(LEGACY_CHRONOLOGICAL))                       # either name for story order
             art = _art_for_name(session, name)
             counts = client.playlist_counts(title)
             if art is None or counts is None:

@@ -67,6 +67,11 @@ class FakeMediaServer:
         self.log.append(("create", title))
         return pid
 
+    def rename_playlist(self, pid: str, title: str) -> None:
+        self._check()
+        self.playlists[pid]["title"] = title
+        self.log.append(("rename", pid, title))
+
     def delete_playlist_id(self, pid: str) -> None:
         self._check()
         self.playlists.pop(pid, None)

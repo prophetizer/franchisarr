@@ -13,7 +13,7 @@ from app.services.chronology_data import ORDERS
 from tests.test_franchisarr_playlists import BASE, _own, client, world  # noqa: F401 - fixtures
 
 M = ItemType.MOVIE.value
-CHRONO = "Star Wars — Chronological (Franchisarr)"
+CHRONO = "Star Wars — Story order (Franchisarr)"
 
 
 # ------------------------------------------------------------------ the data
@@ -150,3 +150,24 @@ def test_a_chronological_playlists_poster_says_so(session: Session, world, monke
     franchisarr_playlists.make(session, "franchises", "Q462", "Star Wars", refs, art, server_id=living.id,
                                variant="chronological")
     assert said == ["IN RELEASE ORDER", "IN STORY ORDER"]
+
+
+def test_a_kept_chronological_playlist_is_renamed_in_place(session: Session, world) -> None:  # noqa: F811
+    """0.77.0: "— Chronological" became "— Story order" (GLOSSARY.md). A playlist made before keeps
+    its id -- renamed, not remade -- so it keeps its spot in people's apps; a name someone chose
+    themselves is never touched."""
+    living, attic, fakes = world
+    _own(session, living, 1893)
+    refs = [(M, 11), (M, 1891), (M, 1893)]
+    franchisarr_playlists.make(session, "franchises", "Q462", "Star Wars", refs, None, server_id=living.id,
+                               variant="chronological")
+    plex = fakes["Living room"]
+    [pid] = plex.titled(CHRONO)
+    plex.playlists[pid]["title"] = "Star Wars — Chronological (Franchisarr)"     # as 0.76 left it
+
+    playlist_sync.run(session)
+    assert plex.titled(CHRONO) == [pid], "same playlist, new name"
+
+    plex.playlists[pid]["title"] = "Our Star Wars marathon"                       # someone renamed it
+    playlist_sync.run(session)
+    assert plex.playlists[pid]["title"] == "Our Star Wars marathon"
