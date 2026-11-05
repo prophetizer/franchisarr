@@ -272,7 +272,8 @@ def search(session: Session, query: str, user_id: int | None, *, today: date | N
 
     for result in films.values():
         result.status = _status(ItemType.MOVIE.value, result.tmdb_id, owned_films, in_radarr, dismissed,
-                                release_dates.get(result.tmdb_id), result.year, today)
+                                release_dates.get(result.tmdb_id), result.year, today,
+                                tmdb_dated=result.tmdb_id in release_dates)
         if result.status == "owned" and result.tmdb_id in film_details:
             result.servers = film_details[result.tmdb_id].servers
         result.links = _unique(result.links)
@@ -316,7 +317,10 @@ def search(session: Session, query: str, user_id: int | None, *, today: date | N
 
 
 def _status(item_type: str, tmdb_id: int, owned: set[int], in_arr: set[int], dismissed: set,
-            release_date: str | None, year: int | None, today: date) -> str:
+            release_date: str | None, year: int | None, today: date, *, tmdb_dated: bool = False) -> str:
+    """`tmdb_dated`: the film came from a collection or a filmography, so `release_date` is TMDb's
+    answer and None means TMDb has no date yet -- upcoming, as on the collection pages (GLOSSARY.md:
+    upcoming). A franchise-only film has no TMDb date here at all, so its year decides."""
     if tmdb_id in owned:
         return "owned"
     if tmdb_id in in_arr:
@@ -328,7 +332,7 @@ def _status(item_type: str, tmdb_id: int, owned: set[int], in_arr: set[int], dis
             released = date.fromisoformat(release_date) <= today if release_date else None
         except ValueError:
             released = None
-        if released is False or (released is None and (year is None or year > today.year)):
+        if released is False or (released is None and (tmdb_dated or year is None or year > today.year)):
             return "upcoming"
     return "missing"
 

@@ -192,3 +192,19 @@ def test_a_member_can_search_but_not_add(client: TestClient) -> None:
 
     assert "Alien Collection" in page and "Not interested" in page
     assert f'/add/8077"' not in page
+
+
+def test_an_undated_collection_film_is_upcoming_as_on_its_collection_page(session: Session) -> None:
+    """GLOSSARY.md: upcoming. TMDb with no date yet is upcoming everywhere (it was 'missing' in
+    search while its collection page said upcoming); a franchise-only film, which search has no
+    TMDb date for, is still judged by its year."""
+    _library(session)
+    session.add(TmdbCollectionMovie(collection_id=ALIEN, tmdb_movie_id=1234, title="Alien: Undated",
+                                    release_date=None, release_year=None, position=9))
+    session.add(FranchiseMember(franchise_id="Q16", item_type="movie", tmdb_id=4321, title="Alien: Old Short",
+                                year=1990))
+    session.commit()
+
+    films = {r.title: r for r in search_service.search(session, "alien", None, today=TODAY).films}
+    assert films["Alien: Undated"].status == "upcoming"
+    assert films["Alien: Old Short"].status == "missing"
