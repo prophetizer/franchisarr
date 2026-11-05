@@ -94,7 +94,7 @@ def test_every_kind_of_thing_is_found_with_its_status_and_pages(session: Session
     results = search_service.search(session, "alien", None, today=TODAY)
 
     assert [c.name for c in results.collections] == ["Alien Collection"]
-    assert results.collections[0].detail == "2 of 4 owned", "the excluded film isn't counted"
+    assert results.collections[0].detail == "2 of 3 owned", "as on its page: not the excluded or the upcoming film"
     assert [f.name for f in results.franchises] == ["Alien franchise"]
     assert results.franchises[0].image_path == "/alien.jpg", "the owned film's collection poster, as on Franchises"
     films = {r.title: r for r in results.films}

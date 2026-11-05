@@ -157,13 +157,13 @@ def search(session: Session, query: str, user_id: int | None, *, today: date | N
     for cid, tmdb_id, *_ in film_rows:
         if (cid, tmdb_id) not in excluded:
             members.setdefault(cid, []).append(tmdb_id)
-    collections = []
-    for cid, name in collection_names.items():
-        ids = members.get(cid, [])
-        owned = sum(1 for i in ids if i in owned_films)
-        if owned and hit(name):
-            collections.append(GroupResult("collection", name, f"/collections/{cid}",
-                                           f"{owned} of {len(ids)} owned", collection_posters.get(cid)))
+    matched = {cid for cid, name in collection_names.items()
+               if hit(name) and any(i in owned_films for i in members.get(cid, []))}
+    # One pass over just the matches, so the card says what the collection's page says (0.77.0).
+    gaps = movie_gap_service.collection_gaps(session, user_id, only=matched, today=today) if matched else []
+    collections = [GroupResult("collection", g.name, f"/collections/{g.collection_id}",
+                               f"{len(g.owned)} of {g.total} owned", collection_posters.get(g.collection_id))
+                   for g in gaps]
     collections.sort(key=lambda g: _rank(g.name, needle))
     results.collections = _cut(results, "collections", collections)
 
