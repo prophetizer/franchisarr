@@ -44,3 +44,24 @@
   </details>
 {% endif %}
 {%- endmacro %}
+
+{#- Wanted (GLOSSARY.md, 0.77.0): with Radarr or Sonarr or requested through Seerr, not yet owned.
+    Counted against the set, so a section of its own rather than a fold; nothing to add or dismiss. -#}
+{% macro wanted_section(items) -%}
+{% if items %}
+  <section class="wanted-section">
+    <h2>Wanted</h2>
+    <p><small class="muted">On its way: with Radarr or Sonarr, or requested through Seerr. It counts
+      until it's in your library.</small></p>
+    <div class="collection-grid collection-grid--compact">
+      {% for m in items %}
+        {% call tile(m.poster, 'wanted', show=m.is_show, title=m.title, year=m.year) %}
+          <header><strong class="film-title">{{ m.title }}</strong></header>
+          <p class="collection-counts muted"><span>{{ m.year or '' }}</span>
+            {% if m.unmonitored %}<span title="Radarr has this film but isn't monitoring it, so it won't arrive until you change that">unmonitored in Radarr</span>{% endif %}</p>
+        {% endcall %}
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}
+{%- endmacro %}

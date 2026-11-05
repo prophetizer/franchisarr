@@ -120,7 +120,9 @@ def _films(n: int, shows: int = 0) -> str:
     return " · ".join(parts)
 
 
-def case(session: Session, *, now: datetime | None = None) -> Case:
+def case(session: Session, user_id: int | None = None, *, now: datetime | None = None) -> Case:
+    """The case as this person sees it: their Not interested titles fold away, as on the pages
+    (michael, 0.77.0). Confetti stays the household's, since it's recorded at scan time."""
     from app.services import director_service, franchise_service, movie_gap_service
 
     now = now or datetime.now(timezone.utc)
@@ -135,13 +137,13 @@ def case(session: Session, *, now: datetime | None = None) -> Case:
 
     collections = []
     almost: list[Almost] = []
-    gaps = movie_gap_service.collection_gaps(session)
+    gaps = movie_gap_service.collection_gaps(session, user_id)
     for g in gaps:
-        short = list(g.missing)          # complete = nothing missing (GLOSSARY.md, 0.77.0)
+        short = list(g.missing) + list(g.wanted)     # what stands between it and complete
         if g.owned and 0 < len(short) <= ALMOST_WITHIN:
             almost.append(Almost("collection", g.name, f"/collections/{g.collection_id}", g.small_poster,
                                  len(g.owned), len(g.owned) + len(short), tuple(m.title for m in short)))
-        if not g.owned or g.missing:
+        if not g.complete:
             continue
         when, new = dated(recorded.get(g.collection_id))
         collections.append(Trophy(g.name, f"/collections/{g.collection_id}", g.small_poster,
@@ -149,11 +151,11 @@ def case(session: Session, *, now: datetime | None = None) -> Case:
     # Newest first; the undated (complete before anyone was counting) after, by name.
     collections.sort(key=lambda t: (t.when is None, -(t.when.timestamp() if t.when else 0), t.name.casefold()))
 
-    views = franchise_service.franchise_views(session, gaps=gaps)   # the same gaps, not a second pass
+    views = franchise_service.franchise_views(session, user_id, gaps=gaps)   # the same gaps, not a second pass
     franchises = [
         Trophy(f.name, f"/franchises/{f.wikidata_id}", f.small_poster,
                _films(len(f.owned_films), len(f.owned_shows)), mosaic=tuple(f.mosaic or ()))
-        for f in views if f.owned and not f.missing
+        for f in views if f.complete
     ]
     # A franchise that *is* a listed collection ("The Matrix" and "The Matrix Collection") would
     # be the same set twice; the collection stands for both.
@@ -161,14 +163,14 @@ def case(session: Session, *, now: datetime | None = None) -> Case:
     # regex 88,000 times on a 20k-film library (0.84s of the page).
     listed = {key for a in almost if (key := franchise_service.name_key(a.name))}
     almost += [Almost("franchise", f.name, f"/franchises/{f.wikidata_id}", f.small_poster, f.owned, f.total,
-                      tuple(t.title for t in f.missing_films + f.missing_shows))
-               for f in views if f.owned and 0 < f.missing <= ALMOST_WITHIN
+                      tuple(t.title for t in f.missing_films + f.missing_shows + f.wanted_films + f.wanted_shows))
+               for f in views if f.owned and 0 < f.missing + f.wanted <= ALMOST_WITHIN
                and franchise_service.name_key(f.name) not in listed]
     franchises.sort(key=lambda t: t.name.casefold())
 
     directors = [
         Trophy(d.name, f"/directors/{d.person_id}", d.photo, _films(len(d.owned)))
-        for d in director_service.director_views(session) if d.owned and not d.missing and not d.pending
+        for d in director_service.director_views(session, user_id) if d.complete
     ]
     directors.sort(key=lambda t: t.name.casefold())
     almost.sort(key=lambda a: (a.to_go, -a.have / a.total, a.name.casefold()))

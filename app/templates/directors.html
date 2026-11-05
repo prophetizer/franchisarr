@@ -51,7 +51,7 @@
             {% if d.upcoming %}<span class="count-upcoming">{{ d.upcoming | length }} coming</span>{% endif %}
           {% endif %}
         </p>
-        {% if not d.pending %}{{ completeness(d.owned | length, d.missing | length, watched_of(d.owned)) }}{% endif %}
+        {% if not d.pending %}{{ completeness(d.owned | length, d.total - d.owned | length, watched_of(d.owned)) }}{% endif %}
         {% if d.missing %}
           <ul class="missing-preview">
             {% for movie in d.top_missing[:3] %}

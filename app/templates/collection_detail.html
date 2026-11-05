@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "partials/tile.html" import tile %}
-{% from "partials/marked_fold.html" import not_interested_fold, excluded_fold %}
+{% from "partials/marked_fold.html" import not_interested_fold, excluded_fold, wanted_section %}
 {% from "partials/set_runtime.html" import set_runtime %}
 {% block title %}{{ gap.name }} — Franchisarr{% endblock %}
 
@@ -12,7 +12,7 @@
 {% include "partials/celebration.html" %}
 {#- Showcase's October touch looks for this (0.51.0). -#}
 {% if horror %}<span data-sc-horror hidden></span>{% endif %}
-<div class="collection-heading{% if gap.backdrop %} has-backdrop{% endif %}"{% if gap.owned and not gap.missing %} data-complete{% endif %}{% if mood %} data-mood="{{ mood }}"{% endif %} data-have="{{ gap.owned | length }}" data-of="{{ gap.total }}">
+<div class="collection-heading{% if gap.backdrop %} has-backdrop{% endif %}"{% if gap.complete %} data-complete{% endif %}{% if mood %} data-mood="{{ mood }}"{% endif %} data-have="{{ gap.owned | length }}" data-of="{{ gap.total }}">
   {% if gap.backdrop %}
     <div class="collection-backdrop-frame" aria-hidden="true">
       <img class="collection-backdrop" src="{{ gap.backdrop }}" alt="" decoding="async"
@@ -57,9 +57,10 @@
       {% include "partials/missing_list.html" %}
     </div>
   </section>
-{% else %}
+{% elif gap.complete %}
   <p role="status" class="notice-good" data-scene="usher">You have every released film in this collection.</p>
 {% endif %}
+{{ wanted_section(gap.wanted_tiles) }}
 
 {% if gap.upcoming %}
   {# Kept deliberately separate from the list above: these films don't exist yet, so they are not
@@ -75,9 +76,9 @@
         {% call tile(movie.poster, 'upcoming', title=movie.title, year=movie.release_year) %}
           <header><strong class="film-title">{{ movie.title }}</strong></header>
           <p class="collection-counts muted"><span>
-            {% if movie.release_date %}expected <time datetime="{{ movie.release_date }}">{{ movie.release_date }}</time>{% else %}no release date announced{% endif %}
+            {% if movie.release_date %}expected <time datetime="{{ movie.release_date }}">{{ movie.release_date }}</time>{% else %}no release date announced{% endif %}{% if movie.wanted %} · wanted{% endif %}
           </span></p>
-          {% if user and user.is_admin %}
+          {% if user and user.is_admin and not movie.wanted %}
           <p class="card-actions">
             <button class="outline" hx-get="{{ url('/add/' ~ movie.tmdb_id) }}"
                     hx-target="#add-dialog" hx-swap="innerHTML">Add</button>

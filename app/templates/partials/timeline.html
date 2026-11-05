@@ -22,10 +22,10 @@
     {% set marks = decade_marks(timeline) %}
     <ol class="timeline-strip">
       {% for s in timeline %}
-        {% set label = s.title ~ (' (' ~ s.year ~ ')' if s.year else '') ~ (' — you have it' if s.status == 'owned' else (' — not out yet' if s.status == 'upcoming' else ' — missing')) %}
+        {% set label = s.title ~ (' (' ~ s.year ~ ')' if s.year else '') ~ (' — you have it' if s.status == 'owned' else (' — wanted' if s.status == 'wanted' else (' — not out yet' if s.status == 'upcoming' else ' — missing'))) %}
         <li class="timeline-step timeline-step--{{ s.status }}{% if loop.index0 in marks %} timeline-step--decade{% endif %}"
             style="--i: {{ loop.index0 }}"{% if loop.index0 in marks %} data-decade="{{ marks[loop.index0] }}"{% endif %}>
-          {% if s.status != 'owned' and user and user.is_admin %}
+          {% if s.addable and user and user.is_admin %}
             <button type="button" class="timeline-poster" title="{{ label }}" aria-label="Add {{ s.title }}"
                     hx-get="{{ url(('/add/' if s.item_type == 'movie' else '/shows/add/') ~ s.tmdb_id) }}"
                     hx-target="{{ '#add-dialog' if s.item_type == 'movie' else '#add-show-dialog' }}" hx-swap="innerHTML">
@@ -35,7 +35,7 @@
             {% if s.poster %}<img src="{{ s.poster }}" alt="{{ s.title }}" loading="lazy" decoding="async" width="92" height="138">
             {% else %}{{ poster_card(s.title, s.year, 'timeline-placeholder') }}{% endif %}
             {% if s.status == 'owned' %}<span class="timeline-tick" aria-hidden="true">✓</span>{% endif %}
-          {% if s.status != 'owned' and user and user.is_admin %}</button>{% else %}</span>{% endif %}
+          {% if s.addable and user and user.is_admin %}</button>{% else %}</span>{% endif %}
           <span class="timeline-year">{{ s.year or '—' }}{% if s.status == 'upcoming' %} · soon{% endif %}</span>
         </li>
       {% endfor %}

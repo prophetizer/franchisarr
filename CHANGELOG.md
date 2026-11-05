@@ -11,13 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 What some pages count, and where some settings live, changes with this release:
 
-- **"Complete" means nothing missing.** Upcoming films, and titles folded away (below the rating
-  floor, TV films, Not interested), no longer stop a set being complete -- for trophies and the
-  confetti as well as the pages. Sets that became complete only because of this are recorded
-  quietly the first time, without confetti.
-- **"N of M" counts owned + missing**, so it reads "M of M" exactly when a set is complete.
-  Collections no longer count upcoming films in M, and directors no longer count their folded
-  documentaries, shorts and music videos.
+- **Wanted is no longer owned.** A film Radarr has without a file, or a request open in Seerr,
+  used to read as in your library on a collection's page, and to vanish from franchise and
+  director pages. It now has a **Wanted** section on all three and counts until the file lands.
+  Some collections that read complete will stop doing so until then.
+- **"Complete" means every counted title is owned.** Upcoming films, and titles folded away (below
+  the rating floor, TV films, Not interested), no longer stop a set being complete -- for trophies
+  and the confetti as well as the pages. Sets that became complete only because of this are
+  recorded quietly the first time, without confetti.
+- **"N of M" counts owned of owned + wanted + missing**, so it reads "M of M" exactly when a set is
+  complete. Collections no longer count upcoming films in M, and directors no longer count their
+  folded documentaries, shorts and music videos.
+- **The Trophy case follows the person viewing it**, so your Not interested titles don't hold your
+  trophies back. The confetti stays the household's.
 - **The rating floor, the directors floor and the TV films / shorts switches moved to
   Settings → Household.** They apply to everyone, and only an administrator can change them; the
   menu under your name now holds only your own preferences. Old links to Preferences land there.
@@ -27,6 +33,10 @@ What some pages count, and where some settings live, changes with this release:
 
 ### Added
 
+- **A Wanted section** on collection, franchise and director pages, for what's already on its way.
+  A film that isn't out yet stays in Upcoming, tagged wanted, and doesn't count; one Radarr holds
+  but isn't monitoring says so. Wanted outranks the rating floor and the TV films fold: if someone
+  asked for it, it shows.
 - **Not interested, with Undo.** Titles you mark Not interested now sit in a folded section on the
   page they came from -- collections, franchises, directors and Spin-offs -- each with **Undo**,
   instead of vanishing for good. Only you see yours. Films marked **Not part of this

@@ -32,7 +32,9 @@ more) — wears your
 [theme.park](https://theme-park.dev) theme like the rest of your stack, and has a web UI and a
 CLI. Everything
 it hides — low-rated films, TV films and specials, shorts, directors' music-video collections — is folded
-away rather than deleted, and most of it is a preference.
+away rather than deleted, and most of it is a preference. Titles marked **Not interested** fold too,
+with Undo; a title already with Radarr or Sonarr, or requested through Seerr, shows as **Wanted**
+and counts until it reaches your library.
 
 Franchisarr owes its starting idea to [Gaps](https://github.com/JasonHHouse/gaps), which has
 found missing collection films in Plex since 2019. This is that idea extended to Jellyfin and

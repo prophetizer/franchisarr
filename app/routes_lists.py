@@ -74,7 +74,7 @@ def _films_from_collections(session: Session, user: User, *, min_rating: float |
     for gap in movie_gap_service.collection_gaps(session, user.id):
         # missing + hidden, then this list's own floor: the page has already folded films below
         # the household floor into `hidden`, and a URL asking for min_rating=0 means all of them.
-        pool = list(gap.missing) + list(gap.hidden) + (list(gap.upcoming) if upcoming else [])
+        pool = list(gap.missing) + list(gap.hidden) + ([m for m in gap.upcoming if not m.wanted] if upcoming else [])
         for m in pool:
             if min_rating is not None and m.falls_below(min_rating):
                 continue
@@ -104,7 +104,7 @@ def _films_upcoming(session: Session, user: User) -> list[dict]:
     return [
         _film(f.tmdb_id, f.title, f.release.year if f.release else None, source="upcoming",
               detail=f"{f.collection_name} · {f.release_date or 'no date yet'}")
-        for f in upcoming_service.upcoming_films(session, user.id)
+        for f in upcoming_service.upcoming_films(session, user.id, wanted=False)
     ]
 
 

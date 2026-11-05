@@ -77,12 +77,12 @@ def numbers(session: Session, gaps: list) -> Numbers:  # noqa: ANN001 - every Co
             seen_decade[year // 10 * 10] += 1 if watched else 0
     out.decades = [Bar(f"{d}s", by_decade[d], seen_decade[d] if known else None) for d in sorted(by_decade)]
 
-    out.complete_sets = sum(1 for g in gaps if g.owned and not g.missing)
+    out.complete_sets = sum(1 for g in gaps if g.complete)
     out.sets_with_gaps = sum(1 for g in gaps if g.owned and g.missing)
-    nearly = sorted((g for g in gaps if len(g.owned) + len(g.missing) >= 3 and g.missing and g.owned),
-                    key=lambda g: (-len(g.owned) / (len(g.owned) + len(g.missing)), len(g.missing), g.name.casefold()))
-    out.closest = [Bar(g.name, round(100 * len(g.owned) / (len(g.owned) + len(g.missing))),
-                       detail=f"{len(g.owned)} of {len(g.owned) + len(g.missing)}", path=f"/collections/{g.collection_id}")
+    nearly = sorted((g for g in gaps if g.total >= 3 and g.missing and g.owned),
+                    key=lambda g: (-len(g.owned) / g.total, len(g.missing), g.name.casefold()))
+    out.closest = [Bar(g.name, round(100 * len(g.owned) / g.total),
+                       detail=f"{len(g.owned)} of {g.total}", path=f"/collections/{g.collection_id}")
                    for g in nearly[:8]]
 
     owned_ids = {f[0] for f in films.values() if f[0]}

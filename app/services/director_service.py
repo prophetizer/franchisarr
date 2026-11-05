@@ -48,6 +48,9 @@ class DirectorTitle:
     watched: bool | None = None
     #: "4K", "1080p"... for owned films whose server reports it (0.72.0).
     resolution: str | None = None
+    #: With Radarr or requested through Seerr, not yet owned (GLOSSARY.md: wanted).
+    wanted: bool = False
+    unmonitored: bool = False
 
     @property
     def where(self) -> str:
@@ -102,6 +105,8 @@ class DirectorView:
     music_videos: list[DirectorTitle] = field(default_factory=list)
     #: Films this person marked Not interested: a fold with Undo (0.77.0).
     not_interested: list = field(default_factory=list)
+    #: Released, not owned, with Radarr or requested through Seerr (GLOSSARY.md, 0.77.0).
+    wanted: list[DirectorTitle] = field(default_factory=list)
     @property
     def photo(self) -> str | None:
         from app.services.artwork import profile_url
@@ -119,9 +124,20 @@ class DirectorView:
 
     @property
     def total(self) -> int:
-        """Owned + missing, as for collections and franchises (0.77.0): the folds -- below the
-        floor, documentaries, shorts, music videos -- are shown in their sections, not counted."""
-        return len(self.owned) + len(self.missing)
+        """Owned + wanted + missing, as for collections and franchises (0.77.0): the folds -- below
+        the floor, documentaries, shorts, music videos -- are shown in their sections, not counted."""
+        return len(self.owned) + len(self.wanted) + len(self.missing)
+
+    @property
+    def complete(self) -> bool:
+        return bool(self.owned) and not self.pending and not self.missing and not self.wanted
+
+    @property
+    def wanted_tiles(self) -> list:
+        from app.services.not_interested import Marked
+
+        return [Marked(ItemType.MOVIE.value, t.tmdb_id, t.title, t.year, t.poster_path, t.unmonitored)
+                for t in self.wanted]
 
     @property
     def best_rating(self) -> float:
@@ -319,6 +335,7 @@ def director_views(
 
     details = owned_details(session, ItemType.MOVIE.value)
     in_radarr = movie_gap_service.radarr_known_ids(session)
+    unmonitored = movie_gap_service.unmonitored_ids(session)
     threshold = movie_gap_service.min_gap_rating(session)
     floor = min_director_films(session)
     show_shorts = include_shorts(session)
@@ -380,7 +397,11 @@ def director_views(
                                           runtime=info.runtime or t.runtime,
                                           resolution=info.resolution) if info else t)
             elif t.tmdb_id in in_radarr:
-                continue
+                # Upcoming even if Radarr has it: it never counts until it's out (GLOSSARY.md).
+                if t.is_released(today):
+                    view.wanted.append(replace(t, unmonitored=t.tmdb_id in unmonitored))
+                else:
+                    view.upcoming.append(replace(t, wanted=True))
             elif t.tmdb_id in dismissed:
                 from app.services.not_interested import Marked
 

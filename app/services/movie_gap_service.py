@@ -66,6 +66,10 @@ class MissingMovie:
     runtime: int | None = None
     #: "4K", "1080p"... for owned films whose server reports it (0.72.0).
     resolution: str | None = None
+    #: With Radarr or requested through Seerr, not yet owned (GLOSSARY.md: wanted); `unmonitored`
+    #: says Radarr isn't fetching it, so the page can say why it never arrives.
+    wanted: bool = False
+    unmonitored: bool = False
 
     @property
     def where(self) -> str:
@@ -104,7 +108,8 @@ class MissingMovie:
 def _marked(movie: MissingMovie):  # noqa: ANN202
     from app.services.not_interested import Marked
 
-    return Marked(ItemType.MOVIE.value, movie.tmdb_id, movie.title, movie.release_year, movie.poster_path)
+    return Marked(ItemType.MOVIE.value, movie.tmdb_id, movie.title, movie.release_year, movie.poster_path,
+                  movie.unmonitored)
 
 
 #: TMDb's "TV Movie" genre id, as stored in TmdbCollectionMovie.genre_ids ("10770,35").
@@ -123,6 +128,10 @@ class CollectionGap:
     #: Missing, released, and rated below the user's threshold. Kept rather than dropped so the
     #: filter is a fold, not a deletion -- the detail page shows what it hid.
     hidden: tuple[MissingMovie, ...] = ()
+    #: Released, not owned, but with Radarr or requested through Seerr (GLOSSARY.md, 0.77.0). Until
+    #: then these sat in `owned`: 39 titles across 33 collections on the developer's library read
+    #: as in the library, and 29 of those collections as having nothing missing.
+    wanted: tuple[MissingMovie, ...] = ()
     #: Missing TV films (TMDb genre 10770), folded unless the TV films preference lists them
     #: (0.75.0) -- the same preference, and the same fold, franchise pages already use.
     #: "Descendants" and the Hallmark mystery series were most of what this held on the
@@ -164,9 +173,18 @@ class CollectionGap:
 
     @property
     def total(self) -> int:
-        """Owned + missing: "N of M" reads M of M exactly when the set is complete (GLOSSARY.md;
-        michael, 0.77.0). Upcoming and folded titles are shown in their own sections instead."""
-        return len(self.owned) + len(self.missing)
+        """Owned + wanted + missing: "N of M" reads M of M exactly when the set is complete
+        (GLOSSARY.md; michael, 0.77.0). Upcoming and folded titles have their own sections."""
+        return len(self.owned) + len(self.wanted) + len(self.missing)
+
+    @property
+    def complete(self) -> bool:
+        """Every title that counts is owned (GLOSSARY.md: complete)."""
+        return bool(self.owned) and not self.missing and not self.wanted
+
+    @property
+    def wanted_tiles(self) -> list:
+        return [_marked(m) for m in self.wanted]
 
     @property
     def has_gaps(self) -> bool:
@@ -214,6 +232,13 @@ def owned_tmdb_ids(session: Session, *, all_servers: bool = False) -> set[int]:
         )
     ).all()
     return {tmdb_id for tmdb_id in ids if tmdb_id}
+
+
+def unmonitored_ids(session: Session) -> set[int]:
+    """Films Radarr holds without a file and isn't fetching: wanted, but not on their way."""
+    return {tmdb_id for tmdb_id in session.exec(select(RadarrMovie.tmdb_id).where(
+        col(RadarrMovie.monitored) == False,  # noqa: E712 - SQL, not Python
+        col(RadarrMovie.has_file) == False)).all() if tmdb_id}  # noqa: E712
 
 
 def radarr_known_ids(session: Session, instance_id: int | None = None) -> set[int]:
@@ -298,7 +323,9 @@ def collection_gaps(
     """
     # "Owned" means in Plex or already handled by Radarr. Both hide a film for the same reason:
     # there is nothing for the user to do about it.
-    owned = owned_tmdb_ids(session) | radarr_known_ids(session, radarr_instance_id)
+    owned = owned_tmdb_ids(session)
+    wanted = radarr_known_ids(session, radarr_instance_id) - owned
+    unmonitored = unmonitored_ids(session)
     dismissed = dismissed_ids(session, user_id)
     from app.services.ownership_service import owned_details
 
@@ -364,6 +391,7 @@ def collection_gaps(
         upcoming_here: list[MissingMovie] = []
         hidden_here: list[MissingMovie] = []
         tv_here: list[MissingMovie] = []
+        wanted_here: list[MissingMovie] = []
         not_interested_here: list = []
         excluded_here: list = []
 
@@ -383,15 +411,23 @@ def collection_gaps(
                 watched=info.watched if info else None,
                 runtime=info.runtime if info else None,
                 resolution=info.resolution if info else None,
+                wanted=tmdb_id in wanted,
+                unmonitored=tmdb_id in wanted and tmdb_id in unmonitored,
             )
             if tmdb_id in owned:
                 owned_here.append(entry)
             elif tmdb_id in excluded:
                 excluded_here.append(_marked(entry))
+            elif not entry.is_released(today):
+                # Upcoming even if Radarr has it: it never counts until it's out (GLOSSARY.md).
+                if tmdb_id not in dismissed or tmdb_id in wanted:
+                    upcoming_here.append(entry)
+                else:
+                    not_interested_here.append(_marked(entry))
+            elif tmdb_id in wanted:
+                wanted_here.append(entry)     # outranks every fold: someone asked for it
             elif tmdb_id in dismissed:
                 not_interested_here.append(_marked(entry))
-            elif not entry.is_released(today):
-                upcoming_here.append(entry)
             elif fold_tv_films and TV_MOVIE_GENRE in (genre_ids or "").split(","):
                 tv_here.append(entry)
             elif entry.falls_below(threshold):
@@ -410,6 +446,7 @@ def collection_gaps(
                 missing=tuple(missing_here),
                 upcoming=tuple(upcoming_here),
                 hidden=tuple(hidden_here),
+                wanted=tuple(wanted_here),
                 tv_films=tuple(tv_here),
                 not_interested=tuple(not_interested_here),
                 excluded=tuple(excluded_here),

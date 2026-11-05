@@ -50,6 +50,10 @@ class Title:
     #: For owned titles: which servers hold it, and whether it has been watched on any.
     servers: tuple[str, ...] = ()
     watched: bool | None = None
+    #: An upcoming title already with Radarr or Sonarr (GLOSSARY.md: wanted, upcoming).
+    wanted: bool = False
+    #: Wanted, but Radarr holds it without fetching it.
+    unmonitored: bool = False
     #: Minutes, for owned films whose server reports it (0.72.0).
     runtime: int | None = None
     #: "4K", "1080p"... for owned films whose server reports it (0.72.0).
@@ -81,6 +85,9 @@ class FranchiseView:
     specials: list[Title] = field(default_factory=list)
     #: Titles this person marked Not interested: a fold with Undo (0.77.0).
     not_interested: list = field(default_factory=list)
+    #: Released, not owned, with Radarr/Sonarr or requested through Seerr (GLOSSARY.md, 0.77.0).
+    wanted_films: list[Title] = field(default_factory=list)
+    wanted_shows: list[Title] = field(default_factory=list)
     #: A poster for the card and a logo for the heading, borrowed from the collection that *is*
     #: this franchise -- same name, or most of its films (see _pick_art, 0.46.1). None when no
     #: collection is, and the card shows `mosaic` instead.
@@ -100,8 +107,24 @@ class FranchiseView:
         return len(self.missing_films) + len(self.missing_shows)
 
     @property
+    def wanted(self) -> int:
+        return len(self.wanted_films) + len(self.wanted_shows)
+
+    @property
+    def wanted_tiles(self) -> list:
+        from app.services.not_interested import Marked
+
+        return [Marked(t.item_type, t.tmdb_id, t.title, t.year, t.poster_path, t.unmonitored)
+                for t in self.wanted_films + self.wanted_shows]
+
+    @property
     def total(self) -> int:
-        return self.owned + self.missing
+        """Owned + wanted + missing, as for collections and directors (GLOSSARY.md, 0.77.0)."""
+        return self.owned + self.wanted + self.missing
+
+    @property
+    def complete(self) -> bool:
+        return bool(self.owned) and not self.missing and not self.wanted
 
     @property
     def spans_both(self) -> bool:
@@ -390,6 +413,7 @@ def franchise_views(
     owned_shows = tv_spinoff_service.owned_show_ids(session)
     in_radarr = movie_gap_service.radarr_known_ids(session)
     in_sonarr = tv_spinoff_service.sonarr_known_ids(session)
+    unmonitored = movie_gap_service.unmonitored_ids(session)
     dismissed = _dismissed(session, user_id)
     from app.services.ownership_service import owned_details
 
@@ -445,9 +469,13 @@ def franchise_views(
             key = (t.item_type, t.tmdb_id)
             if key in seen_missing:
                 return
-            if t.item_type == ItemType.MOVIE.value and (t.tmdb_id in owned_films or t.tmdb_id in in_radarr):
+            film = t.item_type == ItemType.MOVIE.value
+            if t.tmdb_id in (owned_films if film else owned_shows):
                 return
-            if t.item_type == ItemType.SHOW.value and (t.tmdb_id in owned_shows or t.tmdb_id in in_sonarr):
+            if t.tmdb_id in (in_radarr if film else in_sonarr):
+                seen_missing.add(key)
+                (view.wanted_films if film else view.wanted_shows).append(
+                    replace(t, unmonitored=film and t.tmdb_id in unmonitored))
                 return
             if key in dismissed:
                 note_not_interested(t)
@@ -478,6 +506,8 @@ def franchise_views(
             seen_gaps.add(gap.collection_id)
             candidates.append((gap, held.get(gap.collection_id, 0)))
             for mm in gap.missing:
+                add_missing(_from_missing(mm, "collection", gap.name))
+            for mm in gap.wanted:
                 add_missing(_from_missing(mm, "collection", gap.name))
             for marked in gap.not_interested:
                 note_not_interested(marked)
@@ -578,7 +608,7 @@ def _pick_art(view: FranchiseView, candidates: list, owned_films: int) -> None: 
 def _from_missing(mm: MissingMovie, via: str, collection_name: str) -> Title:
     return Title(item_type=ItemType.MOVIE.value, tmdb_id=mm.tmdb_id, title=mm.title,
                  year=mm.release_year, poster_path=mm.poster_path,
-                 release_date=mm.release_date, via=via, note=collection_name)
+                 release_date=mm.release_date, via=via, note=collection_name, wanted=mm.wanted)
 
 
 def franchise_view(session: Session, wikidata_id: str, user_id: int | None = None) -> FranchiseView | None:

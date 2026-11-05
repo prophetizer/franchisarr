@@ -109,7 +109,7 @@ def test_the_spotlight_plays_the_film_that_would_finish_the_set() -> None:
 
     from app.services import home_service
 
-    gap = Film(name="Cop Collection", collection_id=1, backdrop="/b.jpg", logo_image=None, poster=None,
+    gap = Film(name="Cop Collection", collection_id=1, backdrop="/b.jpg", logo_image=None, poster=None, total=3,
                owned=[Film(vote_count=10)], missing=[Film(tmdb_id=306, title="III", release_date="1994-05-24"),
                                                      Film(tmdb_id=96, title="II", release_date="1987-05-18")])
 

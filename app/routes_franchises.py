@@ -64,7 +64,7 @@ def franchise_detail(request: Request, session: DbSession, user: RequiredUser, w
     if view is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No such franchise.")
     steps = timeline.build(view.owned_films + view.owned_shows, view.missing_films + view.missing_shows,
-                           view.upcoming_films)
+                           view.upcoming_films, view.wanted_films + view.wanted_shows)
     mood = about_service.mood(session, film_ids=[t.tmdb_id for t in view.owned_films + view.missing_films])
     return get_templates().TemplateResponse(
         request, "franchise_detail.html",

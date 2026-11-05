@@ -180,7 +180,7 @@ def run(
     # Release-date news is diffed against the last scan rather than against "ever seen": a film
     # that gets a date is news once, and a film that gets a *new* date is news again.
     date_events = upcoming_service.record_and_diff(
-        session, upcoming_service.upcoming_films(session)
+        session, upcoming_service.upcoming_films(session, wanted=False)
     )
 
     result.report = notifier.ScanReport(

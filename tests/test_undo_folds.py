@@ -34,3 +34,20 @@ def test_not_part_of_this_collection_folds_for_administrators_with_undo(client: 
 
 def test_undo_refuses_an_unknown_kind_of_title(client: TestClient) -> None:  # noqa: F811
     assert client.post(f"{BASE}/not-interested/album/1/undo").status_code == 404
+
+
+def test_a_wanted_film_has_its_section_and_no_add_button(client: TestClient) -> None:  # noqa: F811
+    from sqlmodel import Session
+
+    from app.db import get_engine
+    from app.models import RadarrInstance, RadarrMovie
+
+    _seed_collection()
+    with Session(get_engine()) as session:
+        instance = RadarrInstance(name="Radarr", url="http://radarr:7878", api_key="k" * 32)
+        session.add(instance); session.commit(); session.refresh(instance)
+        session.add(RadarrMovie(instance_id=instance.id, tmdb_id=306, title="III"))
+        session.commit()
+
+    page = client.get(f"{BASE}/collections/{COLLECTION}").text
+    assert "<h2>Wanted</h2>" in page and f"{BASE}/add/306" not in page

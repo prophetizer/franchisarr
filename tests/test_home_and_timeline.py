@@ -57,6 +57,10 @@ class Gap:
     missing: tuple
     small_poster: str | None = None
 
+    @property
+    def total(self) -> int:
+        return len(self.owned) + len(self.missing)
+
 
 def test_closest_to_complete_puts_the_smallest_share_missing_first() -> None:
     gaps = [Gap("Half", 1, (1, 2), (3, 4)), Gap("Nearly", 2, (1, 2, 3, 4), (5,)), Gap("Done", 3, (1,), ())]

@@ -99,7 +99,7 @@ def set_titles(session: Session, user_id: int | None, kind: str, ref: str):  # n
         gap = next(iter(movie_gap_service.collection_gaps(session, user_id, only={cid})), None)
         if gap is None:
             return None
-        return gap.name, timeline.build(gap.owned, gap.missing, gap.upcoming)
+        return gap.name, timeline.build(gap.owned, gap.missing, gap.upcoming, gap.wanted)
     if kind == "franchises":
         from app.services import franchise_service
 
@@ -107,5 +107,6 @@ def set_titles(session: Session, user_id: int | None, kind: str, ref: str):  # n
         if view is None:
             return None
         return view.name, timeline.build(view.owned_films + view.owned_shows,
-                                         view.missing_films + view.missing_shows, view.upcoming_films)
+                                         view.missing_films + view.missing_shows, view.upcoming_films,
+                                         view.wanted_films + view.wanted_shows)
     return None

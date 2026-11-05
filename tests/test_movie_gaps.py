@@ -705,3 +705,54 @@ def test_a_tv_film_folds_and_does_not_count_as_a_gap(session: Session) -> None:
     set_setting(session, SettingKey.FRANCHISE_INCLUDE_TV_FILMS, "true"); session.commit()
     gap = movie_gap_service.collection_gaps(session)[0]
     assert [m.tmdb_id for m in gap.missing] == [96, 306] and gap.tv_films == ()
+
+
+# ------------------------------------------------------------------ wanted (0.77.0)
+
+
+def _in_radarr(session: Session, tmdb_id: int, **kwargs) -> None:
+    from app.models import RadarrInstance, RadarrMovie
+
+    instance = session.exec(select(RadarrInstance)).first()
+    if instance is None:
+        instance = RadarrInstance(name="Radarr", url="http://radarr:7878", api_key="k" * 32)
+        session.add(instance); session.commit(); session.refresh(instance)
+    session.add(RadarrMovie(instance_id=instance.id, tmdb_id=tmdb_id, title="x", **kwargs))
+    session.commit()
+
+
+def test_a_film_with_radarr_is_wanted_not_owned_and_the_set_is_not_complete(session: Session) -> None:
+    """GLOSSARY.md: wanted. It read as in the library, and its collection as complete, until
+    0.77.0: 39 titles across 33 collections on the developer's library."""
+    _own(session, 90, "Beverly Hills Cop")
+    _collection(session, (90, "Beverly Hills Cop"), (96, "Beverly Hills Cop II"))
+    _in_radarr(session, 96)
+
+    gap = movie_gap_service.collection_gaps(session)[0]
+    assert [m.tmdb_id for m in gap.owned] == [90] and [m.tmdb_id for m in gap.wanted] == [96]
+    assert gap.missing == () and gap.total == 2 and not gap.complete
+
+
+def test_an_unreleased_film_with_radarr_stays_upcoming_tagged_and_uncounted(session: Session) -> None:
+    _own(session, 90, "Beverly Hills Cop")
+    _collection(session, (90, "Beverly Hills Cop"))
+    session.add(TmdbCollectionMovie(collection_id=COLLECTION, tmdb_movie_id=9999, title="IV",
+                                    release_year=2099, release_date="2099-01-01", position=2))
+    session.commit()
+    _in_radarr(session, 9999)
+
+    gap = movie_gap_service.collection_gaps(session)[0]
+    assert gap.wanted == () and [m.wanted for m in gap.upcoming] == [True]
+    assert gap.total == 1 and gap.complete, "upcoming never counts, even with Radarr"
+
+
+def test_wanted_outranks_the_rating_floor_and_says_when_radarr_is_not_fetching(session: Session) -> None:
+    _own(session, 90, "Beverly Hills Cop")
+    _collection(session, (90, "Beverly Hills Cop"), (306, "III"))
+    _rate(session, 306, 3.0)
+    _set_threshold(session, "6")
+    _in_radarr(session, 306, monitored=False, has_file=False)
+
+    gap = movie_gap_service.collection_gaps(session)[0]
+    assert gap.hidden == () and [m.tmdb_id for m in gap.wanted] == [306]
+    assert gap.wanted[0].unmonitored and gap.wanted_tiles[0].unmonitored

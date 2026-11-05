@@ -168,7 +168,7 @@ def collection_detail(
                               media_server_service, playlist_service, sorting, timeline)
 
     detail_sort = sorting.resolve(session, user.id, "detail", sort, dir)
-    steps = timeline.build(gap.owned, gap.missing, gap.upcoming)
+    steps = timeline.build(gap.owned, gap.missing, gap.upcoming, gap.wanted)
     mood = about_service.mood(session, collection_id=collection_id)
 
     return get_templates().TemplateResponse(

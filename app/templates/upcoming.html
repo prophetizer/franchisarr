@@ -100,9 +100,9 @@
           </p>
           <p><small class="muted">
             <a href="{{ url('/collections/' ~ film.collection_id) }}">{{ film.collection_name }}</a>
-            · you have {{ film.owned_count }} of {{ film.total_count }}
+            · you have {{ film.owned_count }} of {{ film.total_count }}{% if film.wanted %} · wanted{% endif %}
           </small></p>
-          {% if user and user.is_admin %}
+          {% if user and user.is_admin and not film.wanted %}
           <p class="card-actions">
             <button class="outline" hx-get="{{ url('/add/' ~ film.tmdb_id) }}"
                     hx-target="#add-dialog" hx-swap="innerHTML">Add</button>

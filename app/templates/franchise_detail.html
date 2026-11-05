@@ -3,7 +3,7 @@
 {% block title %}{{ f.name }} — Franchisarr{% endblock %}
 
 {% from "partials/tile.html" import tile %}
-{% from "partials/marked_fold.html" import not_interested_fold, excluded_fold %}
+{% from "partials/marked_fold.html" import not_interested_fold, excluded_fold, wanted_section %}
 {% from "partials/set_runtime.html" import set_runtime %}
 {% from "partials/trailer_button.html" import trailer_button %}
 {% macro row(t, css) -%}
@@ -18,13 +18,13 @@
         tiles leave it out (0.44.0) -- "Wikidata files it under Star Wars" on every one was noise. -#}
     {% if css != 'owned' %}
     <p class="collection-counts muted"><span>
-      {% if t.release_date and css == 'upcoming' %}expected <time datetime="{{ t.release_date }}">{{ t.release_date }}</time> · {% endif %}
+      {% if t.release_date and css == 'upcoming' %}expected <time datetime="{{ t.release_date }}">{{ t.release_date }}</time> · {% endif %}{% if t.wanted %}wanted · {% endif %}
       {% if t.via == 'collection' %}in the {{ t.note }}
       {% elif t.via == 'franchise' %}{{ t.note }}
       {% else %}{{ t.note }}{% endif %}
     </span></p>
     {% endif %}
-    {% if css != 'owned' and ((user and user.is_admin) or css == 'missing') %}
+    {% if css != 'owned' and not t.wanted and ((user and user.is_admin) or css == 'missing') %}
       <p class="card-actions">
         {% if user and user.is_admin %}
         {% if t.item_type == 'movie' %}
@@ -45,7 +45,7 @@
 
 {#- Showcase's October touch looks for this (0.51.0). -#}
 {% if horror %}<span data-sc-horror hidden></span>{% endif %}
-<div class="collection-heading{% if f.backdrop %} has-backdrop{% endif %}"{% if f.owned and not f.missing %} data-complete{% endif %}{% if mood %} data-mood="{{ mood }}"{% endif %} data-have="{{ f.owned }}" data-of="{{ f.total }}">
+<div class="collection-heading{% if f.backdrop %} has-backdrop{% endif %}"{% if f.complete %} data-complete{% endif %}{% if mood %} data-mood="{{ mood }}"{% endif %} data-have="{{ f.owned }}" data-of="{{ f.total }}">
   {% if f.backdrop %}
     <div class="collection-backdrop-frame" aria-hidden="true">
       <img class="collection-backdrop" src="{{ f.backdrop }}" alt="" decoding="async" aria-hidden="true">
@@ -110,6 +110,7 @@
     <div class="collection-grid collection-grid--compact">{% for decade, t in decades(sort_titles(f.missing_shows, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(t, 'missing') }}{% endfor %}</div>
   </section>
 {% endif %}
+{{ wanted_section(f.wanted_tiles) }}
 {% if f.upcoming_films %}
   <section class="upcoming-section"><h2>Upcoming</h2>
     <div class="collection-grid collection-grid--compact">{% for decade, t in decades(sort_titles(f.upcoming_films, detail_sort or 'release'), detail_sort) %}{% if decade %}<h3 class="decade-divider" data-decade="{{ decade }}">{{ decade }}</h3>{% endif %}{{ row(t, 'upcoming') }}{% endfor %}</div>
@@ -123,7 +124,7 @@
   </details>
 {% endif %}
 {# Complete = nothing missing; upcoming titles don't count against it (GLOSSARY.md, 0.77.0). #}
-{% if f.owned and not f.missing %}
+{% if f.complete %}
   <p role="status" class="notice-good" data-scene="usher">Complete{% if f.upcoming_films %}, with {{ f.upcoming_films | length }} upcoming{% else %}, as far as anything knows{% endif %}.</p>
 {% endif %}
 

@@ -36,6 +36,8 @@ class UpcomingFilm:
     #: How much of the franchise the user has: "3 of 4" reads as a reason to care.
     owned_count: int = 0
     total_count: int = 0
+    #: Already with Radarr or requested through Seerr (GLOSSARY.md: wanted): tagged on the page.
+    wanted: bool = False
 
     @property
     def poster(self) -> str | None:
@@ -78,9 +80,11 @@ class DateEvent:
 
 
 def upcoming_films(
-    session: Session, user_id: int | None = None, *, today: date | None = None
+    session: Session, user_id: int | None = None, *, today: date | None = None, wanted: bool = True,
 ) -> list[UpcomingFilm]:
-    """Every announced-but-unreleased film in a collection the user owns part of.
+    """Every announced-but-unreleased film in a collection the user owns part of. `wanted=False`
+    leaves out those Radarr already has: release-date news and import lists have no use for them
+    (and adding them to the news in 0.77.0 would have announced them all at once).
 
     Dated films first, soonest first; undated ones last, since "some day" is not a date to plan
     around. Dismissed and excluded films are already gone by the time the gap service hands
@@ -89,6 +93,8 @@ def upcoming_films(
     films: list[UpcomingFilm] = []
     for gap in movie_gap_service.collection_gaps(session, user_id, today=today):
         for movie in gap.upcoming:
+            if movie.wanted and not wanted:
+                continue
             films.append(
                 UpcomingFilm(
                     tmdb_id=movie.tmdb_id,
@@ -97,6 +103,7 @@ def upcoming_films(
                     collection_name=gap.name,
                     release_date=movie.release_date,
                     poster_path=movie.poster_path,
+                    wanted=movie.wanted,
                     owned_count=len(gap.owned),
                     total_count=gap.total,
                 )

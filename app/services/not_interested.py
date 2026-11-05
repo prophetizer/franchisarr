@@ -25,6 +25,8 @@ class Marked:
     title: str
     year: int | None = None
     poster_path: str | None = None
+    #: Wanted titles only: Radarr holds it but isn't fetching it.
+    unmonitored: bool = False
 
     @property
     def poster(self) -> str | None:

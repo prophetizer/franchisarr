@@ -12,11 +12,13 @@ class Step:
     title: str
     year: int | None
     poster: str | None
-    #: "owned", "missing" or "upcoming".
+    #: "owned", "wanted", "missing" or "upcoming".
     status: str
     tmdb_id: int
     #: "movie" or "show" -- which add dialog a missing one opens.
     item_type: str
+    #: False when Radarr already has it (GLOSSARY.md: wanted), even if it's upcoming.
+    addable: bool = True
 
 
 def _year(item) -> int | None:  # noqa: ANN001
@@ -32,14 +34,16 @@ def _when(item) -> str:  # noqa: ANN001
     return f"{year}-99" if year else "9999"
 
 
-def build(owned=(), missing=(), upcoming=()) -> list[Step]:  # noqa: ANN001
+def build(owned=(), missing=(), upcoming=(), wanted=()) -> list[Step]:  # noqa: ANN001
     """Every title of the set in release order. Items are the pages' own (franchise Titles or
     collection MissingMovies): each has a title, a TMDb id, a poster and a date or year."""
-    tagged = [(item, status) for status, items in (("owned", owned), ("missing", missing), ("upcoming", upcoming))
-              for item in items]
+    tagged = [(item, status) for status, items in (("owned", owned), ("wanted", wanted), ("missing", missing),
+                                                   ("upcoming", upcoming)) for item in items]
     tagged.sort(key=lambda pair: (_when(pair[0]), pair[0].title.casefold()))
     return [Step(item.title, _year(item), item.poster, status, item.tmdb_id,
-                 getattr(item, "item_type", "movie") or "movie") for item, status in tagged]
+                 getattr(item, "item_type", "movie") or "movie",
+                 addable=status in ("missing", "upcoming") and not getattr(item, "wanted", False))
+            for item, status in tagged]
 
 
 def decade_marks(steps: list[Step]) -> dict[int, str]:

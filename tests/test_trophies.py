@@ -122,3 +122,25 @@ def test_only_showcase_uses_up_an_unlock(client: TestClient) -> None:  # noqa: F
         _collection(session, 5, "Evil Dead Collection", [50, 51], [50, 51])
     page = client.get(f"{BASE}/trophies").text
     assert "trophy-badge--unlocked" not in page, "four trophies earn nothing new past the first"
+
+
+def test_the_case_follows_the_person_viewing_it(session: Session) -> None:
+    """0.77.0: a title you marked Not interested doesn't hold your trophy back, as on the pages;
+    someone else still sees the set as short of it."""
+    from app.models import DismissedItem, LibraryItem, TmdbCollection, TmdbCollectionMovie, TmdbMovie, User
+    from tests.conftest import ensure_server
+
+    me = User(local_username="me", is_admin=True)
+    session.add(me); session.commit(); session.refresh(me)
+    session.add(TmdbCollection(tmdb_collection_id=7, name="Two Films"))
+    for pos, tid in enumerate((70, 71)):
+        session.add(TmdbCollectionMovie(collection_id=7, tmdb_movie_id=tid, title=f"Film {tid}",
+                                        release_year=2000, release_date="2000-01-01", position=pos))
+    session.add(TmdbMovie(tmdb_id=70, title="Film 70", collection_id=7))
+    session.add(LibraryItem(server_id=ensure_server(session), library_key="1", item_key="f70", item_type="movie",
+                            title="Film 70", year=2000, tmdb_id=70, match_source="guid"))
+    session.add(DismissedItem(user_id=me.id, item_type="movie", tmdb_id=71))
+    session.commit()
+
+    assert [t.name for t in trophies.case(session, me.id).collections] == ["Two Films"]
+    assert trophies.case(session).collections == []

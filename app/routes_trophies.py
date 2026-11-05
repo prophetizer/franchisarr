@@ -14,7 +14,7 @@ router = APIRouter()
 
 @router.get("/trophies", response_class=HTMLResponse)
 def trophy_case(request: Request, session: DbSession, user: RequiredUser, page: int = 1):
-    found = trophies.case(session)
+    found = trophies.case(session, user.id)
     # Collections can run to hundreds; franchises and directors to a few dozen.
     pager = pagination.paginate(found.collections, page, path="/trophies", anchor="#collections")
     # Only Showcase makes a moment of a new badge, so only it uses one up (as with the confetti).

@@ -32,8 +32,8 @@ class Card:
 def closest_to_complete(gaps: list, limit: int = ROW) -> list[Card]:  # noqa: ANN001 - CollectionGap
     """Collections with the smallest share missing: one film away first."""
     ranked = sorted((g for g in gaps if g.missing),
-                    key=lambda g: (-len(g.owned) / (len(g.owned) + len(g.missing)), len(g.missing), g.name.casefold()))
-    return [Card(g.name, f"{len(g.missing)} missing · {len(g.owned)} of {len(g.owned) + len(g.missing)}",
+                    key=lambda g: (-len(g.owned) / g.total, len(g.missing), g.name.casefold()))
+    return [Card(g.name, f"{len(g.missing)} missing · {len(g.owned)} of {g.total}",
                  g.small_poster, f"/collections/{g.collection_id}") for g in ranked[:limit]]
 
 
@@ -122,11 +122,11 @@ def spotlight(gaps: list, limit: int = 5) -> list[Slide]:  # noqa: ANN001 - Coll
     near = sorted((g for g in candidates if len(g.missing) <= 2),
                   key=lambda g: (-fame(g), len(g.missing), g.name.casefold()))
     rest = sorted((g for g in candidates if len(g.missing) > 2),
-                  key=lambda g: (-len(g.owned) / (len(g.owned) + len(g.missing)), g.name.casefold()))
+                  key=lambda g: (-len(g.owned) / g.total, g.name.casefold()))
     ranked = near + rest
     slides = []
     for g in ranked[:limit]:
-        owned, total = len(g.owned), len(g.owned) + len(g.missing)
+        owned, total = len(g.owned), g.total
         left = len(g.missing)
         first = min(g.missing, key=lambda m: (getattr(m, "release_date", None) or "9999", str(getattr(m, "title", ""))))
         slides.append(Slide(g.name, f"You have {owned} of {total} — {left} to go" if left > 1 else
