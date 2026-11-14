@@ -1,10 +1,10 @@
 # Core web framework
 # Bumped 2026-09-18 for the Starlette advisories (Range-header DoS in FileResponse, form limits,
 # Host-header URL reconstruction) and python-multipart parsing DoS; see CHANGELOG 0.11.1.
-fastapi==0.162.0
+fastapi==0.162.4
 uvicorn[standard]==0.54.0
 jinja2==3.1.6
-python-multipart==0.0.32
+python-multipart==0.0.33
 
 # Data layer
 sqlmodel==0.0.48
@@ -24,13 +24,13 @@ bcrypt==5.0.0
 # apprise is pure Python (py3-none-any wheel), so it needs no build on arm64. It brings
 # PyYAML, markdown and requests-oauthlib; PyYAML ships arm64 wheels. Pinned with click below
 # because apprise's CLI imports click too.
-apprise==2.1.0
+apprise==2.2.0
 
 # CLI
 # typer <0.16 calls Click's Parameter.make_metavar() with the old signature and dies on import
 # against Click 8.2+. Click is pinned alongside it so a fresh image build can't reintroduce that.
-typer==0.27.3
-click==8.5.0
+typer==0.29.0
+click==8.5.1
 
 # Playlist posters
 # Pillow composes the poster Franchisarr puts on the playlists it builds (a backdrop with the
